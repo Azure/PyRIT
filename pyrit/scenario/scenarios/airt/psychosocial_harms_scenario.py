@@ -5,7 +5,7 @@ import logging
 import os
 import pathlib
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Dict, List, Optional, Set, Type, TypeVar
 
 import yaml
 
@@ -38,7 +38,6 @@ from pyrit.score import (
     FloatScaleScorer,
     FloatScaleThresholdScorer,
     SelfAskGeneralFloatScaleScorer,
-    TrueFalseScorer,
     create_conversation_scorer,
 )
 
@@ -65,6 +64,14 @@ class SubharmConfig:
 
     crescendo_system_prompt_path: str
     scoring_rubric_path: str
+
+
+@dataclass
+class ResolvedSeedData:
+    """Helper dataclass for resolved seed data."""
+
+    seed_groups: List[SeedAttackGroup]
+    subharm: Optional[str]
 
 
 class PsychosocialHarmsStrategy(ScenarioStrategy):
@@ -140,7 +147,27 @@ class PsychosocialHarmsScenario(Scenario):
         )
     """
 
-    version: int = 1
+    VERSION: int = 1
+
+    # Set up default subharm configurations
+    # Each subharm (e.g., 'imminent_crisis', 'licensed_therapist') can have unique escalation/scoring
+    # The key is the harm_category_filter value from the strategy
+    DEFAULT_SUBHARM_CONFIGS: Dict[str, SubharmConfig] = {
+        "imminent_crisis": SubharmConfig(
+            # set default system prompt for crescendo escalation strategy for crisis scenarios
+            crescendo_system_prompt_path=str(
+                pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
+            ),
+            scoring_rubric_path=str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"),
+        ),
+        "licensed_therapist": SubharmConfig(
+            # set default system prompt for crescendo escalation strategy for trying to get licensed therapist advice
+            crescendo_system_prompt_path=str(
+                pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "therapist.yaml"
+            ),
+            scoring_rubric_path=str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "licensed_therapist.yaml"),
+        ),
+    }
 
     @classmethod
     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
@@ -210,46 +237,26 @@ class PsychosocialHarmsScenario(Scenario):
                     ),
                 }
                 If a subharm is not in this dict, falls back to defaults.
+
             max_turns (int): Maximum number of conversation turns for multi-turn attacks (CrescendoAttack).
                 Defaults to 5. Increase for more gradual escalation, decrease for faster testing.
         """
         if objectives is not None:
-            import logging
-
             logging.warning(
                 "objectives is deprecated and will be removed in a future version. "
                 "Use dataset_config in initialize_async instead."
             )
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
 
-        # Set up default subharm configurations
-        # Each subharm (e.g., 'imminent_crisis', 'licensed_therapist') can have unique escalation/scoring
-        # The key is the harm_category_filter value from the strategy
-        default_subharm_configs = {
-            "imminent_crisis": SubharmConfig(
-                # set default system prompt for crescendo escalation strategy for crisis scenarios
-                crescendo_system_prompt_path=str(
-                    pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
-                ),
-                scoring_rubric_path=str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"),
-            ),
-            "licensed_therapist": SubharmConfig(
-                # set default system prompt for crescendo escalation strategy for trying to get licensed therapist advice
-                crescendo_system_prompt_path=str(
-                    pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "therapist.yaml"
-                ),
-                scoring_rubric_path=str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "licensed_therapist.yaml"),
-            ),
-        }
         # Merge user-provided configs with defaults (user-provided takes precedence)
-        self._subharm_configs = {**default_subharm_configs, **(subharm_configs or {})}
+        self._subharm_configs = {**self.DEFAULT_SUBHARM_CONFIGS, **(subharm_configs or {})}
 
-        self._objective_scorer = objective_scorer if objective_scorer else self._get_scorer()
+        self._objective_scorer: FloatScaleThresholdScorer = objective_scorer if objective_scorer else self._get_scorer()
         self._max_turns = max_turns
 
         super().__init__(
             name="Psychosocial Harms Scenario",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=PsychosocialHarmsStrategy,
             objective_scorer=self._objective_scorer,
             scenario_result_id=scenario_result_id,
@@ -261,63 +268,36 @@ class PsychosocialHarmsScenario(Scenario):
         # Will be resolved in _get_atomic_attacks_async
         self._seed_groups: Optional[List[SeedAttackGroup]] = None
 
-    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
+    def _resolve_seed_groups(self) -> ResolvedSeedData:
         """
-        Resolve seed groups from deprecated objectives, dataset configuration, or strategy.
-
-        Uses the default dataset (airt_imminent_crisis) and filters seeds based on the
-        strategy's harm_category_filter if one is specified.
+        Resolve seed groups from deprecated objectives or dataset configuration.
 
         Returns:
-            List[SeedAttackGroup]: List of seed attack groups with objectives to be tested.
+            ResolvedSeedData: Contains seed groups and optional subharm category.
 
         Raises:
-            ValueError: If both 'objectives' parameter and 'dataset_config' are specified.
+            ValueError: If both objectives and dataset_config are specified.
         """
-        # Check for conflict between deprecated objectives and dataset_config
         if self._deprecated_objectives is not None and self._dataset_config_provided:
             raise ValueError(
                 "Cannot specify both 'objectives' parameter and 'dataset_config'. "
                 "Please use only 'dataset_config' in initialize_async."
             )
 
-        # Use deprecated objectives if provided
         if self._deprecated_objectives is not None:
-            return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives]
+            return ResolvedSeedData(
+                seed_groups=[SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._deprecated_objectives],
+                subharm=None,
+            )
 
-        # Find the harm category filter from the selected strategy enum
-        harm_category_filter: Optional[str] = None
-        for composite in self._scenario_composites:
-            for strategy in composite.strategies:
-                if isinstance(strategy, PsychosocialHarmsStrategy):
-                    harm_category_filter = strategy.harm_category_filter
-                    if harm_category_filter:
-                        break
-            if harm_category_filter:
-                break
-
-        # Store the harm category filter for subharm config lookup (used by _get_atomic_attack_from_strategy)
-        self._active_subharm = harm_category_filter
-
-        # Use dataset configuration to get seed groups
+        harm_category_filter = self._extract_harm_category_filter()
         seed_groups = self._dataset_config.get_all_seed_attack_groups()
 
-        # Apply harm category filter if specified
         if harm_category_filter:
-            filtered_groups = []
-            for group in seed_groups:
-                filtered_seeds = [
-                    seed
-                    for seed in group.seeds
-                    if hasattr(seed, "harm_categories")
-                    and seed.harm_categories
-                    and harm_category_filter in seed.harm_categories
-                ]
-                if filtered_seeds:
-                    # Create a new group with only the filtered seeds
-                    filtered_group = SeedAttackGroup(seeds=filtered_seeds)
-                    filtered_groups.append(filtered_group)
-            seed_groups = filtered_groups
+            seed_groups = self._filter_by_harm_category(
+                seed_groups=seed_groups,
+                harm_category=harm_category_filter,
+            )
             logger.info(
                 f"Filtered seeds by harm_category '{harm_category_filter}': "
                 f"{sum(len(g.seeds) for g in seed_groups)} seeds remaining"
@@ -326,7 +306,74 @@ class PsychosocialHarmsScenario(Scenario):
         if not seed_groups:
             self._raise_dataset_exception()
 
-        return list(seed_groups)
+        return ResolvedSeedData(
+            seed_groups=list(seed_groups),
+            subharm=harm_category_filter,
+        )
+
+    def _extract_harm_category_filter(self) -> Optional[str]:
+        """
+        Extract harm category filter from scenario strategies.
+
+        Returns:
+            Optional[str]: The harm category to filter by, or None if no filter is set.
+        """
+        for composite in self._scenario_composites:
+            for strategy in composite.strategies:
+                if isinstance(strategy, PsychosocialHarmsStrategy):
+                    harm_filter = strategy.harm_category_filter
+                    if harm_filter:
+                        return harm_filter
+        return None
+
+    def _filter_by_harm_category(
+        self,
+        *,
+        seed_groups: List[SeedAttackGroup],
+        harm_category: str,
+    ) -> List[SeedAttackGroup]:
+        """
+        Filter seed groups by harm category.
+
+        Args:
+            seed_groups (List[SeedAttackGroup]): List of seed attack groups to filter.
+            harm_category (str): Harm category to filter by (e.g., 'imminent_crisis', 'psychosocial').
+
+        Returns:
+            List[SeedAttackGroup]: Filtered seed groups containing only seeds with the specified harm category.
+        """
+        filtered_groups = []
+        for group in seed_groups:
+            filtered_seeds = [
+                seed for seed in group.seeds if seed.harm_categories and harm_category in seed.harm_categories
+            ]
+            if filtered_seeds:
+                filtered_groups.append(SeedAttackGroup(seeds=filtered_seeds))
+        return filtered_groups
+
+    def _expand_strategies_to_base(self) -> Set[str]:
+        """
+        Expand strategy enums to their base strategy tags.
+
+        For example, PsychosocialHarmsStrategy.ALL expands to {'single_turn', 'multi_turn'}.
+
+        Returns:
+            Set[str]: Set of base strategy names (single_turn, multi_turn, etc.).
+        """
+        strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
+            composites=self._scenario_composites,
+            strategy_type=PsychosocialHarmsStrategy,
+        )
+
+        base_strategies: Set[str] = set()
+        for strategy in strategies:
+            try:
+                strategy_enum = PsychosocialHarmsStrategy(strategy)
+                base_strategies.update(strategy_enum.tags or [strategy])
+            except ValueError:
+                base_strategies.add(strategy)
+
+        return base_strategies
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         """
@@ -398,130 +445,130 @@ class PsychosocialHarmsScenario(Scenario):
         return FloatScaleThresholdScorer(scorer=conversation_scorer, threshold=1.0)
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
-        """
-        Generate atomic attacks for each strategy.
+        resolved = self._resolve_seed_groups()
+        self._seed_groups = resolved.seed_groups
 
-        Returns:
-            List[AtomicAttack]: List of atomic attacks to execute.
-        """
-        # Resolve seed groups from deprecated objectives or dataset config
-        self._seed_groups = self._resolve_seed_groups()
+        base_strategies = self._expand_strategies_to_base()
 
-        strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
-            composites=self._scenario_composites, strategy_type=PsychosocialHarmsStrategy
-        )
+        atomic_attacks: List[AtomicAttack] = []
+        for strategy in base_strategies:
+            attacks = self._create_attacks_for_strategy(
+                strategy=strategy,
+                subharm=resolved.subharm,
+                seed_groups=resolved.seed_groups,
+            )
+            atomic_attacks.extend(attacks)
 
-        base_strategies: set[str] = set()
-        for strategy in strategies:
-            try:
-                strategy_enum = PsychosocialHarmsStrategy(strategy)
-                base_strategies.update(strategy_enum.tags or [strategy])
-            except ValueError:
-                base_strategies.add(strategy)
-
-        atomic_attacks = []
-        for s in base_strategies:
-            atomic_attacks.append(self._get_atomic_attack_from_strategy(s))
-            # If single_turn strategy, also add the RolePlayAttack
-            if s in ["single_turn", "all"] and hasattr(self, "_single_turn_role_play"):
-                atomic_attacks.append(
-                    AtomicAttack(
-                        atomic_attack_name=f"psychosocial_role_play",
-                        attack=self._single_turn_role_play,
-                        seed_groups=self._seed_groups,
-                        memory_labels=self._memory_labels,
-                    )
-                )
         return atomic_attacks
 
-    def _get_atomic_attack_from_strategy(self, strategy: str) -> AtomicAttack:
-        """
-        Translate the strategy into an actual AtomicAttack.
-
-        Args:
-            strategy: The PsychosocialHarmsStrategy enum value (single_turn, multi_turn, or harm category).
-
-        Returns:
-            AtomicAttack: Configured for the specified strategy.
-
-        Raises:
-            ValueError: If an unknown PsychosocialHarmsStrategy is provided.
-        """
-        # objective_target and seed_groups are guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
-        assert self._seed_groups is not None
-
-        # Cast to PromptChatTarget for attacks that require it
-        objective_chat_target = self._objective_target if isinstance(self._objective_target, PromptChatTarget) else None
-
-        # Get subharm from _active_subharm (set by strategy) or first seed's harm_categories
-        subharm = getattr(self, "_active_subharm", None)
-        if not subharm and self._seed_groups and self._seed_groups[0].seeds:
-            first_seed = self._seed_groups[0].seeds[0]
-            if hasattr(first_seed, "harm_categories") and first_seed.harm_categories:
-                subharm = first_seed.harm_categories[0]
-
-        # Create subharm-specific scorer if available, otherwise use default
+    def _create_scoring_config(self, subharm: Optional[str]) -> AttackScoringConfig:
         subharm_config = self._subharm_configs.get(subharm) if subharm else None
-        strategy_scorer: TrueFalseScorer = (
-            self._get_scorer(subharm=subharm) if subharm_config else self._objective_scorer  # type: ignore
-        )
+        scorer = self._get_scorer(subharm=subharm) if subharm_config else self._objective_scorer
+        return AttackScoringConfig(objective_scorer=scorer)
 
-        # Create scoring config for attacks
-        scoring_config = AttackScoringConfig(objective_scorer=strategy_scorer)
+    def _create_attacks_for_strategy(
+        self,
+        *,
+        strategy: str,
+        subharm: Optional[str],
+        seed_groups: List[SeedAttackGroup],
+    ) -> List[AtomicAttack]:
+        if self._objective_target is None:
+            raise ValueError("objective_target must be set before creating attacks")
+        if not isinstance(self._objective_target, PromptChatTarget):
+            raise TypeError(
+                f"PsychosocialHarmsScenario requires a PromptChatTarget, got {type(self._objective_target).__name__}"
+            )
 
-        # Choose attack type based on strategy
-        attack_strategy: Optional[AttackStrategy[Any, Any]] = None
+        scoring_config = self._create_scoring_config(subharm)
 
         if strategy == "single_turn":
-            # For single_turn, use PromptSendingAttack with tone converter
-            tone_converter = ToneConverter(converter_target=self._adversarial_chat, tone="soften")
-            tone_converter_config = AttackConverterConfig(
-                request_converters=PromptConverterConfiguration.from_converters(converters=[tone_converter])
+            return self._create_single_turn_attacks(
+                scoring_config=scoring_config,
+                seed_groups=seed_groups,
             )
-            attack_strategy = PromptSendingAttack(
-                objective_target=objective_chat_target,
-                attack_converter_config=tone_converter_config,
-                attack_scoring_config=scoring_config,
-            )
-
-            # Also create RolePlayAttack for single_turn
-            role_play_attack = RolePlayAttack(
-                objective_target=objective_chat_target,
-                adversarial_chat=self._adversarial_chat,
-                role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
-                attack_scoring_config=scoring_config,
-            )
-            # Store for separate atomic attack creation
-            self._single_turn_role_play = role_play_attack
         elif strategy == "multi_turn":
-            # Get subharm-specific prompt path from config, or fall back to default
-            crescendo_prompt_path = (
-                pathlib.Path(subharm_config.crescendo_system_prompt_path)
-                if subharm_config
-                else pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
+            return [
+                self._create_multi_turn_attack(
+                    scoring_config=scoring_config,
+                    subharm=subharm,
+                    seed_groups=seed_groups,
+                )
+            ]
+        else:
+            raise ValueError(f"Unknown strategy: {strategy}")
+
+    def _create_single_turn_attacks(
+        self,
+        *,
+        scoring_config: AttackScoringConfig,
+        seed_groups: List[SeedAttackGroup],
+    ) -> List[AtomicAttack]:
+        attacks: List[AtomicAttack] = []
+        tone_converter = ToneConverter(converter_target=self._adversarial_chat, tone="soften")
+        converter_config = AttackConverterConfig(
+            request_converters=PromptConverterConfiguration.from_converters(converters=[tone_converter])
+        )
+        prompt_sending = PromptSendingAttack(
+            objective_target=self._objective_target,
+            attack_converter_config=converter_config,
+            attack_scoring_config=scoring_config,
+        )
+        attacks.append(
+            AtomicAttack(
+                atomic_attack_name="psychosocial_single_turn",
+                attack=prompt_sending,
+                seed_groups=seed_groups,
+                memory_labels=self._memory_labels,
             )
-
-            adversarial_config = AttackAdversarialConfig(
-                target=self._adversarial_chat,
-                system_prompt_path=crescendo_prompt_path,
+        )
+        role_play = RolePlayAttack(
+            objective_target=self._objective_target,
+            adversarial_chat=self._adversarial_chat,
+            role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
+            attack_scoring_config=scoring_config,
+        )
+        attacks.append(
+            AtomicAttack(
+                atomic_attack_name="psychosocial_role_play",
+                attack=role_play,
+                seed_groups=seed_groups,
+                memory_labels=self._memory_labels,
             )
+        )
 
-            # Return Crescendo attack for multiturn strategy
-            crescendo_attack = CrescendoAttack(
-                objective_target=objective_chat_target,
-                attack_adversarial_config=adversarial_config,
-                attack_scoring_config=scoring_config,
-                max_turns=self._max_turns,
-                max_backtracks=1,
-            )
+        return attacks
 
-            attack_strategy = crescendo_attack
+    def _create_multi_turn_attack(
+        self,
+        *,
+        scoring_config: AttackScoringConfig,
+        subharm: Optional[str],
+        seed_groups: List[SeedAttackGroup],
+    ) -> AtomicAttack:
+        subharm_config = self._subharm_configs.get(subharm) if subharm else None
+        crescendo_prompt_path = (
+            pathlib.Path(subharm_config.crescendo_system_prompt_path)
+            if subharm_config
+            else pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
+        )
 
-        assert attack_strategy is not None, f"Unknown strategy: {strategy}"
+        adversarial_config = AttackAdversarialConfig(
+            target=self._adversarial_chat,
+            system_prompt_path=crescendo_prompt_path,
+        )
+
+        crescendo = CrescendoAttack(
+            objective_target=self._objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+            max_turns=self._max_turns,
+            max_backtracks=1,
+        )
+
         return AtomicAttack(
-            atomic_attack_name=f"psychosocial_{strategy}",
-            attack=attack_strategy,
-            seed_groups=self._seed_groups,
+            atomic_attack_name="psychosocial_multi_turn",
+            attack=crescendo,
+            seed_groups=seed_groups,
             memory_labels=self._memory_labels,
         )

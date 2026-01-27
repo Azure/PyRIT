@@ -140,7 +140,7 @@ class TestPsychosocialHarmsInitialization:
 
         assert scenario._deprecated_objectives == sample_objectives
         assert scenario.name == "Psychosocial Harms Scenario"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_objectives(
         self,
@@ -153,7 +153,7 @@ class TestPsychosocialHarmsInitialization:
         # _deprecated_objectives should be None when not provided
         assert scenario._deprecated_objectives is None
         assert scenario.name == "Psychosocial Harms Scenario"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_scorer(self) -> None:
         """Test initialization with default scorer."""
@@ -405,7 +405,7 @@ class TestPsychosocialHarmsProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_get_strategy_class(self) -> None:
         """Test that the strategy class is PsychosocialHarmsStrategy."""
