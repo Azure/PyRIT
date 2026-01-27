@@ -336,7 +336,8 @@ class CopilotAuthenticator(Authenticator):
             new_loop = asyncio.ProactorEventLoop()
             asyncio.set_event_loop(new_loop)
             try:
-                return new_loop.run_until_complete(self._run_playwright_browser_automation())
+                result: Optional[str] = new_loop.run_until_complete(self._run_playwright_browser_automation())
+                return result
             finally:
                 new_loop.close()
 
