@@ -155,8 +155,8 @@ export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
   }
 
   const handleSend = () => {
-    if ((input.trim() || attachments.length > 0) && !disabled) {
-      onSend(input.trim(), undefined, attachments)
+    if ((input || attachments.length > 0) && !disabled) {
+      onSend(input, undefined, attachments)
       setInput('')
       setAttachments([])
       if (textareaRef.current) {
@@ -245,7 +245,7 @@ export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
               appearance="primary"
               icon={<SendRegular />}
               onClick={handleSend}
-              disabled={disabled || (!input.trim() && attachments.length === 0)}
+              disabled={disabled || (!input && attachments.length === 0)}
               title="Send message"
             />
           </div>

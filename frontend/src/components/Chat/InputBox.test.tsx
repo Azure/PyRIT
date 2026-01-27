@@ -140,7 +140,7 @@ describe("InputBox", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
-  it("should not send when input only has whitespace", async () => {
+  it("should allow sending whitespace-only messages", async () => {
     const user = userEvent.setup();
     const onSend = jest.fn();
 
@@ -154,7 +154,20 @@ describe("InputBox", () => {
     await user.type(input, "   ");
     await user.click(getSendButton());
 
-    expect(onSend).not.toHaveBeenCalled();
+    expect(onSend).toHaveBeenCalled();
+  });
+
+  it("should not send when input is completely empty", () => {
+    const onSend = jest.fn();
+
+    render(
+      <TestWrapper>
+        <InputBox {...defaultProps} onSend={onSend} />
+      </TestWrapper>
+    );
+
+    const sendButton = getSendButton();
+    expect(sendButton).toBeDisabled();
   });
 
   it("should have file input for attachments", () => {
@@ -313,6 +326,33 @@ describe("InputBox", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/video\.mp4/)).toBeInTheDocument();
+    });
+  });
+
+  it("should handle multiple file attachments", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TestWrapper>
+        <InputBox {...defaultProps} />
+      </TestWrapper>
+    );
+
+    const files = [
+      new File(["text content"], "document.txt", { type: "text/plain" }),
+      new File(["image data"], "photo.png", { type: "image/png" }),
+      new File(["audio data"], "audio.mp3", { type: "audio/mpeg" }),
+    ];
+    const fileInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+
+    await user.upload(fileInput, files);
+
+    await waitFor(() => {
+      expect(screen.getByText(/document\.txt/)).toBeInTheDocument();
+      expect(screen.getByText(/photo\.png/)).toBeInTheDocument();
+      expect(screen.getByText(/audio\.mp3/)).toBeInTheDocument();
     });
   });
 });
