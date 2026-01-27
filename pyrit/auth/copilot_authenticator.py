@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -333,7 +334,10 @@ class CopilotAuthenticator(Authenticator):
         """
 
         def run_in_new_loop() -> Optional[str]:
-            new_loop = asyncio.ProactorEventLoop()
+            if sys.platform == "win32":
+                new_loop = asyncio.ProactorEventLoop()
+            else:
+                new_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(new_loop)
             try:
                 result: Optional[str] = new_loop.run_until_complete(self._run_playwright_browser_automation())
