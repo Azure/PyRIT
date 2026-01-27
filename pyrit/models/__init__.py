@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.identifiers import Identifiable, Identifier, IdentifierType
 from pyrit.models.attack_result import AttackOutcome, AttackResult, AttackResultT
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,
@@ -82,9 +81,6 @@ __all__ = [
     "group_conversation_message_pieces_by_sequence",
     "group_message_pieces_into_conversations",
     "HarmDefinition",
-    "Identifiable",
-    "Identifier",
-    "IdentifierType",
     "ImagePathDataTypeSerializer",
     "Message",
     "MessagePiece",
