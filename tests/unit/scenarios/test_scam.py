@@ -17,8 +17,9 @@ from pyrit.executor.attack import (
 )
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.identifiers import ScorerIdentifier
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedDataset, SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
+from pyrit.scenario import DatasetConfiguration
 from pyrit.scenario.scenarios.airt.scam import Scam, ScamStrategy
 from pyrit.score import TrueFalseCompositeScorer
 
@@ -41,6 +42,22 @@ def mock_memory_seed_groups() -> List[SeedGroup]:
     """Create mock seed groups that _get_default_seed_groups() would return."""
     return [SeedGroup(seeds=[SeedObjective(value=prompt)]) for prompt in SEED_PROMPT_LIST]
 
+
+@pytest.fixture
+def mock_memory_seeds():
+    """Create mock seeds (SeedObjective objects) from the seed prompt list."""
+    return [SeedObjective(value=prompt) for prompt in SEED_PROMPT_LIST]
+
+
+@pytest.fixture
+def mock_dataset_config(mock_memory_seed_groups):
+    """Create a mock dataset config that returns the seed groups."""
+    seed_attack_groups = [SeedAttackGroup(seeds=list(sg.seeds)) for sg in mock_memory_seed_groups]
+    mock_config = MagicMock(spec=DatasetConfiguration)
+    mock_config.get_all_seed_attack_groups.return_value = seed_attack_groups
+    mock_config.get_default_dataset_names.return_value = ["airt_scam"]
+    mock_config.has_data_source.return_value = True
+    return mock_config
 
 @pytest.fixture
 def single_turn_strategy() -> ScamStrategy:
@@ -192,13 +209,13 @@ class TestScamAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_all(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, mock_dataset_config
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Scam(objective_scorer=mock_objective_scorer)
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
             atomic_attacks = await scenario._get_atomic_attacks_async()
 
             assert len(atomic_attacks) > 0
@@ -211,7 +228,7 @@ class TestScamAttackGeneration:
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseCompositeScorer,
         single_turn_strategy: ScamStrategy,
-        sample_objectives: List[str],
+        mock_dataset_config: DatasetConfiguration,
     ) -> None:
         """Test that the single turn strategy attack generation works."""
         scenario = Scam(
@@ -220,7 +237,9 @@ class TestScamAttackGeneration:
         )
 
         await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[single_turn_strategy]
+            objective_target=mock_objective_target,
+            scenario_strategies=[single_turn_strategy],
+            dataset_config=mock_dataset_config,
         )
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
@@ -229,16 +248,17 @@ class TestScamAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_multiturn_async(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, multi_turn_strategy
+        self, mock_objective_target, mock_objective_scorer, multi_turn_strategy, mock_dataset_config
     ):
         """Test that the multi turn attack generation works."""
         scenario = Scam(
-            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
         await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[multi_turn_strategy]
+            objective_target=mock_objective_target,
+            scenario_strategies=[multi_turn_strategy],
+            dataset_config=mock_dataset_config,
         )
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
@@ -251,21 +271,21 @@ class TestScamAttackGeneration:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseCompositeScorer,
-        sample_objectives: List[str],
+        mock_dataset_config: DatasetConfiguration,
+        mock_memory_seeds,
     ) -> None:
         """Test that attack runs include objectives for each seed prompt."""
         scenario = Scam(
-            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
+        await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         for run in atomic_attacks:
-            assert len(run.objectives) == len(sample_objectives)
+            assert len(run.objectives) == len(mock_memory_seeds)
             for index, objective in enumerate(run.objectives):
-                assert sample_objectives[index] in objective
+                assert mock_memory_seeds[index].value in objective
 
     @pytest.mark.asyncio
     async def test_get_atomic_attacks_async_returns_attacks(
@@ -273,15 +293,14 @@ class TestScamAttackGeneration:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseCompositeScorer,
-        sample_objectives: List[str],
+        mock_dataset_config: DatasetConfiguration,
     ) -> None:
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = Scam(
-            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
+        await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
         atomic_attacks = await scenario._get_atomic_attacks_async()
         assert len(atomic_attacks) > 0
         assert all(hasattr(run, "_attack") for run in atomic_attacks)
@@ -298,11 +317,12 @@ class TestScamLifecycle:
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseCompositeScorer,
         mock_memory_seed_groups: List[SeedGroup],
+        mock_dataset_config,
     ) -> None:
         """Test initialization with custom max_concurrency."""
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Scam(objective_scorer=mock_objective_scorer)
-            await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20)
+            await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20, dataset_config=mock_dataset_config)
             assert scenario._max_concurrency == 20
 
     @pytest.mark.asyncio
@@ -312,6 +332,7 @@ class TestScamLifecycle:
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseCompositeScorer,
         mock_memory_seed_groups: List[SeedGroup],
+        mock_dataset_config,
     ) -> None:
         """Test initialization with memory labels."""
         memory_labels = {"type": "scam", "category": "scenario"}
@@ -321,6 +342,7 @@ class TestScamLifecycle:
             await scenario.initialize_async(
                 memory_labels=memory_labels,
                 objective_target=mock_objective_target,
+                dataset_config=mock_dataset_config,
             )
             assert scenario._memory_labels == memory_labels
 
@@ -333,11 +355,9 @@ class TestScamProperties:
         self,
         *,
         mock_objective_scorer: TrueFalseCompositeScorer,
-        sample_objectives: List[str],
     ) -> None:
         """Test that scenario version is properly set."""
         scenario = Scam(
-            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
@@ -345,12 +365,12 @@ class TestScamProperties:
 
     @pytest.mark.asyncio
     async def test_no_target_duplication_async(
-        self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: List[SeedGroup]
+        self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: List[SeedGroup], mock_dataset_config
     ) -> None:
         """Test that all three targets (adversarial, object, scorer) are distinct."""
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Scam()
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
 
             objective_target = scenario._objective_target
             scorer_target = scenario._scorer_config.objective_scorer  # type: ignore
