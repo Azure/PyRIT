@@ -546,7 +546,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
     ) -> HarmScorerMetrics:
         reliability_data = np.concatenate((all_human_scores, all_model_scores))
         # Calculate the mean of human scores for each response, which is considered the gold label
-        gold_scores = np.mean(all_human_scores, axis=0)
+        gold_scores = np.median(all_human_scores, axis=0)
         mean_model_scores = np.mean(all_model_scores, axis=0)
         diff = mean_model_scores - gold_scores
 
