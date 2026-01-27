@@ -7,13 +7,13 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.18.1
 #   kernelspec:
-#     display_name: pyrit-dev
+#     display_name: pyrit (3.13.5)
 #     language: python
 #     name: python3
 # ---
 
 # %% [markdown]
-# # WebSocket Copilot Target
+# # 10.3 WebSocket Copilot Target
 #
 # The `WebSocketCopilotTarget` is an alternative to the `PlaywrightCopilotTarget` that is designed to be more reliable by minimizing dependence on browser automation. Instead of driving the Copilot UI, it communicates directly with Copilot over a WebSocket connection.
 #
@@ -21,7 +21,7 @@
 # - `COPILOT_USERNAME` and `COPILOT_PASSWORD` environment variables
 # - Playwright installed: `pip install playwright && playwright install chromium`
 #
-# If you prefer not to use automated authentication, see the [Alternative Authentication](#alternative-authentication-with-manualcopilotauthenticator) section below.
+# Some environments are not suited for automated authentication (e.g. they have security policies with retrieving tokens or have MFA). See the [Alternative Authentication](#alternative-authentication-with-manualcopilotauthenticator) section below.
 
 # %% [markdown]
 # ## Basic Usage with `PromptSendingAttack`

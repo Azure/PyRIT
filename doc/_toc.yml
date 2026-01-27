@@ -77,13 +77,13 @@ chapters:
       - file: code/targets/7_http_target
       - file: code/targets/8_openai_responses_target
       - file: code/targets/9_message_normalizer
+      - file: code/targets/10_1_playwright_target
+      - file: code/targets/10_2_playwright_target_copilot
+      - file: code/targets/10_3_websocket_copilot_target
       - file: code/targets/open_ai_completions
-      - file: code/targets/playwright_target
-      - file: code/targets/playwright_target_copilot
       - file: code/targets/prompt_shield_target
-      - file: code/targets/use_huggingface_chat_target
-      - file: code/targets/websocket_copilot_target
       - file: code/targets/realtime_target
+      - file: code/targets/use_huggingface_chat_target
     - file: code/converters/0_converters
       sections:
         - file: code/converters/1_text_to_text_converters
