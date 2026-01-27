@@ -5,15 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.18.1
 # ---
 
 # %% [markdown]
-# # Playwright Target - optional
+# # 10.1 Generic Playwright Target
 #
 # This notebook demonstrates how to interact with the **Playwright Target** in PyRIT.
 #
@@ -158,7 +154,7 @@ async def main(page: Page) -> None:
 
 async def run() -> None:
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(headless=False)
+        browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context()
         page: Page = await context.new_page()
         await page.goto("http://127.0.0.1:5000")
@@ -169,10 +165,10 @@ async def run() -> None:
 
 # Note in Windows this doesn't run in jupyter notebooks due to playwright limitations
 # https://github.com/microsoft/playwright-python/issues/480
-# await run()
+await run()
 
-if __name__ == "__main__":
-    asyncio.run(run())
+# if __name__ == "__main__":
+#     asyncio.run(run())
 
 
 # %% [markdown]
