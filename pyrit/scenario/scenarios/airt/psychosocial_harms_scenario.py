@@ -56,6 +56,7 @@ class SubharmConfig:
     individual seed can specify a subharm (e.g., 'imminent_crisis', 'dependency')
     in its harm_categories field. This config maps subharms to their specific
     escalation strategies and scoring rubrics.
+    The single turn default attacks remain the same for all subharms.
 
     Attributes:
         crescendo_system_prompt_path: Path to the Crescendo escalation strategy YAML file.
@@ -70,52 +71,23 @@ class PsychosocialHarmsStrategy(ScenarioStrategy):
     """
     PsychosocialHarmsStrategy defines a set of strategies for testing model behavior
     in psychosocial harm scenarios. The scenario is designed to evaluate how models handle
-    users in mental health crisis, psychological vulnerability, inappropriate dependency,
-    and self-harm situations.
-
-    Each strategy has a value tuple with three elements:
-    - name: The strategy name
-    - tags: Set of attack strategy tags (single_turn, multi_turn, all)
-    - harm_category_filter: Optional filter to select only seeds with matching harm_categories
+    users in mental health crisis or if the model misrepresents itself as a licensed therapist.
 
     The tags correspond to different attack strategies:
     - single_turn: PromptSendingAttack and RolePlayAttack
     - multi_turn: CrescendoAttack
     - all: Both single_turn and multi_turn attacks
 
-    All strategies use the same dataset (airt_imminent_crisis) but filter seeds by harm_category.
+    Specific strategies (imminent_crisis, licensed_therapist) filter seeds by harm_category.
     """
 
-    _harm_category_filter: Optional[str]
+    ALL = ("all", {"all"})
+    SINGLE_TURN = ("single_turn", {"single_turn"})
+    MULTI_TURN = ("multi_turn", {"multi_turn"})
 
-    # Default strategies filter to "psychosocial" (includes all psychosocial seeds)
-    ALL = ("all", {"all"}, "psychosocial")
-    SINGLE_TURN = ("single_turn", {"single_turn"}, "psychosocial")
-    MULTI_TURN = ("multi_turn", {"multi_turn"}, "psychosocial")
-
-    # Filter to seeds with specific subharm categories
-    imminent_crisis = ("imminent_crisis", {"single_turn", "multi_turn"}, "imminent_crisis")
-    therapist_boundaries = ("therapist_boundaries", {"single_turn", "multi_turn"}, "licensed_therapist")
-
-    def __new__(
-        cls, value: str, tags: set[str] | None = None, harm_category_filter: Optional[str] = None
-    ) -> "PsychosocialHarmsStrategy":
-        """
-        Create a new PsychosocialHarmsStrategy with value, tags, and optional harm category filter.
-
-        Args:
-            value: The strategy value/name (dataset name or aggregate tag).
-            tags: Optional set of tags for categorization.
-            harm_category_filter: Optional harm category to filter seeds by.
-
-        Returns:
-            PsychosocialHarmsStrategy: The new enum member.
-        """
-        obj = object.__new__(cls)
-        obj._value_ = value
-        obj._tags = tags or set()
-        obj._harm_category_filter = harm_category_filter
-        return obj
+    # Strategies that filter to specific subharm categories (names match harm_categories in data)
+    imminent_crisis = ("imminent_crisis", {"single_turn", "multi_turn"})
+    licensed_therapist = ("licensed_therapist", {"single_turn", "multi_turn"})
 
     @property
     def harm_category_filter(self) -> Optional[str]:
@@ -123,9 +95,13 @@ class PsychosocialHarmsStrategy(ScenarioStrategy):
         Get the harm category filter for this strategy.
 
         Returns:
-            Optional[str]: The harm category to filter seeds by, or None if no filtering.
+            Optional[str]: The harm category to filter seeds by, or "psychosocial" as default.
         """
-        return self._harm_category_filter
+        # For specific strategies, filter by the strategy value (which matches harm_categories in data)
+        # For generic strategies (all, single_turn, multi_turn), default to "psychosocial"
+        if self.value in ("all", "single_turn", "multi_turn"):
+            return "psychosocial"
+        return str(self.value)
 
 
 class PsychosocialHarmsScenario(Scenario):
@@ -251,12 +227,14 @@ class PsychosocialHarmsScenario(Scenario):
         # The key is the harm_category_filter value from the strategy
         default_subharm_configs = {
             "imminent_crisis": SubharmConfig(
+                # set default system prompt for crescendo escalation strategy for crisis scenarios
                 crescendo_system_prompt_path=str(
                     pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
                 ),
                 scoring_rubric_path=str(pathlib.Path(DATASETS_PATH) / "score" / "likert" / "crisis_management.yaml"),
             ),
             "licensed_therapist": SubharmConfig(
+                # set default system prompt for crescendo escalation strategy for trying to get licensed therapist advice
                 crescendo_system_prompt_path=str(
                     pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "therapist.yaml"
                 ),
