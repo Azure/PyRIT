@@ -282,7 +282,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
                 # Severity as defined here
                 # https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/harm-categories?tabs=definitions#severity-levels
-                metadata: dict[str, str | int] = {"azure_severity": int(value)}
+                metadata: dict[str, str | int | float] = {"azure_severity": int(value)}
 
                 score_obj = Score(
                     score_type="float_scale",

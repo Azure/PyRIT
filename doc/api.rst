@@ -185,7 +185,6 @@ API Reference
     MultiPromptSendingAttackParameters
     MultiTurnAttackContext
     MultiTurnAttackStrategy
-    ObjectiveEvaluator
     PrependedConversationConfig
     PromptSendingAttack
     RTASystemPromptPaths
@@ -333,7 +332,9 @@ API Reference
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
     HarmDefinition
+    Identifiable
     Identifier
+    IdentifierType
     ImagePathDataTypeSerializer
     AllowedCategories
     AttackOutcome
@@ -504,6 +505,7 @@ API Reference
     HuggingFaceEndpointTarget
     limit_requests_per_minute
     OpenAICompletionTarget
+    OpenAIChatAudioConfig
     OpenAIImageTarget
     OpenAIChatTarget
     OpenAIResponseTarget

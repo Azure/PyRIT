@@ -67,10 +67,10 @@ def sample_attack_result():
         last_score=Score(
             score_type="float_scale",
             score_value="0.5",
-            score_category="other",
+            score_category=["other"],
             score_value_description="Other score",
             score_rationale="Other rationale",
-            score_metadata="{}",
+            score_metadata={},
             message_piece_id=str(uuid.uuid4()),
             scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
         ),

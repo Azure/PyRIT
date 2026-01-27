@@ -16,7 +16,7 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.scenario import AtomicAttack
 from pyrit.scenario.foundry import FoundryStrategy, RedTeamAgent
-from pyrit.score import TrueFalseScorer
+from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
 
 
 @pytest.fixture
@@ -52,6 +52,15 @@ def mock_objective_scorer():
     """Create a mock objective scorer for testing."""
     mock = MagicMock(spec=TrueFalseScorer)
     mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    return mock
+
+
+@pytest.fixture
+def mock_float_threshold_scorer():
+    """Create a mock FloatScaleThresholdScorer for TAP tests."""
+    mock = MagicMock(spec=FloatScaleThresholdScorer)
+    mock.get_identifier.return_value = {"__type__": "MockFloatScaleThresholdScorer", "__module__": "test"}
+    mock.threshold = 0.7
     return mock
 
 
@@ -311,12 +320,13 @@ class TestFoundryStrategyNormalization:
     )
     @pytest.mark.asyncio
     async def test_normalize_difficult_strategies(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups
+        self, mock_objective_target, mock_float_threshold_scorer, mock_memory_seed_groups
     ):
         """Test that DIFFICULT strategy expands to difficult attack strategies."""
         with patch.object(RedTeamAgent, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            # DIFFICULT strategy includes TAP which requires FloatScaleThresholdScorer
             scenario = RedTeamAgent(
-                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
+                attack_scoring_config=AttackScoringConfig(objective_scorer=mock_float_threshold_scorer),
             )
 
             await scenario.initialize_async(
