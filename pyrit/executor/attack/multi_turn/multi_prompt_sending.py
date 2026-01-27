@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import get_kwarg_param
-from pyrit.exceptions import ComponentRole, with_execution_context
+from pyrit.exceptions import ComponentRole, execution_context
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
@@ -335,7 +335,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
             Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
@@ -369,7 +369,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),

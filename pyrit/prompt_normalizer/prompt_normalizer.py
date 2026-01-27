@@ -11,8 +11,8 @@ from uuid import uuid4
 from pyrit.exceptions import (
     ComponentRole,
     EmptyResponseException,
+    execution_context,
     get_execution_context,
-    with_execution_context,
 )
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
@@ -240,7 +240,7 @@ class PromptNormalizer:
                     outer_context = get_execution_context()
 
                     try:
-                        with with_execution_context(
+                        with execution_context(
                             component_role=ComponentRole.CONVERTER,
                             attack_strategy_name=outer_context.attack_strategy_name if outer_context else None,
                             attack_identifier=outer_context.attack_identifier if outer_context else None,

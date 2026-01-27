@@ -11,7 +11,7 @@ from typing import Any, Callable, Optional, Union
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
 from pyrit.common.utils import warn_if_set
-from pyrit.exceptions import ComponentRole, with_execution_context
+from pyrit.exceptions import ComponentRole, execution_context
 from pyrit.executor.attack.component import (
     ConversationManager,
     get_adversarial_chat_messages,
@@ -362,7 +362,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
         prompt_message = Message.from_prompt(prompt=prompt_text, role="user")
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.ADVERSARIAL_CHAT,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
@@ -521,7 +521,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         """
         logger.info(f"Sending prompt to target: {message.get_value()[:50]}...")
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
@@ -569,7 +569,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             logger.warning("No response available in context to score")
             return None
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),

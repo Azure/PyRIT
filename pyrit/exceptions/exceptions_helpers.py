@@ -8,6 +8,8 @@ import time
 
 from tenacity import RetryCallState
 
+from pyrit.exceptions.exception_context import get_execution_context
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,8 +46,6 @@ def log_exception(retry_state: RetryCallState) -> None:
     # Build the "for X" part of the message based on execution context
     for_clause = fn_name
     try:
-        from pyrit.exceptions.exception_context import get_execution_context
-
         exec_context = get_execution_context()
         if exec_context:
             # Format: "objective scorer; TrueFalseScorer::_score_value_with_llm"

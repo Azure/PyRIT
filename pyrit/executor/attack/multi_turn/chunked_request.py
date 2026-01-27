@@ -8,7 +8,7 @@ from string import Formatter
 from typing import Any, List, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.exceptions import ComponentRole, with_execution_context
+from pyrit.exceptions import ComponentRole, execution_context
 from pyrit.executor.attack.component import ConversationManager
 from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
@@ -261,7 +261,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
             message = Message.from_prompt(prompt=chunk_prompt, role="user")
 
             # Send the prompt using the normalizer
-            with with_execution_context(
+            with execution_context(
                 component_role=ComponentRole.OBJECTIVE_TARGET,
                 attack_strategy_name=self.__class__.__name__,
                 attack_identifier=self.get_identifier(),
@@ -358,7 +358,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         if not self._objective_scorer:
             return None
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),

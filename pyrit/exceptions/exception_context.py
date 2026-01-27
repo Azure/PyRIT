@@ -186,7 +186,7 @@ class ExecutionContextManager:
         # On exception, leave context in place for exception handlers to read
 
 
-def with_execution_context(
+def execution_context(
     *,
     component_role: ComponentRole,
     attack_strategy_name: Optional[str] = None,

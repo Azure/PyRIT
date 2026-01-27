@@ -8,9 +8,9 @@ from pyrit.exceptions import (
     ExecutionContext,
     ExecutionContextManager,
     clear_execution_context,
+    execution_context,
     get_execution_context,
     set_execution_context,
-    with_execution_context,
 )
 
 
@@ -228,16 +228,16 @@ class TestExecutionContextManager:
         assert get_execution_context() is None
 
 
-class TestWithExecutionContext:
-    """Tests for the with_execution_context factory function."""
+class TestExecutionContextFactory:
+    """Tests for the execution_context factory function."""
 
     def teardown_method(self):
         """Clear context after each test."""
         clear_execution_context()
 
-    def test_with_execution_context_creates_manager(self):
-        """Test that with_execution_context creates a proper context manager."""
-        manager = with_execution_context(
+    def test_execution_context_creates_manager(self):
+        """Test that execution_context creates a proper context manager."""
+        manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name="TestAttack",
         )
@@ -245,36 +245,36 @@ class TestWithExecutionContext:
         assert manager.context.component_role == ComponentRole.OBJECTIVE_TARGET
         assert manager.context.attack_strategy_name == "TestAttack"
 
-    def test_with_execution_context_extracts_endpoint(self):
+    def test_execution_context_extracts_endpoint(self):
         """Test that endpoint is extracted from component_identifier."""
         component_id = {"__type__": "OpenAIChatTarget", "endpoint": "https://api.openai.com"}
-        manager = with_execution_context(
+        manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             component_identifier=component_id,
         )
         assert manager.context.endpoint == "https://api.openai.com"
 
-    def test_with_execution_context_extracts_component_name(self):
+    def test_execution_context_extracts_component_name(self):
         """Test that component_name is extracted from component_identifier.__type__."""
         component_id = {"__type__": "TrueFalseScorer", "endpoint": "https://api.openai.com"}
-        manager = with_execution_context(
+        manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_SCORER,
             component_identifier=component_id,
         )
         assert manager.context.component_name == "TrueFalseScorer"
 
-    def test_with_execution_context_no_endpoint(self):
+    def test_execution_context_no_endpoint(self):
         """Test that endpoint is None when not in component_identifier."""
         component_id = {"__type__": "TextTarget"}
-        manager = with_execution_context(
+        manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             component_identifier=component_id,
         )
         assert manager.context.endpoint is None
 
-    def test_with_execution_context_full_usage(self):
-        """Test full usage of with_execution_context as context manager."""
-        with with_execution_context(
+    def test_execution_context_full_usage(self):
+        """Test full usage of execution_context as context manager."""
+        with execution_context(
             component_role=ComponentRole.ADVERSARIAL_CHAT,
             attack_strategy_name="CrescendoAttack",
             attack_identifier={"id": "test"},
@@ -290,10 +290,10 @@ class TestWithExecutionContext:
 
         assert get_execution_context() is None
 
-    def test_with_execution_context_preserves_on_exception(self):
+    def test_execution_context_preserves_on_exception(self):
         """Test that context is preserved on exception for error handling."""
         with pytest.raises(RuntimeError):
-            with with_execution_context(
+            with execution_context(
                 component_role=ComponentRole.OBJECTIVE_SCORER,
                 attack_strategy_name="TestAttack",
             ):

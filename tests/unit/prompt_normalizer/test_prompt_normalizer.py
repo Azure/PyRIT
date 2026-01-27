@@ -13,8 +13,8 @@ from pyrit.exceptions import (
     ComponentRole,
     EmptyResponseException,
     clear_execution_context,
+    execution_context,
     get_execution_context,
-    with_execution_context,
 )
 from pyrit.memory import CentralMemory
 from pyrit.models import (
@@ -512,7 +512,7 @@ class TestPromptNormalizerConverterContext:
         converter_config = PromptConverterConfiguration(converters=[ContextCapturingConverter()])
 
         # Set an outer execution context (simulating being called from an attack)
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name="TestAttack",
             attack_identifier={"id": "attack-123"},

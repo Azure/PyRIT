@@ -17,10 +17,10 @@ from pyrit.common.utils import combine_dict
 from pyrit.exceptions import (
     ComponentRole,
     InvalidJsonException,
+    execution_context,
     get_retry_max_num_attempts,
     pyrit_json_retry,
     remove_markdown_json,
-    with_execution_context,
 )
 from pyrit.executor.attack.component import (
     ConversationManager,
@@ -525,7 +525,7 @@ class _TreeOfAttacksNode:
         message = Message.from_prompt(prompt=prompt, role="user")
 
         # Send prompt with configured converters
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,
@@ -581,7 +581,7 @@ class _TreeOfAttacksNode:
         logger.debug(f"Node {self.node_id}: Using initial prompt, bypassing adversarial chat")
 
         # Send prompt with configured converters
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,
@@ -635,7 +635,7 @@ class _TreeOfAttacksNode:
             the TAP algorithm explores in subsequent iterations.
         """
         # Use the Scorer utility method to handle all scoring
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,
@@ -1081,7 +1081,7 @@ class _TreeOfAttacksNode:
         message.message_pieces[0].prompt_metadata = {"response_format": "json"}
 
         # Send and get response
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.ADVERSARIAL_CHAT,
             attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,

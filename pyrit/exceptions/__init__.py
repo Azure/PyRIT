@@ -20,9 +20,9 @@ from pyrit.exceptions.exception_context import (
     ExecutionContext,
     ExecutionContextManager,
     clear_execution_context,
+    execution_context,
     get_execution_context,
     set_execution_context,
-    with_execution_context,
 )
 from pyrit.exceptions.exceptions_helpers import remove_markdown_json
 
@@ -46,5 +46,5 @@ __all__ = [
     "RateLimitException",
     "remove_markdown_json",
     "set_execution_context",
-    "with_execution_context",
+    "execution_context",
 ]

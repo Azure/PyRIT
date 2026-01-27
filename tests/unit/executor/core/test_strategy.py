@@ -8,7 +8,7 @@ import pytest
 from pyrit.exceptions import (
     ComponentRole,
     clear_execution_context,
-    with_execution_context,
+    execution_context,
 )
 from pyrit.executor.core.strategy import Strategy, StrategyContext
 
@@ -59,7 +59,7 @@ class TestStrategyExecutionContext:
         context = MockContext()
 
         # Set a context before execution
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name="TestStrategy",
         ):
@@ -78,7 +78,7 @@ class TestStrategyExecutionContext:
         # The strategy wraps the exception with context details
         with pytest.raises(RuntimeError) as exc_info:
             # First set an execution context (simulating what attacks do)
-            with with_execution_context(
+            with execution_context(
                 component_role=ComponentRole.OBJECTIVE_TARGET,
                 attack_strategy_name="MockStrategy",
                 attack_identifier={"id": "test-123"},
@@ -128,7 +128,7 @@ class TestStrategyExecutionContext:
         strategy = MockStrategy(perform_exception=middle_error)
         context = MockContext()
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name="MockStrategy",
         ):
@@ -157,7 +157,7 @@ class TestStrategyExecutionContextDetails:
         context = MockContext()
 
         with pytest.raises(RuntimeError) as exc_info:
-            with with_execution_context(
+            with execution_context(
                 component_role=ComponentRole.ADVERSARIAL_CHAT,
                 attack_strategy_name="TestAttack",
                 attack_identifier={"__type__": "TestAttack", "id": "abc-123"},
@@ -175,7 +175,7 @@ class TestStrategyExecutionContextDetails:
         context = MockContext()
 
         with pytest.raises(RuntimeError) as exc_info:
-            with with_execution_context(
+            with execution_context(
                 component_role=ComponentRole.OBJECTIVE_TARGET,
                 attack_strategy_name="TestAttack",
                 objective_target_conversation_id="conv-xyz-789",
@@ -192,7 +192,7 @@ class TestStrategyExecutionContextDetails:
         context = MockContext()
 
         with pytest.raises(RuntimeError) as exc_info:
-            with with_execution_context(
+            with execution_context(
                 component_role=ComponentRole.OBJECTIVE_SCORER,
                 attack_strategy_name="TestAttack",
                 component_identifier={"__type__": "SelfAskTrueFalseScorer"},

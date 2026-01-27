@@ -12,9 +12,9 @@ from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.exceptions import (
     ComponentRole,
     InvalidJsonException,
+    execution_context,
     pyrit_json_retry,
     remove_markdown_json,
-    with_execution_context,
 )
 from pyrit.executor.attack.component import (
     ConversationManager,
@@ -508,7 +508,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             prompt_metadata=prompt_metadata,
         )
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.ADVERSARIAL_CHAT,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
@@ -592,7 +592,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         prompt_preview = attack_message.get_value()[:100] if attack_message.get_value() else ""
         self._logger.debug(f"Sending prompt to {objective_target_type}: {prompt_preview}...")
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
@@ -632,7 +632,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to check for refusal")
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.REFUSAL_SCORER,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
@@ -662,7 +662,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to score")
 
-        with with_execution_context(
+        with execution_context(
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
