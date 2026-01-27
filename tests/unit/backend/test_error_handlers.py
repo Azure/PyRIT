@@ -5,10 +5,8 @@
 Tests for backend error handler middleware.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from pyrit.backend.middleware.error_handlers import register_error_handlers
@@ -61,9 +59,7 @@ class TestErrorHandlers:
         assert data["status"] == 422
         assert "errors" in data
 
-    def test_validation_error_includes_field_details(
-        self, app: FastAPI, client: TestClient
-    ) -> None:
+    def test_validation_error_includes_field_details(self, app: FastAPI, client: TestClient) -> None:
         """Test that validation errors include field-level details."""
         from pydantic import BaseModel
 
@@ -100,9 +96,7 @@ class TestErrorHandlers:
         assert data["status"] == 400
         assert "Invalid input value" in data["detail"]
 
-    def test_file_not_found_error_returns_404(
-        self, app: FastAPI, client: TestClient
-    ) -> None:
+    def test_file_not_found_error_returns_404(self, app: FastAPI, client: TestClient) -> None:
         """Test that FileNotFoundError returns 404 with RFC 7807 format."""
 
         @app.get("/test")
@@ -117,9 +111,7 @@ class TestErrorHandlers:
         assert data["title"] == "Not Found"
         assert data["status"] == 404
 
-    def test_permission_error_returns_403(
-        self, app: FastAPI, client: TestClient
-    ) -> None:
+    def test_permission_error_returns_403(self, app: FastAPI, client: TestClient) -> None:
         """Test that PermissionError returns 403 with RFC 7807 format."""
 
         @app.get("/test")
@@ -134,9 +126,7 @@ class TestErrorHandlers:
         assert data["title"] == "Forbidden"
         assert data["status"] == 403
 
-    def test_not_implemented_error_returns_501(
-        self, app: FastAPI, client: TestClient
-    ) -> None:
+    def test_not_implemented_error_returns_501(self, app: FastAPI, client: TestClient) -> None:
         """Test that NotImplementedError returns 501 with RFC 7807 format."""
 
         @app.get("/test")
@@ -151,9 +141,7 @@ class TestErrorHandlers:
         assert data["title"] == "Not Implemented"
         assert data["status"] == 501
 
-    def test_generic_exception_returns_500(
-        self, app: FastAPI, client: TestClient
-    ) -> None:
+    def test_generic_exception_returns_500(self, app: FastAPI, client: TestClient) -> None:
         """Test that unexpected exceptions return 500 with RFC 7807 format."""
 
         @app.get("/test")
@@ -170,9 +158,7 @@ class TestErrorHandlers:
         # Should not leak internal error details
         assert "An unexpected error occurred" in data["detail"]
 
-    def test_error_response_includes_instance(
-        self, app: FastAPI, client: TestClient
-    ) -> None:
+    def test_error_response_includes_instance(self, app: FastAPI, client: TestClient) -> None:
         """Test that error responses include the request path as instance."""
 
         @app.get("/api/v1/test/resource")
@@ -184,9 +170,7 @@ class TestErrorHandlers:
         data = response.json()
         assert data["instance"] == "/api/v1/test/resource"
 
-    def test_error_excludes_none_fields(
-        self, app: FastAPI, client: TestClient
-    ) -> None:
+    def test_error_excludes_none_fields(self, app: FastAPI, client: TestClient) -> None:
         """Test that None fields are excluded from error response."""
 
         @app.get("/test")

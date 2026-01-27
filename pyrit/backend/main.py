@@ -3,20 +3,22 @@
 
 """
 FastAPI application entry point for PyRIT backend.
+
+This is the attack-centric API - all interactions are modeled as "attacks".
 """
 
 import os
 import sys
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 import pyrit
 from pyrit.backend.middleware import register_error_handlers
-from pyrit.backend.routes import conversations, converters, health, memory, registry, version
+from pyrit.backend.routes import attacks, converters, health, registry, targets, version
 from pyrit.setup.initialization import initialize_pyrit_async
 
 # Check for development mode from environment variable
@@ -50,19 +52,11 @@ app.add_middleware(
 )
 
 
-# Create versioned API router
-api_v1 = APIRouter(prefix="/api/v1")
-
-# Include v1 routes
-api_v1.include_router(conversations.router)
-api_v1.include_router(converters.router)
-api_v1.include_router(memory.router)
-api_v1.include_router(registry.router)
-
-# Mount versioned API
-app.include_router(api_v1)
-
-# Include legacy/non-versioned routes
+# Include API routes
+app.include_router(attacks.router, prefix="/api", tags=["attacks"])
+app.include_router(targets.router, prefix="/api", tags=["targets"])
+app.include_router(converters.router, prefix="/api", tags=["converters"])
+app.include_router(registry.router, prefix="/api", tags=["registry"])
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(version.router, tags=["version"])
 

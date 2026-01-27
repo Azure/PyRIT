@@ -7,6 +7,21 @@ Backend models package.
 Pydantic models for API requests and responses.
 """
 
+from pyrit.backend.models.attacks import (
+    AttackDetail,
+    AttackListResponse,
+    AttackSummary,
+    CreateAttackRequest,
+    CreateAttackResponse,
+    Message,
+    MessagePiece,
+    MessagePieceRequest,
+    PrependedMessageRequest,
+    Score,
+    SendMessageRequest,
+    SendMessageResponse,
+    UpdateAttackRequest,
+)
 from pyrit.backend.models.common import (
     ALLOWED_IDENTIFIER_FIELDS,
     SENSITIVE_FIELD_PATTERNS,
@@ -17,36 +32,17 @@ from pyrit.backend.models.common import (
     ProblemDetail,
     filter_sensitive_fields,
 )
-from pyrit.backend.models.conversations import (
-    BranchConversationRequest,
-    BranchConversationResponse,
-    ConversationResponse,
-    ConverterConfig,
-    ConvertersResponse,
-    CreateConversationRequest,
-    CreateConversationResponse,
-    MessagePieceInput,
-    MessagePieceResponse,
-    MessageResponse,
-    SendMessageRequest,
-    SendMessageResponse,
-    SetConvertersRequest,
-    SetSystemPromptRequest,
-    SystemPromptResponse,
-)
 from pyrit.backend.models.converters import (
-    ConversionStep,
-    ConverterListResponse,
+    ConverterInstance,
+    ConverterInstanceListResponse,
     ConverterMetadataResponse,
-    PreviewConverterRequest,
-    PreviewConverterResponse,
-)
-from pyrit.backend.models.memory import (
-    AttackResultQueryResponse,
-    MessageQueryResponse,
-    ScenarioResultQueryResponse,
-    ScoreQueryResponse,
-    SeedQueryResponse,
+    ConverterPreviewRequest,
+    ConverterPreviewResponse,
+    CreateConverterRequest,
+    CreateConverterResponse,
+    InlineConverterConfig,
+    NestedConverterConfig,
+    PreviewStep,
 )
 from pyrit.backend.models.registry import (
     InitializerListResponse,
@@ -55,11 +51,33 @@ from pyrit.backend.models.registry import (
     ScenarioMetadataResponse,
     ScorerListResponse,
     ScorerMetadataResponse,
-    TargetListResponse,
     TargetMetadataResponse,
+)
+from pyrit.backend.models.registry import (
+    TargetListResponse as RegistryTargetListResponse,
+)
+from pyrit.backend.models.targets import (
+    CreateTargetRequest,
+    CreateTargetResponse,
+    TargetInstance,
+    TargetListResponse,
 )
 
 __all__ = [
+    # Attacks
+    "AttackDetail",
+    "AttackListResponse",
+    "AttackSummary",
+    "CreateAttackRequest",
+    "CreateAttackResponse",
+    "Message",
+    "MessagePiece",
+    "MessagePieceRequest",
+    "PrependedMessageRequest",
+    "Score",
+    "SendMessageRequest",
+    "SendMessageResponse",
+    "UpdateAttackRequest",
     # Common
     "ALLOWED_IDENTIFIER_FIELDS",
     "SENSITIVE_FIELD_PATTERNS",
@@ -69,34 +87,17 @@ __all__ = [
     "PaginatedResponse",
     "PaginationInfo",
     "ProblemDetail",
-    # Conversations
-    "BranchConversationRequest",
-    "BranchConversationResponse",
-    "ConversationResponse",
-    "ConverterConfig",
-    "ConvertersResponse",
-    "CreateConversationRequest",
-    "CreateConversationResponse",
-    "MessagePieceInput",
-    "MessagePieceResponse",
-    "MessageResponse",
-    "SendMessageRequest",
-    "SendMessageResponse",
-    "SetConvertersRequest",
-    "SetSystemPromptRequest",
-    "SystemPromptResponse",
     # Converters
-    "ConversionStep",
-    "ConverterListResponse",
+    "ConverterInstance",
+    "ConverterInstanceListResponse",
     "ConverterMetadataResponse",
-    "PreviewConverterRequest",
-    "PreviewConverterResponse",
-    # Memory
-    "AttackResultQueryResponse",
-    "MessageQueryResponse",
-    "ScenarioResultQueryResponse",
-    "ScoreQueryResponse",
-    "SeedQueryResponse",
+    "ConverterPreviewRequest",
+    "ConverterPreviewResponse",
+    "CreateConverterRequest",
+    "CreateConverterResponse",
+    "InlineConverterConfig",
+    "NestedConverterConfig",
+    "PreviewStep",
     # Registry
     "InitializerListResponse",
     "InitializerMetadataResponse",
@@ -104,6 +105,11 @@ __all__ = [
     "ScenarioMetadataResponse",
     "ScorerListResponse",
     "ScorerMetadataResponse",
-    "TargetListResponse",
+    "RegistryTargetListResponse",
     "TargetMetadataResponse",
+    # Targets
+    "CreateTargetRequest",
+    "CreateTargetResponse",
+    "TargetInstance",
+    "TargetListResponse",
 ]

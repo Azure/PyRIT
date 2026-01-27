@@ -7,26 +7,32 @@ Backend services module.
 Provides business logic layer for API routes.
 """
 
-from pyrit.backend.services.conversation_service import (
-    ConversationService,
-    ConversationState,
-    get_conversation_service,
+from pyrit.backend.services.attack_service import (
+    AttackService,
+    AttackState,
+    get_attack_service,
 )
-from pyrit.backend.services.memory_service import (
-    MemoryService,
-    get_memory_service,
+from pyrit.backend.services.converter_service import (
+    ConverterService,
+    get_converter_service,
 )
 from pyrit.backend.services.registry_service import (
     RegistryService,
     get_registry_service,
 )
+from pyrit.backend.services.target_service import (
+    TargetService,
+    get_target_service,
+)
 
 __all__ = [
-    "ConversationService",
-    "ConversationState",
-    "get_conversation_service",
-    "MemoryService",
-    "get_memory_service",
+    "AttackService",
+    "AttackState",
+    "get_attack_service",
+    "ConverterService",
+    "get_converter_service",
     "RegistryService",
     "get_registry_service",
+    "TargetService",
+    "get_target_service",
 ]

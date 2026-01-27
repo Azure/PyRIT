@@ -5,8 +5,6 @@
 Tests for backend registry service.
 """
 
-
-
 from pyrit.backend.services.registry_service import (
     RegistryService,
     _extract_params_schema,

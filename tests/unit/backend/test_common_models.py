@@ -5,8 +5,6 @@
 Tests for backend common models.
 """
 
-
-
 from pyrit.backend.models.common import (
     FieldError,
     IdentifierDict,
@@ -402,4 +400,3 @@ class TestProblemDetailEdgeCases:
 
         assert "instance" not in data  # None should be excluded
         assert data["type"] == "/errors/test"
-
