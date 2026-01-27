@@ -71,13 +71,14 @@ test.describe("Chat Functionality", () => {
     await input.fill("First message");
     await page.getByRole("button", { name: /send/i }).click();
     await expect(page.getByText("First message")).toBeVisible();
+    await expect(page.getByText(/Echo: First message/)).toBeVisible({ timeout: 5000 });
 
     // Click New Chat
     await page.getByRole("button", { name: /new chat/i }).click();
 
-    // Previous messages should be cleared (depending on implementation)
-    // This test verifies the button is clickable
-    await expect(page.getByRole("button", { name: /new chat/i })).toBeVisible();
+    // Previous messages should be cleared
+    await expect(page.getByText("First message")).not.toBeVisible();
+    await expect(page.getByText(/Echo: First message/)).not.toBeVisible();
   });
 });
 
