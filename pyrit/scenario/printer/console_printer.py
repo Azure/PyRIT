@@ -124,7 +124,7 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         self._print_colored(f"{self._indent * 2}• Target Endpoint: {target_endpoint}", Fore.CYAN)
 
         # Scorer information - use ScorerIdentifier from result
-        scorer_identifier = result.get_objective_scorer_identifier()
+        scorer_identifier = result.objective_scorer_identifier
         if scorer_identifier:
             self._scorer_printer.print_objective_scorer(scorer_identifier=scorer_identifier)
 
