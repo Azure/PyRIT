@@ -1,7 +1,7 @@
 # Frontend testing workflow for PyRIT Frontend
 # Runs unit tests, coverage checks, and E2E tests
 
-name: frontend_tests
+name: Frontend Tests
 
 on:
   push:
@@ -29,7 +29,7 @@ env:
 
 jobs:
   unit-tests:
-    name: Unit Tests & Coverage
+    name: Frontend Unit Tests & Coverage
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,7 +63,7 @@ jobs:
           retention-days: 7
 
   e2e-tests:
-    name: E2E Tests
+    name: Frontend E2E Tests
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -128,7 +128,7 @@ jobs:
           retention-days: 7
 
   lint:
-    name: Lint & Type Check
+    name: Frontend Lint & Type Check
     runs-on: ubuntu-latest
     permissions:
       contents: read

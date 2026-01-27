@@ -29,7 +29,7 @@ export default defineConfig({
 
   /* Automatically start servers before running tests */
   webServer: {
-    command: "python dev.py",
+    command: process.env.CI ? "cd .. && uv run python frontend/dev.py" : "python dev.py",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
