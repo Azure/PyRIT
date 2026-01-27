@@ -36,6 +36,7 @@ from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from tests.unit.mocks import get_mock_scorer_identifier
 
 # =============================================================================
 # Test Context Class
@@ -142,6 +143,7 @@ def sample_score() -> Score:
         score_rationale="Test rationale",
         score_metadata={},
         message_piece_id=str(uuid.uuid4()),
+        scorer_class_identifier=get_mock_scorer_identifier(),
     )
 
 
@@ -854,6 +856,7 @@ class TestInitializeContext:
             score_rationale="Test rationale for text",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
         piece1 = MessagePiece(
             role="assistant",
@@ -873,6 +876,7 @@ class TestInitializeContext:
             score_rationale="Test rationale for image",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
         piece2 = MessagePiece(
             role="assistant",
@@ -925,6 +929,7 @@ class TestInitializeContext:
             score_rationale="This simulated success should not be extracted",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
 
         # Create a score with false value - should be extracted
@@ -936,6 +941,7 @@ class TestInitializeContext:
             score_rationale="This refusal can provide feedback",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
 
         piece_with_true = MessagePiece(

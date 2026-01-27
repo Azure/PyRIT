@@ -54,9 +54,9 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         """Get the threshold value used for score comparison."""
         return self._threshold
 
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> None:
         """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+        self._set_identifier(
             sub_scorers=[self._scorer],
             score_aggregator=self._score_aggregator.__name__,
             scorer_specific_params={
@@ -104,7 +104,7 @@ class FloatScaleThresholdScorer(TrueFalseScorer):
         else:
             comparison_symbol = "="
 
-        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
+        scorer_type = self._scorer.get_identifier().class_name
 
         # If we have scores, modify the first one; otherwise create a new score
         if scores:

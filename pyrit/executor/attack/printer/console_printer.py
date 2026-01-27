@@ -365,7 +365,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
             indent_level (int): Number of indent units to apply. Defaults to 3.
         """
         indent = self._indent * indent_level
-        print(f"{indent}Scorer: {score.scorer_class_identifier['__type__']}")
+        scorer_name = score.scorer_class_identifier.class_name
+        print(f"{indent}Scorer: {scorer_name}")
         self._print_colored(f"{indent}• Category: {score.score_category or 'N/A'}", Fore.LIGHTMAGENTA_EX)
         self._print_colored(f"{indent}• Type: {score.score_type}", Fore.CYAN)
 

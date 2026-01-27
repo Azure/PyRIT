@@ -12,10 +12,21 @@ import pytest
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import CrescendoAttack, PromptSendingAttack, RolePlayAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario.airt import LeakageScenario, LeakageStrategy
 from pyrit.score import TrueFalseCompositeScorer
+
+
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 @pytest.fixture
@@ -79,7 +90,7 @@ def mock_objective_target():
 @pytest.fixture
 def mock_objective_scorer():
     mock = MagicMock(spec=TrueFalseCompositeScorer)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_scorer_id("MockObjectiveScorer")
     return mock
 
 
