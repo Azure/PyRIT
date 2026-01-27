@@ -647,6 +647,41 @@ class TestCopilotAuthenticatorGetClaims:
 class TestCopilotAuthenticatorPlaywrightIntegration:
     """Test Playwright browser automation (mocked)."""
 
+    @pytest.fixture(autouse=True)
+    def mock_playwright_module(self):
+        """
+        Inject a mock playwright module into sys.modules.
+
+        This allows tests to run without playwright installed by providing
+        a mock module that can be patched.
+        """
+        import sys
+
+        mock_async_api = MagicMock()
+        mock_playwright_module = MagicMock()
+        mock_playwright_module.async_api = mock_async_api
+
+        # Store original modules if they exist
+        orig_playwright = sys.modules.get("playwright")
+        orig_async_api = sys.modules.get("playwright.async_api")
+
+        # Inject mock modules
+        sys.modules["playwright"] = mock_playwright_module
+        sys.modules["playwright.async_api"] = mock_async_api
+
+        yield mock_async_api
+
+        # Restore original state
+        if orig_playwright is not None:
+            sys.modules["playwright"] = orig_playwright
+        else:
+            sys.modules.pop("playwright", None)
+
+        if orig_async_api is not None:
+            sys.modules["playwright.async_api"] = orig_async_api
+        else:
+            sys.modules.pop("playwright.async_api", None)
+
     @pytest.mark.asyncio
     async def test_fetch_token_playwright_not_installed(self, mock_env_vars, mock_persistent_cache):
         """Test that RuntimeError is raised when Playwright is not installed."""
