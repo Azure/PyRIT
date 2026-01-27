@@ -46,19 +46,19 @@ class Identifier:
     # Auto-computed fields
     snake_class_name: str = field(init=False, metadata={EXCLUDE_FROM_STORAGE: True})
     hash: str | None = field(default=None, compare=False, kw_only=True)
-    name: str = field(init=False)  # Unique identifier: {full_snake_case}::{hash[:8]}
+    unique_name: str = field(init=False)  # Unique identifier: {full_snake_case}::{hash[:8]}
 
     def __post_init__(self) -> None:
-        """Compute derived fields: snake_class_name, hash, and name."""
+        """Compute derived fields: snake_class_name, hash, and unique_name."""
         # Use object.__setattr__ since this is a frozen dataclass
         # 1. Compute snake_class_name
         object.__setattr__(self, "snake_class_name", class_name_to_snake_case(self.class_name))
         # 2. Compute hash only if not already provided (e.g., from from_dict)
         if self.hash is None:
             object.__setattr__(self, "hash", self._compute_hash())
-        # 3. Compute name: full snake_case :: hash prefix
+        # 3. Compute unique_name: full snake_case :: hash prefix
         full_snake = class_name_to_snake_case(self.class_name)
-        object.__setattr__(self, "name", f"{full_snake}::{self.hash[:8]}")
+        object.__setattr__(self, "unique_name", f"{full_snake}::{self.hash[:8]}")
 
     def _compute_hash(self) -> str:
         """
@@ -73,7 +73,7 @@ class Identifier:
         hashable_dict: dict[str, Any] = {
             f.name: getattr(self, f.name)
             for f in fields(self)
-            if f.name not in ("hash", "name") and not f.metadata.get(EXCLUDE_FROM_STORAGE, False)
+            if f.name not in ("hash", "unique_name") and not f.metadata.get(EXCLUDE_FROM_STORAGE, False)
         }
         config_json = json.dumps(hashable_dict, sort_keys=True, separators=(",", ":"), default=_dataclass_encoder)
         return hashlib.sha256(config_json.encode("utf-8")).hexdigest()
@@ -179,8 +179,6 @@ class Identifier:
 
         # Get the set of valid field names for this class
         valid_fields = {f.name for f in fields(cls) if f.init}
-
-        # Filter to only include valid fields, excluding computed fields like 'hash'
         filtered_data = {k: v for k, v in data.items() if k in valid_fields}
 
         return cls(**filtered_data)

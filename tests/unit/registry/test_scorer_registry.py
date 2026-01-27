@@ -215,8 +215,8 @@ class TestScorerRegistryBuildMetadata:
         assert len(metadata) == 1
         assert metadata[0].scorer_type == "true_false"
         assert metadata[0].class_name == "MockTrueFalseScorer"
-        # name is auto-computed from class_name, not the registry key
-        assert "mock_true_false_scorer" in metadata[0].name
+        # unique_name is auto-computed from class_name, not the registry key
+        assert "mock_true_false_scorer" in metadata[0].unique_name
 
     def test_build_metadata_float_scale_scorer(self):
         """Test that metadata correctly identifies FloatScaleScorer type."""
@@ -380,5 +380,5 @@ class TestScorerIdentifierType:
         assert identifier.class_module == "test.module"
         assert identifier.class_description == "A test scorer"
         assert identifier.scorer_type == "true_false"
-        # name is auto-computed
-        assert identifier.name is not None
+        # unique_name is auto-computed
+        assert identifier.unique_name is not None

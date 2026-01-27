@@ -96,6 +96,6 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
             instance: The scorer instance.
 
         Returns:
-            ScorerIdentifier: The scorer's identifier which includes scorer_type.
+            ScorerIdentifier: The scorer's identifier
         """
         return instance.get_identifier()

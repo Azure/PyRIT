@@ -49,9 +49,9 @@ class TestIdentifier:
         assert identifier.class_name == "TestScorer"
         assert identifier.class_module == "pyrit.test.scorer"
         assert identifier.class_description == "A test scorer for testing"
-        # name is auto-computed from class_name and hash
-        assert identifier.name is not None
-        assert "test_scorer" in identifier.name
+        # unique_name is auto-computed from class_name and hash
+        assert identifier.unique_name is not None
+        assert "test_scorer" in identifier.unique_name
 
     def test_identifier_is_frozen(self):
         """Test that Identifier is immutable."""
@@ -63,7 +63,7 @@ class TestIdentifier:
         )
 
         with pytest.raises(AttributeError):
-            identifier.name = "new_name"  # type: ignore[misc]
+            identifier.unique_name = "new_name"  # type: ignore[misc]
 
     def test_identifier_type_literal_class(self):
         """Test identifier_type with 'class' value."""
@@ -192,7 +192,7 @@ class TestIdentifierStorage:
         storage_dict = identifier.to_dict()
 
         # Should include storable fields
-        assert "name" in storage_dict
+        assert "unique_name" in storage_dict
         assert "class_name" in storage_dict
         assert "class_module" in storage_dict
         assert "hash" in storage_dict
@@ -211,8 +211,8 @@ class TestIdentifierStorage:
         )
         storage_dict = identifier.to_dict()
 
-        # name is auto-computed
-        assert storage_dict["name"] == identifier.name
+        # unique_name is auto-computed
+        assert storage_dict["unique_name"] == identifier.unique_name
         assert storage_dict["class_name"] == "MyScorer"
         assert storage_dict["class_module"] == "pyrit.score.my_scorer"
         assert storage_dict["hash"] == identifier.hash
@@ -361,8 +361,8 @@ class TestIdentifierFromDict:
 
         # Hash should be preserved from the dict, not recomputed
         assert identifier.hash == stored_hash
-        # Name should use the preserved hash
-        assert identifier.name == f"test_class::{stored_hash[:8]}"
+        # unique_name should use the preserved hash
+        assert identifier.unique_name == f"test_class::{stored_hash[:8]}"
 
     def test_from_dict_computes_hash_when_not_provided(self):
         """Test that from_dict computes the hash when not provided in the dict."""
@@ -376,5 +376,5 @@ class TestIdentifierFromDict:
         # Hash should be computed (64 char SHA256 hex)
         assert identifier.hash is not None
         assert len(identifier.hash) == 64
-        # Name should use the computed hash
-        assert identifier.name == f"test_class::{identifier.hash[:8]}"
+        # unique_name should use the computed hash
+        assert identifier.unique_name == f"test_class::{identifier.hash[:8]}"

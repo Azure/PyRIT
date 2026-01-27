@@ -32,7 +32,7 @@ class TestScorerIdentifierBasic:
         assert len(identifier.hash) == 64  # SHA256 hex digest length
 
     def test_scorer_identifier_name_auto_computed(self):
-        """Test that name is auto-computed from class_name and hash."""
+        """Test that unique_name is auto-computed from class_name and hash."""
         identifier = ScorerIdentifier(
             class_name="TestScorer",
             class_module="pyrit.score.test_scorer",
@@ -40,10 +40,10 @@ class TestScorerIdentifierBasic:
             identifier_type="instance",
         )
 
-        # Name format: {full_snake_case}::{hash[:8]}
-        assert identifier.name.startswith("test_scorer::")
-        assert len(identifier.name.split("::")[1]) == 8
-        assert identifier.name == f"test_scorer::{identifier.hash[:8]}"
+        # unique_name format: {full_snake_case}::{hash[:8]}
+        assert identifier.unique_name.startswith("test_scorer::")
+        assert len(identifier.unique_name.split("::")[1]) == 8
+        assert identifier.unique_name == f"test_scorer::{identifier.hash[:8]}"
 
     def test_scorer_identifier_snake_class_name(self):
         """Test that snake_class_name converts to snake_case."""
@@ -56,8 +56,8 @@ class TestScorerIdentifierBasic:
 
         # snake_class_name is the full snake_case class name
         assert identifier.snake_class_name == "self_ask_refusal_scorer"
-        # name uses the same snake case with hash
-        assert identifier.name.startswith("self_ask_refusal_scorer::")
+        # unique_name uses the same snake case with hash
+        assert identifier.unique_name.startswith("self_ask_refusal_scorer::")
 
     def test_scorer_identifier_creation_all_fields(self):
         """Test creating a ScorerIdentifier with all fields."""
@@ -162,7 +162,7 @@ class TestScorerIdentifierToDict:
         assert result["class_name"] == "TestScorer"
         assert result["class_module"] == "pyrit.score.test_scorer"
         assert result["hash"] == identifier.hash
-        assert result["name"] == identifier.name
+        assert result["unique_name"] == identifier.unique_name
         # class_description and identifier_type should be excluded
         assert "class_description" not in result
         assert "identifier_type" not in result
@@ -240,8 +240,8 @@ class TestScorerIdentifierFromDict:
         identifier = ScorerIdentifier.from_dict(data)
 
         assert identifier.class_name == "TestScorer"
-        # name is auto-computed
-        assert identifier.name.startswith("test_scorer::")
+        # unique_name is auto-computed
+        assert identifier.unique_name.startswith("test_scorer::")
 
     def test_from_dict_handles_legacy_type_key(self):
         """Test that from_dict handles legacy '__type__' key."""
@@ -279,7 +279,7 @@ class TestScorerIdentifierFromDict:
             "identifier_type": "instance",
             "unknown_field": "should be ignored",
             "hash": "abc123stored_hash_preserved",
-            "name": "stored_name_ignored_because_recomputed",
+            "unique_name": "stored_name_ignored_because_recomputed",
         }
 
         identifier = ScorerIdentifier.from_dict(data)
@@ -287,8 +287,8 @@ class TestScorerIdentifierFromDict:
         assert identifier.class_name == "TestScorer"
         # hash is preserved from dict (not recomputed) to handle truncated fields
         assert identifier.hash == "abc123stored_hash_preserved"
-        # name is recomputed from hash
-        assert identifier.name == f"test_scorer::{identifier.hash[:8]}"
+        # unique_name is recomputed from hash
+        assert identifier.unique_name == f"test_scorer::{identifier.hash[:8]}"
 
     def test_from_dict_roundtrip(self):
         """Test that to_dict -> from_dict roundtrip works."""

@@ -190,9 +190,9 @@ class TestIdentifier:
         assert metadata.class_name == "TestScorer"
         assert metadata.class_module == "pyrit.test.scorer"
         assert metadata.class_description == "A test scorer for testing"
-        # name is auto-computed
-        assert metadata.name is not None
-        assert "test_scorer" in metadata.name
+        # unique_name is auto-computed
+        assert metadata.unique_name is not None
+        assert "test_scorer" in metadata.unique_name
 
     def test_identifier_is_frozen(self):
         """Test that Identifier is immutable."""
@@ -204,7 +204,7 @@ class TestIdentifier:
         )
 
         with pytest.raises(AttributeError):
-            metadata.name = "new_name"  # type: ignore[misc]
+            metadata.unique_name = "new_name"  # type: ignore[misc]
 
     def test_identifier_hash_computed_at_creation(self):
         """Test that hash is computed when the Identifier is created."""

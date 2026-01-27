@@ -19,7 +19,7 @@ class ConcreteTestRegistry(BaseInstanceRegistry[str, SampleItemMetadata]):
 
     def _build_metadata(self, name: str, instance: str) -> SampleItemMetadata:
         """Build test metadata from a string instance."""
-        # Note: name parameter is for registry key, but Identifier.name is auto-computed
+        # Note: name parameter is for registry key, but Identifier.unique_name is auto-computed
         return SampleItemMetadata(
             identifier_type="instance",
             class_name="str",
@@ -188,12 +188,12 @@ class TestBaseInstanceRegistryListMetadata:
     def test_list_metadata_sorted_by_name(self):
         """Test that metadata is sorted by registry key order."""
         metadata = self.registry.list_metadata()
-        # Since name is auto-computed, we verify we get 3 items in order
-        # The actual name field is auto-computed from class_name::hash
+        # Since unique_name is auto-computed, we verify we get 3 items in order
+        # The actual unique_name field is auto-computed from class_name::hash
         assert len(metadata) == 3
-        # All should have "str" in the name since class_name is "str"
+        # All should have "str" in the unique_name since class_name is "str"
         for m in metadata:
-            assert "str" in m.name
+            assert "str" in m.unique_name
 
     def test_list_metadata_with_filter(self):
         """Test filtering metadata by a field."""
