@@ -13,7 +13,7 @@ import logging
 import textwrap
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Tuple, Type, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
 
 from tqdm.auto import tqdm
 
@@ -30,7 +30,7 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
-from pyrit.score import Scorer
+from pyrit.score import Scorer, TrueFalseScorer
 
 if TYPE_CHECKING:
     from pyrit.executor.attack.core.attack_config import AttackScoringConfig
@@ -67,9 +67,9 @@ class Scenario(ABC):
             strategy_class (Type[ScenarioStrategy]): The strategy enum class for this scenario.
             objective_scorer (Scorer): The objective scorer used to evaluate attack results.
             include_default_baseline (bool): Whether to include a baseline atomic attack that sends all objectives
-                from the first atomic attack without modifications. Most scenarios should have some kind of
-                baseline so users can understand the impact of strategies, but subclasses can optionally write
-                their own custom baselines. Defaults to True.
+                without modifications. Most scenarios should have some kind of baseline so users can understand
+                the impact of strategies, but subclasses can optionally write their own custom baselines.
+                Defaults to True.
             scenario_result_id (Optional[Union[uuid.UUID, str]]): Optional ID of an existing scenario result to resume.
                 Can be either a UUID object or a string representation of a UUID.
                 If provided and found in memory, the scenario will resume from prior progress.
@@ -320,8 +320,7 @@ class Scenario(ABC):
         """
         Get the data needed to create a baseline attack.
 
-        Returns either the first attack's data or the scenario-level data
-        depending on whether other atomic attacks exist.
+        Returns the scenario-level data
 
         Returns:
             Tuple containing (seed_groups, attack_scoring_config, objective_target)
@@ -329,41 +328,27 @@ class Scenario(ABC):
         Raises:
             ValueError: If required data is not available.
         """
-        if self._atomic_attacks and len(self._atomic_attacks) > 0:
-            # Derive from first attack
-            first_attack = self._atomic_attacks[0]
-            seed_groups = first_attack.seed_groups
-            attack_scoring_config = first_attack._attack.get_attack_scoring_config()
-            objective_target = first_attack._attack.get_objective_target()
-        else:
-            # Create from scenario-level settings
-            if not self._objective_target:
-                raise ValueError("Objective target is required to create baseline attack.")
-            if not self._dataset_config:
-                raise ValueError("Dataset config is required to create baseline attack.")
-            if not self._objective_scorer:
-                raise ValueError("Objective scorer is required to create baseline attack.")
+        # Create from scenario-level settings
+        if not self._objective_target:
+            raise ValueError("Objective target is required to create baseline attack.")
+        if not self._dataset_config:
+            raise ValueError("Dataset config is required to create baseline attack.")
+        if not self._objective_scorer:
+            raise ValueError("Objective scorer is required to create baseline attack.")
 
-            seed_groups = self._dataset_config.get_all_seed_attack_groups()
-            objective_target = self._objective_target
-
-            # Import here to avoid circular imports
-            from typing import cast
-
-            from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-            from pyrit.score import TrueFalseScorer
-
-            attack_scoring_config = AttackScoringConfig(objective_scorer=cast(TrueFalseScorer, self._objective_scorer))
-
-        # Validate required data
+        seed_groups = self._dataset_config.get_all_seed_attack_groups()
         if not seed_groups or len(seed_groups) == 0:
             raise ValueError("Seed groups are required to create baseline attack.")
-        if not objective_target:
-            raise ValueError("Objective target is required to create baseline attack.")
+
+        # Import here to avoid circular imports
+        from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+
+        attack_scoring_config = AttackScoringConfig(objective_scorer=cast(TrueFalseScorer, self._objective_scorer))
+
         if not attack_scoring_config:
             raise ValueError("Attack scoring config is required to create baseline attack.")
 
-        return seed_groups, attack_scoring_config, objective_target
+        return seed_groups, attack_scoring_config, self._objective_target
 
     def _raise_dataset_exception(self) -> None:
         error_msg = textwrap.dedent(

@@ -154,6 +154,46 @@ else:
 # await printer.print_summary_async(easy_results)
 
 # %% [markdown]
+# ## Baseline-Only Execution
+#
+# Sometimes you want to establish a baseline measurement of how the target responds to objectives
+# *without* any attack strategies applied. This is useful for:
+#
+# - **Measuring default defenses**: See how the target responds to harmful prompts with no obfuscation
+# - **Establishing comparison points**: Compare baseline refusal rates against strategy-enhanced attacks
+# - **Quick sanity checks**: Verify the target and scoring are working before running full scenarios
+# - **Understanding attack effectiveness**: Calculate the "lift" each strategy provides over baseline
+#
+# To run a baseline-only scenario, pass an empty list for `scenario_strategies`:
+
+# %%
+baseline_only_scenario = RedTeamAgent()
+await baseline_only_scenario.initialize_async(  # type: ignore
+    objective_target=objective_target,
+    scenario_strategies=[],  # Empty list = baseline only
+    dataset_config=dataset_config,
+)
+baseline_result = await baseline_only_scenario.run_async()  # type: ignore
+await printer.print_summary_async(baseline_result)  # type: ignore
+
+
+# %% [markdown]
+# The baseline attack sends each objective directly to the target without any converters or
+# multi-turn strategies. This gives you the "unmodified" success/failure rate.
+#
+# You can also disable the baseline entirely by setting `include_default_baseline=False` in the
+# scenario constructor if you only want to run specific strategies without comparison:
+#
+# ```python
+# # Run only strategies, no baseline
+# scenario = RedTeamAgent(include_default_baseline=False)
+# await scenario.initialize_async(
+#     objective_target=objective_target,
+#     scenario_strategies=[FoundryStrategy.Base64],
+# )
+# ```
+
+# %% [markdown]
 # ## Scenario Resiliency
 #
 # The `Foundry` scenario supports automatic resume and retry mechanisms:
