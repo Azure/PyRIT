@@ -20,13 +20,11 @@ from pyrit.scenario.scenarios.airt import (
     PsychosocialHarmsScenario,
     PsychosocialHarmsStrategy,
 )
-from pyrit.scenario.scenarios.airt.psychosocial_harms_scenario import HarmCategoryConfig
+from pyrit.scenario.scenarios.airt.psychosocial_harms_scenario import SubharmConfig
 from pyrit.score import FloatScaleThresholdScorer
 
 SEED_DATASETS_PATH = DATASETS_PATH / "seed_datasets" / "local" / "airt"
-SEED_PROMPT_LIST = list(
-    SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "psychosocical_imminent_crisis.prompt").get_values()
-)
+SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "psychosocial.prompt").get_values())
 
 
 @pytest.fixture
@@ -47,7 +45,7 @@ def multi_turn_strategy() -> PsychosocialHarmsStrategy:
 
 @pytest.fixture
 def imminent_crisis_strategy() -> PsychosocialHarmsStrategy:
-    return PsychosocialHarmsStrategy.IMMINENT_CRISIS
+    return PsychosocialHarmsStrategy.imminent_crisis
 
 
 @pytest.fixture
@@ -184,34 +182,23 @@ class TestPsychosocialHarmsInitialization:
         )
         assert scenario._adversarial_chat == adversarial_chat
 
-    def test_init_with_custom_crescendo_path(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
-        """Test initialization with custom Crescendo system prompt path."""
-        custom_path = "custom/path/to/crescendo.yaml"
-
-        scenario = PsychosocialHarmsScenario(
-            crescendo_system_prompt_path=custom_path,
-            objective_scorer=mock_objective_scorer,
-        )
-        assert scenario._crescendo_system_prompt_path == custom_path
-
-    def test_init_with_custom_scoring_rubrics(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
-        """Test initialization with custom harm category configurations."""
+    def test_init_with_custom_subharm_configs(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
+        """Test initialization with custom subharm configurations."""
 
         custom_configs = {
-            "psychosocial_imminent_crisis": HarmCategoryConfig(
+            "imminent_crisis": SubharmConfig(
                 crescendo_system_prompt_path="custom/crisis_crescendo.yaml",
                 scoring_rubric_path="custom/crisis_rubric.yaml",
             ),
         }
 
         scenario = PsychosocialHarmsScenario(
-            harm_configs=custom_configs,
+            subharm_configs=custom_configs,
             objective_scorer=mock_objective_scorer,
         )
-        assert scenario._harm_configs["psychosocial_imminent_crisis"].scoring_rubric_path == "custom/crisis_rubric.yaml"
+        assert scenario._subharm_configs["imminent_crisis"].scoring_rubric_path == "custom/crisis_rubric.yaml"
         assert (
-            scenario._harm_configs["psychosocial_imminent_crisis"].crescendo_system_prompt_path
-            == "custom/crisis_crescendo.yaml"
+            scenario._subharm_configs["imminent_crisis"].crescendo_system_prompt_path == "custom/crisis_crescendo.yaml"
         )
 
     def test_init_with_custom_max_turns(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
@@ -456,7 +443,7 @@ class TestPsychosocialHarmsStrategy:
         assert PsychosocialHarmsStrategy.ALL.tags == {"all"}
         assert PsychosocialHarmsStrategy.SINGLE_TURN.tags == {"single_turn"}
         assert PsychosocialHarmsStrategy.MULTI_TURN.tags == {"multi_turn"}
-        assert PsychosocialHarmsStrategy.IMMINENT_CRISIS.tags == {"single_turn", "multi_turn"}
+        assert PsychosocialHarmsStrategy.imminent_crisis.tags == {"single_turn", "multi_turn"}
 
     def test_aggregate_tags(self):
         """Test that only 'all' is an aggregate tag."""
@@ -471,4 +458,4 @@ class TestPsychosocialHarmsStrategy:
         assert PsychosocialHarmsStrategy.ALL.value == "all"
         assert PsychosocialHarmsStrategy.SINGLE_TURN.value == "single_turn"
         assert PsychosocialHarmsStrategy.MULTI_TURN.value == "multi_turn"
-        assert PsychosocialHarmsStrategy.IMMINENT_CRISIS.value == "psychosocial_imminent_crisis"
+        assert PsychosocialHarmsStrategy.imminent_crisis.value == "imminent_crisis"
