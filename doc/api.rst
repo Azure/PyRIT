@@ -258,6 +258,22 @@ API Reference
     XPIAProcessingCallback
     XPIAStatus
 
+:py:mod:`pyrit.identifiers`
+===========================
+
+.. automodule:: pyrit.identifiers
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    Identifiable
+    Identifier
+    IdentifierType
+    ScorerIdentifier
+
 :py:mod:`pyrit.memory`
 ======================
 
@@ -332,9 +348,6 @@ API Reference
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
     HarmDefinition
-    Identifiable
-    Identifier
-    IdentifierType
     ImagePathDataTypeSerializer
     AllowedCategories
     AttackOutcome
