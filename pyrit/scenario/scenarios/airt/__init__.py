@@ -9,9 +9,9 @@ from pyrit.scenario.scenarios.airt.content_harms import (
 )
 from pyrit.scenario.scenarios.airt.cyber import Cyber, CyberStrategy
 from pyrit.scenario.scenarios.airt.psychosocial_harms_scenario import (
-    HarmCategoryConfig,
     PsychosocialHarmsScenario,
     PsychosocialHarmsStrategy,
+    SubharmConfig,
 )
 from pyrit.scenario.scenarios.airt.scam import Scam, ScamStrategy
 
@@ -20,9 +20,9 @@ __all__ = [
     "CyberStrategy",
     "ContentHarms",
     "ContentHarmsStrategy",
-    "HarmCategoryConfig",
     "PsychosocialHarmsScenario",
     "PsychosocialHarmsStrategy",
+    "SubharmConfig",
     "Scam",
     "ScamStrategy",
 ]
