@@ -55,7 +55,8 @@ def mock_memory_seed_groups() -> List[SeedGroup]:
 def mock_objective_target() -> PromptTarget:
     """Create a mock objective target for testing."""
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = {
+        "__type__": "MockObjectiveTarget", "__module__": "test"}
     return mock
 
 
@@ -63,7 +64,8 @@ def mock_objective_target() -> PromptTarget:
 def mock_objective_scorer() -> TrueFalseInverterScorer:
     """Create a mock scorer for testing."""
     mock = MagicMock(spec=TrueFalseInverterScorer)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = {
+        "__type__": "MockObjectiveScorer", "__module__": "test"}
     return mock
 
 
@@ -108,7 +110,7 @@ class TestJailbreakInitialization:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.name == "Cyber"
+        assert scenario.name == "Jailbreak"
         assert scenario.version == 1
 
     def test_init_with_default_objectives(self, mock_objective_scorer, mock_memory_seed_groups):
@@ -117,7 +119,7 @@ class TestJailbreakInitialization:
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
-            assert scenario.name == "Cyber"
+            assert scenario.name == "Jailbreak"
             assert scenario.version == 1
 
     def test_init_with_default_scorer(self, mock_memory_seed_groups):
@@ -178,7 +180,8 @@ class TestJailbreakAttackGeneration:
             )
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[pyrit_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[
+                    pyrit_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -244,7 +247,7 @@ class TestJailbreakLifecycle:
         mock_memory_seed_groups: List[SeedGroup],
     ) -> None:
         """Test initialization with memory labels."""
-        memory_labels = {"type": "scam", "category": "scenario"}
+        memory_labels = {"type": "jailbreak", "category": "scenario"}
 
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
