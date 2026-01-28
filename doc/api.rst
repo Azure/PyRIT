@@ -30,6 +30,8 @@ API Reference
     Authenticator
     AzureAuth
     AzureStorageAuth
+    CopilotAuthenticator
+    ManualCopilotAuthenticator
 
 :py:mod:`pyrit.auxiliary_attacks`
 =================================
@@ -42,23 +44,6 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-
-:py:mod:`pyrit.chat_message_normalizer`
-=======================================
-
-.. automodule:: pyrit.chat_message_normalizer
-    :no-members:
-    :no-inherited-members:
-
-.. autosummary::
-    :nosignatures:
-    :toctree: _autosummary/
-
-    ChatMessageNormalizer
-    ChatMessageNop
-    GenericSystemSquash
-    ChatMessageNormalizerChatML
-    ChatMessageNormalizerTokenizerTemplate
 
 
 :py:mod:`pyrit.cli`
@@ -90,7 +75,6 @@ API Reference
     combine_list
     convert_local_image_to_data_url
     DefaultValueScope
-    deprecation_message
     display_image_response
     download_chunk
     download_file
@@ -105,7 +89,7 @@ API Reference
     get_required_value
     is_in_ipython_session
     make_request_and_raise_if_error_async
-    print_chat_messages_with_color
+    print_deprecation_message
     reset_default_values
     set_default_value
     Singleton
@@ -123,32 +107,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    fetch_adv_bench_dataset
-    fetch_aya_redteaming_dataset
-    fetch_babelscape_alert_dataset
-    fetch_ccp_sensitive_prompts_dataset
-    fetch_darkbench_dataset
-    fetch_decoding_trust_stereotypes_dataset
-    fetch_equitymedqa_dataset_unique_values
-    fetch_examples
-    fetch_forbidden_questions_dataset
-    fetch_harmbench_dataset
-    fetch_harmbench_multimodal_dataset_async
-    fetch_librAI_do_not_answer_dataset
-    fetch_llm_latent_adversarial_training_harmful_dataset
-    fetch_jbb_behaviors_by_harm_category
-    fetch_jbb_behaviors_by_jbb_category
-    fetch_jbb_behaviors_dataset
-    fetch_many_shot_jailbreaking_dataset
-    fetch_medsafetybench_dataset
-    fetch_mlcommons_ailuminate_demo_dataset
-    fetch_multilingual_vulnerability_dataset
-    fetch_pku_safe_rlhf_dataset
-    fetch_seclists_bias_testing_dataset
-    fetch_sosbench_dataset
-    fetch_tdc23_redteaming_dataset
-    fetch_wmdp_dataset
-    fetch_xstest_dataset
+    SeedDatasetProvider
+    TextJailBreak
 
 
 
@@ -163,8 +123,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AzureTextEmbedding
-    OpenAiTextEmbedding
+    OpenAITextEmbedding
 
 :py:mod:`pyrit.exceptions`
 ==========================
@@ -205,28 +164,42 @@ API Reference
     AttackContext
     AttackConverterConfig
     AttackExecutor
+    AttackExecutorResult
+    AttackParameters
+    AttackResultPrinter
     AttackScoringConfig
     AttackStrategy
+    ConsoleAttackResultPrinter
+    ChunkedRequestAttack
+    ChunkedRequestAttackContext
     ContextComplianceAttack
+    ConversationManager
     ConversationSession
+    ConversationState
     CrescendoAttack
+    CrescendoAttackContext
+    CrescendoAttackResult
     FlipAttack
+    generate_simulated_conversation_async
     ManyShotJailbreakAttack
+    MarkdownAttackResultPrinter
     MultiPromptSendingAttack
-    MultiPromptSendingAttackContext
+    MultiPromptSendingAttackParameters
     MultiTurnAttackContext
-    AttackExecutorResult
+    MultiTurnAttackStrategy
+    PrependedConversationConfig
     PromptSendingAttack
     RTASystemPromptPaths
     RedTeamingAttack
     RolePlayAttack
+    RolePlayPaths
     SingleTurnAttackContext
+    SingleTurnAttackStrategy
+    SkeletonKeyAttack
     TAPAttack
     TAPAttackContext
     TAPAttackResult
     TreeOfAttacksWithPruningAttack
-    SkeletonKeyAttack
-    ConsoleAttackResultPrinter
 
 :py:mod:`pyrit.executor.promptgen`
 ==================================
@@ -242,13 +215,31 @@ API Reference
     AnecdoctorContext
     AnecdoctorGenerator
     AnecdoctorResult
-    FuzzerContext
-    FuzzerResult
-    FuzzerGenerator
-    FuzzerResultPrinter
     PromptGeneratorStrategy
     PromptGeneratorStrategyContext
     PromptGeneratorStrategyResult
+
+:py:mod:`pyrit.executor.promptgen.fuzzer`
+=========================================
+
+.. automodule:: pyrit.executor.promptgen.fuzzer
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    FuzzerConverter
+    FuzzerContext
+    FuzzerCrossOverConverter
+    FuzzerExpandConverter
+    FuzzerGenerator
+    FuzzerRephraseConverter
+    FuzzerResult
+    FuzzerResultPrinter
+    FuzzerShortenConverter
+    FuzzerSimilarConverter
 
 :py:mod:`pyrit.executor.workflow`
 =================================
@@ -268,6 +259,25 @@ API Reference
     XPIAManualProcessingWorkflow
     XPIAProcessingCallback
     XPIAStatus
+
+:py:mod:`pyrit.identifiers`
+===========================
+
+.. automodule:: pyrit.identifiers
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    class_name_to_snake_case
+    Identifiable
+    Identifier
+    IdentifierT
+    IdentifierType
+    ScorerIdentifier
+    snake_case_to_class_name
 
 :py:mod:`pyrit.memory`
 ======================
@@ -291,6 +301,24 @@ API Reference
     SeedEntry
     SQLiteMemory
 
+:py:mod:`pyrit.message_normalizer`
+==================================
+
+.. automodule:: pyrit.message_normalizer
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    MessageListNormalizer
+    MessageStringNormalizer
+    GenericSystemSquashNormalizer
+    TokenizerTemplateNormalizer
+    ConversationContextNormalizer
+    ChatMessageNormalizer
+
 :py:mod:`pyrit.models`
 ======================
 
@@ -305,6 +333,7 @@ API Reference
     ALLOWED_CHAT_MESSAGE_ROLES
     AudioPathDataTypeSerializer
     AzureBlobStorageIO
+    BinaryPathDataTypeSerializer
     ChatMessage
     ChatMessagesDataset
     ChatMessageRole
@@ -320,25 +349,42 @@ API Reference
     EmbeddingSupport
     EmbeddingUsageInformation
     ErrorDataTypeSerializer
+    get_all_harm_definitions
     group_conversation_message_pieces_by_sequence
-    Identifier
+    group_message_pieces_into_conversations
+    HarmDefinition
     ImagePathDataTypeSerializer
+    AllowedCategories
+    AttackOutcome
+    AttackResult
     Message
     MessagePiece
+    NextMessageSystemPromptPaths
     PromptDataType
     PromptResponseError
     QuestionAnsweringDataset
     QuestionAnsweringEntry
     QuestionChoice
+    ScaleDescription
+    ScenarioIdentifier
+    ScenarioResult
     Score
     ScoreType
-    SeedPrompt
+    Seed
+    SeedAttackGroup
     SeedDataset
     SeedGroup
+    SeedObjective
+    SeedPrompt
+    SeedSimulatedConversation
+    SeedType
+    SimulatedTargetSystemPromptPaths
+    sort_message_pieces
     StorageIO
     StrategyResult
     TextDataTypeSerializer
     UnvalidatedScore
+    VideoPathDataTypeSerializer
 
 
 :py:mod:`pyrit.prompt_converter`
@@ -358,13 +404,16 @@ API Reference
     AnsiAttackConverter
     AsciiArtConverter
     AsciiSmugglerConverter
+    AskToDecodeConverter
     AtbashConverter
     AudioFrequencyConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
+    Base2048Converter
     Base64Converter
     BinAsciiConverter
     BinaryConverter
+    BrailleConverter
     CaesarConverter
     CharacterSpaceConverter
     CharSwapConverter
@@ -373,31 +422,39 @@ API Reference
     ConverterResult
     DenylistConverter
     DiacriticConverter
+    EcojiConverter
     EmojiConverter
     FirstLetterConverter
     FlipConverter
-    FuzzerCrossOverConverter
-    FuzzerExpandConverter
-    FuzzerRephraseConverter
-    FuzzerShortenConverter
-    FuzzerSimilarConverter
+    get_converter_modalities
     HumanInTheLoopConverter
     ImageCompressionConverter
+    IndexSelectionStrategy
     InsertPunctuationConverter
+    KeywordSelectionStrategy
     LeetspeakConverter
     LLMGenericTextConverter
     MaliciousQuestionGeneratorConverter
+    MathObfuscationConverter
     MathPromptConverter
     MorseConverter
+    NatoConverter
+    NegationTrapConverter
     NoiseConverter
     PDFConverter
     PersuasionConverter
+    PositionSelectionStrategy
     PromptConverter
+    ProportionSelectionStrategy
     QRCodeConverter
     RandomCapitalLettersConverter
+    RandomTranslationConverter
+    RangeSelectionStrategy
+    RegexSelectionStrategy
     RepeatTokenConverter
     ROT13Converter
     SearchReplaceConverter
+    SelectiveTextConverter
     SneakyBitsSmugglerConverter
     StringJoinConverter
     SuffixAppendConverter
@@ -405,6 +462,8 @@ API Reference
     TemplateSegmentConverter
     TenseConverter
     TextJailbreakConverter
+    TextSelectionStrategy
+    TokenSelectionStrategy
     ToneConverter
     ToxicSentenceGeneratorConverter
     TranslationConverter
@@ -415,13 +474,14 @@ API Reference
     UrlConverter
     VariationConverter
     VariationSelectorSmugglerConverter
+    WordIndexSelectionStrategy
+    WordKeywordSelectionStrategy
+    WordPositionSelectionStrategy
+    WordProportionSelectionStrategy
+    WordRegexSelectionStrategy
+    WordSelectionStrategy
     ZalgoConverter
     ZeroWidthConverter
-
-.. automodule:: pyrit.prompt_converter.fuzzer_converter
-    :no-members:
-    :no-inherited-members:
-    :no-index:
 
 :py:mod:`pyrit.prompt_normalizer`
 =================================
@@ -451,6 +511,7 @@ API Reference
 
     AzureBlobStorageTarget
     AzureMLChatTarget
+    CopilotType
     CrucibleTarget
     GandalfLevel
     GandalfTarget
@@ -462,18 +523,21 @@ API Reference
     HuggingFaceEndpointTarget
     limit_requests_per_minute
     OpenAICompletionTarget
-    OpenAIDALLETarget
+    OpenAIChatAudioConfig
+    OpenAIImageTarget
     OpenAIChatTarget
     OpenAIResponseTarget
-    OpenAISoraTarget
+    OpenAIVideoTarget
     OpenAITTSTarget
     OpenAITarget
+    PlaywrightCopilotTarget
     PlaywrightTarget
     PromptChatTarget
     PromptShieldTarget
     PromptTarget
     RealtimeTarget
     TextTarget
+    WebSocketCopilotTarget
 
 :py:mod:`pyrit.score`
 =====================
@@ -488,8 +552,15 @@ API Reference
 
     AzureContentFilterScorer
     BatchScorer
+    ConsoleScorerPrinter
     ContentClassifierPaths
+    ConversationScorer
+    create_conversation_scorer
+    DecodingScorer
+    FloatScaleScoreAggregator
     FloatScaleScorer
+    FloatScaleScorerAllCategories
+    FloatScaleScorerByCategory
     FloatScaleThresholdScorer
     GandalfScorer
     HarmHumanLabeledEntry
@@ -499,8 +570,8 @@ API Reference
     HumanLabeledDataset
     HumanLabeledEntry
     InsecureCodeScorer
+    LikertScaleEvalFiles
     LikertScalePaths
-    LookBackScorer
     MarkdownInjectionScorer
     MetricsType
     ObjectiveHumanLabeledEntry
@@ -510,10 +581,16 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RegistryUpdateBehavior
     Scorer
+    ScorerEvalDatasetFiles
     ScorerEvaluator
     ScorerMetrics
+    ScorerMetricsWithIdentity
+    ScorerPrinter
     ScorerPromptValidator
+    get_all_harm_metrics
+    get_all_objective_metrics
     SelfAskCategoryScorer
     SelfAskGeneralFloatScaleScorer
     SelfAskGeneralTrueFalseScorer
@@ -523,17 +600,20 @@ API Reference
     SelfAskScaleScorer
     SelfAskTrueFalseScorer
     SubStringScorer
+    TrueFalseAggregatorFunc
     TrueFalseCompositeScorer
     TrueFalseInverterScorer
     TrueFalseQuestion
     TrueFalseQuestionPaths
     TrueFalseScoreAggregator
     TrueFalseScorer
+    VideoFloatScaleScorer
+    VideoTrueFalseScorer
 
-:py:mod:`pyrit.scenarios`
+:py:mod:`pyrit.scenario`
 =========================
 
-.. automodule:: pyrit.scenarios
+.. automodule:: pyrit.scenario
     :no-members:
     :no-inherited-members:
 
@@ -542,13 +622,55 @@ API Reference
     :toctree: _autosummary/
 
     AtomicAttack
-    EncodingScenario
-    FoundryStrategy
-    FoundryScenario
+    DatasetConfiguration
     Scenario
+    ScenarioCompositeStrategy
     ScenarioStrategy
-    ScenarioIdentifier
-    ScenarioResult
+
+:py:mod:`pyrit.scenario.airt`
+=============================
+
+.. automodule:: pyrit.scenario.airt
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    ContentHarms
+    ContentHarmsStrategy
+    Cyber
+    CyberStrategy
+
+:py:mod:`pyrit.scenario.foundry`
+================================
+
+.. automodule:: pyrit.scenario.foundry
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    FoundryScenario
+    FoundryStrategy
+    RedTeamAgent
+
+:py:mod:`pyrit.scenario.garak`
+==============================
+
+.. automodule:: pyrit.scenario.garak
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    Encoding
+    EncodingStrategy
 
 :py:mod:`pyrit.setup`
 =====================
@@ -561,7 +683,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    initialize_pyrit
+    initialize_pyrit_async
     AZURE_SQL
     SQLITE
     IN_MEMORY
@@ -580,3 +702,5 @@ API Reference
     PyRITInitializer
     AIRTInitializer
     SimpleInitializer
+    LoadDefaultDatasets
+    ScenarioObjectiveListInitializer

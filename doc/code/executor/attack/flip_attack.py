@@ -7,6 +7,16 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.3
 # ---
+# %% [markdown]
+# # Flip Attack (Single-Turn) - optional
+#
+# Flip Attack is a simple attack. The paper is available here: https://arxiv.org/html/2410.02832v1.
+#
+# We replicate the ability to send prompts that match this output: https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json. In other words, it sends a system prompt to the target, directing it to unflip the word, and then it flips the malicious prompt.
+#
+# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../../setup/populating_secrets.md).
+#
+# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 
 # %%
 from pyrit.executor.attack import (
@@ -16,25 +26,9 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
-
-# %% [markdown]
-# # Flip Attack (Single-Turn) - optional
-#
-# Flip Attack is a simple attack. The paper is available here: https://arxiv.org/html/2410.02832v1.
-#
-# We replicate the ability to send prompts that match this output: https://github.com/yueliu1999/FlipAttack/blob/main/result/FlipAttack-gpt-4.json. In other words, it sends a system prompt to the target, directing it to unflip the word, and then it flips the malicious prompt.
-#
-# Before you begin, ensure you are set up with the correct version of PyRIT installed and have secrets configured as described [here](../../../index.md#Installation-Guide.
-#
-# The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
-
-# %%
-from pyrit.setup import IN_MEMORY, initialize_pyrit
-
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target = OpenAIChatTarget()
 

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
-"""Krippendorff's alpha for ordinal data.
+"""
+Krippendorff's alpha for ordinal data.
 
 This implementation follows the standard Krippendorff's alpha formulation and
 is inspired by LightTag/simpledorff's clean decomposition of expected/observed
@@ -16,11 +17,12 @@ import numpy as np
 
 
 def _validate_and_prepare_data(
-    reliability_data: "np.ndarray",
+    reliability_data: "np.ndarray",  # type: ignore[type-arg, unused-ignore]
     level_of_measurement: str,
     missing: float | None,
-) -> tuple["np.ndarray", "np.ndarray", "np.ndarray"]:
-    """Validate inputs and prepare data for reliability calculation.
+) -> tuple["np.ndarray", "np.ndarray", "np.ndarray"]:  # type: ignore[type-arg, unused-ignore]
+    """
+    Validate inputs and prepare data for reliability calculation.
 
     Args:
         reliability_data: Ratings array of shape (num_raters_or_trials, num_items).
@@ -61,11 +63,12 @@ def _validate_and_prepare_data(
 
 
 def _build_value_counts_matrix(
-    data: "np.ndarray",
-    valid_mask: "np.ndarray",
-    categories: "np.ndarray",
-) -> "np.ndarray":
-    """Build matrix counting how many raters assigned each category to each item.
+    data: "np.ndarray",  # type: ignore[type-arg, unused-ignore]
+    valid_mask: "np.ndarray",  # type: ignore[type-arg, unused-ignore]
+    categories: "np.ndarray",  # type: ignore[type-arg, unused-ignore]
+) -> "np.ndarray":  # type: ignore[type-arg, unused-ignore]
+    """
+    Build matrix counting how many raters assigned each category to each item.
 
     Args:
         data: Float64 array of ratings.
@@ -92,9 +95,10 @@ def _build_value_counts_matrix(
 
 
 def _build_coincidence_matrix(
-    value_counts: "np.ndarray",
-) -> "np.ndarray":
-    """Build coincidence matrix from value counts.
+    value_counts: "np.ndarray",  # type: ignore[type-arg, unused-ignore]
+) -> "np.ndarray":  # type: ignore[type-arg, unused-ignore]
+    """
+    Build coincidence matrix from value counts.
 
     Args:
         value_counts: Matrix of shape (num_items, num_categories) with counts.
@@ -128,9 +132,10 @@ def _build_coincidence_matrix(
 
 
 def _build_expected_matrix(
-    coincidence_matrix: "np.ndarray",
-) -> tuple["np.ndarray", "np.ndarray", float]:
-    """Build expected coincidence matrix from observed coincidences.
+    coincidence_matrix: "np.ndarray",  # type: ignore[type-arg, unused-ignore]
+) -> tuple["np.ndarray", "np.ndarray", float]:  # type: ignore[type-arg, unused-ignore]
+    """
+    Build expected coincidence matrix from observed coincidences.
 
     Args:
         coincidence_matrix: Observed coincidence matrix.
@@ -155,9 +160,10 @@ def _build_expected_matrix(
 
 def _build_ordinal_distance_matrix(
     num_categories: int,
-    n_v: "np.ndarray",
-) -> "np.ndarray":
-    """Build ordinal distance matrix using category marginals.
+    n_v: "np.ndarray",  # type: ignore[type-arg, unused-ignore]
+) -> "np.ndarray":  # type: ignore[type-arg, unused-ignore]
+    """
+    Build ordinal distance matrix using category marginals.
 
     Args:
         num_categories: Number of unique categories.
@@ -183,7 +189,8 @@ def _compute_alpha_from_disagreements(
     observed_disagreement: float,
     expected_disagreement: float,
 ) -> float:
-    """Compute Krippendorff's alpha from observed and expected disagreements.
+    """
+    Compute Krippendorff's alpha from observed and expected disagreements.
 
     Args:
         observed_disagreement: Observed disagreement value.
@@ -209,11 +216,12 @@ def _compute_alpha_from_disagreements(
 
 
 def krippendorff_alpha(
-    reliability_data: "np.ndarray",  # shape: (num_raters_or_trials, num_items); dtype float
+    reliability_data: "np.ndarray",  # type: ignore[type-arg, unused-ignore]  # shape: (num_raters_or_trials, num_items); dtype float
     level_of_measurement: str = "ordinal",
     missing: float | None = np.nan,
 ) -> float:
-    """Compute Krippendorff's alpha inter-rater reliability for ordinal data.
+    """
+    Compute Krippendorff's alpha inter-rater reliability for ordinal data.
 
     Computes inter-rater reliability for ordered categories, ignoring missing
     entries and supporting varying numbers of raters per item.

@@ -22,7 +22,7 @@ class AzureStorageAuth:
     @staticmethod
     async def get_user_delegation_key(blob_service_client: BlobServiceClient) -> UserDelegationKey:
         """
-        Retrieves a user delegation key valid for one day.
+        Retrieve a user delegation key valid for one day.
 
         Args:
             blob_service_client (BlobServiceClient): An instance of BlobServiceClient to interact
@@ -43,13 +43,16 @@ class AzureStorageAuth:
     @staticmethod
     async def get_sas_token(container_url: str) -> str:
         """
-        Generates a SAS token for the specified blob using a user delegation key.
+        Generate a SAS token for the specified blob using a user delegation key.
 
         Args:
             container_url (str): The URL of the Azure Blob Storage container.
 
         Returns:
             str: The generated SAS token.
+
+        Raises:
+            ValueError: If container_url is empty or invalid.
         """
         if not container_url:
             raise ValueError(
@@ -71,7 +74,6 @@ class AzureStorageAuth:
 
         try:
             async with BlobServiceClient(account_url=account_url, credential=credential) as blob_service_client:
-
                 user_delegation_key = await AzureStorageAuth.get_user_delegation_key(
                     blob_service_client=blob_service_client
                 )
@@ -86,11 +88,11 @@ class AzureStorageAuth:
                     account_name=storage_account_name,
                     container_name=container_name,
                     user_delegation_key=user_delegation_key,
-                    permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),
+                    permission=ContainerSasPermissions(read=True, write=True, create=True, list=True, delete=True),  # type: ignore[no-untyped-call, unused-ignore]
                     expiry=expiry_time,
                     start=start_time,
                 )
         finally:
             await credential.close()
 
-        return sas_token
+        return sas_token  # type: ignore[return-value, no-any-return, unused-ignore]

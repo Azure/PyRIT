@@ -42,7 +42,7 @@ class SimpleInitializer(PyRITInitializer):
     - Adversarial target configurations for attacks
 
     Required Environment Variables:
-    - OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY
+    - OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY
 
     This configuration is designed for simple use cases with:
     - Basic OpenAI API integration (uses standard OPENAI_API_KEY env var)
@@ -51,7 +51,7 @@ class SimpleInitializer(PyRITInitializer):
 
     Example:
         initializer = SimpleInitializer()
-        initializer.initialize()  # Sets up complete simple configuration
+        await initializer.initialize_async()  # Sets up complete simple configuration
     """
 
     def __init__(self) -> None:
@@ -77,10 +77,11 @@ class SimpleInitializer(PyRITInitializer):
         """Get list of required environment variables."""
         return [
             "OPENAI_CHAT_ENDPOINT",
+            "OPENAI_CHAT_MODEL",
             "OPENAI_CHAT_KEY",
         ]
 
-    def initialize(self) -> None:
+    async def initialize_async(self) -> None:
         """
         Execute the complete simple initialization.
 
@@ -100,7 +101,7 @@ class SimpleInitializer(PyRITInitializer):
         self._setup_adversarial_targets()
 
     def _setup_converter_target(self) -> None:
-        """Setup default converter target configuration."""
+        """Set up the default converter target configuration."""
         default_converter_target = OpenAIChatTarget(
             temperature=1.2,
         )
@@ -113,7 +114,7 @@ class SimpleInitializer(PyRITInitializer):
         )
 
     def _setup_scorers(self) -> None:
-        """Setup simple objective scorer."""
+        """Set up the simple objective scorer."""
         scorer_target = OpenAIChatTarget(temperature=0.3)
 
         # Configure simple objective scorer
@@ -152,7 +153,7 @@ class SimpleInitializer(PyRITInitializer):
             )
 
     def _setup_adversarial_targets(self) -> None:
-        """Setup adversarial target configurations for attacks."""
+        """Set up the adversarial target configurations for attacks."""
         adversarial_config = AttackAdversarialConfig(
             target=OpenAIChatTarget(
                 temperature=1.3,

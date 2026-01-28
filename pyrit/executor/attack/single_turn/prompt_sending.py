@@ -3,12 +3,14 @@
 
 import logging
 import uuid
-from typing import Optional
+from typing import Any, Optional, Type
 
-from pyrit.common.apply_defaults import apply_defaults
-from pyrit.common.utils import combine_dict, warn_if_set
-from pyrit.executor.attack.component import ConversationManager
-from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.common.utils import warn_if_set
+from pyrit.exceptions import ComponentRole, execution_context
+from pyrit.executor.attack.component import ConversationManager, PrependedConversationConfig
+from pyrit.executor.attack.core.attack_config import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
@@ -20,8 +22,6 @@ from pyrit.models import (
     ConversationType,
     Message,
     Score,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
@@ -53,11 +53,13 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -68,12 +70,23 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.
             max_attempts_on_failure (int): Maximum number of attempts to retry on failure.
+            params_type (Type[AttackParamsT]): The type of parameters this strategy accepts.
+                Defaults to AttackParameters. Use AttackParameters.excluding() to create
+                a params type that rejects certain fields.
+            prepended_conversation_config (Optional[PrependedConversationConfiguration]):
+                Configuration for how to process prepended conversations. Controls converter
+                application by role, message normalization, and non-chat target behavior.
 
         Raises:
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(objective_target=objective_target, logger=logger, context_type=SingleTurnAttackContext)
+        super().__init__(
+            objective_target=objective_target,
+            logger=logger,
+            context_type=SingleTurnAttackContext,
+            params_type=params_type,
+        )
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -102,6 +115,9 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
 
         self._max_attempts_on_failure = max_attempts_on_failure
 
+        # Store the prepended conversation configuration
+        self._prepended_conversation_config = prepended_conversation_config
+
     def get_attack_scoring_config(self) -> Optional[AttackScoringConfig]:
         """
         Get the attack scoring configuration used by this strategy.
@@ -114,7 +130,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             auxiliary_scorers=self._auxiliary_scorers,
         )
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+    def _validate_context(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """
         Validate the context before executing the attack.
 
@@ -127,7 +143,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
 
-    async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
+    async def _setup_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """
         Set up the attack by preparing conversation context.
 
@@ -137,19 +153,17 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
 
-        # Combine memory labels from context and attack strategy
-        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
-
-        # Process prepended conversation if provided
-        await self._conversation_manager.update_conversation_state_async(
+        # Initialize context with prepended conversation and merged labels
+        await self._conversation_manager.initialize_context_async(
+            context=context,
             target=self._objective_target,
             conversation_id=context.conversation_id,
-            prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
-            response_converters=self._response_converters,
+            prepended_conversation_config=self._prepended_conversation_config,
+            memory_labels=self._memory_labels,
         )
 
-    async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
+    async def _perform_async(self, *, context: SingleTurnAttackContext[Any]) -> AttackResult:
         """
         Perform the prompt injection attack.
 
@@ -176,17 +190,17 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # 6) After retries are exhausted, compile the final response and score
         # 7) Return an AttackResult object that captures the outcome of the attack
 
-        # Prepare the prompt
-        prompt_group = self._get_prompt_group(context)
-
         # Execute with retries
         for attempt in range(self._max_attempts_on_failure + 1):
-            self._logger.debug(f"Attempt {attempt+1}/{self._max_attempts_on_failure + 1}")
+            self._logger.debug(f"Attempt {attempt + 1}/{self._max_attempts_on_failure + 1}")
+
+            # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
+            message = self._get_message(context)
 
             # Send the prompt
-            response = await self._send_prompt_to_objective_target_async(prompt_group=prompt_group, context=context)
+            response = await self._send_prompt_to_objective_target_async(message=message, context=context)
             if not response:
-                self._logger.warning(f"No response received on attempt {attempt+1} (likely filtered)")
+                self._logger.warning(f"No response received on attempt {attempt + 1} (likely filtered)")
                 continue  # Retry if no response (filtered or error)
 
             # Score the response including auxiliary and objective scoring
@@ -228,7 +242,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         return result
 
     def _determine_attack_outcome(
-        self, *, response: Optional[Message], score: Optional[Score], context: SingleTurnAttackContext
+        self, *, response: Optional[Message], score: Optional[Score], context: SingleTurnAttackContext[Any]
     ) -> tuple[AttackOutcome, Optional[str]]:
         """
         Determine the outcome of the attack based on the response and score.
@@ -259,54 +273,62 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # No response at all (all attempts filtered/failed)
         return AttackOutcome.FAILURE, "All attempts were filtered or failed to get a response"
 
-    async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
-        """Clean up after attack execution"""
+    async def _teardown_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
 
-    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedGroup:
+    def _get_message(self, context: SingleTurnAttackContext[Any]) -> Message:
         """
-        Prepare the seed group for the attack.
+        Prepare the message for the attack.
 
-        If a seed_group is provided in the context, it will be used directly.
-        Otherwise, creates a new SeedGroup with the objective as a text prompt.
+        If a message is provided in the context, it will be used directly.
+        Otherwise, creates a new Message from the objective as a text prompt.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
-                and optionally a pre-configured seed_group.
+                and optionally a pre-configured message template.
 
         Returns:
-            SeedGroup: The seed group to be used in the attack.
+            Message: The message to be used in the attack.
         """
-        if context.seed_group:
-            return context.seed_group
+        if context.next_message:
+            # Deep copy the message to preserve all fields, then assign new IDs
+            return context.next_message.duplicate_message()
 
-        return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
+        return Message.from_prompt(prompt=context.objective, role="user")
 
     async def _send_prompt_to_objective_target_async(
-        self, *, prompt_group: SeedGroup, context: SingleTurnAttackContext
+        self, *, message: Message, context: SingleTurnAttackContext[Any]
     ) -> Optional[Message]:
         """
         Send the prompt to the target and return the response.
 
         Args:
-            prompt_group (SeedGroup): The seed group to send.
+            message (Message): The message to send.
             context (SingleTurnAttackContext): The attack context containing parameters and labels.
 
         Returns:
             Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
-
-        return await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_group,
-            target=self._objective_target,
-            conversation_id=context.conversation_id,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
-            labels=context.memory_labels,  # combined with strategy labels at _setup()
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-        )
+            component_identifier=self._objective_target.get_identifier(),
+            objective_target_conversation_id=context.conversation_id,
+            objective=context.params.objective,
+        ):
+            return await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                target=self._objective_target,
+                conversation_id=context.conversation_id,
+                request_converter_configurations=self._request_converters,
+                response_converter_configurations=self._response_converters,
+                labels=context.memory_labels,  # combined with strategy labels at _setup()
+                attack_identifier=self.get_identifier(),
+            )
 
     async def _evaluate_response_async(
         self,
@@ -329,14 +351,21 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-
-        scoring_results = await Scorer.score_response_async(
-            response=response,
-            objective_scorer=self._objective_scorer,
-            auxiliary_scorers=self._auxiliary_scorers,
-            role_filter="assistant",
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_SCORER,
+            attack_strategy_name=self.__class__.__name__,
+            attack_identifier=self.get_identifier(),
+            component_identifier=self._objective_scorer.get_identifier().to_dict() if self._objective_scorer else None,
             objective=objective,
-        )
+        ):
+            scoring_results = await Scorer.score_response_async(
+                response=response,
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+                role_filter="assistant",
+                objective=objective,
+                skip_on_error_result=True,
+            )
 
         if not self._objective_scorer:
             return None

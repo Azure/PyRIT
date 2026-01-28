@@ -5,18 +5,19 @@ from collections import defaultdict
 from typing import Callable, Dict, Iterable, List
 
 from pyrit.models import Score
-from pyrit.score.aggregator_utils import (
+from pyrit.score.score_aggregator_result import ScoreAggregatorResult
+from pyrit.score.score_utils import (
     combine_metadata_and_categories,
     format_score_for_rationale,
 )
-from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 
 FloatScaleOp = Callable[[List[float]], float]
 FloatScaleAggregatorFunc = Callable[[Iterable[Score]], List[ScoreAggregatorResult]]
 
 
 def _build_rationale(scores: List[Score], *, aggregate_description: str) -> tuple[str, str]:
-    """Build description and rationale for aggregated scores.
+    """
+    Build description and rationale for aggregated scores.
 
     Args:
         scores: List of Score objects to aggregate.
@@ -42,13 +43,16 @@ def _create_aggregator(
     *,
     result_func: FloatScaleOp,
     aggregate_description: str,
+    raise_on_empty: bool = False,
 ) -> FloatScaleAggregatorFunc:
-    """Create a float-scale aggregator using a result function over float values.
+    """
+    Create a float-scale aggregator using a result function over float values.
 
     Args:
         name (str): Name of the aggregator variant.
         result_func (FloatScaleOp): Function applied to the list of float values to compute the aggregation result.
         aggregate_description (str): Base description for the aggregated result.
+        raise_on_empty (bool): Whether to raise ValueError when no scores are provided. Defaults to False.
 
     Returns:
         FloatScaleAggregatorFunc: Aggregator function that reduces a sequence of float-scale Scores
@@ -63,6 +67,8 @@ def _create_aggregator(
 
         scores_list = list(scores)
         if not scores_list:
+            if raise_on_empty:
+                raise ValueError("No scores available for aggregation")
             # No scores; return a neutral result
             return [
                 ScoreAggregatorResult(
@@ -99,7 +105,8 @@ def _create_aggregator(
 
 # Float scale aggregators (return list with single score)
 class FloatScaleScoreAggregator:
-    """Namespace for float scale score aggregators that return a single aggregated score.
+    """
+    Namespace for float scale score aggregators that return a single aggregated score.
 
     All aggregators return a list containing one ScoreAggregatorResult that combines
     all input scores together, preserving all categories.
@@ -123,6 +130,27 @@ class FloatScaleScoreAggregator:
         aggregate_description="Minimum value among constituent scorers in a MIN composite scorer.",
     )
 
+    AVERAGE_RAISE_ON_EMPTY: FloatScaleAggregatorFunc = _create_aggregator(
+        "AVERAGE_RAISE_ON_EMPTY",
+        result_func=lambda xs: round(sum(xs) / len(xs), 10) if xs else 0.0,
+        aggregate_description="Average of constituent scorers in an AVERAGE composite scorer.",
+        raise_on_empty=True,
+    )
+
+    MAX_RAISE_ON_EMPTY: FloatScaleAggregatorFunc = _create_aggregator(
+        "MAX_RAISE_ON_EMPTY",
+        result_func=max,
+        aggregate_description="Maximum value among constituent scorers in a MAX composite scorer.",
+        raise_on_empty=True,
+    )
+
+    MIN_RAISE_ON_EMPTY: FloatScaleAggregatorFunc = _create_aggregator(
+        "MIN_RAISE_ON_EMPTY",
+        result_func=min,
+        aggregate_description="Minimum value among constituent scorers in a MIN composite scorer.",
+        raise_on_empty=True,
+    )
+
 
 def _create_aggregator_by_category(
     name: str,
@@ -131,7 +159,8 @@ def _create_aggregator_by_category(
     aggregate_description: str,
     group_by_category: bool = True,
 ) -> FloatScaleAggregatorFunc:
-    """Create a float-scale aggregator that can optionally group scores by category.
+    """
+    Create a float-scale aggregator that can optionally group scores by category.
 
     When group_by_category=True (default), scores are grouped by their category and each
     category is aggregated separately, returning multiple ScoreAggregatorResult objects.
@@ -248,7 +277,8 @@ def _create_aggregator_by_category(
 
 # Category-aware aggregators (group by category and return multiple scores)
 class FloatScaleScorerByCategory:
-    """Namespace for float scale score aggregators that group by category.
+    """
+    Namespace for float scale score aggregators that group by category.
 
     These aggregators return multiple ScoreAggregatorResult objects (one per category).
     Useful for scorers like AzureContentFilterScorer that return multiple scores per item.
@@ -278,7 +308,8 @@ class FloatScaleScorerByCategory:
 
 # Non-category-aware aggregators (combine all categories into one score)
 class FloatScaleScorerAllCategories:
-    """Namespace for float scale score aggregators that combine all categories.
+    """
+    Namespace for float scale score aggregators that combine all categories.
 
     These aggregators ignore category boundaries and aggregate all scores together,
     returning a single ScoreAggregatorResult with all categories combined.

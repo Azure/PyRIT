@@ -19,16 +19,15 @@
 #
 # The above describes why we have `SelfAskRefusalScorer` and how they work. It has code that automatically detects filtered responses as refusals, and has a specific LLM prompt to ask only whether a response is a refusal or not.
 
+# %%
 from pyrit.models import MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import SelfAskRefusalScorer
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # %%
-from pyrit.setup import IN_MEMORY, initialize_pyrit
-
-initialize_pyrit(memory_db_type=IN_MEMORY)
-
-
 blocked = MessagePiece(
     role="assistant",
     original_value="",
@@ -88,6 +87,6 @@ assert scored_response.get_value(), "Score should be refused since it's off topi
 scored_response = (await refusal_scorer.score_async(message=off_topic_task))[0]  # type: ignore
 print("[Non Refused Response] Scored response is given as:", scored_response, scored_response.score_rationale)
 
-assert (
-    not scored_response.get_value()
-), "[Refused Response] Score should not be a refusal as the response as there is no task (so not off topic)."
+assert not scored_response.get_value(), (
+    "[Refused Response] Score should not be a refusal as the response as there is no task (so not off topic)."
+)

@@ -1,13 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 from uuid import UUID
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.models import PromptDataType, Score, UnvalidatedScore
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
+from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_metrics import HarmScorerMetrics
 
 
 class FloatScaleScorer(Scorer):
@@ -19,21 +23,50 @@ class FloatScaleScorer(Scorer):
     is scored independently, returning one score per piece.
     """
 
-    def __init__(self, *, validator) -> None:
+    def __init__(self, *, validator: ScorerPromptValidator) -> None:
+        """
+        Initialize the FloatScaleScorer.
+
+        Args:
+            validator: A validator object used to validate scores.
+        """
         super().__init__(validator=validator)
 
-    def validate_return_scores(self, scores: list[Score]):
+    def validate_return_scores(self, scores: list[Score]) -> None:
+        """
+        Validate that the returned scores are within the valid range [0, 1].
+
+        Raises:
+            ValueError: If any score is not between 0 and 1.
+        """
         for score in scores:
             if not (0 <= score.get_value() <= 1):
                 raise ValueError("FloatScaleScorer score value must be between 0 and 1.")
+
+    def get_scorer_metrics(self) -> Optional["HarmScorerMetrics"]:
+        """
+        Get evaluation metrics for this scorer from the configured evaluation result file.
+
+        Returns:
+            HarmScorerMetrics: The metrics for this scorer, or None if not found or not configured.
+        """
+        from pyrit.score.scorer_evaluation.scorer_metrics_io import (
+            find_harm_metrics_by_hash,
+        )
+
+        if self.evaluation_file_mapping is None or self.evaluation_file_mapping.harm_category is None:
+            return None
+        scorer_hash = self.get_identifier().hash
+
+        return find_harm_metrics_by_hash(hash=scorer_hash, harm_category=self.evaluation_file_mapping.harm_category)
 
     async def _score_value_with_llm(
         self,
         *,
         prompt_target: PromptChatTarget,
         system_prompt: str,
-        prompt_request_value: str,
-        prompt_request_data_type: PromptDataType,
+        message_value: str,
+        message_data_type: PromptDataType,
         scored_prompt_id: str | UUID,
         category: Optional[str | UUID] = None,
         objective: Optional[str] = None,
@@ -49,8 +82,8 @@ class FloatScaleScorer(Scorer):
             score = await super()._score_value_with_llm(
                 prompt_target=prompt_target,
                 system_prompt=system_prompt,
-                prompt_request_value=prompt_request_value,
-                prompt_request_data_type=prompt_request_data_type,
+                message_value=message_value,
+                message_data_type=message_data_type,
                 scored_prompt_id=scored_prompt_id,
                 category=category,
                 objective=objective,

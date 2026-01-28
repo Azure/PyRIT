@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.17.3
 # ---
 
 # %% [markdown]
@@ -20,13 +20,19 @@
 
 # %%
 from pyrit.prompt_target import RealtimeTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target = RealtimeTarget()
-# For an AzureOpenAI endpoint with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# target = RealtimeTarget(use_entra_auth=True)
+# For Azure OpenAI with Entra ID authentication:
+# from pyrit.auth import get_azure_openai_auth
+# endpoint = "https://your-endpoint.openai.azure.com"
+# target = RealtimeTarget(
+#     endpoint=endpoint,
+#     api_key=get_azure_openai_auth(endpoint),
+#     model_name="your-deployment-name"
+# )
 
 # %% [markdown]
 # ## Audio Conversation
@@ -38,6 +44,7 @@ from pathlib import Path
 
 from pyrit.executor.attack import (
     AttackExecutor,
+    AttackParameters,
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
     SingleTurnAttackContext,
@@ -51,7 +58,7 @@ audio_path = Path("../../../assets/converted_audio.wav").resolve()
 objective = "Cutting down a tree"
 
 seed_group = SeedGroup(
-    prompts=[
+    seeds=[
         SeedPrompt(
             value=str(audio_path),
             data_type="audio_path",
@@ -59,9 +66,11 @@ seed_group = SeedGroup(
     ]
 )
 
-context = SingleTurnAttackContext(
-    objective=objective,
-    seed_group=seed_group,
+context: SingleTurnAttackContext = SingleTurnAttackContext(
+    params=AttackParameters(
+        objective=objective,
+        next_message=seed_group.next_message,
+    )
 )
 
 attack = PromptSendingAttack(objective_target=target)
@@ -75,12 +84,18 @@ await target.cleanup_target()  # type: ignore
 # This section below shows how to interact with the Realtime Target with text prompts
 
 # %%
+from pyrit.executor.attack import (
+    AttackExecutor,
+    ConsoleAttackResultPrinter,
+    PromptSendingAttack,
+)
+
 prompt_to_send = "What is the capitol of France?"
 second_prompt_to_send = "What is the size of that city?"
 # Showing how to send multiple prompts but each is its own conversation, ie the second prompt is not a follow up to the first
 
 attack = PromptSendingAttack(objective_target=target)
-results = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+results = await AttackExecutor().execute_attack_async(  # type: ignore
     attack=attack,
     objectives=[prompt_to_send, second_prompt_to_send],
 )
@@ -104,9 +119,9 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, RealtimeTarget
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 logging.basicConfig(level=logging.WARNING)
 

@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import Message, MessagePiece, UnvalidatedScore
 from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer
 
@@ -21,7 +22,6 @@ criteria_system_prompt_path = SelfAskScaleScorer.SystemPaths.CRITERIA_SYSTEM_PRO
 
 @pytest.fixture
 def scorer_scale_response() -> Message:
-
     json_response = (
         dedent(
             """
@@ -65,7 +65,7 @@ async def test_scale_scorer_set_system_prompt(
     patch_central_database,
 ):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_scale_response])
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
@@ -134,10 +134,9 @@ def test_validate_scale_arguments_missing_args_raises_value_error(scale_args, sc
 
 @pytest.mark.asyncio
 async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_database):
-
     chat_target = MagicMock()
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_scale_response])
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
@@ -161,7 +160,6 @@ async def test_scale_scorer_score(scorer_scale_response: Message, patch_central_
 
 @pytest.mark.asyncio
 async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, patch_central_database):
-
     chat_target = MagicMock()
 
     # set a higher score to test the scaling
@@ -170,7 +168,7 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, p
     ].original_value.replace("1", "53")
     scorer_scale_response.message_pieces[0].converted_value = scorer_scale_response.message_pieces[0].original_value
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_scale_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_scale_response])
 
     scorer = SelfAskScaleScorer(
         chat_target=chat_target,
@@ -198,7 +196,6 @@ async def test_scale_scorer_score_custom_scale(scorer_scale_response: Message, p
 
 @pytest.mark.asyncio
 async def test_scale_scorer_score_calls_send_chat(patch_central_database):
-
     chat_target = MagicMock()
 
     scorer = SelfAskScaleScorer(
@@ -213,7 +210,12 @@ async def test_scale_scorer_score_calls_send_chat(patch_central_database):
         score_category=["jailbreak"],
         score_value_description="description",
         score_metadata={"meta": "metadata"},
-        scorer_class_identifier={"id": "identifier"},
+        scorer_class_identifier=ScorerIdentifier(
+            class_name="SelfAskScaleScorer",
+            class_module="pyrit.score",
+            class_description="",
+            identifier_type="instance",
+        ),
         message_piece_id=str(uuid.uuid4()),
         objective="task",
     )

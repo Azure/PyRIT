@@ -48,9 +48,9 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
 )
 from pyrit.prompt_target import HuggingFaceChatTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # models to test
 model_id = "Qwen/Qwen2-0.5B-Instruct"
@@ -74,7 +74,7 @@ try:
     start_time = time.time()
 
     # Send prompts asynchronously
-    responses = await AttackExecutor().execute_multi_objective_attack_async(  # type: ignore
+    responses = await AttackExecutor().execute_attack_async(  # type: ignore
         attack=attack,
         objectives=prompt_list,
     )
@@ -102,9 +102,3 @@ if model_times[model_id] is not None:
     print(f"{model_id}: {model_times[model_id]:.2f} seconds")
 else:
     print(f"{model_id}: Error occurred, no average time calculated.")
-
-# %%
-from pyrit.memory import CentralMemory
-
-memory = CentralMemory.get_memory_instance()
-memory.dispose_engine()

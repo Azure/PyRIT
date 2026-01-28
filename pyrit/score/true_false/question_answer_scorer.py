@@ -45,9 +45,19 @@ class QuestionAnswerScorer(TrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category if category is not None else []
+
+        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_identifier(
+            score_aggregator=self._score_aggregator.__name__,
+            scorer_specific_params={
+                "correct_answer_matching_patterns": self._correct_answer_matching_patterns,
+            },
+        )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -62,7 +72,6 @@ class QuestionAnswerScorer(TrueFalseScorer):
         Returns:
             list[Score]: A list containing a single Score object indicating whether the correct answer was found.
         """
-
         result = False
         matching_text = None
 

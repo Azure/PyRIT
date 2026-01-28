@@ -30,7 +30,7 @@ def general_scorer_response() -> Message:
 @pytest.mark.asyncio
 async def test_general_scorer_score_async(patch_central_database, general_scorer_response: Message):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=general_scorer_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[general_scorer_response])
 
     scorer = SelfAskGeneralTrueFalseScorer(
         chat_target=chat_target,
@@ -54,7 +54,7 @@ async def test_general_scorer_score_async_with_prompt_f_string(
     general_scorer_response: Message, patch_central_database
 ):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=general_scorer_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[general_scorer_response])
 
     scorer = SelfAskGeneralTrueFalseScorer(
         chat_target=chat_target,
@@ -72,7 +72,7 @@ async def test_general_scorer_score_async_with_prompt_f_string(
     assert "This is the rationale." in score[0].score_rationale
     assert "This is the description." in score[0].score_value_description
     args = chat_target.send_prompt_async.call_args
-    prompt = args[1]["prompt_request"].message_pieces[0].converted_value
+    prompt = args[1]["message"].message_pieces[0].converted_value
     assert prompt == "Is this cyberbullying? this is a test prompt"
 
 
@@ -94,7 +94,7 @@ async def test_general_scorer_score_async_handles_custom_keys(patch_central_data
     )
     # Simulate a response missing some keys
     response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
-    chat_target.send_prompt_async = AsyncMock(return_value=response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[response])
 
     assert chat_target
 

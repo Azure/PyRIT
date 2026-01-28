@@ -21,7 +21,7 @@ async def test_send_prompt_async_file_upload(mock_request, patch_central_databas
 
     # Create a MessagePiece with converted_value set to the temporary file path.
     message_piece = MessagePiece(role="user", original_value="mock", converted_value=file_path)
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
 
     # Mock a response simulating a file upload.
     mock_response = MagicMock()
@@ -30,11 +30,14 @@ async def test_send_prompt_async_file_upload(mock_request, patch_central_databas
 
     # Create HTTPXAPITarget without passing a transport.
     target = HTTPXAPITarget(http_url="http://example.com/upload/", method="POST", timeout=180)
-    response = await target.send_prompt_async(prompt_request=prompt_request)
+    response = await target.send_prompt_async(message=message)
 
     # Our mock transport returns a JSON string containing "File uploaded successfully".
+    assert len(response) == 1
     response_text = (
-        str(response.message_pieces[0].converted_value) if response.message_pieces[0].converted_value else str(response)
+        str(response[0].message_pieces[0].converted_value)
+        if response[0].message_pieces[0].converted_value
+        else str(response[0])
     )
     assert "File uploaded successfully" in response_text
 
@@ -47,7 +50,7 @@ async def test_send_prompt_async_file_upload(mock_request, patch_central_databas
 async def test_send_prompt_async_no_file(mock_request, patch_central_database):
     # Create a MessagePiece with converted_value that does not point to a valid file.
     message_piece = MessagePiece(role="user", original_value="mock", converted_value="non_existent_file.pdf")
-    prompt_request = Message(message_pieces=[message_piece])
+    message = Message(message_pieces=[message_piece])
 
     # Mock a response simulating a standard API (non-file).
     mock_response = MagicMock()
@@ -55,11 +58,14 @@ async def test_send_prompt_async_no_file(mock_request, patch_central_database):
     mock_request.return_value = mock_response
 
     target = HTTPXAPITarget(http_url="http://example.com/data/", method="POST", timeout=180)
-    response = await target.send_prompt_async(prompt_request=prompt_request)
+    response = await target.send_prompt_async(message=message)
 
     # The mock transport returns a JSON string containing "Sample JSON response".
+    assert len(response) == 1
     response_text = (
-        str(response.message_pieces[0].converted_value) if response.message_pieces[0].converted_value else str(response)
+        str(response[0].message_pieces[0].converted_value)
+        if response[0].message_pieces[0].converted_value
+        else str(response[0])
     )
     assert "Sample JSON response" in response_text
 
@@ -67,12 +73,12 @@ async def test_send_prompt_async_no_file(mock_request, patch_central_database):
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient.request")
 async def test_send_prompt_async_validation(mock_request, patch_central_database):
-    # Create an invalid prompt request (empty message_pieces)
-    prompt_request = MagicMock()
-    prompt_request.message_pieces = []
+    # Create an invalid message (empty message_pieces)
+    message = MagicMock()
+    message.message_pieces = []
     target = HTTPXAPITarget(http_url="http://example.com/validate/", method="POST", timeout=180)
 
     with pytest.raises(ValueError) as excinfo:
-        await target.send_prompt_async(prompt_request=prompt_request)
+        await target.send_prompt_async(message=message)
 
     assert "This target only supports a single message piece." in str(excinfo.value)

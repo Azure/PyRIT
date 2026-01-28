@@ -3,6 +3,7 @@
 
 import gc
 import logging
+from typing import Any
 
 import numpy as np
 import torch
@@ -20,29 +21,31 @@ from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import (
 logger = logging.getLogger(__name__)
 
 
-def token_gradients(model, input_ids, input_slice, target_slice, loss_slice):
+def token_gradients(
+    model: Any,
+    input_ids: torch.Tensor,
+    input_slice: slice,
+    target_slice: slice,
+    loss_slice: slice,
+) -> torch.Tensor:
     """
     Computes gradients of the loss with respect to the coordinates.
 
-    Parameters
-    ----------
-    model : Transformer Model
-        The transformer model to be used.
-    input_ids : torch.Tensor
-        The input sequence in the form of token ids.
-    input_slice : slice
-        The slice of the input sequence for which gradients need to be computed.
-    target_slice : slice
-        The slice of the input sequence to be used as targets.
-    loss_slice : slice
-        The slice of the logits to be used for computing the loss.
+    Args:
+        model (Transformer Model):
+            The transformer model to be used.
+        input_ids (torch.Tensor):
+            The input sequence in the form of token ids.
+        input_slice (slice):
+            The slice of the input sequence for which gradients need to be computed.
+        target_slice (slice):
+            The slice of the input sequence to be used as targets.
+        loss_slice (slice):
+            The slice of the logits to be used for computing the loss.
 
-    Returns
-    -------
-    torch.Tensor
-        The gradients of each token in the input_slice with respect to the loss.
+    Returns:
+        torch.Tensor: The gradients of each token in the input_slice with respect to the loss.
     """
-
     embed_weights = get_embedding_matrix(model)
     one_hot = torch.zeros(
         input_ids[input_slice].shape[0], embed_weights.shape[0], device=model.device, dtype=embed_weights.dtype
@@ -69,25 +72,27 @@ def token_gradients(model, input_ids, input_slice, target_slice, loss_slice):
 
 
 class GCGAttackPrompt(AttackPrompt):
-
-    def __init__(self, *args, **kwargs):
-
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-    def grad(self, model):
+    def grad(self, model: Any) -> torch.Tensor:
         return token_gradients(
             model, self.input_ids.to(model.device), self._control_slice, self._target_slice, self._loss_slice
         )
 
 
 class GCGPromptManager(PromptManager):
-
-    def __init__(self, *args, **kwargs):
-
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-    def sample_control(self, grad, batch_size, topk=256, temp=1, allow_non_ascii=True):
-
+    def sample_control(
+        self,
+        grad: torch.Tensor,
+        batch_size: int,
+        topk: int = 256,
+        temp: int = 1,
+        allow_non_ascii: bool = True,
+    ) -> torch.Tensor:
         if not allow_non_ascii:
             grad[:, self._nonascii_toks.to(grad.device)] = np.inf
         top_indices = (-grad).topk(topk, dim=1).indices
@@ -104,23 +109,20 @@ class GCGPromptManager(PromptManager):
 
 
 class GCGMultiPromptAttack(MultiPromptAttack):
-
-    def __init__(self, *args, **kwargs):
-
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
     def step(
         self,
-        batch_size=1024,
-        topk=256,
-        temp=1,
-        allow_non_ascii=True,
-        target_weight=1,
-        control_weight=0.1,
-        verbose=False,
-        filter_cand=True,
-    ):
-
+        batch_size: int = 1024,
+        topk: int = 256,
+        temp: int = 1,
+        allow_non_ascii: bool = True,
+        target_weight: float = 1,
+        control_weight: float = 0.1,
+        verbose: bool = False,
+        filter_cand: bool = True,
+    ) -> tuple[str, float]:
         main_device = self.models[0].device
         control_cands = []
 
@@ -186,7 +188,9 @@ class GCGMultiPromptAttack(MultiPromptAttack):
                     gc.collect()
 
                     if verbose:
-                        progress.set_description(f"loss={loss[j*batch_size:(j+1)*batch_size].min().item()/(i+1):.4f}")
+                        progress.set_description(  # type: ignore[union-attr]
+                            f"loss={loss[j * batch_size : (j + 1) * batch_size].min().item() / (i + 1):.4f}"  # type: ignore[operator]
+                        )
 
             min_idx = loss.argmin()
             model_idx = min_idx // batch_size

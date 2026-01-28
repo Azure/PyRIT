@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from pyrit.auth.azure_auth import get_speech_config
 from pyrit.common import default_values
 from pyrit.models import PromptDataType, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,9 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/speech-to-text
     """
+
+    SUPPORTED_INPUT_TYPES = ("audio_path",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     #: The name of the Azure region.
     AZURE_SPEECH_REGION_ENVIRONMENT_VARIABLE: str = "AZURE_SPEECH_REGION"
@@ -39,7 +42,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         recognition_language: str = "en-US",
     ) -> None:
         """
-        Initializes the converter with Azure Speech service credentials and recognition language.
+        Initialize the converter with Azure Speech service credentials and recognition language.
 
         Args:
             azure_speech_region (str, Optional): The name of the Azure region.
@@ -83,15 +86,9 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         # Create a flag to indicate when recognition is finished
         self.done = False
 
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "audio_path"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
-
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """
-        Converts the given audio file into its text representation.
+        Convert the given audio file into its text representation.
 
         Args:
             prompt (str): File path to the audio file to be transcribed.
@@ -123,13 +120,16 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     def recognize_audio(self, audio_bytes: bytes) -> str:
         """
-        Recognizes audio file and returns transcribed text.
+        Recognize audio file and return transcribed text.
 
         Args:
             audio_bytes (bytes): Audio bytes input.
 
         Returns:
             str: Transcribed text.
+
+        Raises:
+            ModuleNotFoundError: If the azure.cognitiveservices.speech module is not installed.
         """
         try:
             import azure.cognitiveservices.speech as speechsdk  # noqa: F811
@@ -180,7 +180,7 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     def transcript_cb(self, evt: Any, transcript: list[str]) -> None:
         """
-        Callback function that appends transcribed text upon receiving a "recognized" event.
+        Append transcribed text upon receiving a "recognized" event.
 
         Args:
             evt (speechsdk.SpeechRecognitionEventArgs): Event.
@@ -191,11 +191,14 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
 
     def stop_cb(self, evt: Any, recognizer: Any) -> None:
         """
-        Callback function that stops continuous recognition upon receiving an event 'evt'.
+        Stop continuous recognition upon receiving an event 'evt'.
 
         Args:
             evt (speechsdk.SpeechRecognitionEventArgs): Event.
             recognizer (speechsdk.SpeechRecognizer): Speech recognizer object.
+
+        Raises:
+            ModuleNotFoundError: If the azure.cognitiveservices.speech module is not installed.
         """
         try:
             import azure.cognitiveservices.speech as speechsdk  # noqa: F811

@@ -55,10 +55,21 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
                 (returns single score with all categories preserved).
         """
         FloatScaleScorer.__init__(self, validator=validator or self._default_validator)
+
         _BaseVideoScorer.__init__(
             self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
         )
         self._score_aggregator = score_aggregator
+
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_identifier(
+            sub_scorers=[self.image_scorer],
+            score_aggregator=self._score_aggregator.__name__,
+            scorer_specific_params={
+                "num_sampled_frames": self.num_sampled_frames,
+            },
+        )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """

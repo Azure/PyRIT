@@ -11,7 +11,7 @@ Docker provides the fastest way to get started with PyRIT. This method uses a pr
 - Want JupyterLab pre-configured and ready to go
 - Work on Windows, macOS, or Linux
 
-❌ **Consider [local installation](./1a_install_conda.md) if you:**
+❌ **Consider [local installation](./1a_install_uv.md) if you:**
 - Need to integrate PyRIT into existing Python workflows
 - Prefer lighter-weight installations
 - Want direct access to PyRIT from your system Python
@@ -46,8 +46,8 @@ Create the required environment configuration files:
 
 ```bash
 # Create main environment files in the parent directory
-cp ../.env.example ../.env
-cp ../.env.local_example ../.env.local
+cp ../.env_example ~/.pyrit/.env
+cp ../.env_local_example ~/.pyrit/.env.local
 
 # Create container-specific settings
 # Note: The example file uses underscores, but you copy it to a file with dots

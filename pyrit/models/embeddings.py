@@ -31,7 +31,8 @@ class EmbeddingResponse(BaseModel):
     data: list[EmbeddingData]
 
     def save_to_file(self, directory_path: Path) -> str:
-        """Save the embedding response to disk and return the path of the new file
+        """
+        Save the embedding response to disk and return the path of the new file.
 
         Args:
             directory_path: The path to save the file to
@@ -46,7 +47,8 @@ class EmbeddingResponse(BaseModel):
 
     @staticmethod
     def load_from_file(file_path: Path) -> EmbeddingResponse:
-        """Load the embedding response from disk
+        """
+        Load the embedding response from disk.
 
         Args:
             file_path: The path to load the file from
@@ -62,8 +64,9 @@ class EmbeddingResponse(BaseModel):
 
 class EmbeddingSupport(ABC):
     @abstractmethod
-    def generate_text_embedding(self, text: str, **kwargs) -> EmbeddingResponse:
-        """Generate text embedding
+    def generate_text_embedding(self, text: str, **kwargs: object) -> EmbeddingResponse:
+        """
+        Generate text embedding synchronously.
 
         Args:
             text: The text to generate the embedding for
@@ -73,3 +76,17 @@ class EmbeddingSupport(ABC):
             The embedding response
         """
         raise NotImplementedError("generate_text_embedding method not implemented")
+
+    @abstractmethod
+    async def generate_text_embedding_async(self, text: str, **kwargs: object) -> EmbeddingResponse:
+        """
+        Generate text embedding asynchronously.
+
+        Args:
+            text: The text to generate the embedding for
+            **kwargs: Additional arguments to pass to the function.
+
+        Returns:
+            The embedding response
+        """
+        raise NotImplementedError("generate_text_embedding_async method not implemented")

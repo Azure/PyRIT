@@ -2,9 +2,12 @@
 # Licensed under the MIT license.
 
 import binascii
-import re
-from typing import List, Literal, Optional, Union
+from typing import Literal, Optional
 
+from pyrit.prompt_converter.text_selection_strategy import (
+    AllWordsSelectionStrategy,
+    WordSelectionStrategy,
+)
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
 
@@ -25,10 +28,7 @@ class BinAsciiConverter(WordLevelConverter):
         self,
         *,
         encoding_func: EncodingFunc = "hex",
-        indices: Optional[List[int]] = None,
-        keywords: Optional[List[str]] = None,
-        proportion: Optional[float] = None,
-        regex: Optional[Union[str, re.Pattern]] = None,
+        word_selection_strategy: Optional[WordSelectionStrategy] = None,
         word_split_separator: Optional[str] = " ",
     ) -> None:
         """
@@ -37,24 +37,22 @@ class BinAsciiConverter(WordLevelConverter):
         Args:
             encoding_func (str): The encoding function to use. Options: "hex", "quoted-printable", "UUencode".
                 Defaults to "hex".
-            indices (Optional[List[int]]): Specific indices of words to convert.
-            keywords (Optional[List[str]]): Keywords to select words for conversion.
-            proportion (Optional[float]): Proportion of randomly selected words to convert [0.0-1.0].
-            regex (Optional[Union[str, re.Pattern]]): Regex pattern to match words for conversion.
+            word_selection_strategy (Optional[WordSelectionStrategy]): Strategy for selecting which words to convert.
+                If None, all words will be converted.
             word_split_separator (Optional[str]): Separator used to split words in the input text.
                 Defaults to " ".
+
+        Raises:
+            ValueError: If an invalid ``encoding_func`` is provided.
         """
         super().__init__(
-            indices=indices,
-            keywords=keywords,
-            proportion=proportion,
-            regex=regex,
+            word_selection_strategy=word_selection_strategy,
             word_split_separator=word_split_separator,
         )
 
         if encoding_func not in ["hex", "quoted-printable", "UUencode"]:
             raise ValueError(
-                f"Invalid encoding_func '{encoding_func}'. " "Must be one of: 'hex', 'quoted-printable', 'UUencode'"
+                f"Invalid encoding_func '{encoding_func}'. Must be one of: 'hex', 'quoted-printable', 'UUencode'"
             )
 
         self._encoding_func = encoding_func
@@ -68,6 +66,9 @@ class BinAsciiConverter(WordLevelConverter):
 
         Returns:
             str: The encoded word.
+
+        Raises:
+            ValueError: If an unsupported encoding function is encountered.
         """
         if self._encoding_func == "hex":
             return word.encode("utf-8").hex().upper()
@@ -97,7 +98,7 @@ class BinAsciiConverter(WordLevelConverter):
 
     def join_words(self, words: list[str]) -> str:
         """
-        Join words appropriately based on the encoding type and mode.
+        Join words appropriately based on the encoding type and selection mode.
 
         Args:
             words (list[str]): The list of encoded words to join.
@@ -105,7 +106,10 @@ class BinAsciiConverter(WordLevelConverter):
         Returns:
             str: The joined string.
         """
-        if self._mode == "all":
+        # Check if all words are being converted
+        all_words_selected = isinstance(self._word_selection_strategy, AllWordsSelectionStrategy)
+
+        if all_words_selected:
             if self._encoding_func == "hex":
                 return "20".join(words)  # 20 is the hex representation of space
             elif self._encoding_func == "quoted-printable":

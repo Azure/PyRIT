@@ -15,8 +15,6 @@ from pyrit.models import (
     AttackResult,
     Message,
     MessagePiece,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_target import PromptTarget
 
@@ -171,17 +169,11 @@ class TestFairnessBiasBenchmark:
         assert sample_benchmark_context.generated_story_prompt != ""
         assert "Write me a short story about a doctor" in sample_benchmark_context.generated_story_prompt
 
-        # Check that seed group was created
-        assert sample_benchmark_context.generated_seed_group is not None
-        assert len(sample_benchmark_context.generated_seed_group.prompts) == 1
-
-        seed_prompt = sample_benchmark_context.generated_seed_group.prompts[0]
-        assert seed_prompt.value == sample_benchmark_context.generated_story_prompt
-        assert seed_prompt.data_type == "text"
-        assert seed_prompt.metadata is not None
-        assert seed_prompt.metadata["subject"] == "doctor"
-        assert seed_prompt.metadata["story_type"] == "short story"
-        assert seed_prompt.metadata["benchmark"] == "fairness_bias"
+        # Check that message was created
+        assert sample_benchmark_context.generated_message is not None
+        message_piece = sample_benchmark_context.generated_message.get_piece()
+        assert message_piece.original_value == sample_benchmark_context.generated_story_prompt
+        assert message_piece.api_role == "user"
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
@@ -235,24 +227,19 @@ class TestFairnessBiasBenchmark:
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
-    async def test_create_seed_group(self, mock_prompt_target: MagicMock) -> None:
-        """Test seed group creation."""
+    async def test_setup_creates_message(
+        self, mock_prompt_target: MagicMock, sample_benchmark_context: FairnessBiasBenchmarkContext
+    ) -> None:
+        """Test that setup creates a message with the story prompt."""
         benchmark = FairnessBiasBenchmark(objective_target=mock_prompt_target)
-        story_prompt = "Test story prompt"
 
-        seed_group = benchmark._create_seed_group(subject="lawyer", story_type="tale", story_prompt=story_prompt)
+        await benchmark._setup_async(context=sample_benchmark_context)
 
-        assert isinstance(seed_group, SeedGroup)
-        assert len(seed_group.prompts) == 1
-
-        seed_prompt = seed_group.prompts[0]
-        assert isinstance(seed_prompt, SeedPrompt)
-        assert seed_prompt.value == story_prompt
-        assert seed_prompt.data_type == "text"
-        assert seed_prompt.metadata is not None
-        assert seed_prompt.metadata["subject"] == "lawyer"
-        assert seed_prompt.metadata["story_type"] == "tale"
-        assert seed_prompt.metadata["benchmark"] == "fairness_bias"
+        assert sample_benchmark_context.generated_message is not None
+        assert isinstance(sample_benchmark_context.generated_message, Message)
+        message_piece = sample_benchmark_context.generated_message.get_piece()
+        assert message_piece.original_value == sample_benchmark_context.generated_story_prompt
+        assert message_piece.api_role == "user"
 
     @pytest.mark.asyncio
     @pytest.mark.skipif(not is_spacy_installed(), reason="spacy is not installed")
@@ -287,7 +274,8 @@ class TestFairnessBiasBenchmark:
                 call_kwargs = mock_attack_instance.execute_async.call_args.kwargs
 
                 assert call_kwargs["objective"] == sample_benchmark_context.generated_objective
-                assert call_kwargs["seed_group"] == sample_benchmark_context.generated_seed_group
+                # Check that next_message was passed (from generated_message)
+                assert "next_message" in call_kwargs
                 assert call_kwargs["prepended_conversation"] == sample_benchmark_context.prepended_conversation
                 assert call_kwargs["memory_labels"] == sample_benchmark_context.memory_labels
 

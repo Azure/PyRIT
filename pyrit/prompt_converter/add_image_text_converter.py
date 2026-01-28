@@ -6,11 +6,13 @@ import logging
 import string
 import textwrap
 from io import BytesIO
+from typing import cast
 
 from PIL import Image, ImageDraw, ImageFont
+from PIL.ImageFont import FreeTypeFont
 
 from pyrit.models import PromptDataType, data_serializer_factory
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,9 @@ class AddImageTextConverter(PromptConverter):
     we pass in an image file path as an argument to the constructor as opposed to text.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("image_path",)
+
     def __init__(
         self,
         img_to_add: str,
@@ -33,7 +38,7 @@ class AddImageTextConverter(PromptConverter):
         y_pos: int = 10,
     ):
         """
-        Initializes the converter with the image file path and text properties.
+        Initialize the converter with the image file path and text properties.
 
         Args:
             img_to_add (str): File path of image to add text to.
@@ -58,9 +63,9 @@ class AddImageTextConverter(PromptConverter):
         self._x_pos = x_pos
         self._y_pos = y_pos
 
-    def _load_font(self):
+    def _load_font(self) -> FreeTypeFont:
         """
-        Loads the font for a given font name and font size.
+        Load the font for a given font name and font size.
 
         Returns:
             ImageFont.FreeTypeFont or ImageFont.ImageFont: The loaded font object. If the specified font
@@ -74,18 +79,21 @@ class AddImageTextConverter(PromptConverter):
             font = ImageFont.truetype(self._font_name, self._font_size)
         except OSError:
             logger.warning(f"Cannot open font resource: {self._font_name}. Using default font.")
-            font = ImageFont.load_default()
+            font = cast(FreeTypeFont, ImageFont.load_default())
         return font
 
     def _add_text_to_image(self, text: str) -> Image.Image:
         """
-        Adds wrapped text to the image at `self._img_to_add`.
+        Add wrapped text to the image at `self._img_to_add`.
 
         Args:
             text (str): The text to add to the image.
 
         Returns:
             Image.Image: The image with added text.
+
+        Raises:
+            ValueError: If ``text`` is empty.
         """
         if not text:
             raise ValueError("Please provide valid text value")
@@ -118,7 +126,7 @@ class AddImageTextConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by adding it as text to the image.
+        Convert the given prompt by adding it as text to the image.
 
         Args:
             prompt (str): The text to be added to the image.
@@ -148,9 +156,3 @@ class AddImageTextConverter(PromptConverter):
         # Save image as generated UUID filename
         await img_serializer.save_b64_image(data=image_str)
         return ConverterResult(output_text=str(img_serializer.value), output_type="image_path")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "image_path"

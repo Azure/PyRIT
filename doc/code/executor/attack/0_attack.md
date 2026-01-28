@@ -15,7 +15,7 @@ flowchart LR
 To execute an Attack, one generally follows this pattern:
 1. Create an **attack context** containing state information (i.e. attack objective, memory labels, prepended conversations, seed prompts)
 2. Initialize an **attack strategy** (with optional **attack configurations** for converters, scorers, and adversarial chat targets)
-3. _Execute_ the attack strategy with the created context
+3. _Execute_ the attack strategy with the created context (which  includes the objective and often optionally prepended_conversations and next_message)
 4. Receive and process the **attack result**
 
 ## Types of Attacks

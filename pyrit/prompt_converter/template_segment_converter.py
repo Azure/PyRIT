@@ -6,9 +6,9 @@ import pathlib
 import random
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType, SeedPrompt
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +21,16 @@ class TemplateSegmentConverter(PromptConverter):
     https://adversa.ai/blog/universal-llm-jailbreak-chatgpt-gpt-4-bard-bing-anthropic-and-beyond/
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(
         self,
         *,
         prompt_template: Optional[SeedPrompt] = None,
     ):
         """
-        Initializes the converter with the specified target and prompt template.
+        Initialize the converter with the specified target and prompt template.
 
         Args:
             prompt_template (SeedPrompt, Optional): The prompt template for the conversion. Must have two or more
@@ -42,7 +45,7 @@ class TemplateSegmentConverter(PromptConverter):
             prompt_template
             if prompt_template
             else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "template_segment_converter" / "tom_and_jerry.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "template_segment_converter" / "tom_and_jerry.yaml"
             )
         )
 
@@ -66,15 +69,9 @@ class TemplateSegmentConverter(PromptConverter):
                 f"Template parameters: {self.prompt_template.parameters}"
             )
 
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"
-
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by splitting it into random segments and using them to fill the template parameters.
+        Convert the given prompt by splitting it into random segments and using them to fill the template parameters.
         The prompt is split into N segments (where N is the number of template parameters) at random word boundaries.
         Each segment is then used to fill the corresponding template parameter.
 
@@ -99,7 +96,7 @@ class TemplateSegmentConverter(PromptConverter):
 
     def _split_prompt_into_segments(self, prompt: str) -> list[str]:
         """
-        Splits a prompt into random segments based on word boundaries.
+        Split a prompt into random segments based on word boundaries.
         If there aren't enough words for all parameters, remaining segments will be empty strings.
 
         Args:

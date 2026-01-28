@@ -1,15 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""This module contains initialization PyRIT."""
+"""Module containing initialization PyRIT."""
 
-from pyrit.setup.initialization import initialize_pyrit, AZURE_SQL, SQLITE, IN_MEMORY, MemoryDatabaseType
-
+from pyrit.setup.initialization import AZURE_SQL, IN_MEMORY, SQLITE, MemoryDatabaseType, initialize_pyrit_async
 
 __all__ = [
     "AZURE_SQL",
     "SQLITE",
     "IN_MEMORY",
-    "initialize_pyrit",
+    "initialize_pyrit_async",
     "MemoryDatabaseType",
 ]

@@ -5,7 +5,9 @@
 
 import pytest
 
-from pyrit.scenarios import EncodingStrategy, FoundryStrategy
+from pyrit.scenario import ScenarioCompositeStrategy
+from pyrit.scenario.foundry import FoundryStrategy
+from pyrit.scenario.garak import EncodingStrategy
 
 
 class TestStrategyValidation:
@@ -49,3 +51,53 @@ class TestStrategyValidation:
             FoundryStrategy.validate_composition(
                 [FoundryStrategy.Base64, FoundryStrategy.Crescendo, FoundryStrategy.MultiTurn]
             )
+
+
+class TestScenarioCompositeStrategyExtraction:
+    """Test extraction of strategy values from composite strategies."""
+
+    def test_extract_single_strategy_values_with_single_strategies(self):
+        """Test extracting values from single-strategy composites."""
+        composites = [
+            ScenarioCompositeStrategy(strategies=[EncodingStrategy.Base64]),
+            ScenarioCompositeStrategy(strategies=[EncodingStrategy.ROT13]),
+            ScenarioCompositeStrategy(strategies=[EncodingStrategy.Atbash]),
+        ]
+
+        values = ScenarioCompositeStrategy.extract_single_strategy_values(composites, strategy_type=EncodingStrategy)
+
+        assert values == {"base64", "rot13", "atbash"}
+
+    def test_extract_single_strategy_values_filters_by_type(self):
+        """Test that extraction filters by strategy type."""
+        composites = [
+            ScenarioCompositeStrategy(strategies=[EncodingStrategy.Base64]),
+            ScenarioCompositeStrategy(strategies=[FoundryStrategy.ROT13]),
+        ]
+
+        # Extract only EncodingStrategy values
+        encoding_values = ScenarioCompositeStrategy.extract_single_strategy_values(
+            composites, strategy_type=EncodingStrategy
+        )
+        assert encoding_values == {"base64"}
+
+        # Extract only FoundryStrategy values
+        foundry_values = ScenarioCompositeStrategy.extract_single_strategy_values(
+            composites, strategy_type=FoundryStrategy
+        )
+        assert foundry_values == {"rot13"}
+
+    def test_extract_single_strategy_values_rejects_multi_strategy_composites(self):
+        """Test that extraction raises error if any composite has multiple strategies."""
+        composites = [
+            ScenarioCompositeStrategy(strategies=[FoundryStrategy.Base64]),
+            ScenarioCompositeStrategy(strategies=[FoundryStrategy.ROT13, FoundryStrategy.Atbash]),  # Multi-strategy!
+        ]
+
+        with pytest.raises(ValueError, match="extract_single_strategy_values.*requires all composites"):
+            ScenarioCompositeStrategy.extract_single_strategy_values(composites, strategy_type=FoundryStrategy)
+
+    def test_extract_single_strategy_values_with_empty_list(self):
+        """Test that extraction handles empty composite list."""
+        values = ScenarioCompositeStrategy.extract_single_strategy_values([], strategy_type=EncodingStrategy)
+        assert values == set()

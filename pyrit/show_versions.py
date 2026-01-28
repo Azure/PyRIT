@@ -1,22 +1,22 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Utility methods to print system info for debugging.
+"""
+Utility methods to print system info for debugging.
 
 Adapted from :py:func:`pandas.show_versions` and :py:func:`sklearn.show_versions`.
-"""  # noqa: RST304
+"""
 
 import platform
 import sys
 
 
-def _get_sys_info():
-    """System information.
+def _get_sys_info() -> dict[str, str]:
+    """
+    System information.
 
-    Returns
-    -------
-    sys_info : dict
-        system and Python version information
+    Returns:
+        dict: system and Python version information
     """
     python = sys.version.replace("\n", " ")
 
@@ -29,16 +29,15 @@ def _get_sys_info():
     return dict(blob)
 
 
-def _get_deps_info():
-    """Overview of the installed version of main dependencies.
+def _get_deps_info() -> dict[str, str | None]:
+    """
+    Overview of the installed version of main dependencies.
 
     This function does not import the modules to collect the version numbers
     but instead relies on standard Python package metadata.
 
-    Returns
-    -------
-    deps_info: dict
-        version information on relevant Python libraries
+    Returns:
+        dict: version information on relevant Python libraries
     """
     deps = sorted(
         [
@@ -69,7 +68,7 @@ def _get_deps_info():
     return deps_info
 
 
-def show_versions():
+def show_versions() -> None:
     """Print useful debugging information."""
     sys_info = _get_sys_info()
     deps_info = _get_deps_info()

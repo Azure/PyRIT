@@ -7,13 +7,10 @@ from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import HTTPStatusError
-from openai import RateLimitError
+from openai import BadRequestError, RateLimitError
 from unit.mocks import get_image_message_piece, get_sample_conversations
 
-from pyrit.common import net_utility
 from pyrit.exceptions import RateLimitException
-from pyrit.memory import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAITTSTarget
 from pyrit.prompt_target.openai.openai_tts_target import TTSResponseFormat
@@ -44,11 +41,15 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
             api_key="keytest",
         )
 
-        assert mock_get_required.call_count == 1
+        assert mock_get_required.call_count == 3
 
         mock_get_required.assert_any_call(
             env_var_name=target.endpoint_environment_variable, passed_value="endpointtest"
         )
+        mock_get_required.assert_any_call(
+            env_var_name=target.model_name_environment_variable, passed_value="deploymenttest"
+        )
+        mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
 
 
 @pytest.mark.asyncio
@@ -60,14 +61,14 @@ async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
         ]
     )
     with pytest.raises(ValueError, match="This target only supports a single message piece."):
-        await tts_target.send_prompt_async(prompt_request=request)
+        await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
 async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget):
     request = Message(message_pieces=[get_image_message_piece()])
     with pytest.raises(ValueError, match="This target only supports text prompt input."):
-        await tts_target.send_prompt_async(prompt_request=request)
+        await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
@@ -87,7 +88,7 @@ async def test_tts_validate_previous_conversations(
     with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_request:
         mock_request.return_value = MagicMock(content=b"audio data")
         with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
-            await tts_target.send_prompt_async(prompt_request=request)
+            await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.parametrize("response_format", ["mp3", "ogg"])
@@ -102,15 +103,17 @@ async def test_tts_send_prompt_file_save_async(
     message_piece = sample_conversations[0]
     message_piece.conversation_id = str(uuid.uuid4())
     request = Message(message_pieces=[message_piece])
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        return_value = MagicMock()
-        return_value.content = b"audio data"
-        mock_request.return_value = return_value
-        response = await tts_target.send_prompt_async(prompt_request=request)
 
-        file_path = response.get_value()
+    # Mock SDK response
+    mock_audio_response = MagicMock()
+    mock_audio_response.content = b"audio data"
+
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = mock_audio_response
+        response = await tts_target.send_prompt_async(message=request)
+        assert len(response) == 1
+
+        file_path = response[0].get_value()
         assert file_path
         assert file_path.endswith(f".{response_format}")
         assert os.path.exists(file_path)
@@ -119,7 +122,7 @@ async def test_tts_send_prompt_file_save_async(
         os.remove(file_path)
 
 
-testdata = [(400, "Bad Request", HTTPStatusError), (429, "Rate Limit Reached", RateLimitException)]
+testdata = [(400, "Bad Request", Exception), (429, "Rate Limit Reached", RateLimitException)]
 
 
 @pytest.mark.asyncio
@@ -137,46 +140,43 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
 
     tts_target._memory = mock_memory
 
-    response = MagicMock()
-    response.status_code = status_code
-    response.text = error_text
-    mock_response_async = AsyncMock(
-        side_effect=HTTPStatusError(message=response.text, request=MagicMock(), response=response)
-    )
-
-    setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
-
     message_piece = sample_conversations[0]
     message_piece.conversation_id = str(uuid.uuid4())
     request = Message(message_pieces=[message_piece])
 
-    with pytest.raises((exception_class)) as exc:
-        await tts_target.send_prompt_async(prompt_request=request)
-        tts_target._memory.get_conversation.assert_called_once_with(conversation_id=message_piece.conversation_id)
+    # Create appropriate SDK exception
+    mock_response = MagicMock()
+    mock_response.text = error_text
 
-        tts_target._memory.add_message_to_memory.assert_called_once_with(request=request)
+    sdk_exception: Exception
+    if status_code == 400:
+        sdk_exception = BadRequestError(error_text, response=mock_response, body={})
+    else:  # 429
+        sdk_exception = RateLimitError(error_text, response=mock_response, body={})
 
-        assert response.text in str(exc.value)
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = sdk_exception
+
+        with pytest.raises((exception_class)):
+            await tts_target.send_prompt_async(message=request)
 
 
 @pytest.mark.asyncio
 async def test_tts_send_prompt_async_rate_limit_exception_retries(
     tts_target: OpenAITTSTarget, sample_conversations: MutableSequence[MessagePiece]
 ):
-    response = MagicMock()
-    response.status_code = 429
-    response.text = "Rate Limit Reached"
-    mock_response_async = AsyncMock(
-        side_effect=RateLimitError(message=response.text, response=response, body="Rate limit reached")
-    )
+    mock_response = MagicMock()
+    mock_response.text = "Rate Limit Reached"
+    sdk_exception = RateLimitError("Rate Limit Reached", response=mock_response, body={})
 
-    setattr(net_utility, "make_request_and_raise_if_error_async", mock_response_async)
-    message_piece = sample_conversations[0]
-    request = Message(message_pieces=[message_piece])
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.side_effect = sdk_exception
 
-    with pytest.raises(RateLimitError):
-        await tts_target.send_prompt_async(prompt_request=request)
-        assert mock_response_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+        message_piece = sample_conversations[0]
+        request = Message(message_pieces=[message_piece])
+
+        with pytest.raises(RateLimitException):
+            await tts_target.send_prompt_async(message=request)
 
 
 def test_is_json_response_supported(tts_target: OpenAITTSTarget):
@@ -184,76 +184,32 @@ def test_is_json_response_supported(tts_target: OpenAITTSTarget):
 
 
 @pytest.mark.asyncio
-async def test_tts_target_no_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAITTSTarget(
-        api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model", api_version=None
-    )
-    request = Message([sample_conversations[0]])
+async def test_tts_send_prompt_with_speed_parameter(
+    patch_central_database,
+    sample_conversations: MutableSequence[MessagePiece],
+) -> None:
+    tts_target = OpenAITTSTarget(model_name="test", endpoint="test", api_key="test", speed=1.5)
 
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"audio data"
+    message_piece = sample_conversations[0]
+    message_piece.conversation_id = str(uuid.uuid4())
+    request = Message(message_pieces=[message_piece])
 
-        mock_request.return_value = mock_response
+    # Mock SDK response
+    mock_audio_response = MagicMock()
+    mock_audio_response.content = b"audio data"
 
-        await target.send_prompt_async(prompt_request=request)
+    with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = mock_audio_response
+        response = await tts_target.send_prompt_async(message=request)
 
-        called_params = mock_request.call_args[1]["params"]
-        assert "api-version" not in called_params
+        # Verify speed parameter was passed
+        mock_create.assert_called_once()
+        call_kwargs = mock_create.call_args.kwargs
+        assert call_kwargs["speed"] == 1.5
 
-
-@pytest.mark.asyncio
-async def test_tts_target_default_api_version(sample_conversations: MutableSequence[MessagePiece]):
-    target = OpenAITTSTarget(api_key="test_key", endpoint="https://mock.azure.com", model_name="tts-model")
-    request = Message([sample_conversations[0]])
-
-    with patch(
-        "pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock
-    ) as mock_request:
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"audio data"
-
-        mock_request.return_value = mock_response
-
-        await target.send_prompt_async(prompt_request=request)
-
-        called_params = mock_request.call_args[1]["params"]
-
-        assert "api-version" in called_params
-        assert called_params["api-version"] == "2025-02-01-preview"
-
-
-@pytest.mark.asyncio
-async def test_send_prompt_async_calls_refresh_auth_headers(tts_target):
-    mock_memory = MagicMock(spec=MemoryInterface)
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_message_to_memory = AsyncMock()
-
-    tts_target._memory = mock_memory
-
-    tts_target.refresh_auth_headers = MagicMock()
-    tts_target._validate_request = MagicMock()
-    tts_target._construct_request_body = AsyncMock(return_value={})
-
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async") as mock_make_request:
-        mock_response = MagicMock()
-        mock_response.content = b"audio data"
-        mock_make_request.return_value = mock_response
-
-        prompt_request = Message(
-            message_pieces=[
-                MessagePiece(
-                    role="user",
-                    original_value="test prompt",
-                    converted_value="test prompt",
-                    converted_value_data_type="text",
-                )
-            ]
-        )
-        await tts_target.send_prompt_async(prompt_request=prompt_request)
-
-        tts_target.refresh_auth_headers.assert_called_once()
+        # Verify audio was saved
+        assert len(response) == 1
+        file_path = response[0].get_value()
+        assert file_path
+        assert os.path.exists(file_path)
+        os.remove(file_path)

@@ -9,14 +9,24 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Union,
+    cast,
+)
 
 from pyrit.exceptions import (
     InvalidJsonException,
+    PyritException,
     pyrit_json_retry,
     remove_markdown_json,
 )
+from pyrit.identifiers import Identifiable, ScorerIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     ChatMessageRole,
@@ -29,44 +39,127 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_evaluation.metrics_type import MetricsType
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
+
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
+    from pyrit.score.scorer_evaluation.scorer_evaluator import (
+        ScorerEvalDatasetFiles,
+    )
+    from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
-class Scorer(abc.ABC):
+
+class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
     """
     Abstract base class for scorers.
     """
 
-    scorer_type: ScoreType
+    # Evaluation configuration - maps input dataset files to a result file
+    # Specifies glob patterns for datasets and a result file name
+    evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
+
+    _identifier: Optional[ScorerIdentifier] = None
 
     def __init__(self, *, validator: ScorerPromptValidator):
+        """
+        Initialize the Scorer.
+
+        Args:
+            validator (ScorerPromptValidator): Validator for message pieces and scorer configuration.
+        """
         self._validator = validator
+
+    @property
+    def scorer_type(self) -> ScoreType:
+        """
+        Get the scorer type based on class hierarchy.
+
+        Returns:
+            ScoreType: "true_false" for TrueFalseScorer subclasses,
+                      "float_scale" for FloatScaleScorer subclasses,
+                      "unknown" for other scorers.
+        """
+        # Import here to avoid circular imports
+        from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
+        from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+
+        if isinstance(self, TrueFalseScorer):
+            return "true_false"
+        elif isinstance(self, FloatScaleScorer):
+            return "float_scale"
+        else:
+            return "unknown"
+
+    def get_identifier(self) -> ScorerIdentifier:
+        """
+        Get the scorer identifier. Built lazily on first access.
+
+        Returns:
+            ScorerIdentifier: The identifier containing all configuration parameters.
+        """
+        if self._identifier is None:
+            self._build_identifier()
+            assert self._identifier is not None, "_build_identifier must set _identifier"
+        return self._identifier
 
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def _verify_and_resolve_path(self, path: Union[str, Path]) -> Path:
+    def _set_identifier(
+        self,
+        *,
+        system_prompt_template: Optional[str] = None,
+        user_prompt_template: Optional[str] = None,
+        sub_scorers: Optional[Sequence["Scorer"]] = None,
+        score_aggregator: Optional[str] = None,
+        scorer_specific_params: Optional[Dict[str, Any]] = None,
+        prompt_target: Optional[PromptTarget] = None,
+    ) -> None:
         """
-        Verify that a path passed to a Scorer on its creation
-        is valid before beginning the scoring logic.
+        Construct the scorer evaluation identifier.
 
         Args:
-            path (Union[str, Path]): A pathlike argument passed to the Scorer.
-
-        Returns:
-            Path: The resolved Path object.
+            system_prompt_template (Optional[str]): The system prompt template used by this scorer. Defaults to None.
+            user_prompt_template (Optional[str]): The user prompt template used by this scorer. Defaults to None.
+            sub_scorers (Optional[Sequence[Scorer]]): List of sub-scorers for composite scorers. Defaults to None.
+            score_aggregator (Optional[str]): The name of the score aggregator function. Defaults to None.
+            scorer_specific_params (Optional[Dict[str, Any]]): Additional scorer-specific parameters.
+                Defaults to None.
+            prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
         """
-        if not isinstance(path, (str, Path)):
-            raise ValueError(f"Path must be a string or Path object. Got type(path): {type(path).__name__}")
+        # Build sub_identifier from sub_scorers (store as dicts for storage)
+        sub_identifier: Optional[List[ScorerIdentifier]] = None
+        if sub_scorers:
+            sub_identifier = [scorer.get_identifier() for scorer in sub_scorers]
+        # Extract target_info from prompt_target
+        target_info: Optional[Dict[str, Any]] = None
+        if prompt_target:
+            target_id = prompt_target.get_identifier()
+            # Extract standard fields for scorer evaluation
+            target_info = {}
+            for key in ["__type__", "model_name", "temperature", "top_p"]:
+                if key in target_id:
+                    target_info[key] = target_id[key]
 
-        path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
-        if not path_obj.exists():
-            raise ValueError(f"Path not found: {str(path_obj)}")
-        return path_obj
+        self._identifier = ScorerIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            class_description=self.__class__.__doc__ or "",
+            identifier_type="instance",
+            scorer_type=self.scorer_type,
+            system_prompt_template=system_prompt_template,
+            user_prompt_template=user_prompt_template,
+            sub_identifier=sub_identifier,
+            target_info=target_info,
+            score_aggregator=score_aggregator,
+            scorer_specific_params=scorer_specific_params,
+        )
 
     async def score_async(
         self,
@@ -78,19 +171,29 @@ class Scorer(abc.ABC):
         infer_objective_from_request: bool = False,
     ) -> list[Score]:
         """
-        Score the message, add the results to the database
-        and return a list of Score objects.
+        Score the message, add the results to the database, and return a list of Score objects.
 
         Args:
-            message (Message): The request response to be scored.
-            task (str): The task based on which the text should be scored (the original attacker model's objective).
+            message (Message): The message to be scored.
+            objective (Optional[str]): The task or objective based on which the message should be scored.
+                Defaults to None.
+            role_filter (Optional[ChatMessageRole]): Only score messages with this exact stored role.
+                Use "assistant" to score only real assistant responses, or "simulated_assistant"
+                to score only simulated responses. Defaults to None (no filtering).
+            skip_on_error_result (bool): If True, skip scoring if the message contains an error. Defaults to False.
+            infer_objective_from_request (bool): If True, infer the objective from the message's previous request
+                when objective is not provided. Defaults to False.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
+
+        Raises:
+            PyritException: If scoring raises a PyRIT exception (re-raised with enhanced context).
+            RuntimeError: If scoring raises a non-PyRIT exception (wrapped with scorer context).
         """
         self._validator.validate(message, objective=objective)
 
-        if role_filter is not None and message.role != role_filter:
+        if role_filter is not None and message.get_piece().get_role_for_storage() != role_filter:
             logger.debug("Skipping scoring due to role filter mismatch.")
             return []
 
@@ -101,10 +204,19 @@ class Scorer(abc.ABC):
         if infer_objective_from_request and (not objective):
             objective = self._extract_objective_from_response(message)
 
-        scores = await self._score_async(
-            message,
-            objective=objective,
-        )
+        try:
+            scores = await self._score_async(
+                message,
+                objective=objective,
+            )
+        except PyritException as e:
+            # Re-raise PyRIT exceptions with enhanced context while preserving type for retry decorators
+            e.message = f"Error in scorer {self.__class__.__name__}: {e.message}"
+            e.args = (f"Status Code: {e.status_code}, Message: {e.message}",)
+            raise
+        except Exception as e:
+            # Wrap non-PyRIT exceptions for better error tracing
+            raise RuntimeError(f"Error in scorer {self.__class__.__name__}: {str(e)}") from e
 
         self.validate_return_scores(scores=scores)
         self._memory.add_scores_to_memory(scores=scores)
@@ -149,16 +261,19 @@ class Scorer(abc.ABC):
 
     def _get_supported_pieces(self, message: Message) -> list[MessagePiece]:
         """
-        Returns a list of supported message pieces for this scorer.
+        Get a list of supported message pieces for this scorer.
+
+        Returns:
+            list[MessagePiece]: List of message pieces that are supported by this scorer's validator.
         """
         return [
             piece for piece in message.message_pieces if self._validator.is_message_piece_supported(message_piece=piece)
         ]
 
     @abstractmethod
-    def validate_return_scores(self, scores: list[Score]):
+    def validate_return_scores(self, scores: list[Score]) -> None:
         """
-        Validates the scores returned by the scorer. Because some scorers may require
+        Validate the scores returned by the scorer. Because some scorers may require
         specific Score types or values.
 
         Args:
@@ -166,32 +281,77 @@ class Scorer(abc.ABC):
         """
         raise NotImplementedError()
 
-    def get_scorer_metrics(self, dataset_name: str, metrics_type: Optional[MetricsType] = None):
+    async def evaluate_async(
+        self,
+        file_mapping: Optional["ScorerEvalDatasetFiles"] = None,
+        *,
+        num_scorer_trials: int = 3,
+        update_registry_behavior: "RegistryUpdateBehavior" = None,
+        max_concurrency: int = 10,
+    ) -> Optional["ScorerMetrics"]:
         """
-        Returns evaluation statistics for the scorer using the dataset_name of the human labeled dataset that this
-        scorer was run against. If you did not evaluate the scorer against your own human labeled dataset, you can
-        use this method to retrieve metrics based on a pre-existing dataset name, which is often a 'harm_category'
-        or abbreviated version of the 'objective'. For example, to retrieve metrics for the 'hate_speech' harm,
-        you would pass 'hate_speech' as the dataset_name.
+        Evaluate this scorer against human-labeled datasets.
 
-        The existing metrics can be found in the 'dataset/score/scorer_evals' directory within either
-        the 'harm' or 'objective' subdirectory.
+        Uses file mapping to determine which datasets to evaluate and how to aggregate results.
 
         Args:
-            dataset_name (str): The name of the dataset on which the scorer evaluation was run. This is used to
-                inform the name of the metrics file to read in the `scorer_evals` directory.
-            metrics_type (MetricsType, optional): The type of metrics to retrieve, either HARM
-                or OBJECTIVE. If not provided, it will default to OBJECTIVE for true/false scorers
-                and HARM for all other scorers.
+            file_mapping: Optional ScorerEvalDatasetFiles configuration.
+                If not provided, uses the scorer's configured evaluation_file_mapping.
+                Maps input file patterns to an output result file.
+            num_scorer_trials: Number of times to score each response (for measuring variance). Defaults to 3.
+            update_registry_behavior: Controls how existing registry entries are handled.
+                - SKIP_IF_EXISTS (default): Check registry for existing results. If found, return cached metrics.
+                - ALWAYS_UPDATE: Always run evaluation and overwrite any existing registry entry.
+                - NEVER_UPDATE: Always run evaluation but never write to registry (for debugging).
+                Defaults to RegistryUpdateBehavior.SKIP_IF_EXISTS.
+            max_concurrency: Maximum number of concurrent scoring requests. Defaults to 10.
 
         Returns:
-            ScorerMetrics: A ScorerMetrics object containing the saved evaluation statistics for the scorer.
-        """
-        # Import ScorerEvaluator here to avoid circular imports
-        from pyrit.score import ScorerEvaluator
+            ScorerMetrics: The evaluation metrics, or None if no datasets found.
 
-        scorer_evaluator = ScorerEvaluator.from_scorer(self, metrics_type=metrics_type)
-        return scorer_evaluator.get_scorer_metrics(dataset_name=dataset_name)
+        Raises:
+            ValueError: If no file_mapping is provided and no evaluation_file_mapping is configured.
+        """
+        from pyrit.score import ScorerEvaluator
+        from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
+
+        # Handle default for update_registry_behavior (can't use enum in signature due to forward ref)
+        if update_registry_behavior is None:
+            update_registry_behavior = RegistryUpdateBehavior.SKIP_IF_EXISTS
+
+        # Use provided mapping or fall back to scorer's configured mapping
+        mapping = file_mapping if file_mapping is not None else self.evaluation_file_mapping
+
+        if mapping is None:
+            raise ValueError(
+                f"No file_mapping provided and no evaluation_file_mapping configured for {self.__class__.__name__}. "
+                "Either provide file_mapping parameter or configure evaluation_file_mapping on the scorer class."
+            )
+
+        scorer_evaluator = ScorerEvaluator.from_scorer(self)
+        return await scorer_evaluator.run_evaluation_async(
+            dataset_files=mapping,
+            num_scorer_trials=num_scorer_trials,
+            update_registry_behavior=update_registry_behavior,
+            max_concurrency=max_concurrency,
+        )
+
+    @abstractmethod
+    def get_scorer_metrics(self) -> Optional["ScorerMetrics"]:
+        """
+        Get evaluation metrics for this scorer from the configured evaluation result file.
+
+        Looks up metrics by this scorer's identity hash in the JSONL result file.
+        The result file may contain entries for multiple scorer configurations.
+
+        Subclasses must implement this to return the appropriate metrics type:
+        - TrueFalseScorer subclasses should return ObjectiveScorerMetrics
+        - FloatScaleScorer subclasses should return HarmScorerMetrics
+
+        Returns:
+            ScorerMetrics: The metrics for this scorer, or None if not found or not configured.
+        """
+        raise NotImplementedError("Subclasses must implement get_scorer_metrics")
 
     async def score_text_async(self, text: str, *, objective: Optional[str] = None) -> list[Score]:
         """
@@ -199,7 +359,7 @@ class Scorer(abc.ABC):
 
         Args:
             text (str): The text to be scored.
-            objective (str): The task based on which the text should be scored
+            objective (Optional[str]): The task based on which the text should be scored
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -218,11 +378,11 @@ class Scorer(abc.ABC):
 
     async def score_image_async(self, image_path: str, *, objective: Optional[str] = None) -> list[Score]:
         """
-        Scores the given image using the chat target.
+        Score the given image using the chat target.
 
         Args:
-            text (str): The image to be scored.
-            objective (str): The objective based on which the text should be scored
+            image_path (str): The path to the image file to be scored.
+            objective (Optional[str]): The objective based on which the image should be scored. Defaults to None.
 
         Returns:
             list[Score]: A list of Score objects representing the results.
@@ -299,6 +459,21 @@ class Scorer(abc.ABC):
     async def score_image_batch_async(
         self, *, image_paths: Sequence[str], objectives: Optional[Sequence[str]] = None, batch_size: int = 10
     ) -> list[Score]:
+        """
+        Score a batch of images asynchronously.
+
+        Args:
+            image_paths (Sequence[str]): Sequence of paths to image files to be scored.
+            objectives (Optional[Sequence[str]]): Optional sequence of objectives corresponding to each image.
+                If provided, must match the length of image_paths. Defaults to None.
+            batch_size (int): Maximum number of images to score concurrently. Defaults to 10.
+
+        Returns:
+            list[Score]: A list of Score objects representing the scoring results for all images.
+
+        Raises:
+            ValueError: If the number of objectives does not match the number of image_paths.
+        """
         if objectives:
             if len(objectives) != len(image_paths):
                 raise ValueError("The number of objectives must match the number of image_paths.")
@@ -335,38 +510,16 @@ class Scorer(abc.ABC):
         normalized_value = (value - min_value) / (max_value - min_value)
         return normalized_value
 
-    def get_identifier(self):
-        """
-        Returns an identifier dictionary for the scorer.
-
-        Returns:
-            dict: The identifier dictionary.
-        """
-        identifier = {}
-        identifier["__type__"] = self.__class__.__name__
-        identifier["__module__"] = self.__class__.__module__
-        identifier["sub_identifier"] = self._get_sub_identifier()
-        return identifier
-
-    def _get_sub_identifier(self) -> Optional[Union[Dict, List[Dict]]]:
-        """
-        Returns the sub-identifier for composite scorers.
-        Override this method in subclasses that wrap other scorers.
-
-        Returns:
-            None, dict, or list[dict]: The sub-identifier(s) of wrapped scorer(s), or None for non-composite scorers.
-        """
-        return None
-
     @pyrit_json_retry
     async def _score_value_with_llm(
         self,
         *,
         prompt_target: PromptChatTarget,
         system_prompt: str,
-        prompt_request_value: str,
-        prompt_request_data_type: PromptDataType,
+        message_value: str,
+        message_data_type: PromptDataType,
         scored_prompt_id: str,
+        prepended_text_message_piece: Optional[str] = None,
         category: Optional[Sequence[str] | str] = None,
         objective: Optional[str] = None,
         score_value_output_key: str = "score_value",
@@ -377,33 +530,49 @@ class Scorer(abc.ABC):
         attack_identifier: Optional[Dict[str, str]] = None,
     ) -> UnvalidatedScore:
         """
-        Sends a request to a target, and takes care of retries.
+        Send a request to a target, and take care of retries.
 
         The scorer target response should be JSON with value, rationale, and optional metadata and
         description fields.
 
         Args:
-            prompt_target (PromptChatTarget): The target LLM to send the prompt request to.
+            prompt_target (PromptChatTarget): The target LLM to send the message to.
             system_prompt (str): The system-level prompt that guides the behavior of the target LLM.
-            prompt_request_value (str): The actual value or content to be scored by the LLM.
-            prompt_request_data_type (PromptDataType): The type of the data being sent in the prompt request.
+            message_value (str): The actual value or content to be scored by the LLM (e.g., text, image path,
+                audio path).
+            message_data_type (PromptDataType): The type of the data being sent in the message (e.g., "text",
+                "image_path", "audio_path").
             scored_prompt_id (str): The ID of the scored prompt.
-            category (str, Optional): The category of the score. Can also be parsed from the JSON response if
-                not provided.
-            objective (str, Optional): A description of the objective that is associated with the score, used for
-                contextualizing the result.
+            prepended_text_message_piece (Optional[str]): Text context to prepend before the main
+                message_value. When provided, creates a multi-piece message with this text first, followed
+                by the message_value. Useful for adding objective/context when scoring non-text content.
+                Defaults to None.
+            category (Optional[Sequence[str] | str]): The category of the score. Can also be parsed from
+                the JSON response if not provided. Defaults to None.
+            objective (Optional[str]): A description of the objective that is associated with the score,
+                used for contextualizing the result. Defaults to None.
             score_value_output_key (str): The key in the JSON response that contains the score value.
+                Defaults to "score_value".
             rationale_output_key (str): The key in the JSON response that contains the rationale.
+                Defaults to "rationale".
             description_output_key (str): The key in the JSON response that contains the description.
+                Defaults to "description".
+            metadata_output_key (str): The key in the JSON response that contains the metadata.
+                Defaults to "metadata".
             category_output_key (str): The key in the JSON response that contains the category.
-            attack_identifier (dict[str, str], Optional): A dictionary containing attack-specific
-                identifiers.
+                Defaults to "category".
+            attack_identifier (Optional[Dict[str, str]]): A dictionary containing attack-specific identifiers.
+                Defaults to None.
 
         Returns:
             UnvalidatedScore: The score object containing the response from the target LLM.
                 score_value still needs to be normalized and validated.
-        """
 
+        Raises:
+            ValueError: If required keys are missing from the response or if the response format is invalid.
+            InvalidJsonException: If the response is not valid JSON.
+            Exception: For other unexpected errors during scoring.
+        """
         conversation_id = str(uuid.uuid4())
 
         if attack_identifier:
@@ -415,27 +584,46 @@ class Scorer(abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
-        scorer_llm_request = Message(
-            [
+
+        # Build message pieces - prepended text context first (if provided), then the main message being scored
+        message_pieces: list[MessagePiece] = []
+
+        # Add prepended text context piece if provided (e.g., objective context for non-text scoring)
+        if prepended_text_message_piece:
+            message_pieces.append(
                 MessagePiece(
                     role="user",
-                    original_value=prompt_request_value,
-                    original_value_data_type=prompt_request_data_type,
-                    converted_value_data_type=prompt_request_data_type,
+                    original_value=prepended_text_message_piece,
+                    original_value_data_type="text",
+                    converted_value_data_type="text",
                     conversation_id=conversation_id,
                     prompt_target_identifier=prompt_target.get_identifier(),
                     prompt_metadata=prompt_metadata,
                 )
-            ]
+            )
+
+        # Add the main message piece being scored
+        message_pieces.append(
+            MessagePiece(
+                role="user",
+                original_value=message_value,
+                original_value_data_type=message_data_type,
+                converted_value_data_type=message_data_type,
+                conversation_id=conversation_id,
+                prompt_target_identifier=prompt_target.get_identifier(),
+                prompt_metadata=prompt_metadata,
+            )
         )
+
+        scorer_llm_request = Message(message_pieces)
         try:
-            response = await prompt_target.send_prompt_async(prompt_request=scorer_llm_request)
+            response = await prompt_target.send_prompt_async(message=scorer_llm_request)
         except Exception as ex:
             raise Exception(f"Error scoring prompt with original prompt ID: {scored_prompt_id}") from ex
 
         response_json: str = ""
         try:
-            response_json = response.get_value()
+            response_json = response[0].get_value()
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
@@ -459,16 +647,16 @@ class Scorer(abc.ABC):
                 # JSON must yield either a string or a list of strings
                 raise ValueError("'category' must be a string or a list of strings")
 
-            # Normalize metadata to a dictionary with string keys and string/int values
+            # Normalize metadata to a dictionary with string keys and string/int/float values
             raw_md = parsed_response.get(metadata_output_key)
-            normalized_md: Optional[Dict[str, Union[str, int]]]
+            normalized_md: Optional[Dict[str, Union[str, int, float]]]
             if raw_md is None:
                 normalized_md = None
             elif isinstance(raw_md, dict):
-                # Coerce keys to str and filter to str/int values only
-                normalized_md = {str(k): v for k, v in raw_md.items() if isinstance(v, (str, int))}
+                # Coerce keys to str and filter to str/int/float values only
+                normalized_md = {str(k): v for k, v in raw_md.items() if isinstance(v, (str, int, float))}
                 # If dictionary becomes empty after filtering, keep as empty dict
-            elif isinstance(raw_md, (str, int)):
+            elif isinstance(raw_md, (str, int, float)):
                 # Wrap primitive metadata into a namespaced field
                 normalized_md = {"metadata": raw_md}
             else:
@@ -496,21 +684,20 @@ class Scorer(abc.ABC):
 
     def _extract_objective_from_response(self, response: Message) -> str:
         """
-        Extracts an objective from the response using the last request (if it exists).
+        Extract an objective from the response using the last request (if it exists).
 
         Args:
             response (Message): The response to extract the objective from.
 
         Returns:
-            str: The objective extracted from the response.
+            str: The objective extracted from the response, or empty string if not found.
         """
-
         if not response.message_pieces:
             return ""
 
         piece = response.get_piece()
 
-        if piece.role != "assistant":
+        if piece.api_role != "assistant":
             return ""
 
         conversation = self._memory.get_message_pieces(conversation_id=piece.conversation_id)
@@ -541,16 +728,20 @@ class Scorer(abc.ABC):
         Score a response using an objective scorer and optional auxiliary scorers.
 
         Args:
-            response (Message): Response containing pieces to score
-            objective_scorer (Scorer): The main scorer to determine success
-            auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply
-            role_filter (ChatMessageRole): Only score pieces with this role (default: `assistant`)
-            objective (Optional[str]): Task/objective for scoring context
-            skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: `True`)
+            response (Message): Response containing pieces to score.
+            objective_scorer (Optional[Scorer]): The main scorer to determine success. Defaults to None.
+            auxiliary_scorers (Optional[List[Scorer]]): List of auxiliary scorers to apply. Defaults to None.
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
+            objective (Optional[str]): Task/objective for scoring context. Defaults to None.
+            skip_on_error_result (bool): If True, skip scoring pieces that have errors. Defaults to True.
 
         Returns:
-            Dict[str,List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
+            Dict[str, List[Score]]: Dictionary with keys `auxiliary_scores` and `objective_scores`
                 containing lists of scores from each type of scorer.
+
+        Raises:
+            ValueError: If response is not provided.
         """
         result: Dict[str, List[Score]] = {"auxiliary_scores": [], "objective_scores": []}
 
@@ -617,7 +808,8 @@ class Scorer(abc.ABC):
         Args:
             response (Message): The response containing pieces to score.
             scorers (List[Scorer]): List of scorers to apply.
-            role_filter (ChatMessageRole): Only score pieces with this role (default: "assistant").
+            role_filter (ChatMessageRole): Only score pieces with this exact stored role.
+                Defaults to "assistant" (real responses only, not simulated).
             objective (Optional[str]): Optional objective description for scoring context.
             skip_on_error_result (bool): If True, skip scoring pieces that have errors (default: True).
 

@@ -14,15 +14,15 @@ from tenacity import (
     wait_exponential,
 )
 
-from pyrit.common.apply_defaults import apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import (
     Message,
     MessagePiece,
     PromptDataType,
     SeedPrompt,
 )
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -33,18 +33,21 @@ class TranslationConverter(PromptConverter):
     Translates prompts into different languages using an LLM.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     @apply_defaults
     def __init__(
         self,
         *,
-        converter_target: Optional[PromptChatTarget] = None,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         language: str,
         prompt_template: Optional[SeedPrompt] = None,
         max_retries: int = 3,
         max_wait_time_in_seconds: int = 60,
     ):
         """
-        Initializes the converter with the target chat support, language, and optional prompt template.
+        Initialize the converter with the target chat support, language, and optional prompt template.
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
@@ -58,13 +61,6 @@ class TranslationConverter(PromptConverter):
             ValueError: If converter_target is not provided and no default has been configured.
             ValueError: If the language is not provided.
         """
-        if converter_target is None:
-            raise ValueError(
-                "converter_target is required for LLM-based converters. "
-                "Either pass it explicitly or configure a default via PyRIT initialization "
-                "(e.g., initialize_pyrit with SimpleInitializer or AIRTInitializer)."
-            )
-
         self.converter_target = converter_target
 
         # Retry strategy for the conversion
@@ -75,9 +71,7 @@ class TranslationConverter(PromptConverter):
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPrompt.from_yaml_file(
-                pathlib.Path(DATASETS_PATH) / "prompt_converters" / "translation_converter.yaml"
-            )
+            else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "translation_converter.yaml")
         )
 
         if not language:
@@ -89,10 +83,11 @@ class TranslationConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by translating it using the converter target.
+        Convert the given prompt by translating it using the converter target.
 
         Args:
             prompt (str): The prompt to be converted.
+            input_type (PromptDataType): The type of input data.
 
         Returns:
             ConverterResult: The result containing the generated version of the prompt.
@@ -100,7 +95,6 @@ class TranslationConverter(PromptConverter):
         Raises:
             ValueError: If the input type is not supported.
         """
-
         conversation_id = str(uuid.uuid4())
 
         self.converter_target.set_system_prompt(system_prompt=self.system_prompt, conversation_id=conversation_id)
@@ -136,7 +130,7 @@ class TranslationConverter(PromptConverter):
         translation = await self._send_translation_prompt_async(request)
         return ConverterResult(output_text=translation, output_type="text")
 
-    async def _send_translation_prompt_async(self, request) -> str:
+    async def _send_translation_prompt_async(self, request: Message) -> str:
         async for attempt in AsyncRetrying(
             stop=stop_after_attempt(self._max_retries),
             wait=wait_exponential(multiplier=1, min=1, max=self._max_wait_time_in_seconds),
@@ -144,15 +138,9 @@ class TranslationConverter(PromptConverter):
         ):
             with attempt:
                 logger.debug(f"Attempt {attempt.retry_state.attempt_number} for translation")
-                response = await self.converter_target.send_prompt_async(prompt_request=request)
-                response_msg = response.get_value()
+                response = await self.converter_target.send_prompt_async(message=request)
+                response_msg = response[0].get_value()
                 return response_msg.strip()
 
         # when we exhaust all retries without success, raise an exception
         raise Exception(f"Failed to translate after {self._max_retries} attempts")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

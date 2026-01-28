@@ -15,7 +15,12 @@ class MemoryExporter:
     This class utilizes the strategy design pattern to select the appropriate export format.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize the MemoryExporter.
+
+        Sets up the available export formats using the strategy design pattern.
+        """
         # Using strategy design pattern for export functionality.
         self.export_strategies = {
             "json": self.export_to_json,
@@ -26,9 +31,9 @@ class MemoryExporter:
 
     def export_data(
         self, data: list[MessagePiece], *, file_path: Optional[Path] = None, export_type: str = "json"
-    ):  # type: ignore
+    ) -> None:
         """
-        Exports the provided data to a file in the specified format.
+        Export the provided data to a file in the specified format.
 
         Args:
             data (list[MessagePiece]): The data to be exported, as a list of MessagePiece instances.
@@ -47,9 +52,9 @@ class MemoryExporter:
         else:
             raise ValueError(f"Unsupported export format: {export_type}")
 
-    def export_to_json(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_json(self, data: list[MessagePiece], file_path: Optional[Path] = None) -> None:
         """
-        Exports the provided data to a JSON file at the specified file path.
+        Export the provided data to a JSON file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
@@ -70,9 +75,9 @@ class MemoryExporter:
         with open(file_path, "w") as f:
             json.dump(export_data, f, indent=4)
 
-    def export_to_csv(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_csv(self, data: list[MessagePiece], file_path: Optional[Path] = None) -> None:
         """
-        Exports the provided data to a CSV file at the specified file path.
+        Export the provided data to a CSV file at the specified file path.
         Each item in the data list, representing a row from the table,
         is converted to a dictionary before being written to the file.
 
@@ -96,9 +101,9 @@ class MemoryExporter:
             writer.writeheader()
             writer.writerows(export_data)
 
-    def export_to_markdown(self, data: list[MessagePiece], file_path: Path = None) -> None:  # type: ignore
+    def export_to_markdown(self, data: list[MessagePiece], file_path: Optional[Path] = None) -> None:
         """
-        Exports the provided data to a Markdown file at the specified file path.
+        Export the provided data to a Markdown file at the specified file path.
         Each item in the data list is converted to a dictionary and formatted as a table.
 
         Args:

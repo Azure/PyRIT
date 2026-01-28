@@ -34,7 +34,6 @@ async def test_translation_converter_convert_async_retrieve_key_capitalization_m
 
     translation_converter = TranslationConverter(converter_target=prompt_target, language="spanish")
     with patch.object(translation_converter, "_send_translation_prompt_async", new=AsyncMock(return_value="hola")):
-
         raised = False
         try:
             await translation_converter.convert_async(prompt="hello")
@@ -53,11 +52,13 @@ async def test_translation_converter_retries_on_exception(sqlite_instance):
     )
 
     mock_send_prompt = AsyncMock(side_effect=Exception("Test failure"))
+    # Mock asyncio.sleep to avoid exponential backoff delays
     with patch.object(prompt_target, "send_prompt_async", mock_send_prompt):
-        with pytest.raises(Exception):
-            await translation_converter.convert_async(prompt="hello")
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            with pytest.raises(Exception):
+                await translation_converter.convert_async(prompt="hello")
 
-        assert mock_send_prompt.call_count == max_retries
+            assert mock_send_prompt.call_count == max_retries
 
 
 @pytest.mark.asyncio
@@ -86,14 +87,16 @@ async def test_translation_converter_succeeds_after_retries(sqlite_instance):
 
     # fail twice, then succeed
     mock_send_prompt = AsyncMock()
-    mock_send_prompt.side_effect = [Exception("First failure"), Exception("Second failure"), success_response]
+    mock_send_prompt.side_effect = [Exception("First failure"), Exception("Second failure"), [success_response]]
 
+    # Mock asyncio.sleep to avoid exponential backoff delays
     with patch.object(prompt_target, "send_prompt_async", mock_send_prompt):
-        result = await translation_converter.convert_async(prompt="hello")
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await translation_converter.convert_async(prompt="hello")
 
-        assert mock_send_prompt.call_count == max_retries
-        assert result.output_text == "hola"
-        assert result.output_type == "text"
+            assert mock_send_prompt.call_count == max_retries
+            assert result.output_text == "hola"
+            assert result.output_type == "text"
 
 
 def test_translation_converter_input_supported(sqlite_instance):

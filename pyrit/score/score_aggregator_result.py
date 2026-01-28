@@ -7,7 +7,8 @@ from typing import Dict, List, Union
 
 @dataclass(frozen=True, slots=True)
 class ScoreAggregatorResult:
-    """Common result object returned by score aggregators.
+    """
+    Common result object returned by score aggregators.
 
     Attributes:
         value (Union[bool, float]): The aggregated value. For true/false aggregators this is
@@ -15,11 +16,11 @@ class ScoreAggregatorResult:
         description (str): A short, human-friendly description of the aggregation outcome.
         rationale (str): Combined rationale from constituent scores.
         category (List[str]): Combined list of categories from constituent scores.
-        metadata (Dict[str, Union[str, int]]): Combined metadata from constituent scores.
+        metadata (Dict[str, Union[str, int, float]]): Combined metadata from constituent scores.
     """
 
     value: Union[bool, float]
     description: str
     rationale: str
     category: List[str]
-    metadata: Dict[str, Union[str, int]]
+    metadata: Dict[str, Union[str, int, float]]

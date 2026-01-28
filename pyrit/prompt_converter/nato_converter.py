@@ -3,7 +3,7 @@
 
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 
 class NatoConverter(PromptConverter):
@@ -26,6 +26,9 @@ class NatoConverter(PromptConverter):
         Input: "Hello"
         Output: "Hotel Echo Lima Lima Oscar"
     """
+
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
 
     _NATO_MAP = {
         "A": "Alfa",
@@ -58,7 +61,7 @@ class NatoConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given text into NATO phonetic alphabet representation.
+        Convert the given text into NATO phonetic alphabet representation.
 
         Args:
             prompt (str): The text to be converted to NATO phonetic alphabet.
@@ -77,33 +80,9 @@ class NatoConverter(PromptConverter):
 
         return ConverterResult(output_text=nato_text, output_type="text")
 
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        """
-        Checks if the input type is supported.
-
-        Args:
-            input_type (PromptDataType): The input type to check.
-
-        Returns:
-            bool: True if input type is "text", False otherwise.
-        """
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        """
-        Checks if the output type is supported.
-
-        Args:
-            output_type (PromptDataType): The output type to check.
-
-        Returns:
-            bool: True if output type is "text", False otherwise.
-        """
-        return output_type == "text"
-
     def _convert_to_nato(self, text: str) -> str:
         """
-        Converts text to NATO phonetic alphabet representation.
+        Convert text to NATO phonetic alphabet representation.
 
         Args:
             text (str): The text to convert.

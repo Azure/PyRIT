@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 import uuid
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -28,6 +27,7 @@ def openai_response_json() -> dict:
 @pytest.fixture
 def azure_openai_target(patch_central_database):
     return OpenAIChatTarget(
+        model_name="gpt-4",
         endpoint="test",
         api_key="test",
     )
@@ -57,7 +57,7 @@ def test_set_system_prompt(azure_openai_target: OpenAIChatTarget, mock_attack_st
 
     chats = azure_openai_target._memory.get_message_pieces(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chat, got {len(chats)}"
-    assert chats[0].role == "system"
+    assert chats[0].api_role == "system"
     assert chats[0].converted_value == "system prompt"
 
 
@@ -75,7 +75,7 @@ async def test_set_system_prompt_adds_memory(
 
     chats = azure_openai_target._memory.get_message_pieces(conversation_id="1")
     assert len(chats) == 1, f"Expected 1 chats, got {len(chats)}"
-    assert chats[0].role == "system"
+    assert chats[0].api_role == "system"
 
 
 @pytest.mark.asyncio
@@ -85,13 +85,21 @@ async def test_send_prompt_with_system_calls_chat_complete(
     sample_entries: MutableSequence[MessagePiece],
     mock_attack_strategy: AttackStrategy,
 ):
+    # Mock SDK response
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.finish_reason = "stop"
+    mock_message = MagicMock()
+    mock_message.content = "hi"
+    mock_message.audio = None  # Explicitly set to avoid MagicMock auto-creation
+    mock_message.tool_calls = None
+    mock_choice.message = mock_message
+    mock_response.choices = [mock_choice]
 
-    openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(openai_response_json)
-
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_create:
-
-        mock_create.return_value = openai_mock_return
+    with patch.object(
+        azure_openai_target._async_client.chat.completions, "create", new_callable=AsyncMock
+    ) as mock_create:
+        mock_create.return_value = mock_response
 
         azure_openai_target.set_system_prompt(
             system_prompt="system prompt",
@@ -104,7 +112,7 @@ async def test_send_prompt_with_system_calls_chat_complete(
         request.converted_value = "hi, I am a victim chatbot, how can I help?"
         request.conversation_id = "1"
 
-        await azure_openai_target.send_prompt_async(prompt_request=Message(message_pieces=[request]))
+        await azure_openai_target.send_prompt_async(message=Message(message_pieces=[request]))
 
         mock_create.assert_called_once()
 
@@ -117,17 +125,27 @@ async def test_send_prompt_async_with_delay(
 ):
     azure_openai_target._max_requests_per_minute = 10
 
-    openai_mock_return = MagicMock()
-    openai_mock_return.text = json.dumps(openai_response_json)
+    # Mock SDK response
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.finish_reason = "stop"
+    mock_message = MagicMock()
+    mock_message.content = "hi"
+    mock_message.audio = None  # Explicitly set to avoid MagicMock auto-creation
+    mock_message.tool_calls = None
+    mock_choice.message = mock_message
+    mock_response.choices = [mock_choice]
 
-    with patch("pyrit.common.net_utility.make_request_and_raise_if_error_async", new_callable=AsyncMock) as mock_create:
+    with patch.object(
+        azure_openai_target._async_client.chat.completions, "create", new_callable=AsyncMock
+    ) as mock_create:
         with patch("asyncio.sleep") as mock_sleep:
-            mock_create.return_value = openai_mock_return
+            mock_create.return_value = mock_response
 
             request = sample_entries[0]
             request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
-            await azure_openai_target.send_prompt_async(prompt_request=Message(message_pieces=[request]))
+            await azure_openai_target.send_prompt_async(message=Message(message_pieces=[request]))
 
             mock_create.assert_called_once()
             mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute

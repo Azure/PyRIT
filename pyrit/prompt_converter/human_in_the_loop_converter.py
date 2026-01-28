@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +18,15 @@ class HumanInTheLoopConverter(PromptConverter):
     or run the prompt through one of the passed-in converters before sending it.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(
         self,
         converters: Optional[list[PromptConverter]] = None,
     ):
         """
-        Initializes the converter with a list of possible converters to run input through.
+        Initialize the converter with a list of possible converters to run input through.
 
         Args:
             converters (List[PromptConverter], Optional): List of possible converters to run input through.
@@ -32,7 +35,7 @@ class HumanInTheLoopConverter(PromptConverter):
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
-        Converts the given prompt by allowing user interaction before sending it to a target.
+        Convert the given prompt by allowing user interaction before sending it to a target.
 
         User is given three options to choose from:
             (1) Proceed with sending the prompt as is.
@@ -81,7 +84,7 @@ class HumanInTheLoopConverter(PromptConverter):
                         input(
                             f"The available converters are {converters_str}. \
                                                 Enter the index of the converter you would like to run on \
-                                                the input (0 to {len(self._converters)-1})"
+                                                the input (0 to {len(self._converters) - 1})"
                         ).strip()
                     )
                 converter = self._converters[converter_index]
@@ -90,9 +93,3 @@ class HumanInTheLoopConverter(PromptConverter):
             else:
                 raise ValueError("No converters were passed into the HumanInTheLoopConverter")
         return ConverterResult(output_text=prompt, output_type=input_type)
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == []
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == []

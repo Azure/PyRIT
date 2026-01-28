@@ -12,12 +12,12 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.dialects.sqlite import CHAR, JSON
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.sqltypes import NullType
-from unit.mocks import get_sample_conversation_entries
 
 from pyrit.memory.memory_models import EmbeddingDataEntry, PromptMemoryEntry
 from pyrit.models import MessagePiece
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
+from unit.mocks import get_sample_conversation_entries
 
 
 @pytest.fixture
@@ -109,13 +109,13 @@ def test_conversation_data_column_types(sqlite_instance):
 
             # Handle columns that can have multiple types depending on database
             if isinstance(expected_type, tuple):
-                assert any(
-                    issubclass(column_types[column], t) for t in expected_type
-                ), f"Expected {column} to be a subclass of any of {expected_type}, got {column_types[column]} instead."
+                assert any(issubclass(column_types[column], t) for t in expected_type), (
+                    f"Expected {column} to be a subclass of any of {expected_type}, got {column_types[column]} instead."
+                )
             else:
-                assert issubclass(
-                    column_types[column], expected_type
-                ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
+                assert issubclass(column_types[column], expected_type), (
+                    f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
+                )
 
 
 def test_embedding_data_column_types(sqlite_instance):
@@ -135,14 +135,14 @@ def test_embedding_data_column_types(sqlite_instance):
             assert column in column_types, f"{column} not found in EmbeddingStore schema."
             # Handle columns that can have multiple types depending on database
             if isinstance(expected_type, tuple):
-                assert any(
-                    issubclass(column_types[column], t) for t in expected_type
-                ), f"Expected {column} to be a subclass of any of {expected_type}, got {column_types[column]} instead."
+                assert any(issubclass(column_types[column], t) for t in expected_type), (
+                    f"Expected {column} to be a subclass of any of {expected_type}, got {column_types[column]} instead."
+                )
             else:
                 # Allow for flexibility in type representation (String vs. VARCHAR)
-                assert issubclass(
-                    column_types[column], expected_type
-                ), f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
+                assert issubclass(column_types[column], expected_type), (
+                    f"Expected {column} to be a subclass of {expected_type}, got {column_types[column]} instead."
+                )
     # Handle 'embedding' column separately
     assert "embedding" in column_types, "'embedding' column not found in EmbeddingData schema."
     # Check if 'embedding' column type is either NullType (due to reflection issue), ARRAY, or JSON (SQLite)
@@ -278,34 +278,33 @@ def test_insert_embedding_entry(sqlite_instance):
 def test_disable_embedding(sqlite_instance):
     sqlite_instance.disable_embedding()
 
-    assert (
-        sqlite_instance.memory_embedding is None
-    ), "disable_memory flag was passed, so memory embedding should be disabled."
+    assert sqlite_instance.memory_embedding is None, (
+        "disable_memory flag was passed, so memory embedding should be disabled."
+    )
 
 
 def test_default_enable_embedding(sqlite_instance):
-    os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = "mock_key"
-    os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = "embedding"
-    os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = "deployment"
+    os.environ["OPENAI_EMBEDDING_KEY"] = "mock_key"
+    os.environ["OPENAI_EMBEDDING_ENDPOINT"] = "embedding"
+    os.environ["OPENAI_EMBEDDING_MODEL"] = "deployment"
 
     sqlite_instance.enable_embedding()
 
-    assert (
-        sqlite_instance.memory_embedding is not None
-    ), "Memory embedding should be enabled when set with environment variables."
+    assert sqlite_instance.memory_embedding is not None, (
+        "Memory embedding should be enabled when set with environment variables."
+    )
 
 
 def test_default_embedding_raises(sqlite_instance):
-    os.environ["AZURE_OPENAI_EMBEDDING_KEY"] = ""
-    os.environ["AZURE_OPENAI_EMBEDDING_ENDPOINT"] = ""
-    os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"] = ""
+    os.environ["OPENAI_EMBEDDING_KEY"] = ""
+    os.environ["OPENAI_EMBEDDING_ENDPOINT"] = ""
+    os.environ["OPENAI_EMBEDDING_MODEL"] = ""
 
     with pytest.raises(ValueError):
         sqlite_instance.enable_embedding()
 
 
 def test_query_entries(sqlite_instance, sample_conversation_entries):
-
     for i in range(3):
         sample_conversation_entries[i].conversation_id = str(i)
         sample_conversation_entries[i].original_value = f"Message {i}"
@@ -326,7 +325,6 @@ def test_query_entries(sqlite_instance, sample_conversation_entries):
 
 
 def test_get_all_memory(sqlite_instance, sample_conversation_entries):
-
     sqlite_instance._insert_entries(entries=sample_conversation_entries)
 
     # Fetch all entries
@@ -367,7 +365,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
         assert len(retrieved_entries) == 1
         retrieved_entry = retrieved_entries[0].message_pieces[0]
         assert retrieved_entry.conversation_id == specific_conversation_id
-        assert retrieved_entry.role == "user"
+        assert retrieved_entry.api_role == "user"
         assert retrieved_entry.original_value == "Test content"
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - piece.timestamp).total_seconds()) < 0.1

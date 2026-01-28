@@ -13,8 +13,8 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target import HTTPTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
+from pyrit.prompt_target.http_target.http_target import HTTPTarget
 
 logger = logging.getLogger(__name__)
 
@@ -35,17 +35,21 @@ class HTTPXAPITarget(HTTPTarget):
         http_url: str,
         method: Literal["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"] = "POST",
         file_path: Optional[str] = None,
-        json_data: Optional[dict] = None,
-        form_data: Optional[dict] = None,
-        params: Optional[dict] = None,
-        headers: Optional[dict] = None,
+        json_data: Optional[dict[str, Any]] = None,
+        form_data: Optional[dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
         http2: Optional[bool] = None,
-        callback_function: Callable | None = None,
+        callback_function: Callable[..., Any] | None = None,
         max_requests_per_minute: Optional[int] = None,
         **httpx_client_kwargs: Any,
     ) -> None:
         """
         Force the parent 'HTTPTarget' to skip raw http_request logic by setting http_request=None.
+
+        Raises:
+            ValueError: If the HTTP method is invalid.
+            ValueError: If file uploads are attempted with an HTTP method that does not support them.
         """
         super().__init__(
             http_request="",
@@ -74,17 +78,25 @@ class HTTPXAPITarget(HTTPTarget):
             raise ValueError(f"File uploads are not allowed with HTTP method: {self.method}")
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
         Override the parent's method to skip raw http_request usage,
         and do a standard "API mode" approach.
 
         - If file_path is set or we can deduce it from the message piece, we upload a file.
         - Otherwise, we send normal requests with JSON or form_data (if provided).
-        """
 
-        self._validate_request(prompt_request=prompt_request)
-        message_piece: MessagePiece = prompt_request.message_pieces[0]
+        Returns:
+            list[Message]: A list containing the response object with generated text pieces.
+
+        Raises:
+            ValueError: If no `http_url` is provided.
+            httpx.TimeoutException: If the request times out.
+            httpx.RequestError: If the request fails.
+            FileNotFoundError: If the specified file to upload is not found.
+        """
+        self._validate_request(message=message)
+        message_piece: MessagePiece = message.message_pieces[0]
 
         # If user didn't set file_path, see if the PDF path is in converted_value
         if not self.file_path:
@@ -153,4 +165,4 @@ class HTTPXAPITarget(HTTPTarget):
             request=message_piece, response_text_pieces=[str(response_content)]
         )
 
-        return response_entry
+        return [response_entry]

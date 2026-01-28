@@ -13,11 +13,39 @@ import inspect
 import logging
 import sys
 from dataclasses import dataclass
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, Callable, Dict, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+class _RequiredValueSentinel:
+    """
+    Sentinel type to mark parameters as required but eligible for apply_defaults.
+
+    This allows parameters to have no default value in the function signature
+    (making them appear required), while still allowing apply_defaults to provide
+    a value if one is registered globally.
+
+    Usage:
+        @apply_defaults
+        def __init__(self, *, objective_target: PromptTarget = REQUIRED_VALUE):
+            # If apply_defaults finds a default for objective_target, it will be used.
+            # Otherwise, an error will be raised for missing required parameter.
+            pass
+    """
+
+    def __repr__(self) -> str:
+        return "REQUIRED_VALUE"
+
+    def __bool__(self) -> bool:
+        # Ensure this evaluates to False in boolean context
+        return False
+
+
+# Global sentinel instance
+REQUIRED_VALUE = _RequiredValueSentinel()
 
 
 @dataclass(frozen=True)
@@ -29,11 +57,17 @@ class DefaultValueScope:
     be inherited by subclasses.
     """
 
-    class_type: Type
+    class_type: Type[object]
     parameter_name: str
     include_subclasses: bool = True
 
     def __hash__(self) -> int:
+        """
+        Return a hash based on class type, parameter name, and subclass inclusion flag.
+
+        Returns:
+            int: Hash value for this scope.
+        """
         return hash((self.class_type, self.parameter_name, self.include_subclasses))
 
 
@@ -46,12 +80,13 @@ class GlobalDefaultValues:
     """
 
     def __init__(self) -> None:
+        """Initialize the global default values registry."""
         self._default_values: Dict[DefaultValueScope, Any] = {}
 
     def set_default_value(
         self,
         *,
-        class_type: Type,
+        class_type: Type[object],
         parameter_name: str,
         value: Any,
         include_subclasses: bool = True,
@@ -76,7 +111,7 @@ class GlobalDefaultValues:
     def get_default_value(
         self,
         *,
-        class_type: Type,
+        class_type: Type[object],
         parameter_name: str,
     ) -> tuple[bool, Any]:
         """
@@ -125,13 +160,18 @@ _global_default_values = GlobalDefaultValues()
 
 
 def get_global_default_values() -> GlobalDefaultValues:
-    """Get the global default values registry."""
+    """
+    Get the global default values registry.
+
+    Returns:
+        GlobalDefaultValues: The global default values registry instance.
+    """
     return _global_default_values
 
 
 def set_default_value(
     *,
-    class_type: Type,
+    class_type: Type[object],
     parameter_name: str,
     value: Any,
     include_subclasses: bool = True,
@@ -187,14 +227,13 @@ def set_global_variable(*, name: str, value: Any) -> None:
         variable accessible to code that imports or executes after the initialization
         script runs.
     """
-
     # Set the variable in the __main__ module's global namespace
     sys.modules["__main__"].__dict__[name] = value
 
 
-def apply_defaults_to_method(method):
+def apply_defaults_to_method(method: Callable[..., T]) -> Callable[..., T]:
     """
-    Decorator that applies default values to a method's parameters.
+    Apply default values to a method's parameters.
 
     This decorator looks up default values for the method's class and applies them
     to parameters that are None or not provided.
@@ -207,7 +246,7 @@ def apply_defaults_to_method(method):
     """
 
     @functools.wraps(method)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: object, *args: object, **kwargs: object) -> T:
         # Get the class of the instance
         cls = self.__class__
 
@@ -218,13 +257,13 @@ def apply_defaults_to_method(method):
         bound_args = sig.bind(self, *args, **kwargs)
         bound_args.apply_defaults()
 
-        # Apply default values for parameters that are None
+        # Apply default values for parameters that are None or REQUIRED_VALUE
         for param_name, param_value in bound_args.arguments.items():
             if param_name == "self":
                 continue
 
-            # Only apply defaults if the parameter is None
-            if param_value is None:
+            # Apply defaults if parameter is None or REQUIRED_VALUE sentinel
+            if param_value is None or isinstance(param_value, _RequiredValueSentinel):
                 found, default_value = _global_default_values.get_default_value(
                     class_type=cls,
                     parameter_name=param_name,
@@ -232,6 +271,21 @@ def apply_defaults_to_method(method):
                 if found:
                     bound_args.arguments[param_name] = default_value
                     logger.debug(f"Applied default value for {cls.__name__}.{param_name} = {default_value}")
+                elif isinstance(param_value, _RequiredValueSentinel):
+                    # REQUIRED_VALUE was used but no default found - raise clear error
+                    raise ValueError(
+                        f"{param_name} is required for {cls.__name__}. "
+                        f"Either pass the parameter explicitly or register a default using set_default_value()."
+                    )
+                # If None was explicitly passed and parameter has REQUIRED_VALUE as default, also raise
+                elif param_value is None:
+                    # Check if the parameter's default in the signature is REQUIRED_VALUE
+                    param_obj = sig.parameters.get(param_name)
+                    if param_obj and isinstance(param_obj.default, _RequiredValueSentinel):
+                        raise ValueError(
+                            f"{param_name} is required for {cls.__name__}. "
+                            f"Either pass a valid value or register a default using set_default_value()."
+                        )
 
         # Call the original method with updated arguments
         return method(*bound_args.args, **bound_args.kwargs)
@@ -239,9 +293,9 @@ def apply_defaults_to_method(method):
     return wrapper
 
 
-def apply_defaults(method):
+def apply_defaults(method: Callable[..., T]) -> Callable[..., T]:
     """
-    Decorator that applies default values to a class constructor.
+    Apply default values to a class constructor.
 
     This is an alias for apply_defaults_to_method for backward compatibility.
 

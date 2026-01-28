@@ -8,10 +8,21 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from pyrit.executor.attack.core import AttackExecutorResult
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
-from pyrit.scenarios import AtomicAttack, Scenario
-from pyrit.scenarios.scenario import ScenarioResult
+from pyrit.scenario import DatasetConfiguration, ScenarioResult
+from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
+
+
+def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 @pytest.fixture
@@ -29,26 +40,50 @@ def save_attack_results_to_memory(attack_results):
 
 
 def create_mock_atomic_attack(name: str, objectives: list[str]) -> MagicMock:
-    """Create a mock AtomicAttack with required attributes for baseline creation."""
+    """Create a mock AtomicAttack with required attributes for baseline creation.
+
+    The mock tracks its objectives and properly updates when filter_seed_groups_by_objectives is called.
+    """
     mock_attack_strategy = MagicMock()
     mock_attack_strategy.get_objective_target.return_value = MagicMock()
     mock_attack_strategy.get_attack_scoring_config.return_value = MagicMock()
 
     attack = MagicMock(spec=AtomicAttack)
     attack.atomic_attack_name = name
-    attack._objectives = objectives
     attack._attack = mock_attack_strategy
-    type(attack).objectives = PropertyMock(return_value=objectives)
+
+    # Track current objectives in a mutable container so it can be updated
+    current_objectives = {"value": list(objectives)}
+
+    # Configure objectives property to return current objectives
+    type(attack).objectives = PropertyMock(side_effect=lambda: current_objectives["value"])
+
+    # Configure filter_seed_groups_by_objectives to update the tracked objectives
+    def filter_objectives(*, remaining_objectives):
+        remaining_set = set(remaining_objectives)
+        current_objectives["value"] = [obj for obj in current_objectives["value"] if obj in remaining_set]
+
+    attack.filter_seed_groups_by_objectives = MagicMock(side_effect=filter_objectives)
+
     return attack
 
 
 class ConcreteScenario(Scenario):
     """Concrete implementation of Scenario for testing."""
 
-    def __init__(self, *, atomic_attacks_to_return=None, **kwargs):
+    def __init__(self, *, atomic_attacks_to_return=None, objective_scorer=None, **kwargs):
         # Default include_default_baseline=False for tests unless explicitly specified
         kwargs.setdefault("include_default_baseline", False)
-        super().__init__(**kwargs)
+
+        # Get strategy_class from kwargs or use default
+        strategy_class = kwargs.pop("strategy_class", None) or self.get_strategy_class()
+
+        # Create a default mock scorer if not provided
+        if objective_scorer is None:
+            objective_scorer = MagicMock()
+            objective_scorer.get_identifier.return_value = _mock_scorer_id("MockScorer")
+
+        super().__init__(strategy_class=strategy_class, objective_scorer=objective_scorer, **kwargs)
         self._test_atomic_attacks = atomic_attacks_to_return or []
 
     async def _get_atomic_attacks_async(self):
@@ -56,11 +91,24 @@ class ConcreteScenario(Scenario):
 
     @classmethod
     def get_strategy_class(cls):
-        return None
+        class TestStrategy(ScenarioStrategy):
+            CONCRETE = ("concrete", {"concrete"})
+            ALL = ("all", {"all"})
+
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return {"all"}
+
+        return TestStrategy
 
     @classmethod
     def get_default_strategy(cls):
-        return None
+        return cls.get_strategy_class().ALL
+
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for testing."""
+        return DatasetConfiguration()
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -116,11 +164,12 @@ class TestScenarioPartialAttackCompletion:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=1,
             atomic_attacks_to_return=[atomic_attack],
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=1,
+        )
 
         result = await scenario.run_async()
 
@@ -163,11 +212,12 @@ class TestScenarioPartialAttackCompletion:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=0,  # No retries
             atomic_attacks_to_return=[atomic_attack],
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=0,  # No retries
+        )
 
         # Should raise error because of incomplete objectives
         with pytest.raises(ValueError, match="incomplete"):
@@ -194,7 +244,7 @@ class TestScenarioPartialAttackCompletion:
             call_count[0] += 1
 
             # Track which objectives are being executed
-            current_objectives = atomic_attack._objectives.copy()
+            current_objectives = atomic_attack.objectives.copy()
             executed_objectives.append(current_objectives)
 
             if call_count[0] == 1:
@@ -236,11 +286,12 @@ class TestScenarioPartialAttackCompletion:
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=1,
             atomic_attacks_to_return=[atomic_attack],
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=1,
+        )
 
         result = await scenario.run_async()
 
@@ -299,14 +350,11 @@ class TestScenarioPartialAttackCompletion:
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
                         )
-                        for obj in getattr(
-                            (
-                                attack1
-                                if attack_name == "attack_1"
-                                else (attack2 if attack_name == "attack_2" else attack3)
-                            ),
-                            "_objectives",
-                        )
+                        for obj in (
+                            attack1
+                            if attack_name == "attack_1"
+                            else (attack2 if attack_name == "attack_2" else attack3)
+                        ).objectives
                     ]
 
                     save_attack_results_to_memory(completed)
@@ -315,18 +363,19 @@ class TestScenarioPartialAttackCompletion:
 
             return mock_run
 
-        attack1.run_async = await make_mock_run("attack_1", attack1._objectives)
-        attack2.run_async = await make_mock_run("attack_2", attack2._objectives)
-        attack3.run_async = await make_mock_run("attack_3", attack3._objectives)
+        attack1.run_async = await make_mock_run("attack_1", attack1.objectives)
+        attack2.run_async = await make_mock_run("attack_2", attack2.objectives)
+        attack3.run_async = await make_mock_run("attack_3", attack3.objectives)
 
         scenario = ConcreteScenario(
             name="Test Scenario",
             version=1,
-            objective_target=mock_objective_target,
-            max_retries=1,
             atomic_attacks_to_return=[attack1, attack2, attack3],
         )
-        await scenario.initialize_async()
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            max_retries=1,
+        )
 
         result = await scenario.run_async()
 

@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -58,7 +57,6 @@ def test_prompt_persuasion_init_misrepresentation_template_not_null(sqlite_insta
     ],
 )
 async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries(converted_value, sqlite_instance):
-
     prompt_target = MockPromptTarget()
 
     prompt_persuasion = PersuasionConverter(
@@ -66,7 +64,6 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
     )
 
     with patch("unit.mocks.MockPromptTarget.send_prompt_async", new_callable=AsyncMock) as mock_create:
-
         message = Message(
             message_pieces=[
                 MessagePiece(
@@ -82,11 +79,12 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
                 )
             ]
         )
-        mock_create.return_value = message
+        mock_create.return_value = [message]
 
         with pytest.raises(InvalidJsonException):
             await prompt_persuasion.convert_async(prompt="testing", input_type="text")
-            assert mock_create.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+            # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+            assert mock_create.call_count == 2
 
 
 def test_persuasion_converter_input_supported():

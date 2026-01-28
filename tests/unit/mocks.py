@@ -2,17 +2,30 @@
 # Licensed under the MIT license.
 
 import os
+import shutil
 import tempfile
 import uuid
 from contextlib import AbstractAsyncContextManager
 from typing import Generator, MutableSequence, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
-from mock_alchemy.mocking import UnifiedAlchemyMagicMock
-
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
+
+
+def get_mock_scorer_identifier() -> ScorerIdentifier:
+    """
+    Returns a mock ScorerIdentifier for use in tests where the specific
+    scorer identity doesn't matter.
+    """
+    return ScorerIdentifier(
+        class_name="MockScorer",
+        class_module="tests.unit.mocks",
+        class_description="Mock scorer for testing",
+        identifier_type="instance",
+    )
 
 
 class MockHttpPostAsync(AbstractAsyncContextManager):
@@ -84,18 +97,20 @@ class MockPromptTarget(PromptChatTarget):
             )
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        self.prompt_sent.append(prompt_request.get_value())
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        self.prompt_sent.append(message.get_value())
 
-        return MessagePiece(
-            role="assistant",
-            original_value="default",
-            conversation_id=prompt_request.message_pieces[0].conversation_id,
-            attack_identifier=prompt_request.message_pieces[0].attack_identifier,
-            labels=prompt_request.message_pieces[0].labels,
-        ).to_message()
+        return [
+            MessagePiece(
+                role="assistant",
+                original_value="default",
+                conversation_id=message.message_pieces[0].conversation_id,
+                attack_identifier=message.message_pieces[0].attack_identifier,
+                labels=message.message_pieces[0].labels,
+            ).to_message()
+        ]
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
+    def _validate_request(self, *, message: Message) -> None:
         """
         Validates the provided message
         """
@@ -105,9 +120,10 @@ class MockPromptTarget(PromptChatTarget):
 
 
 def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
-    # Create a test Azure SQL Server DB
+    # Create a test Azure SQL Server DB using in-memory SQLite
+    # This allows testing actual SQL queries (including JOINs and metadata filtering)
+    # without requiring a real Azure SQL instance
     with (
-        patch("pyrit.memory.AzureSQLMemory.get_session") as get_session_mock,
         patch("pyrit.memory.AzureSQLMemory._create_auth_token") as create_auth_token_mock,
         patch("pyrit.memory.AzureSQLMemory._enable_azure_authorization") as enable_azure_authorization_mock,
     ):
@@ -116,24 +132,30 @@ def get_azure_sql_memory() -> Generator[AzureSQLMemory, None, None]:
         )
         os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN] = "valid_sas_token"
 
+        # Use in-memory SQLite instead of mock to allow real SQL queries
         azure_sql_memory = AzureSQLMemory(
-            connection_string="mssql+pyodbc://test:test@test/test?driver=ODBC+Driver+18+for+SQL+Server",
+            connection_string="sqlite:///:memory:",
             results_container_url=os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL],
             results_sas_token=os.environ[AzureSQLMemory.AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN],
         )
 
-        session_mock = UnifiedAlchemyMagicMock()
-        session_mock.__enter__.return_value = session_mock
-        session_mock.is_modified.return_value = True
-        get_session_mock.return_value = session_mock
-
         create_auth_token_mock.return_value = "token"
         enable_azure_authorization_mock.return_value = None
 
+        # Create a temporary directory for results
+        temp_dir = tempfile.mkdtemp()
+        azure_sql_memory.results_path = temp_dir
+
         azure_sql_memory.disable_embedding()
+
+        # Initialize the database schema
+        azure_sql_memory.reset_database()
+
         CentralMemory.set_memory_instance(azure_sql_memory)
         yield azure_sql_memory
 
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir)
     azure_sql_memory.dispose_engine()
 
 
@@ -168,7 +190,6 @@ def get_audio_message_piece() -> MessagePiece:
 
 
 def get_test_message_piece() -> MessagePiece:
-
     return MessagePiece(
         role="user",
         original_value="some text",
@@ -180,7 +201,6 @@ def get_test_message_piece() -> MessagePiece:
 
 def get_sample_conversations() -> MutableSequence[Message]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
-
         conversation_1 = str(uuid.uuid4())
         attack_identifier = {
             "__type__": "MockPromptTarget",

@@ -1,18 +1,49 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import hashlib
 import logging
 import math
 import random
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 
 logger = logging.getLogger(__name__)
 
 
-def combine_dict(existing_dict: Optional[dict] = None, new_dict: Optional[dict] = None) -> dict:
+def verify_and_resolve_path(path: Union[str, Path]) -> Path:
     """
-    Combines two dictionaries containing string keys and values into one.
+    Verify that a path is valid and resolve it to an absolute path.
+
+    This utility function can be used anywhere path validation is needed,
+    such as in scorers, converters, or other components that accept file paths.
+
+    Args:
+        path (Union[str, Path]): A path as a string or Path object.
+
+    Returns:
+        Path: The resolved absolute Path object.
+
+    Raises:
+        ValueError: If the path is not a string or Path object.
+        FileNotFoundError: If the path does not exist.
+    """
+    if not isinstance(path, (str, Path)):
+        raise ValueError(f"Path must be a string or Path object. Got type: {type(path).__name__}")
+
+    path_obj: Path = Path(path).resolve() if isinstance(path, str) else path.resolve()
+    if not path_obj.exists():
+        raise FileNotFoundError(f"Path not found: {str(path_obj)}")
+    return path_obj
+
+
+def combine_dict(
+    existing_dict: Optional[dict[str, Any]] = None, new_dict: Optional[dict[str, Any]] = None
+) -> dict[str, Any]:
+    """
+    Combine two dictionaries containing string keys and values into one.
 
     Args:
         existing_dict: Dictionary with existing values
@@ -27,17 +58,16 @@ def combine_dict(existing_dict: Optional[dict] = None, new_dict: Optional[dict] 
     return result
 
 
-def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> list:
+def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> list[str]:
     """
-    Combines two lists containing string keys, keeping only unique values.
+    Combine two lists or strings into a single list with unique values.
 
     Args:
-        existing_dict: Dictionary with existing values
-        new_dict: Dictionary with new values to be added to the existing dictionary.
-            Note if there's a key clash, the value in new_dict will be used.
+        list1 (Union[str, List[str]]): First list or string to combine.
+        list2 (Union[str, List[str]]): Second list or string to combine.
 
     Returns:
-        list: combined dictionary
+        list: Combined list containing unique values from both inputs.
     """
     if isinstance(list1, str):
         list1 = [list1]
@@ -63,6 +93,9 @@ def get_random_indices(*, start: int, size: int, proportion: float) -> List[int]
 
     Returns:
         List[int]: A list of randomly selected indices based on the specified proportion.
+
+    Raises:
+        ValueError: If `start` is negative, `size` is not positive, or `proportion` is not between 0 and 1.
     """
     if start < 0:
         raise ValueError("Start index must be non-negative")
@@ -82,7 +115,7 @@ def get_random_indices(*, start: int, size: int, proportion: float) -> List[int]
 
 def to_sha256(data: str) -> str:
     """
-    Converts a string to its SHA-256 hash representation.
+    Convert a string to its SHA-256 hash representation.
 
     Args:
         data (str): The input string to be hashed.
@@ -94,10 +127,10 @@ def to_sha256(data: str) -> str:
 
 
 def warn_if_set(
-    *, config: Any, unused_fields: List[str], log: Union[logging.Logger, logging.LoggerAdapter] = logger
+    *, config: Any, unused_fields: List[str], log: Union[logging.Logger, logging.LoggerAdapter[logging.Logger]] = logger
 ) -> None:
     """
-    Utility method to warn about unused parameters in configurations.
+    Warn about unused parameters in configurations.
 
     This method checks if specified fields in a configuration object are set
     (not None and not empty for collections) and logs a warning message for each
@@ -106,6 +139,7 @@ def warn_if_set(
     Args:
         config (Any): The configuration object to check for unused fields.
         unused_fields (List[str]): List of field names to check in the config object.
+        log (Union[logging.Logger, logging.LoggerAdapter]): Logger to use for warning messages.
     """
     config_name = config.__class__.__name__
 
@@ -182,7 +216,7 @@ def get_kwarg_param(
 
     if not isinstance(value, expected_type):
         raise TypeError(
-            f"Parameter '{param_name}' must be of type {expected_type.__name__}, " f"got {type(value).__name__}"
+            f"Parameter '{param_name}' must be of type {expected_type.__name__}, got {type(value).__name__}"
         )
 
     return value

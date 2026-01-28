@@ -46,7 +46,6 @@ class QuestionAnsweringEntry(BaseModel):
 
     def get_correct_answer_text(self) -> str:
         """Get the text of the correct answer."""
-
         correct_answer_index = self.correct_answer
         try:
             # Match using the explicit choice.index (not enumerate position) so non-sequential indices are supported
@@ -57,7 +56,7 @@ class QuestionAnsweringEntry(BaseModel):
                 f"Available choices are: {[f'{i}: {c.text}' for i, c in enumerate(self.choices)]}"
             )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.model_dump_json())
 
 

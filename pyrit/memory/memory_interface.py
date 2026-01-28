@@ -3,15 +3,15 @@
 
 import abc
 import atexit
-import copy
 import logging
 import uuid
+import warnings
 import weakref
 from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import MetaData, and_
+from sqlalchemy import MetaData, and_, or_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql.elements import ColumnElement
@@ -33,7 +33,6 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
-    ChatMessage,
     DataTypeSerializer,
     Message,
     MessagePiece,
@@ -42,6 +41,7 @@ from pyrit.models import (
     Seed,
     SeedDataset,
     SeedGroup,
+    SeedType,
     StorageIO,
     data_serializer_factory,
     group_conversation_message_pieces_by_sequence,
@@ -55,7 +55,8 @@ Model = TypeVar("Model")
 
 
 class MemoryInterface(abc.ABC):
-    """Abstract interface for conversation memory storage systems.
+    """
+    Abstract interface for conversation memory storage systems.
 
     This interface defines the contract for storing and retrieving chat messages
     and conversation history. Implementations can use different storage backends
@@ -67,8 +68,9 @@ class MemoryInterface(abc.ABC):
     results_path: str = None
     engine: Engine = None
 
-    def __init__(self, embedding_model=None):
-        """Initialize the MemoryInterface.
+    def __init__(self, embedding_model: Optional[Any] = None) -> None:
+        """
+        Initialize the MemoryInterface.
 
         Args:
             embedding_model: If set, this includes embeddings in the memory entries
@@ -83,28 +85,44 @@ class MemoryInterface(abc.ABC):
         # Ensure cleanup at process exit
         self.cleanup()
 
-    def enable_embedding(self, embedding_model=None):
+    def enable_embedding(self, embedding_model: Optional[Any] = None) -> None:
+        """
+        Enable embedding functionality for the memory interface.
+
+        Args:
+            embedding_model: Optional embedding model to use. If not provided,
+                attempts to create a default embedding model from environment variables.
+
+        Raises:
+            ValueError: If no embedding model is provided and required environment
+            variables are not set.
+        """
         self.memory_embedding = default_memory_embedding_factory(embedding_model=embedding_model)
 
-    def disable_embedding(self):
+    def disable_embedding(self) -> None:
+        """
+        Disable embedding functionality for the memory interface.
+
+        Sets the memory_embedding attribute to None, disabling any embedding operations.
+        """
         self.memory_embedding = None
 
     @abc.abstractmethod
     def get_all_embeddings(self) -> Sequence[EmbeddingDataEntry]:
         """
-        Loads all EmbeddingData from the memory storage handler.
+        Load all EmbeddingData from the memory storage handler.
         """
 
     @abc.abstractmethod
-    def _init_storage_io(self):
+    def _init_storage_io(self) -> None:
         """
         Initialize the storage IO handler results_storage_io.
         """
 
     @abc.abstractmethod
-    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list:
+    def _get_message_pieces_memory_label_conditions(self, *, memory_labels: dict[str, str]) -> list[Any]:
         """
-        Returns a list of conditions for filtering memory entries based on memory labels.
+        Return a list of conditions for filtering memory entries based on memory labels.
 
         Args:
             memory_labels (dict[str, str]): A free-form dictionary for tagging prompts with custom labels.
@@ -117,9 +135,11 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_message_pieces_prompt_metadata_conditions(self, *, prompt_metadata: dict[str, Union[str, int]]) -> list:
+    def _get_message_pieces_prompt_metadata_conditions(
+        self, *, prompt_metadata: dict[str, Union[str, int]]
+    ) -> list[Any]:
         """
-        Returns a list of conditions for filtering memory entries based on prompt metadata.
+        Return a list of conditions for filtering memory entries based on prompt metadata.
 
         Args:
             prompt_metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
@@ -132,13 +152,13 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _get_message_pieces_attack_conditions(self, *, attack_id: str) -> Any:
         """
-        Returns a condition to retrieve based on attack ID.
+        Return a condition to retrieve based on attack ID.
         """
 
     @abc.abstractmethod
     def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
-        Returns a condition for filtering seed prompt entries based on prompt metadata.
+        Return a condition for filtering seed prompt entries based on prompt metadata.
 
         Args:
             metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
@@ -151,24 +171,29 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
-        Inserts a list of message pieces into the memory storage.
+        Insert a list of message pieces into the memory storage.
         """
 
     @abc.abstractmethod
     def _add_embeddings_to_memory(self, *, embedding_data: Sequence[EmbeddingDataEntry]) -> None:
         """
-        Inserts embedding data into memory storage
+        Insert embedding data into memory storage.
         """
 
     @abc.abstractmethod
     def _query_entries(
-        self, Model, *, conditions: Optional = None, distinct: bool = False, join_scores: bool = False  # type: ignore
-    ) -> MutableSequence[Model]:  # type: ignore
+        self,
+        model_class: type[Model],
+        *,
+        conditions: Optional[Any] = None,
+        distinct: bool = False,
+        join_scores: bool = False,
+    ) -> MutableSequence[Model]:
         """
-        Fetches data from the specified table model with optional conditions.
+        Fetch data from the specified table model with optional conditions.
 
         Args:
-            model: The SQLAlchemy model class corresponding to the table you want to query.
+            model_class: The SQLAlchemy model class corresponding to the table you want to query.
             conditions: SQLAlchemy filter conditions (Optional).
             distinct: Whether to return distinct rows only. Defaults to False.
             join_scores: Whether to join the scores table. Defaults to False.
@@ -178,30 +203,30 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _insert_entry(self, entry: Base) -> None:  # type: ignore
+    def _insert_entry(self, entry: Base) -> None:
         """
-        Inserts an entry into the Table.
+        Insert an entry into the Table.
 
         Args:
             entry: An instance of a SQLAlchemy model to be added to the Table.
         """
 
     @abc.abstractmethod
-    def _insert_entries(self, *, entries: Sequence[Base]) -> None:  # type: ignore
-        """Inserts multiple entries into the database."""
+    def _insert_entries(self, *, entries: Sequence[Base]) -> None:
+        """Insert multiple entries into the database."""
 
     @abc.abstractmethod
-    def get_session(self):  # type: ignore
+    def get_session(self) -> Any:
         """
-        Provides a SQLAlchemy session for transactional operations.
+        Provide a SQLAlchemy session for transactional operations.
 
         Returns:
             Session: A SQLAlchemy session bound to the engine.
         """
 
-    def _update_entry(self, entry: Base) -> None:  # type: ignore
+    def _update_entry(self, entry: Base) -> None:
         """
-        Updates an existing entry in the Table using merge.
+        Update an existing entry in the Table using merge.
 
         This method uses SQLAlchemy's merge operation which will:
         - Update the existing record if the primary key matches
@@ -209,6 +234,9 @@ class MemoryInterface(abc.ABC):
 
         Args:
             entry: An instance of a SQLAlchemy model to be updated in the Table.
+
+        Raises:
+            SQLAlchemyError: If there's an error during the database operation.
         """
         from contextlib import closing
 
@@ -224,9 +252,9 @@ class MemoryInterface(abc.ABC):
                 raise
 
     @abc.abstractmethod
-    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict) -> bool:  # type: ignore
+    def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict[str, Any]) -> bool:
         """
-        Updates the given entries with the specified field values.
+        Update the given entries with the specified field values.
 
         Args:
             entries (Sequence[Base]): A list of SQLAlchemy model instances to be updated.
@@ -236,7 +264,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
         """
-        Returns a database-specific condition for filtering AttackResults by targeted harm categories
+        Return a database-specific condition for filtering AttackResults by targeted harm categories
         in the associated PromptMemoryEntry records.
 
         Args:
@@ -249,7 +277,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
-        Returns a database-specific condition for filtering AttackResults by labels
+        Return a database-specific condition for filtering AttackResults by labels
         in the associated PromptMemoryEntry records.
 
         Args:
@@ -262,7 +290,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
-        Returns a database-specific condition for filtering ScenarioResults by labels.
+        Return a database-specific condition for filtering ScenarioResults by labels.
 
         Args:
             labels: Dictionary of labels that must ALL be present.
@@ -274,7 +302,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _get_scenario_result_target_endpoint_condition(self, *, endpoint: str) -> Any:
         """
-        Returns a database-specific condition for filtering ScenarioResults by target endpoint.
+        Return a database-specific condition for filtering ScenarioResults by target endpoint.
 
         Args:
             endpoint: Endpoint substring to search for (case-insensitive).
@@ -286,7 +314,7 @@ class MemoryInterface(abc.ABC):
     @abc.abstractmethod
     def _get_scenario_result_target_model_condition(self, *, model_name: str) -> Any:
         """
-        Returns a database-specific condition for filtering ScenarioResults by target model name.
+        Return a database-specific condition for filtering ScenarioResults by target model name.
 
         Args:
             model_name: Model name substring to search for (case-insensitive).
@@ -297,7 +325,7 @@ class MemoryInterface(abc.ABC):
 
     def add_scores_to_memory(self, *, scores: Sequence[Score]) -> None:
         """
-        Inserts a list of scores into the memory storage.
+        Insert a list of scores into the memory storage.
         """
         for score in scores:
             if score.message_piece_id:
@@ -321,7 +349,7 @@ class MemoryInterface(abc.ABC):
         sent_before: Optional[datetime] = None,
     ) -> Sequence[Score]:
         """
-        Retrieves a list of Score objects based on the specified filters.
+        Retrieve a list of Score objects based on the specified filters.
 
         Args:
             score_ids (Optional[Sequence[str]]): A list of score IDs to filter by.
@@ -370,10 +398,25 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[Sequence[str]] = None,
     ) -> Sequence[Score]:
         """
-        Retrieves scores attached to message pieces based on the specified filters.
+        Retrieve scores attached to message pieces based on the specified filters.
 
         Args:
-            Same as `get_message_pieces`.
+            attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
+            role (Optional[str], optional): The role of the prompt. Defaults to None.
+            conversation_id (Optional[str | uuid.UUID], optional): The ID of the conversation. Defaults to None.
+            prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
+                Defaults to None.
+            labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
+            prompt_metadata (Optional[dict[str, Union[str, int]]], optional): The metadata associated with the prompt.
+                Defaults to None.
+            sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
+            sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
+            original_values (Optional[Sequence[str]], optional): A list of original values. Defaults to None.
+            converted_values (Optional[Sequence[str]], optional): A list of converted values. Defaults to None.
+            data_type (Optional[str], optional): The data type to filter by. Defaults to None.
+            not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
+            converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
+                Defaults to None.
 
         Returns:
             Sequence[Score]: A list of scores extracted from the message pieces.
@@ -412,7 +455,7 @@ class MemoryInterface(abc.ABC):
 
     def get_conversation(self, *, conversation_id: str) -> MutableSequence[Message]:
         """
-        Retrieves a list of Message objects that have the specified conversation ID.
+        Retrieve a list of Message objects that have the specified conversation ID.
 
         Args:
             conversation_id (str): The conversation ID to match.
@@ -425,13 +468,18 @@ class MemoryInterface(abc.ABC):
 
     def get_request_from_response(self, *, response: Message) -> Message:
         """
-        Retrieves the request that produced the given response.
+        Retrieve the request that produced the given response.
+
         Args:
-            request (Message): The message object to match.
+            response (Message): The response message object to match.
+
         Returns:
             Message: The corresponding message object.
+
+        Raises:
+            ValueError: If the response is not from an assistant role or has no preceding request.
         """
-        if response.role != "assistant":
+        if response.api_role != "assistant":
             raise ValueError("The provided request is not a response (role must be 'assistant').")
         if response.sequence < 1:
             raise ValueError("The provided request does not have a preceding request (sequence < 1).")
@@ -457,7 +505,7 @@ class MemoryInterface(abc.ABC):
         converted_value_sha256: Optional[Sequence[str]] = None,
     ) -> Sequence[MessagePiece]:
         """
-        Retrieves a list of MessagePiece objects based on the specified filters.
+        Retrieve a list of MessagePiece objects based on the specified filters.
 
         Args:
             attack_id (Optional[str | uuid.UUID], optional): The ID of the attack. Defaults to None.
@@ -466,6 +514,8 @@ class MemoryInterface(abc.ABC):
             prompt_ids (Optional[Sequence[str] | Sequence[uuid.UUID]], optional): A list of prompt IDs.
                 Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of labels. Defaults to None.
+            prompt_metadata (Optional[dict[str, Union[str, int]]], optional): The metadata associated with the prompt.
+                Defaults to None.
             sent_after (Optional[datetime], optional): Filter for prompts sent after this datetime. Defaults to None.
             sent_before (Optional[datetime], optional): Filter for prompts sent before this datetime. Defaults to None.
             original_values (Optional[Sequence[str]], optional): A list of original values. Defaults to None.
@@ -474,13 +524,14 @@ class MemoryInterface(abc.ABC):
             not_data_type (Optional[str], optional): The data type to exclude. Defaults to None.
             converted_value_sha256 (Optional[Sequence[str]], optional): A list of SHA256 hashes of converted values.
                 Defaults to None.
+
         Returns:
             Sequence[MessagePiece]: A list of MessagePiece objects that match the specified filters.
+
         Raises:
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
         """
-
         conditions = []
         if attack_id:
             conditions.append(self._get_message_pieces_attack_conditions(attack_id=str(attack_id)))
@@ -513,48 +564,56 @@ class MemoryInterface(abc.ABC):
         try:
             memory_entries: Sequence[PromptMemoryEntry] = self._query_entries(
                 PromptMemoryEntry, conditions=and_(*conditions) if conditions else None, join_scores=True
-            )  # type: ignore
+            )
             message_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
             return sort_message_pieces(message_pieces=message_pieces)
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with error {e}")
-            return []
+            raise
 
-    def duplicate_conversation(self, *, conversation_id: str, new_attack_id: Optional[str] = None) -> str:
+    def _duplicate_conversation(self, *, messages: Sequence[Message]) -> tuple[str, Sequence[MessagePiece]]:
         """
-        Duplicates a conversation for reuse
+        Duplicate messages with new conversation ID.
+
+        Args:
+            messages (Sequence[Message]): The messages to duplicate.
+
+        Returns:
+            tuple[str, Sequence[MessagePiece]]: The new conversation ID and the duplicated message pieces.
+        """
+        new_conversation_id = str(uuid.uuid4())
+
+        all_pieces: list[MessagePiece] = []
+        for message in messages:
+            duplicated_message = message.duplicate_message()
+
+            for piece in duplicated_message.message_pieces:
+                piece.conversation_id = new_conversation_id
+
+            all_pieces.extend(duplicated_message.message_pieces)
+
+        return new_conversation_id, all_pieces
+
+    def duplicate_conversation(self, *, conversation_id: str) -> str:
+        """
+        Duplicate a conversation for reuse.
 
         This can be useful when an attack strategy requires branching out from a particular point in the conversation.
-        One cannot continue both branches with the same attack and conversation IDs since that would corrupt
-        the memory. Instead, one needs to duplicate the conversation and continue with the new attack ID.
+        One cannot continue both branches with the same conversation ID since that would corrupt
+        the memory. Instead, one needs to duplicate the conversation and continue with the new conversation ID.
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
-                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
+
         Returns:
             The uuid for the new conversation.
         """
-        new_conversation_id = str(uuid.uuid4())
-        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
-        for piece in message_pieces:
-            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
-            piece.id = uuid.uuid4()
-            if piece.attack_identifier["id"] == new_attack_id:
-                raise ValueError("The new attack ID must be different from the existing attack ID.")
-
-            if new_attack_id:
-                piece.attack_identifier["id"] = new_attack_id
-
-            piece.conversation_id = new_conversation_id
-
-        self.add_message_pieces_to_memory(message_pieces=message_pieces)
+        messages = self.get_conversation(conversation_id=conversation_id)
+        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages)
+        self.add_message_pieces_to_memory(message_pieces=all_pieces)
         return new_conversation_id
 
-    def duplicate_conversation_excluding_last_turn(
-        self, *, conversation_id: str, new_attack_id: Optional[str] = None
-    ) -> str:
+    def duplicate_conversation_excluding_last_turn(self, *, conversation_id: str) -> str:
         """
         Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last
         user request (e.g. if there is half a turn, it just removes that half).
@@ -563,57 +622,43 @@ class MemoryInterface(abc.ABC):
 
         Args:
             conversation_id (str): The conversation ID with existing conversations.
-            new_attack_id (str, Optional): The new attack ID to assign to the duplicated conversations.
-                If no new attack ID is provided, the attack ID will remain the same. Defaults to None.
+
         Returns:
             The uuid for the new conversation.
         """
-        new_conversation_id = str(uuid.uuid4())
-        # Deep copy objects to prevent any mutability-related issues that could arise due to in-memory databases.
-        message_pieces = copy.deepcopy(self.get_message_pieces(conversation_id=conversation_id))
+        messages = self.get_conversation(conversation_id=conversation_id)
 
         # remove the final turn from the conversation
-        if len(message_pieces) == 0:
-            return new_conversation_id
+        if len(messages) == 0:
+            return str(uuid.uuid4())
 
-        last_prompt = max(message_pieces, key=lambda x: x.sequence)
+        last_message = messages[-1]
 
         length_of_sequence_to_remove = 0
 
-        if last_prompt.role == "system" or last_prompt.role == "user":
+        if last_message.api_role == "system" or last_message.api_role == "user":
             length_of_sequence_to_remove = 1
         else:
             length_of_sequence_to_remove = 2
 
-        message_pieces = [
-            message_piece
-            for message_piece in message_pieces
-            if message_piece.sequence <= last_prompt.sequence - length_of_sequence_to_remove
+        messages_to_duplicate = [
+            message for message in messages if message.sequence <= last_message.sequence - length_of_sequence_to_remove
         ]
 
-        for piece in message_pieces:
-            # Assign duplicated piece a new ID, but note that the `original_prompt_id` remains the same.
-            piece.id = uuid.uuid4()
-            if new_attack_id:
-                piece.attack_identifier["id"] = new_attack_id
-            piece.conversation_id = new_conversation_id
-
-        self.add_message_pieces_to_memory(message_pieces=message_pieces)
+        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages_to_duplicate)
+        self.add_message_pieces_to_memory(message_pieces=all_pieces)
 
         return new_conversation_id
 
     def add_message_to_memory(self, *, request: Message) -> None:
         """
-        Inserts a list of message pieces into the memory storage.
+        Insert a list of message pieces into the memory storage.
 
         Automatically updates the sequence to be the next number in the conversation.
         If necessary, generates embedding data for applicable entries
 
         Args:
             request (MessagePiece): The message piece to add to the memory.
-
-        Returns:
-            None
         """
         request.validate()
 
@@ -631,14 +676,13 @@ class MemoryInterface(abc.ABC):
 
             self._add_embeddings_to_memory(embedding_data=embedding_entries)
 
-    def _update_sequence(self, *, message_pieces: Sequence[MessagePiece]):
+    def _update_sequence(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """
-        Updates the sequence number of the message pieces in the conversation.
+        Update the sequence number of the message pieces in the conversation.
 
         Args:
             message_pieces (Sequence[MessagePiece]): The list of message pieces to update.
         """
-
         prev_conversations = self.get_message_pieces(conversation_id=message_pieces[0].conversation_id)
 
         sequence = 0
@@ -649,9 +693,9 @@ class MemoryInterface(abc.ABC):
         for piece in message_pieces:
             piece.sequence = sequence
 
-    def update_prompt_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict) -> bool:
+    def update_prompt_entries_by_conversation_id(self, *, conversation_id: str, update_fields: dict[str, Any]) -> bool:
         """
-        Updates prompt entries for a given conversation ID with the specified field values.
+        Update prompt entries for a given conversation ID with the specified field values.
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
@@ -659,6 +703,9 @@ class MemoryInterface(abc.ABC):
 
         Returns:
             bool: True if the update was successful, False otherwise.
+
+        Raises:
+            ValueError: If update_fields is empty or not provided.
         """
         if not update_fields:
             raise ValueError("update_fields must be provided to update prompt entries.")
@@ -680,9 +727,9 @@ class MemoryInterface(abc.ABC):
             logger.error(f"Failed to update entries with conversation_id {conversation_id}.")
         return success
 
-    def update_labels_by_conversation_id(self, *, conversation_id: str, labels: dict) -> bool:
+    def update_labels_by_conversation_id(self, *, conversation_id: str, labels: dict[str, Any]) -> bool:
         """
-        Updates the labels of prompt entries in memory for a given conversation ID.
+        Update the labels of prompt entries in memory for a given conversation ID.
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
@@ -699,11 +746,11 @@ class MemoryInterface(abc.ABC):
         self, *, conversation_id: str, prompt_metadata: dict[str, Union[str, int]]
     ) -> bool:
         """
-        Updates the metadata of prompt entries in memory for a given conversation ID.
+        Update the metadata of prompt entries in memory for a given conversation ID.
 
         Args:
             conversation_id (str): The conversation ID of the entries to be updated.
-            metadata (dict[str, str | int]): New metadata.
+            prompt_metadata (dict[str, str | int]): New metadata.
 
         Returns:
             bool: True if the update was successful, False otherwise.
@@ -713,14 +760,14 @@ class MemoryInterface(abc.ABC):
         )
 
     @abc.abstractmethod
-    def dispose_engine(self):
+    def dispose_engine(self) -> None:
         """
         Dispose the engine and clean up resources.
         """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
-        Ensure cleanup on process exit
+        Ensure cleanup on process exit.
         """
         # Ensure cleanup at process exit
         atexit.register(self.dispose_engine)
@@ -728,42 +775,36 @@ class MemoryInterface(abc.ABC):
         # Ensure cleanup happens even if the object is garbage collected before process exits
         weakref.finalize(self, self.dispose_engine)
 
-    def get_chat_messages_with_conversation_id(self, *, conversation_id: str) -> Sequence[ChatMessage]:
-        """
-        Returns the memory for a given conversation_id.
-
-        Args:
-            conversation_id (str): The conversation ID.
-
-        Returns:
-            Sequence[ChatMessage]: The list of chat messages.
-        """
-        memory_entries = self.get_message_pieces(conversation_id=conversation_id)
-        return [ChatMessage(role=me.role, content=me.converted_value) for me in memory_entries]  # type: ignore
-
     def get_seeds(
         self,
         *,
         value: Optional[str] = None,
         value_sha256: Optional[Sequence[str]] = None,
         dataset_name: Optional[str] = None,
+        dataset_name_pattern: Optional[str] = None,
         data_types: Optional[Sequence[str]] = None,
         harm_categories: Optional[Sequence[str]] = None,
         added_by: Optional[str] = None,
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
-        is_objective: Optional[bool] = None,
+        seed_type: Optional[SeedType] = None,
+        is_objective: Optional[bool] = None,  # Deprecated in 0.13.0: Use seed_type instead
         parameters: Optional[Sequence[str]] = None,
         metadata: Optional[dict[str, Union[str, int]]] = None,
+        prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
     ) -> Sequence[Seed]:
         """
-        Retrieves a list of seed prompts based on the specified filters.
+        Retrieve a list of seed prompts based on the specified filters.
 
         Args:
             value (str): The value to match by substring. If None, all values are returned.
             value_sha256 (str): The SHA256 hash of the value to match. If None, all values are returned.
-            dataset_name (str): The dataset name to match. If None, all dataset names are considered.
+            dataset_name (str): The dataset name to match exactly. If None, all dataset names are considered.
+            dataset_name_pattern (str): A pattern to match dataset names using SQL LIKE syntax.
+                Supports wildcards: % (any characters) and _ (single character).
+                Examples: "harm%" matches names starting with "harm", "%test%" matches names containing "test".
+                If both dataset_name and dataset_name_pattern are provided, dataset_name takes precedence.
             data_types (Optional[Sequence[str], Optional): List of data types to filter seed prompts by
                 (e.g., text, image_path).
             harm_categories (Sequence[str]): A list of harm categories to filter by. If None,
@@ -775,14 +816,35 @@ class MemoryInterface(abc.ABC):
                 is "A. Jones", "Jones, Adam", etc. If None, all authors are considered.
             groups (Sequence[str]): A list of groups to filter by. If None, all groups are considered.
             source (str): The source to filter by. If None, all sources are considered.
-            is_objective (bool): Whether to filter by prompts that are used as objectives.
+            seed_type (SeedType): The type of seed to filter by ("prompt", "objective", or
+                "simulated_conversation").
+            is_objective (bool): Deprecated in 0.13.0. Use seed_type="objective" instead.
             parameters (Sequence[str]): A list of parameters to filter by. Specifying parameters effectively returns
                 prompt templates instead of prompts.
             metadata (dict[str, str | int]): A free-form dictionary for tagging prompts with custom metadata.
+            prompt_group_ids (Sequence[uuid.UUID]): A list of prompt group IDs to filter by.
 
         Returns:
             Sequence[SeedPrompt]: A list of prompts matching the criteria.
+
+        Raises:
+            ValueError: If both 'seed_type' and deprecated 'is_objective' parameters are specified.
         """
+        # Handle deprecated is_objective parameter
+        if is_objective is not None:
+            if seed_type is not None:
+                raise ValueError(
+                    "Cannot specify both 'seed_type' and 'is_objective'. "
+                    "is_objective is deprecated since 0.13.0. Use seed_type='objective' instead."
+                )
+            warnings.warn(
+                "is_objective parameter is deprecated since 0.13.0. Use seed_type='objective' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            # Convert is_objective to seed_type
+            seed_type = "objective" if is_objective else "prompt"
+
         conditions = []
 
         # Apply filters for non-list fields
@@ -792,6 +854,10 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedEntry.value_sha256.in_(value_sha256))
         if dataset_name:
             conditions.append(SeedEntry.dataset_name == dataset_name)
+        elif dataset_name_pattern:
+            conditions.append(SeedEntry.dataset_name.like(dataset_name_pattern))
+        if prompt_group_ids:
+            conditions.append(SeedEntry.prompt_group_id.in_(prompt_group_ids))
         if data_types:
             data_type_conditions = SeedEntry.data_type.in_(data_types)
             conditions.append(data_type_conditions)
@@ -799,8 +865,13 @@ class MemoryInterface(abc.ABC):
             conditions.append(SeedEntry.added_by == added_by)
         if source:
             conditions.append(SeedEntry.source == source)
-        if is_objective is not None:
-            conditions.append(SeedEntry.is_objective == is_objective)
+
+        # Handle seed_type filtering with backward compatibility for is_objective
+        if seed_type == "objective":
+            # Match either seed_type="objective" OR legacy is_objective=True
+            conditions.append(or_(SeedEntry.seed_type == "objective", SeedEntry.is_objective == True))  # noqa: E712
+        elif seed_type is not None:
+            conditions.append(SeedEntry.seed_type == seed_type)
 
         self._add_list_conditions(field=SeedEntry.harm_categories, values=harm_categories, conditions=conditions)
         self._add_list_conditions(field=SeedEntry.authors, values=authors, conditions=conditions)
@@ -816,14 +887,14 @@ class MemoryInterface(abc.ABC):
             memory_entries: Sequence[SeedEntry] = self._query_entries(
                 SeedEntry,
                 conditions=and_(*conditions) if conditions else None,
-            )  # type: ignore
+            )
             return [memory_entry.get_seed() for memory_entry in memory_entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve prompts with dataset name {dataset_name} with error {e}")
-            return []
+            raise
 
     def _add_list_conditions(
-        self, field: InstrumentedAttribute, conditions: list, values: Optional[Sequence[str]] = None
+        self, field: InstrumentedAttribute[Any], conditions: list[Any], values: Optional[Sequence[str]] = None
     ) -> None:
         if values:
             for value in values:
@@ -831,7 +902,7 @@ class MemoryInterface(abc.ABC):
 
     async def _serialize_seed_value(self, prompt: Seed) -> str:
         """
-        Serializes the value of a seed prompt based on its data type.
+        Serialize the value of a seed prompt based on its data type.
 
         Args:
             prompt (Seed): The seed prompt to serialize. Must have a valid `data_type`.
@@ -861,17 +932,20 @@ class MemoryInterface(abc.ABC):
             serialized_prompt_value = str(serializer.value)
         return serialized_prompt_value
 
-    async def add_seeds_to_memory_async(self, *, prompts: Sequence[Seed], added_by: Optional[str] = None) -> None:
+    async def add_seeds_to_memory_async(self, *, seeds: Sequence[Seed], added_by: Optional[str] = None) -> None:
         """
-        Inserts a list of prompts into the memory storage.
+        Insert a list of seeds into the memory storage.
 
         Args:
-            prompts (Sequence[Seed]): A list of prompts to insert.
-            added_by (str): The user who added the prompts.
+            seeds (Sequence[Seed]): A list of seeds to insert.
+            added_by (str): The user who added the seeds.
+
+        Raises:
+            ValueError: If the 'added_by' attribute is not set for each prompt.
         """
         entries: MutableSequence[SeedEntry] = []
         current_time = datetime.now()
-        for prompt in prompts:
+        for prompt in seeds:
             if added_by:
                 prompt.added_by = added_by
             if not prompt.added_by:
@@ -882,7 +956,9 @@ class MemoryInterface(abc.ABC):
             if prompt.date_added is None:
                 prompt.date_added = current_time
 
-            prompt.set_encoding_metadata()
+            # Only SeedPrompt has set_encoding_metadata for audio/video/image files
+            if hasattr(prompt, "set_encoding_metadata"):
+                prompt.set_encoding_metadata()
 
             # Handle serialization for image, audio & video SeedPrompts
             if prompt.data_type in ["image_path", "audio_path", "video_path"]:
@@ -896,9 +972,23 @@ class MemoryInterface(abc.ABC):
 
         self._insert_entries(entries=entries)
 
+    async def add_seed_datasets_to_memory_async(self, *, datasets: Sequence[SeedDataset], added_by: str) -> None:
+        """
+        Insert a list of seed datasets into the memory storage.
+
+        Args:
+            datasets (Sequence[SeedDataset]): A list of seed datasets to insert.
+            added_by (str): The user who added the datasets.
+        """
+        for dataset in datasets:
+            await self.add_seeds_to_memory_async(seeds=dataset.seeds, added_by=added_by)
+
     def get_seed_dataset_names(self) -> Sequence[str]:
         """
-        Returns a list of all seed dataset names in the memory storage.
+        Return a list of all seed dataset names in the memory storage.
+
+        Returns:
+            Sequence[str]: A list of unique dataset names.
         """
         try:
             entries: Sequence[SeedEntry] = self._query_entries(
@@ -914,66 +1004,77 @@ class MemoryInterface(abc.ABC):
             return list(dataset_names)
         except Exception as e:
             logger.exception(f"Failed to retrieve dataset names with error {e}")
-            return []
+            raise
 
-    async def add_seed_groups_to_memory(
+    async def add_seed_groups_to_memory_async(
         self, *, prompt_groups: Sequence[SeedGroup], added_by: Optional[str] = None
     ) -> None:
         """
-        Inserts a list of seed groups into the memory storage.
+        Insert a list of seed groups into the memory storage.
 
         Args:
             prompt_groups (Sequence[SeedGroup]): A list of prompt groups to insert.
             added_by (str): The user who added the prompt groups.
 
         Raises:
-            ValueError: If a prompt group does not have at least one prompt.
-            ValueError: If prompt group IDs are inconsistent within the same prompt group.
+            ValueError: If a seed group does not have at least one seed.
+            ValueError: If seed group IDs are inconsistent within the same seed group.
         """
         if not prompt_groups:
             raise ValueError("At least one prompt group must be provided.")
         # Validates the prompt group IDs and sets them if possible before leveraging
-        # the add_seed_prompts_to_memory method.
-        all_prompts: MutableSequence[Seed] = []
+        # the add_seeds_to_memory_async method.
+        all_seeds: MutableSequence[Seed] = []
         for prompt_group in prompt_groups:
-            if not prompt_group.prompts:
-                raise ValueError("Prompt group must have at least one prompt.")
+            if not prompt_group.seeds:
+                raise ValueError("Seed group must have at least one seed.")
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(prompt.prompt_group_id for prompt in prompt_group.prompts)
+            group_id_set = set(seed.prompt_group_id for seed in prompt_group.seeds)
             if len(group_id_set) > 1:
                 raise ValueError(
                     f"""Inconsistent 'prompt_group_id' attribute between members of the
-                    same prompt group. Found {group_id_set}"""
+                    same seed group. Found {group_id_set}"""
                 )
             prompt_group_id = group_id_set.pop() or uuid.uuid4()
-            for prompt in prompt_group.prompts:
-                prompt.prompt_group_id = prompt_group_id
+            for seed in prompt_group.seeds:
+                seed.prompt_group_id = prompt_group_id
 
-            all_prompts.extend(prompt_group.prompts)
-            if prompt_group.objective:
-                prompt_group.objective.prompt_group_id = prompt_group_id
-                all_prompts.append(prompt_group.objective)
-        await self.add_seeds_to_memory_async(prompts=all_prompts, added_by=added_by)
+            all_seeds.extend(prompt_group.seeds)
+        await self.add_seeds_to_memory_async(seeds=all_seeds, added_by=added_by)
 
     def get_seed_groups(
         self,
         *,
+        value: Optional[str] = None,
         value_sha256: Optional[Sequence[str]] = None,
         dataset_name: Optional[str] = None,
+        dataset_name_pattern: Optional[str] = None,
         data_types: Optional[Sequence[str]] = None,
         harm_categories: Optional[Sequence[str]] = None,
         added_by: Optional[str] = None,
         authors: Optional[Sequence[str]] = None,
         groups: Optional[Sequence[str]] = None,
         source: Optional[str] = None,
+        seed_type: Optional[SeedType] = None,
+        is_objective: Optional[bool] = None,  # Deprecated in 0.13.0: Use seed_type instead
+        parameters: Optional[Sequence[str]] = None,
+        metadata: Optional[dict[str, Union[str, int]]] = None,
+        prompt_group_ids: Optional[Sequence[uuid.UUID]] = None,
+        group_length: Optional[Sequence[int]] = None,
     ) -> Sequence[SeedGroup]:
-        """Retrieves groups of seed prompts based on the provided filtering criteria
+        """
+        Retrieve groups of seed prompts based on the provided filtering criteria.
 
         Args:
+            value (Optional[str], Optional): The value to match by substring.
             value_sha256 (Optional[Sequence[str]], Optional): SHA256 hash of value to filter seed groups by.
-            dataset_name (Optional[str], Optional): Name of the dataset to filter seed prompts.
+            dataset_name (Optional[str], Optional): Name of the dataset to match exactly.
+            dataset_name_pattern (Optional[str], Optional): A pattern to match dataset names using SQL LIKE syntax.
+                Supports wildcards: % (any characters) and _ (single character).
+                Examples: "harm%" matches names starting with "harm", "%test%" matches names containing "test".
+                If both dataset_name and dataset_name_pattern are provided, dataset_name takes precedence.
             data_types (Optional[Sequence[str]], Optional): List of data types to filter seed prompts by
             (e.g., text, image_path).
             harm_categories (Optional[Sequence[str]], Optional): List of harm categories to filter seed prompts by.
@@ -981,21 +1082,52 @@ class MemoryInterface(abc.ABC):
             authors (Optional[Sequence[str]], Optional): List of authors to filter seed groups by.
             groups (Optional[Sequence[str]], Optional): List of groups to filter seed groups by.
             source (Optional[str], Optional): The source from which the seed prompts originated.
+            seed_type (Optional[SeedType], Optional): The type of seed to filter by ("prompt", "objective", or
+                "simulated_conversation").
+            is_objective (bool): Deprecated in 0.13.0. Use seed_type="objective" instead.
+            parameters (Optional[Sequence[str]], Optional): List of parameters to filter by.
+            metadata (Optional[dict[str, Union[str, int]]], Optional): A free-form dictionary for tagging
+                prompts with custom metadata.
+            prompt_group_ids (Optional[Sequence[uuid.UUID]], Optional): List of prompt group IDs to filter by.
+            group_length (Optional[Sequence[int]], Optional): The number of seeds in the group to filter by.
 
         Returns:
             Sequence[SeedGroup]: A list of `SeedGroup` objects that match the filtering criteria.
         """
         seeds = self.get_seeds(
+            value=value,
             value_sha256=value_sha256,
             dataset_name=dataset_name,
+            dataset_name_pattern=dataset_name_pattern,
             data_types=data_types,
             harm_categories=harm_categories,
             added_by=added_by,
             authors=authors,
             groups=groups,
             source=source,
+            seed_type=seed_type,
+            is_objective=is_objective,
+            parameters=parameters,
+            metadata=metadata,
+            prompt_group_ids=prompt_group_ids,
         )
+
+        # If we have filtered seeds, we want to get all seeds in the same group
+        # This allows us to filter by one modality (e.g. audio) and get the whole group (e.g. audio + text)
+        if seeds:
+            related_prompt_group_ids = {seed.prompt_group_id for seed in seeds if seed.prompt_group_id}
+            if related_prompt_group_ids:
+                seeds = self.get_seeds(prompt_group_ids=list(related_prompt_group_ids))
+
+        # Deduplicate seeds to ensure we don't have duplicate prompts in the groups
+        if seeds:
+            seeds = list({seed.id: seed for seed in seeds}.values())
+
         seed_groups = SeedDataset.group_seed_prompts_by_prompt_group_id(seeds)
+
+        if group_length:
+            seed_groups = [group for group in seed_groups if len(group.seeds) in group_length]
+
         return seed_groups
 
     def export_conversations(
@@ -1016,7 +1148,7 @@ class MemoryInterface(abc.ABC):
         export_type: str = "json",
     ) -> Path:
         """
-        Exports conversation data with the given inputs to a specified file.
+        Export conversation data with the given inputs to a specified file.
             Defaults to all conversations if no filters are provided.
 
         Args:
@@ -1036,6 +1168,9 @@ class MemoryInterface(abc.ABC):
             file_path (Optional[Path], optional): The path to the file where the data will be exported.
                 Defaults to None.
             export_type (str, optional): The format of the export. Defaults to "json".
+
+        Returns:
+            Path: The path to the exported file.
         """
         data = self.get_message_pieces(
             attack_id=attack_id,
@@ -1056,13 +1191,13 @@ class MemoryInterface(abc.ABC):
             file_name = f"exported_conversations_on_{datetime.now().strftime('%Y_%m_%d')}.{export_type}"
             file_path = DB_DATA_PATH / file_name
 
-        self.exporter.export_data(data, file_path=file_path, export_type=export_type)
+        self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)
 
         return file_path
 
     def add_attack_results_to_memory(self, *, attack_results: Sequence[AttackResult]) -> None:
         """
-        Inserts a list of attack results into the memory storage.
+        Insert a list of attack results into the memory storage.
         The database model automatically calculates objective_sha256 for consistency.
         """
         self._insert_entries(entries=[AttackResultEntry(entry=attack_result) for attack_result in attack_results])
@@ -1079,7 +1214,7 @@ class MemoryInterface(abc.ABC):
         labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
         """
-        Retrieves a list of AttackResult objects based on the specified filters.
+        Retrieve a list of AttackResult objects based on the specified filters.
 
         Args:
             attack_result_ids (Optional[Sequence[str]], optional): A list of attack result IDs. Defaults to None.
@@ -1099,6 +1234,7 @@ class MemoryInterface(abc.ABC):
             labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter results by.
                 These labels are associated with the prompts themselves, used for custom tagging and tracking.
                 Defaults to None.
+
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """
@@ -1136,11 +1272,11 @@ class MemoryInterface(abc.ABC):
             return [entry.get_attack_result() for entry in entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
-            return []
+            raise
 
     def add_scenario_results_to_memory(self, *, scenario_results: Sequence[ScenarioResult]) -> None:
         """
-        Inserts a list of scenario results into the memory storage.
+        Insert a list of scenario results into the memory storage.
 
         Args:
             scenario_results: Sequence of ScenarioResult objects to store in the database.
@@ -1204,8 +1340,8 @@ class MemoryInterface(abc.ABC):
             return True
 
         except Exception as e:
-            logger.error(f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}", exc_info=True)
-            return False
+            logger.exception(f"Failed to add attack results to scenario {scenario_result_id}: {str(e)}")
+            raise
 
     def update_scenario_run_state(self, *, scenario_result_id: str, scenario_run_state: str) -> bool:
         """
@@ -1246,11 +1382,10 @@ class MemoryInterface(abc.ABC):
             return True
 
         except Exception as e:
-            logger.error(
-                f"Failed to update scenario {scenario_result_id} state to '{scenario_run_state}': {str(e)}",
-                exc_info=True,
+            logger.exception(
+                f"Failed to update scenario {scenario_result_id} state to '{scenario_run_state}': {str(e)}"
             )
-            return False
+            raise
 
     def get_scenario_results(
         self,
@@ -1266,7 +1401,7 @@ class MemoryInterface(abc.ABC):
         objective_target_model_name: Optional[str] = None,
     ) -> Sequence[ScenarioResult]:
         """
-        Retrieves a list of ScenarioResult objects based on the specified filters.
+        Retrieve a list of ScenarioResult objects based on the specified filters.
 
         Args:
             scenario_result_ids (Optional[Sequence[str]], optional): A list of scenario result IDs.
@@ -1277,7 +1412,7 @@ class MemoryInterface(abc.ABC):
             pyrit_version (Optional[str], optional): The PyRIT version to filter by. Defaults to None.
             added_after (Optional[datetime], optional): Filter for scenarios completed after this datetime.
                 Defaults to None.
-            before_time (Optional[datetime], optional): Filter for scenarios completed before this datetime.
+            added_before (Optional[datetime], optional): Filter for scenarios completed before this datetime.
                 Defaults to None.
             labels (Optional[dict[str, str]], optional): A dictionary of memory labels to filter by.
                 Defaults to None.
@@ -1300,7 +1435,11 @@ class MemoryInterface(abc.ABC):
             conditions.append(ScenarioResultEntry.id.in_(scenario_result_ids))
 
         if scenario_name:
-            conditions.append(ScenarioResultEntry.scenario_name.contains(scenario_name))
+            # Normalize CLI snake_case names (e.g., "foundry" or "content_harms")
+            # to class names (e.g., "Foundry" or "ContentHarms")
+            # This allows users to query with either format
+            normalized_name = ScenarioResult.normalize_scenario_name(scenario_name)
+            conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))
 
         if scenario_version is not None:
             conditions.append(ScenarioResultEntry.scenario_version == scenario_version)
@@ -1367,10 +1506,10 @@ class MemoryInterface(abc.ABC):
             return scenario_results
         except Exception as e:
             logger.exception(f"Failed to retrieve scenario results with error {e}")
-            return []
+            raise
 
-    def print_schema(self):
-        """Prints the schema of all tables in the database."""
+    def print_schema(self) -> None:
+        """Print the schema of all tables in the database."""
         metadata = MetaData()
         metadata.reflect(bind=self.engine)
 

@@ -11,7 +11,8 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class TrueFalseCompositeScorer(TrueFalseScorer):
-    """Composite true/false scorer that aggregates results from other true/false scorers.
+    """
+    Composite true/false scorer that aggregates results from other true/false scorers.
 
     This scorer invokes a collection of constituent ``TrueFalseScorer`` instances and
     reduces their single-score outputs into one final true/false score using the supplied
@@ -25,13 +26,18 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         aggregator: TrueFalseAggregatorFunc,
         scorers: List[TrueFalseScorer],
     ) -> None:
-        """Initialize the composite scorer.
+        """
+        Initialize the composite scorer.
 
         Args:
             aggregator (TrueFalseAggregatorFunc): Aggregation function to combine child scores
                 (e.g., ``TrueFalseScoreAggregator.AND``, ``TrueFalseScoreAggregator.OR``,
                 ``TrueFalseScoreAggregator.MAJORITY``).
             scorers (List[TrueFalseScorer]): The constituent true/false scorers to invoke.
+
+        Raises:
+            ValueError: If no scorers are provided.
+            ValueError: If any provided scorer is not a TrueFalseScorer.
         """
         # Initialize base with the selected aggregator used by TrueFalseScorer logic
         # Validation is used by sub-scorers
@@ -46,6 +52,13 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
         self._scorers = scorers
 
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_identifier(
+            sub_scorers=self._scorers,
+            score_aggregator=self._score_aggregator.__name__,
+        )
+
     async def _score_async(
         self,
         message: Message,
@@ -53,16 +66,21 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
     ) -> list[Score]:
-        """Score a request/response by combining results from all constituent scorers.
+        """
+        Score a request/response by combining results from all constituent scorers.
 
         Args:
             message (Message): The request/response to score.
             objective (Optional[str]): Scoring objective or context.
+            role_filter (Optional[ChatMessageRole]): Optional filter for message roles. Defaults to None.
 
         Returns:
             list[Score]: A single-element list with the aggregated true/false score.
-        """
 
+        Raises:
+            ValueError: If any constituent scorer does not return exactly one score.
+            ValueError: If no scores are generated from the request response pieces.
+        """
         tasks = [
             scorer.score_async(message=message, objective=objective, role_filter=role_filter)
             for scorer in self._scorers
@@ -102,7 +120,8 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         return [return_score]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Composite scorers do not support piecewise scoring.
+        """
+        Composite scorers do not support piecewise scoring.
 
         Args:
             message_piece (MessagePiece): Unused.
@@ -112,12 +131,3 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
         raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    def _get_sub_identifier(self):
-        """
-        Returns the identifiers of all constituent scorers.
-
-        Returns:
-            list[dict]: A list of identifier dictionaries from all wrapped scorers.
-        """
-        return [scorer.get_identifier() for scorer in self._scorers]

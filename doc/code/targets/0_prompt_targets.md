@@ -14,7 +14,7 @@ Prompt targets are found [here](https://github.com/Azure/PyRIT/tree/main/pyrit/p
 The main entry method follow the following signature:
 
 ```
-async def send_prompt_async(self, *, prompt_request: Message) -> Message:
+async def send_prompt_async(self, *, message: Message) -> Message:
 ```
 
 A `Message` object is a normalized object with all the information a target will need to send a prompt, including a way to get a history for that prompt (in the cases that also needs to be sent). This is discussed in more depth [here](../memory/3_memory_data_types.md).
@@ -30,6 +30,6 @@ Here are some examples:
 | Example                             | Is `PromptChatTarget`?               | Notes                                                                                           |
 |-------------------------------------|---------------------------------------|-------------------------------------------------------------------------------------------------|
 | **OpenAIChatTarget** (e.g., GPT-4)  | **Yes** (`PromptChatTarget`)         | Designed for conversational prompts (system messages, conversation history, etc.).               |
-| **OpenAIDALLETarget**               | **No** (not a `PromptChatTarget`)    | Used for image generation; does not manage conversation history.                                 |
+| **OpenAIImageTarget**               | **No** (not a `PromptChatTarget`)    | Used for image generation; does not manage conversation history.                                 |
 | **HTTPTarget**                      | **No** (not a `PromptChatTarget`)    | Generic HTTP target. Some apps might allow conversation history, but this target doesn't handle it. |
 | **AzureBlobStorageTarget**          | **No** (not a `PromptChatTarget`)    | Used primarily for storage; not for conversation-based AI.                                       |

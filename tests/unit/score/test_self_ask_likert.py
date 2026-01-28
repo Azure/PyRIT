@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -10,12 +9,11 @@ import pytest
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Message, MessagePiece
-from pyrit.score import ContentClassifierPaths, LikertScalePaths, SelfAskLikertScorer
+from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
 
 @pytest.fixture
 def scorer_likert_response() -> Message:
-
     json_response = (
         dedent(
             """
@@ -38,9 +36,9 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
-        chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
 
-        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale=LikertScalePaths.CYBER_SCALE)
 
         await scorer.score_text_async(text="string")
 
@@ -57,23 +55,12 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
 
 
 @pytest.mark.asyncio
-async def test_likert_scorer_must_have_category():
-
-    chat_target = MagicMock()
-    with pytest.raises(KeyError, match="category"):
-        SelfAskLikertScorer(
-            chat_target=chat_target,
-            likert_scale_path=ContentClassifierPaths.HARMFUL_CONTENT_CLASSIFIER.value,
-        )
-
-
-@pytest.mark.asyncio
 async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+        scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale=LikertScalePaths.CYBER_SCALE)
 
         await scorer.score_text_async(text="string")
 
@@ -82,12 +69,11 @@ async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
 
 @pytest.mark.asyncio
 async def test_likert_scorer_score(patch_central_database, scorer_likert_response: Message):
-
     chat_target = MagicMock()
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_likert_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
 
-    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale=LikertScalePaths.CYBER_SCALE)
 
     score = await scorer.score_text_async("No cyber harm")
 
@@ -104,21 +90,20 @@ async def test_likert_scorer_score(patch_central_database, scorer_likert_respons
 
 @pytest.mark.asyncio
 async def test_self_ask_scorer_bad_json_exception_retries():
-
     chat_target = MagicMock()
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
+    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale=LikertScalePaths.CYBER_SCALE)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskLikertScorer"):
         await scorer.score_text_async("this has no bullying")
-        assert chat_target.send_prompt_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio
 async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
-
     chat_target = MagicMock()
 
     json_response = (
@@ -136,9 +121,10 @@ async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
-    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale_path=LikertScalePaths.CYBER_SCALE.value)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
+    scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale=LikertScalePaths.CYBER_SCALE)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskLikertScorer"):
         await scorer.score_text_async("this has no bullying")
-        assert chat_target.send_prompt_async.call_count == os.getenv("RETRY_MAX_NUM_ATTEMPTS")
+        # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+        assert chat_target.send_prompt_async.call_count == 2

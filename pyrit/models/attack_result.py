@@ -32,7 +32,7 @@ class AttackOutcome(Enum):
 
 @dataclass
 class AttackResult(StrategyResult):
-    """Base class for all attack results"""
+    """Base class for all attack results."""
 
     # Identity
     # Unique identifier of the conversation that produced this result
@@ -71,7 +71,7 @@ class AttackResult(StrategyResult):
     # Arbitrary metadata
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def get_conversations_by_type(self, conversation_type: ConversationType):
+    def get_conversations_by_type(self, conversation_type: ConversationType) -> list[ConversationReference]:
         """
         Return all related conversations of the requested type.
 
@@ -83,5 +83,5 @@ class AttackResult(StrategyResult):
         """
         return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
 
-    def __str__(self):
-        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: " f"{self.objective[:50]}..."
+    def __str__(self) -> str:
+        return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."

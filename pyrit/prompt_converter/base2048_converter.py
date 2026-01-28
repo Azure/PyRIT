@@ -6,13 +6,14 @@ import logging
 import base2048
 
 from pyrit.models import PromptDataType
-from pyrit.prompt_converter import ConverterResult, PromptConverter
+from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
 logger = logging.getLogger(__name__)
 
 
 class Base2048Converter(PromptConverter):
-    """Converter that encodes text to base2048 format.
+    """
+    Converter that encodes text to base2048 format.
 
     This converter takes input text and converts it to base2048 encoding,
     which uses 2048 different Unicode characters to represent binary data.
@@ -20,12 +21,16 @@ class Base2048Converter(PromptConverter):
     handle encoded Unicode content.
     """
 
+    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_OUTPUT_TYPES = ("text",)
+
     def __init__(self) -> None:
         """Initialize the Base2048Converter."""
         pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """Converts the given prompt to base2048 encoding.
+        """
+        Convert the given prompt to base2048 encoding.
 
         Args:
             prompt: The prompt to be converted.
@@ -44,9 +49,3 @@ class Base2048Converter(PromptConverter):
         encoded_bytes = base2048.encode(string_bytes)
 
         return ConverterResult(output_text=encoded_bytes, output_type="text")
-
-    def input_supported(self, input_type: PromptDataType) -> bool:
-        return input_type == "text"
-
-    def output_supported(self, output_type: PromptDataType) -> bool:
-        return output_type == "text"

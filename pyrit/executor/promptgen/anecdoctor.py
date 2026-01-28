@@ -7,11 +7,11 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, overload
+from typing import Any, Dict, List, Optional, overload
 
 import yaml
 
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.core.config import StrategyConverterConfig
 from pyrit.executor.promptgen.core import (
@@ -21,8 +21,6 @@ from pyrit.executor.promptgen.core import (
 )
 from pyrit.models import (
     Message,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
@@ -93,7 +91,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
     _ANECDOCTOR_BUILD_KG_YAML = "anecdoctor_build_knowledge_graph.yaml"
     _ANECDOCTOR_USE_KG_YAML = "anecdoctor_use_knowledge_graph.yaml"
     _ANECDOCTOR_USE_FEWSHOT_YAML = "anecdoctor_use_fewshot.yaml"
-    _ANECDOCTOR_PROMPT_PATH = Path("executors", "anecdoctor")
+    _ANECDOCTOR_PROMPT_PATH = Path("anecdoctor")
 
     def __init__(
         self,
@@ -143,7 +141,6 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         Raises:
             ValueError: If the context is invalid.
         """
-
         if not context.content_type:
             raise ValueError("content_type must be provided in the context")
 
@@ -250,7 +247,7 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         """
         Send the formatted examples to the target model.
 
-        Creates a seed group from the formatted examples and sends it to the
+        Creates a message from the formatted examples and sends it to the
         objective target model using the configured converters and normalizer.
 
         Args:
@@ -261,19 +258,12 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             Optional[Message]: The response from the target model,
                 or None if the request failed.
         """
-        # Create seed group containing the formatted examples
-        prompt_group = SeedGroup(
-            prompts=[
-                SeedPrompt(
-                    value=formatted_examples,
-                    data_type="text",
-                )
-            ]
-        )
+        # Create message from the formatted examples
+        message = Message.from_prompt(prompt=formatted_examples, role="user")
 
         # Send to target model with configured converters
         return await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_group,
+            message=message,
             target=self._objective_target,
             conversation_id=context.conversation_id,
             request_converter_configurations=self._request_converters,
@@ -300,10 +290,10 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             yaml.YAMLError: If the YAML file is malformed.
             KeyError: If the 'value' key is not found in the YAML data.
         """
-        prompt_path = Path(DATASETS_PATH, self._ANECDOCTOR_PROMPT_PATH, yaml_filename)
+        prompt_path = Path(EXECUTOR_SEED_PROMPT_PATH, self._ANECDOCTOR_PROMPT_PATH, yaml_filename)
         prompt_data = prompt_path.read_text(encoding="utf-8")
         yaml_data = yaml.safe_load(prompt_data)
-        return yaml_data["value"]
+        return str(yaml_data["value"])
 
     def _format_few_shot_examples(self, *, evaluation_data: List[str]) -> str:
         """
@@ -353,19 +343,12 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         # Format examples for knowledge graph extraction using few-shot format
         formatted_examples = self._format_few_shot_examples(evaluation_data=context.evaluation_data)
 
-        # Create seed group for the processing model
-        kg_prompt_group = SeedGroup(
-            prompts=[
-                SeedPrompt(
-                    value=formatted_examples,
-                    data_type="text",
-                )
-            ]
-        )
+        # Create message for the processing model
+        message = Message.from_prompt(prompt=formatted_examples, role="user")
 
         # Send to processing model with configured converters
         kg_response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=kg_prompt_group,
+            message=message,
             target=self._processing_model,
             conversation_id=kg_conversation_id,
             request_converter_configurations=self._request_converters,
@@ -387,7 +370,18 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         language: str,
         evaluation_data: List[str],
         memory_labels: Optional[dict[str, str]] = None,
-        **kwargs,
+        **kwargs: Any,
+    ) -> AnecdoctorResult: ...
+
+    @overload
+    async def execute_async(
+        self,
+        **kwargs: Any,
+    ) -> AnecdoctorResult: ...
+
+    async def execute_async(
+        self,
+        **kwargs: Any,
     ) -> AnecdoctorResult:
         """
         Execute the prompt generation strategy asynchronously with the provided parameters.
@@ -402,22 +396,6 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         Returns:
             AnecdoctorResult: The result of the anecdoctor generation.
         """
-        ...
-
-    @overload
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> AnecdoctorResult: ...
-
-    async def execute_async(
-        self,
-        **kwargs,
-    ) -> AnecdoctorResult:
-        """
-        Execute the prompt generation strategy asynchronously with the provided parameters.
-        """
-
         # Validate parameters before creating context
         content_type = get_kwarg_param(kwargs=kwargs, param_name="content_type", expected_type=str)
         language = get_kwarg_param(kwargs=kwargs, param_name="language", expected_type=str)

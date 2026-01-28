@@ -8,12 +8,20 @@ from typing import Optional
 
 from pyrit.common import net_utility
 from pyrit.models import Message, construct_response_from_request
-from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
 
 class GandalfLevel(enum.Enum):
+    """
+    Enumeration of Gandalf challenge levels.
+
+    Each level represents a different difficulty of the Gandalf security challenge,
+    from baseline to the most advanced levels.
+    """
+
     LEVEL_1 = "baseline"
     LEVEL_2 = "do-not-tell"
     LEVEL_3 = "do-not-tell-and-block"
@@ -27,6 +35,7 @@ class GandalfLevel(enum.Enum):
 
 
 class GandalfTarget(PromptTarget):
+    """A prompt target for the Gandalf security challenge."""
 
     def __init__(
         self,
@@ -49,9 +58,18 @@ class GandalfTarget(PromptTarget):
         self._defender = level.value
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the Gandalf target.
+
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+        """
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         logger.info(f"Sending the following prompt to the prompt target: {request}")
 
@@ -59,22 +77,26 @@ class GandalfTarget(PromptTarget):
 
         response_entry = construct_response_from_request(request=request, response_text_pieces=[response])
 
-        return response_entry
+        return [response_entry]
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        n_pieces = len(prompt_request.message_pieces)
+    def _validate_request(self, *, message: Message) -> None:
+        n_pieces = len(message.message_pieces)
         if n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
 
-        piece_type = prompt_request.message_pieces[0].converted_value_data_type
+        piece_type = message.message_pieces[0].converted_value_data_type
         if piece_type != "text":
             raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     async def check_password(self, password: str) -> bool:
         """
-        Checks if the password is correct
+        Check if the password is correct.
 
-        True means the password is correct, False means it is not
+        Returns:
+            bool: True if the password is correct, False otherwise.
+
+        Raises:
+            ValueError: If the chat returned an empty response.
         """
         payload: dict[str, object] = {
             "defender": self._defender,
@@ -89,7 +111,7 @@ class GandalfTarget(PromptTarget):
             raise ValueError("The chat returned an empty response.")
 
         json_response = resp.json()
-        return json_response["success"]
+        return bool(json_response["success"])
 
     async def _complete_text_async(self, text: str) -> str:
         payload: dict[str, object] = {
@@ -104,7 +126,7 @@ class GandalfTarget(PromptTarget):
         if not resp.text:
             raise ValueError("The chat returned an empty response.")
 
-        answer = json.loads(resp.text)["answer"]
+        answer: str = json.loads(resp.text)["answer"]
 
         logger.info(f'Received the following response from the prompt target "{answer}"')
         return answer

@@ -15,6 +15,7 @@ from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScor
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
+from tests.unit.mocks import get_mock_scorer_identifier
 
 
 def is_opencv_installed():
@@ -63,9 +64,13 @@ class MockTrueFalseScorer(TrueFalseScorer):
     """Mock TrueFalseScorer for testing"""
 
     def __init__(self, return_value: bool = True):
+        self.return_value = return_value
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
-        self.return_value = return_value
+
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this mock scorer."""
+        self._set_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -78,6 +83,7 @@ class MockTrueFalseScorer(TrueFalseScorer):
                 score_value_description="test_description",
                 message_piece_id=message_piece.id or uuid.uuid4(),
                 objective=objective,
+                scorer_class_identifier=get_mock_scorer_identifier(),
             )
         ]
 
@@ -86,9 +92,13 @@ class MockFloatScaleScorer(FloatScaleScorer):
     """Mock FloatScaleScorer for testing"""
 
     def __init__(self, return_value: float = 0.8):
+        self.return_value = return_value
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
-        self.return_value = return_value
+
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this mock scorer."""
+        self._set_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -101,6 +111,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
                 score_value_description="test_description",
                 message_piece_id=message_piece.id or uuid.uuid4(),
                 objective=objective,
+                scorer_class_identifier=get_mock_scorer_identifier(),
             )
         ]
 
@@ -116,9 +127,9 @@ async def test_extract_frames_true_false(video_converter_sample_video):
     video_path = video_converter_sample_video.converted_value
     frame_paths = scorer._extract_frames(video_path=video_path)
 
-    assert (
-        len(frame_paths) == scorer.num_sampled_frames
-    ), f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    assert len(frame_paths) == scorer.num_sampled_frames, (
+        f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    )
 
     # Verify frames are valid images and cleanup
     for path in frame_paths:
@@ -140,9 +151,9 @@ async def test_extract_frames_float_scale(video_converter_sample_video):
     video_path = video_converter_sample_video.converted_value
     frame_paths = scorer._extract_frames(video_path=video_path)
 
-    assert (
-        len(frame_paths) == scorer.num_sampled_frames
-    ), f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    assert len(frame_paths) == scorer.num_sampled_frames, (
+        f"Expected {scorer.num_sampled_frames} frames, got {len(frame_paths)}"
+    )
 
     # Verify frames are valid images and cleanup
     for path in frame_paths:

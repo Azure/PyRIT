@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
 import tempfile
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -17,7 +16,6 @@ from pyrit.score import SelfAskRefusalScorer
 
 @pytest.fixture
 def scorer_true_false_response() -> Message:
-
     json_response = (
         dedent(
             """
@@ -33,10 +31,9 @@ def scorer_true_false_response() -> Message:
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_score(scorer_true_false_response: Message, patch_central_database):
-
     chat_target = MagicMock()
 
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     score = await scorer.score_text_async("true false")
@@ -45,13 +42,13 @@ async def test_refusal_scorer_score(scorer_true_false_response: Message, patch_c
     assert score[0].get_value() is True
     assert score[0].score_value_description == "This is true"
     assert score[0].score_rationale == "rationale for true"
-    assert score[0].scorer_class_identifier["__type__"] == "SelfAskRefusalScorer"
+    assert score[0].scorer_class_identifier.class_name == "SelfAskRefusalScorer"
 
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_set_system_prompt(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     await scorer.score_text_async("true false")
@@ -62,19 +59,19 @@ async def test_refusal_scorer_set_system_prompt(scorer_true_false_response: Mess
 @pytest.mark.asyncio
 async def test_refusal_scorer_no_task(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     await scorer.score_text_async("true false")
 
     _, kwargs = chat_target.send_prompt_async.call_args
-    assert kwargs["prompt_request"].message_pieces[0].original_value == "response_to_evaluate_input: true false"
+    assert kwargs["message"].message_pieces[0].original_value == "response_to_evaluate_input: true false"
 
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_with_task(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
     await scorer.score_text_async("true false", objective="task")
@@ -82,13 +79,13 @@ async def test_refusal_scorer_with_task(scorer_true_false_response: Message, pat
     _, kwargs = chat_target.send_prompt_async.call_args
 
     expected = "conversation_objective: task\nresponse_to_evaluate_input: true false"
-    assert kwargs["prompt_request"].message_pieces[0].original_value == expected
+    assert kwargs["message"].message_pieces[0].original_value == expected
 
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_image_non_block(scorer_true_false_response: Message, patch_central_database):
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
 
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
@@ -104,7 +101,7 @@ async def test_refusal_scorer_image_non_block(scorer_true_false_response: Messag
 async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
-    chat_target.send_prompt_async = AsyncMock(return_value=scorer_true_false_response)
+    chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskRefusalScorer(chat_target=chat_target)
         await scorer.score_text_async(text="string")
@@ -114,17 +111,17 @@ async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: Message
 
 @pytest.mark.asyncio
 async def test_refusal_scorer_bad_json_exception_retries(patch_central_database):
-
     chat_target = MagicMock()
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskRefusalScorer"):
         await scorer.score_text_async("this has no bullying")
 
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
+    # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+    assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -143,14 +140,15 @@ async def test_self_ask_objective_scorer_bad_json_exception_retries(patch_centra
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
-    chat_target.send_prompt_async = AsyncMock(return_value=bad_json_resp)
+    chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
 
     scorer = SelfAskRefusalScorer(chat_target=chat_target)
 
-    with pytest.raises(InvalidJsonException):
+    with pytest.raises(InvalidJsonException, match="Error in scorer SelfAskRefusalScorer"):
         await scorer.score_text_async("this has no bullying")
 
-    assert chat_target.send_prompt_async.call_count == int(os.getenv("RETRY_MAX_NUM_ATTEMPTS", 2))
+    # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
+    assert chat_target.send_prompt_async.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -167,4 +165,4 @@ async def test_score_async_filtered_response(patch_central_database):
     assert scores[0].score_value == "true"
     assert scores[0].score_value_description == "Refusal detected"
     assert scores[0].score_rationale == "Content was filtered, constituting a refusal."
-    assert scores[0].scorer_class_identifier["__type__"] == "SelfAskRefusalScorer"
+    assert scores[0].scorer_class_identifier.class_name == "SelfAskRefusalScorer"

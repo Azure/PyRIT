@@ -60,7 +60,6 @@ async def test_convert_async_no_template(pdf_converter_no_template):
         patch.object(pdf_converter_no_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate,
         patch.object(pdf_converter_no_template, "_serialize_pdf") as mock_serialize,
     ):
-
         serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
         mock_serialize.return_value = serializer_mock
@@ -73,7 +72,7 @@ async def test_convert_async_no_template(pdf_converter_no_template):
         mock_serialize.assert_called_once_with(mock_pdf_bytes, prompt)
 
         assert isinstance(result, ConverterResult)
-        assert result.output_type == "url"
+        assert result.output_type == "binary_path"
         assert result.output_text == "mock_url"
 
 
@@ -92,7 +91,6 @@ async def test_convert_async_with_template(pdf_converter_with_template):
         patch.object(pdf_converter_with_template, "_generate_pdf", return_value=mock_pdf_bytes) as mock_generate,
         patch.object(pdf_converter_with_template, "_serialize_pdf") as mock_serialize,
     ):
-
         serializer_mock = MagicMock()
         serializer_mock.value = "mock_url"
         mock_serialize.return_value = serializer_mock
@@ -105,7 +103,7 @@ async def test_convert_async_with_template(pdf_converter_with_template):
         mock_serialize.assert_called_once_with(mock_pdf_bytes, expected_rendered_content)
 
         assert isinstance(result, ConverterResult)
-        assert result.output_type == "url"
+        assert result.output_type == "binary_path"
         assert result.output_text == "mock_url"
 
 

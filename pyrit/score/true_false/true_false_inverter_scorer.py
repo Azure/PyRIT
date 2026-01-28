@@ -13,19 +13,29 @@ class TrueFalseInverterScorer(TrueFalseScorer):
     """A scorer that inverts a true false score."""
 
     def __init__(self, *, scorer: TrueFalseScorer, validator: Optional[ScorerPromptValidator] = None) -> None:
-        """Initialize the TrueFalseInverterScorer.
+        """
+        Initialize the TrueFalseInverterScorer.
 
         Args:
             scorer (TrueFalseScorer): The underlying true/false scorer whose results will be inverted.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
                 Note: This parameter is present for signature compatibility but is not used.
+
+        Raises:
+            ValueError: If the scorer is not an instance of TrueFalseScorer.
         """
-
-        super().__init__(validator=ScorerPromptValidator())
-
         if not isinstance(scorer, TrueFalseScorer):
             raise ValueError("The scorer must be a true false scorer")
         self._scorer = scorer
+
+        super().__init__(validator=ScorerPromptValidator())
+
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_identifier(
+            sub_scorers=[self._scorer],
+            score_aggregator=self._score_aggregator.__name__,
+        )
 
     async def _score_async(
         self,
@@ -34,7 +44,8 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         objective: Optional[str] = None,
         role_filter: Optional[ChatMessageRole] = None,
     ) -> list[Score]:
-        """Scores the piece using the underlying true-false scorer and returns the inverted score.
+        """
+        Scores the piece using the underlying true-false scorer and returns the inverted score.
 
         Args:
             message (Message): The message to score.
@@ -57,9 +68,9 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         inv_score.score_value = str(True) if not inv_score.get_value() else str(False)
         inv_score.score_value_description = "Inverted score: " + str(inv_score.score_value_description)
 
-        scorer_type = self._scorer.get_identifier().get("__type__", "Unknown")
+        scorer_type = self._scorer.get_identifier().class_name
         inv_score.score_rationale = (
-            f"Inverted score from {scorer_type} result: {inv_score.score_value}\n" f"{inv_score.score_rationale}"
+            f"Inverted score from {scorer_type} result: {inv_score.score_value}\n{inv_score.score_rationale}"
         )
 
         inv_score.id = uuid.uuid4()
@@ -69,7 +80,8 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         return [inv_score]
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """True False Inverter scorers do not support piecewise scoring.
+        """
+        Indicate that True False Inverter scorers do not support piecewise scoring.
 
         Args:
             message_piece (MessagePiece): Unused.
@@ -78,13 +90,4 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         Raises:
             NotImplementedError: Always, since composite scoring operates at the response level.
         """
-        raise NotImplementedError("TrueFalseCompositeScorer does not support piecewise scoring.")
-
-    def _get_sub_identifier(self):
-        """
-        Returns the identifier of the underlying true/false scorer.
-
-        Returns:
-            dict: The identifier dictionary of the wrapped scorer.
-        """
-        return self._scorer.get_identifier()
+        raise NotImplementedError("TrueFalseInverterScorer does not support piecewise scoring.")

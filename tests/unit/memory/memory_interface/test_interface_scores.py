@@ -10,12 +10,23 @@ from uuid import uuid4
 import pytest
 
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
     MessagePiece,
     Score,
     SeedPrompt,
 )
+
+
+def _test_scorer_id(name: str = "TestScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="tests.unit.memory",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 def test_get_scores_by_attack_id_and_label(
@@ -36,7 +47,7 @@ def test_get_scores_by_attack_id_and_label(
         score_category=["test"],
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
-        scorer_class_identifier={"__type__": "TestScorer"},
+        scorer_class_identifier=_test_scorer_id("TestScorer"),
         message_piece_id=prompt_id,
     )
 
@@ -98,7 +109,7 @@ def test_add_score_get_score(
         score_category=["test"],
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
-        scorer_class_identifier={"__type__": "TestScorer"},
+        scorer_class_identifier=_test_scorer_id("TestScorer"),
         message_piece_id=prompt_id,
     )
 
@@ -114,7 +125,8 @@ def test_add_score_get_score(
     assert db_score[0].score_category == ["test"]
     assert db_score[0].score_rationale == "Test score"
     assert db_score[0].score_metadata == {"test": "metadata"}
-    assert db_score[0].scorer_class_identifier == {"__type__": "TestScorer"}
+    # scorer_class_identifier is now a ScorerIdentifier object, check the class_name
+    assert db_score[0].scorer_class_identifier.class_name == "TestScorer"
     assert db_score[0].message_piece_id == prompt_id
 
 
@@ -134,10 +146,11 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
             attack_identifier=attack.get_identifier(),
         )
     ]
-    new_attack_id = str(uuid4())
     sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
-    sqlite_instance.duplicate_conversation(new_attack_id=new_attack_id, conversation_id=conversation_id)
-    dupe_piece = sqlite_instance.get_message_pieces(attack_id=new_attack_id)[0]
+    sqlite_instance.duplicate_conversation(conversation_id=conversation_id)
+    # Get the duplicated piece (it will have a different conversation_id but same attack_id)
+    all_pieces = sqlite_instance.get_message_pieces()
+    dupe_piece = [p for p in all_pieces if p.id != original_id][0]
     dupe_id = dupe_piece.id
     assert dupe_id is not None, "Dupe ID should not be None"
 
@@ -151,7 +164,7 @@ def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
         score_category=["test"],
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
-        scorer_class_identifier={"__type__": "TestScorer"},
+        scorer_class_identifier=_test_scorer_id("TestScorer"),
         message_piece_id=dupe_id,
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
@@ -182,7 +195,7 @@ def test_get_scores_by_memory_labels(sqlite_instance: MemoryInterface):
         score_category=["test"],
         score_rationale="Test score",
         score_metadata={"test": "metadata"},
-        scorer_class_identifier={"__type__": "TestScorer"},
+        scorer_class_identifier=_test_scorer_id("TestScorer"),
         message_piece_id=prompt_id,
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
@@ -207,7 +220,7 @@ async def test_get_seeds_no_filters(sqlite_instance: MemoryInterface):
         SeedPrompt(value="prompt1", dataset_name="dataset1", data_type="text"),
         SeedPrompt(value="prompt2", dataset_name="dataset2", data_type="text"),
     ]
-    await sqlite_instance.add_seeds_to_memory_async(prompts=seed_prompts, added_by="test")
+    await sqlite_instance.add_seeds_to_memory_async(seeds=seed_prompts, added_by="test")
 
     result = sqlite_instance.get_seeds()
     assert len(result) == 2

@@ -1,6 +1,6 @@
 [project]
 name = "pyrit"
-version = "0.10.0.dev0"
+version = "0.10.1.dev0"
 description = "The Python Risk Identification Tool for LLMs (PyRIT) is a library used to assess the robustness of LLMs"
 authors = [
     { name = "Microsoft AI Red Team", email = "airedteam@microsoft.com" },
@@ -39,12 +39,13 @@ dependencies = [
     "confusable-homoglyphs>=3.3.1",
     "ecoji>=0.1.1",
     "datasets>=3.6.0",
+    "fastapi>=0.115.0",
     "httpx[http2]>=0.27.2",
     "jinja2>=3.1.6",
     "numpy>=1.26.0",
-    "openai>=1.58.1",
+    "openai>=2.2.0",
     "openpyxl>=3.1.5",
-    "pillow>=11.2.1",
+    "pillow>=12.1.0",
     "pydantic>=2.11.5",
     "pyodbc>=5.1.0",
     "python-dotenv>=1.0.1",
@@ -59,16 +60,14 @@ dependencies = [
     "tqdm>=4.67.1",
     "transformers>=4.52.4",
     "treelib>=1.7.1",
+    "uvicorn[standard]>=0.32.0",
     "websockets>=14.0",
 ]
 
 [project.optional-dependencies]
 # always make sure the individual ones are in sync with the all group
 dev = [
-    "black>=25.1.0",
     "feedgen>=1.0.0",
-    "flake8>=7.2.0",
-    "flake8-copyright>=0.2.4",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
     "jupyter-book==1.0.4",
@@ -80,10 +79,22 @@ dev = [
     "pytest-asyncio>=1.0.0",
     "pytest-cov>=6.1.1",
     "pytest-timeout>=2.4.0",
+    "pytest-xdist>=3.6.1",
     "respx>=0.22.0",
+    "ruff>=0.14.4",
     "sphinxcontrib-mermaid>=1.0.0",
+    "types-aiofiles>=24.1.0",
+    "types-cachetools>=5.5.0",
+    "types-decorator>=5.1.0",
+    "types-paramiko>=3.5.0",
+    "types-pycurl>=7.45.0",
+    "types-pytz>=2024.2.0",
     "types-PyYAML>=6.0.12.20250516",
     "types-requests>=2.31.0.20250515",
+    "types-simplejson>=3.19.0",
+    "types-six>=1.16.0",
+    "types-tabulate>=0.9.0",
+    "types-ujson>=5.10.0",
 ]
 huggingface = [
     "torch>=2.7.0",
@@ -143,9 +154,13 @@ all = [
 ]
 
 [project.scripts]
-pyrit_scan = "pyrit.cli.__main__:main"
+pyrit_scan = "pyrit.cli.pyrit_scan:main"
+pyrit_shell = "pyrit.cli.pyrit_shell:main"
 
 [tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
 pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
@@ -157,10 +172,7 @@ strict = false
 follow_imports = "silent"
 strict_optional = false
 disable_error_code = ["empty-body"]
-
-[tool.black]
-target-version = ["py310"]
-line-length = 120
+exclude = ["doc/code/"]
 
 [build-system]
 requires = ["setuptools>=64.0.0", "wheel"]
@@ -169,11 +181,21 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["pyrit", "pyrit.*"]
 
+[tool.setuptools.package-data]
+pyrit = [
+    "backend/frontend/**/*",
+    "py.typed"
+]
+
 [tool.jupytext]
 formats = "ipynb,py:percent"
 
 [tool.ruff]
 line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+preview = true
 fixable = [
     "A",
     "B",
@@ -220,3 +242,45 @@ fixable = [
     "UP",
     "YTT",
 ]
+select = [
+    "CPY001",  # missing-copyright-notice
+    "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
+    "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
+    "F401",  # unused-import
+    "I",  # isort
+]
+ignore = [
+    "D100",  # Missing docstring in public module
+    "D200",  # One-line docstring should fit on one line
+    "D205",  # 1 blank line required between summary line and description
+    "D212",  # Multi-line docstring summary should start at the first line
+    "D301",  # Use r""" if any backslashes in a docstring
+    "DOC502",  # Raised exception is not explicitly raised
+]
+extend-select = [
+    "D204",  # 1 blank line required after class docstring
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D401",  # First line of docstring should be in imperative mood
+    "D404",  # First word of the docstring should not be "This"
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pyrit"]
+
+[tool.ruff.lint.flake8-copyright]
+min-file-size = 1
+notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under the MIT license"
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore D and DOC rules everywhere except for the pyrit/ directory
+"!pyrit/**.py" = ["D", "DOC"]
+# Ignore copyright check only in doc/ directory
+"doc/**" = ["CPY001"]
+# Temporary ignores for pyrit/ subdirectories until issue #1176
+# https://github.com/Azure/PyRIT/issues/1176 is fully resolved
+# TODO: Remove these ignores once the issues are fixed
+"pyrit/{auxiliary_attacks,exceptions,models,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501"]
+"pyrit/__init__.py" = ["D104"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

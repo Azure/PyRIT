@@ -10,6 +10,8 @@ from pyrit.models import AttackOutcome, AttackResult
 
 @dataclass
 class AttackStats:
+    """Statistics for attack analysis results."""
+
     success_rate: Optional[float]
     total_decided: int
     successes: int
@@ -29,7 +31,7 @@ def _compute_stats(successes: int, failures: int, undetermined: int) -> AttackSt
     )
 
 
-def analyze_results(attack_results: list[AttackResult]) -> dict:
+def analyze_results(attack_results: list[AttackResult]) -> dict[str, AttackStats | dict[str, AttackStats]]:
     """
     Analyze a list of AttackResult objects and return overall and grouped statistics.
 
@@ -49,7 +51,6 @@ def analyze_results(attack_results: list[AttackResult]) -> dict:
             "By_attack_identifier": dict[str, AttackStats]
         }
     """
-
     if not attack_results:
         raise ValueError("attack_results cannot be empty")
 

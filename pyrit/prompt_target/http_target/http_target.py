@@ -14,7 +14,8 @@ from pyrit.models import (
     MessagePiece,
     construct_response_from_request,
 )
-from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ RequestBody = dict[str, Any] | str
 
 class HTTPTarget(PromptTarget):
     """
-    HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt
+    HTTP_Target is for endpoints that do not have an API and instead require HTTP request(s) to send a prompt.
 
     Parameters:
         http_request (str): the header parameters as a request (i.e., from Burp)
@@ -42,12 +43,28 @@ class HTTPTarget(PromptTarget):
         http_request: str,
         prompt_regex_string: str = "{PROMPT}",
         use_tls: bool = True,
-        callback_function: Optional[Callable] = None,
+        callback_function: Optional[Callable[..., Any]] = None,
         max_requests_per_minute: Optional[int] = None,
         client: Optional[httpx.AsyncClient] = None,
         model_name: str = "",
         **httpx_client_kwargs: Any,
     ) -> None:
+        """
+        Initialize the HTTPTarget.
+
+        Args:
+            http_request (str): The raw HTTP request string.
+            prompt_regex_string (str): Regex string to match prompt location. Defaults to "{PROMPT}".
+            use_tls (bool): Whether to use TLS. Defaults to True.
+            callback_function (Callable, Optional): Function to parse HTTP response.
+            max_requests_per_minute (int, Optional): Maximum number of requests per minute.
+            client (httpx.AsyncClient, Optional): Pre-configured httpx client.
+            model_name (str): The model name. Defaults to empty string.
+            **httpx_client_kwargs: Additional keyword arguments for httpx.AsyncClient.
+
+        Raises:
+            ValueError: If both client and httpx_client_kwargs are provided.
+        """
         # Initialize attributes needed by parse_raw_http_request before calling it
         self._client = client
         self.use_tls = use_tls
@@ -71,7 +88,7 @@ class HTTPTarget(PromptTarget):
         client: httpx.AsyncClient,
         http_request: str,
         prompt_regex_string: str = "{PROMPT}",
-        callback_function: Callable | None = None,
+        callback_function: Callable[..., Any] | None = None,
         max_requests_per_minute: Optional[int] = None,
     ) -> "HTTPTarget":
         """
@@ -83,6 +100,9 @@ class HTTPTarget(PromptTarget):
             prompt_regex_string: the placeholder for the prompt
             callback_function: function to parse HTTP response
             max_requests_per_minute: Optional rate limiting
+
+        Returns:
+            HTTPTarget: an instance of HTTPTarget
         """
         instance = cls(
             http_request=http_request,
@@ -95,8 +115,14 @@ class HTTPTarget(PromptTarget):
 
     def _inject_prompt_into_request(self, request: MessagePiece) -> str:
         """
-        Adds the prompt into the URL if the prompt_regex_string is found in the
-        http_request
+        Add the prompt into the URL if the prompt_regex_string is found in the
+        http_request.
+
+        Args:
+            request: The message piece containing the prompt to inject.
+
+        Returns:
+            str: the http request with the prompt added in
         """
         re_pattern = re.compile(self.prompt_regex_string)
         if re.search(self.prompt_regex_string, self.http_request):
@@ -106,9 +132,18 @@ class HTTPTarget(PromptTarget):
         return http_request_w_prompt
 
     @limit_requests_per_minute
-    async def send_prompt_async(self, *, prompt_request: Message) -> Message:
-        self._validate_request(prompt_request=prompt_request)
-        request = prompt_request.message_pieces[0]
+    async def send_prompt_async(self, *, message: Message) -> list[Message]:
+        """
+        Asynchronously send a message to the HTTP target.
+
+        Args:
+            message (Message): The message object containing the prompt to send.
+
+        Returns:
+            list[Message]: A list containing the response from the prompt target.
+        """
+        self._validate_request(message=message)
+        request = message.message_pieces[0]
 
         http_request_w_prompt = self._inject_prompt_into_request(request)
 
@@ -152,14 +187,17 @@ class HTTPTarget(PromptTarget):
             if self.callback_function:
                 response_content = self.callback_function(response=response)
 
-            return construct_response_from_request(request=request, response_text_pieces=[str(response_content)])
+            response_message = construct_response_from_request(
+                request=request, response_text_pieces=[str(response_content)]
+            )
+            return [response_message]
         finally:
             if cleanup_client:
                 await client.aclose()
 
     def parse_raw_http_request(self, http_request: str) -> tuple[Dict[str, str], RequestBody, str, str, str]:
         """
-        Parses the HTTP request string into a dictionary of headers
+        Parse the HTTP request string into a dictionary of headers.
 
         Parameters:
             http_request: the header parameters as a request str with
@@ -171,8 +209,10 @@ class HTTPTarget(PromptTarget):
             url (str): string with URL
             http_method (str): method (ie GET vs POST)
             http_version (str): HTTP version to use
-        """
 
+        Raises:
+            ValueError: If the HTTP request line is invalid.
+        """
         headers_dict: Dict[str, str] = {}
         if self._client:
             headers_dict = dict(self._client.headers.copy())
@@ -235,8 +275,8 @@ class HTTPTarget(PromptTarget):
         host = headers_dict["host"]
         return f"{http_protocol}{host}{path}"
 
-    def _validate_request(self, *, prompt_request: Message) -> None:
-        message_pieces: Sequence[MessagePiece] = prompt_request.message_pieces
+    def _validate_request(self, *, message: Message) -> None:
+        message_pieces: Sequence[MessagePiece] = message.message_pieces
 
         n_pieces = len(message_pieces)
         if n_pieces != 1:

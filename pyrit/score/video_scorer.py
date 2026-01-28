@@ -39,6 +39,9 @@ class _BaseVideoScorer(ABC):
             image_capable_scorer: A scorer capable of processing images that will be used to score
                 individual video frames.
             num_sampled_frames: Number of frames to extract from the video for scoring (default: 5).
+
+        Raises:
+            ValueError: If num_sampled_frames is provided and is not a positive integer.
         """
         self.image_scorer = image_capable_scorer
 
@@ -60,6 +63,10 @@ class _BaseVideoScorer(ABC):
 
         Returns:
             List of scores for the extracted frames.
+
+        Raises:
+            FileNotFoundError: If the video file does not exist.
+            ValueError: If no frames are extracted from the video or if no scores are returned for the frames.
         """
         video_path = message_piece.converted_value
 
@@ -84,7 +91,7 @@ class _BaseVideoScorer(ABC):
 
             piece = MessagePiece(
                 original_value=message_piece.converted_value,
-                role=message_piece.role,
+                role=message_piece.get_role_for_storage(),
                 original_prompt_id=original_prompt_id,
                 converted_value=frame,
                 converted_value_data_type="image_path",
@@ -117,6 +124,9 @@ class _BaseVideoScorer(ABC):
 
         Returns:
             List of temporary file paths for the extracted frames.
+
+        Raises:
+            ModuleNotFoundError: If OpenCV is not installed.
         """
         try:
             import cv2  # noqa: F401

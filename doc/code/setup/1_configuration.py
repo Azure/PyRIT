@@ -11,9 +11,9 @@
 # %% [markdown]
 # # 1. Configuration
 #
-# Before running PyRIT, you need to call the `initialize_pyrit` function which will set up your configuration.
+# Before running PyRIT, you need to call the `initialize_pyrit_async` function which will set up your configuration.
 #
-# What are the configuration steps? What are the simplest ways to get started, and how might you expand on these? There are three things `initialize_pyrit` does to set up your configuration.
+# What are the configuration steps? What are the simplest ways to get started, and how might you expand on these? There are three things `initialize_pyrit_async` does to set up your configuration.
 #
 # 1. Set up environment variables (recommended)
 # 2. Pick a database (required)
@@ -24,13 +24,13 @@
 # This section goes into each of these steps. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
 
 # %%
-# Set OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY environment variables before running this code
+# Set OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY environment variables before running this code
 # E.g. you can put it in .env
 
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])  # type: ignore
 
 # Now you can run most of our notebooks! Just remove any os.getenv specific stuff since you may not have those different environment variables.
 
@@ -39,15 +39,15 @@ initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
 #
 # The recommended step to setup PyRIT is that it needs access to secrets and endpoints. These can be loaded in environment variables or put in a `.env` file. See `.env_example` for how this file is formatted.
 #
-# Each target has default environment variables to look for. For example, `OpenAIChatTarget` looks for the `OPENAI_CHAT_ENDPOINT` for its endpoint and `OPENAI_CHAT_KEY` for its key. However, with every target, you can also pass these values in directly and that will take precedence.
+# Each target has default environment variables to look for. For example, `OpenAIChatTarget` looks for the `OPENAI_CHAT_ENDPOINT` for its endpoint, `OPENAI_CHAT_MODEL` for its model name, and `OPENAI_CHAT_KEY` for its key. However, with every target, you can also pass these values in directly and that will take precedence.
 
 # %%
 import os
 
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-initialize_pyrit(memory_db_type=IN_MEMORY)
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 target1 = OpenAIChatTarget()
 
@@ -72,6 +72,7 @@ target3 = OpenAIChatTarget(
 #
 # ```
 # OPENAI_CHAT_ENDPOINT = ${AZURE_OPENAI_GPT4O_ENDPOINT2}
+# OPENAI_CHAT_MODEL = ${AZURE_OPENAI_GPT4O_MODEL2}
 # OPENAI_CHAT_KEY = ${AZURE_OPENAI_GPT4O_KEY2}
 # ```
 #
@@ -92,12 +93,12 @@ target3 = OpenAIChatTarget(
 # %% [markdown]
 # ## Choosing a database
 #
-# The next required step is to pick a database. PyRIT supports three types of databases; InMemory, sqlite, and SQL Azure. These are detailed in the [memory](../memory/0_memory.md) section of documentation. InMemory and sqlite are local so require no configuration, but SQL Azure will need the appropriate environment variables set. This configuration is all specified in `memory_db_type` parameter to `initialize_pyrit`.
+# The next required step is to pick a database. PyRIT supports three types of databases; InMemory, sqlite, and SQL Azure. These are detailed in the [memory](../memory/0_memory.md) section of documentation. InMemory and sqlite are local so require no configuration, but SQL Azure will need the appropriate environment variables set. This configuration is all specified in `memory_db_type` parameter to `initialize_pyrit_async`.
 
 # %% [markdown]
 # ## Setting up Initialization Scripts and Defaults
 #
-# When you call initialize_pyrit, you can pass it initialization_scripts and/or initializers. These can do anything, including setting convenience variables. But one of the primary purposes is to set default values. It is recommended to always use an initializer.
+# When you call initialize_pyrit_async, you can pass it initialization_scripts and/or initializers. These can do anything, including setting convenience variables. But one of the primary purposes is to set default values. It is recommended to always use an initializer.
 #
 # ### Using Built-In Initializers
 #
@@ -122,24 +123,27 @@ from pyrit.prompt_normalizer.prompt_converter_configuration import (
     PromptConverterConfiguration,
 )
 from pyrit.prompt_target import OpenAIChatTarget
-from pyrit.setup import initialize_pyrit
+from pyrit.setup import initialize_pyrit_async
 from pyrit.setup.initializers import SimpleInitializer
 
 # This is a way to include the SimpleInitializer class directly
-initialize_pyrit(memory_db_type="InMemory", initializers=[SimpleInitializer()])
+await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInitializer()])  # type: ignore
 
 
 # Alternative approach - you can pass the path to the initializer class.
 # This is how you provide your own file not part of the repo that defines a PyRITInitializer class
 # This is equivalent to loading the class directly as above
-initialize_pyrit(memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"])
+await initialize_pyrit_async(  # type: ignore
+    memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"]
+)
 
 
-# SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_KEY configured
+# SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY configured
 # It is meant to only require these two env vars to be configured
 # It can easily be swapped for another PyRITInitializer, like AIRTInitializer which is better but requires more env configuration
-# get_info() is a class method that shows how this initializer configures defaults and what global variables it sets
-for key, value in SimpleInitializer.get_info().items():
+# get_info_async() is a class method that shows how this initializer configures defaults and what global variables it sets
+info = await SimpleInitializer.get_info_async()  # type: ignore
+for key, value in info.items():
     print(f"{key}: {value}")
 
 
@@ -164,7 +168,7 @@ attack = PromptSendingAttack(
 )
 
 # Execute the attack - all components use sensible defaults
-results = await AttackExecutor().execute_single_turn_attacks_async(attack=attack, objectives=objectives)  # type: ignore
+results = await AttackExecutor().execute_attack_async(attack=attack, objectives=objectives)  # type: ignore
 
 for result in results:
     await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore

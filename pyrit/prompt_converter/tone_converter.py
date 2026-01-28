@@ -5,10 +5,10 @@ import logging
 import pathlib
 from typing import Optional
 
-from pyrit.common.apply_defaults import apply_defaults
-from pyrit.common.path import DATASETS_PATH
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import SeedPrompt
-from pyrit.prompt_converter import LLMGenericTextConverter
+from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
@@ -25,12 +25,12 @@ class ToneConverter(LLMGenericTextConverter):
     def __init__(
         self,
         *,
-        converter_target: Optional[PromptChatTarget] = None,
+        converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         tone: str,
         prompt_template: Optional[SeedPrompt] = None,
     ):
         """
-        Initializes the converter with the target chat support, tone, and optional prompt template.
+        Initialize the converter with the target chat support, tone, and optional prompt template.
 
         Args:
             converter_target (PromptChatTarget): The target chat support for the conversion which will translate.
@@ -45,7 +45,7 @@ class ToneConverter(LLMGenericTextConverter):
         prompt_template = (
             prompt_template
             if prompt_template
-            else SeedPrompt.from_yaml_file(pathlib.Path(DATASETS_PATH) / "prompt_converters" / "tone_converter.yaml")
+            else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "tone_converter.yaml")
         )
 
         super().__init__(

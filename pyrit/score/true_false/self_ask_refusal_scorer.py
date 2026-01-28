@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from pyrit.common.path import SCORER_CONFIG_PATH
+from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -15,15 +15,16 @@ from pyrit.score.true_false.true_false_score_aggregator import (
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE = Path(
-    SCORER_CONFIG_PATH, "refusal", "refusal_with_objective.yaml"
+    SCORER_SEED_PROMPT_PATH, "refusal", "refusal_with_objective.yaml"
 ).resolve()
 REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
-    SCORER_CONFIG_PATH, "refusal", "refusal_without_objective.yaml"
+    SCORER_SEED_PROMPT_PATH, "refusal", "refusal_without_objective.yaml"
 ).resolve()
 
 
 class SelfAskRefusalScorer(TrueFalseScorer):
-    """A self-ask scorer that detects refusal in AI responses.
+    """
+    A self-ask scorer that detects refusal in AI responses.
 
     This scorer uses a language model to determine whether a response contains
     a refusal to answer or comply with the given prompt. It's useful for
@@ -39,7 +40,8 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
     ) -> None:
-        """Initialize the SelfAskRefusalScorer.
+        """
+        Initialize the SelfAskRefusalScorer.
 
         Args:
             chat_target (PromptChatTarget): The endpoint that will be used to score the prompt.
@@ -47,6 +49,15 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
         """
+        # Set refusal-specific evaluation file mapping before calling super().__init__
+        from pyrit.score.scorer_evaluation.scorer_evaluator import (
+            ScorerEvalDatasetFiles,
+        )
+
+        self.evaluation_file_mapping = ScorerEvalDatasetFiles(
+            human_labeled_datasets_files=["refusal_scorer/*.csv"],
+            result_file="refusal_scorer/refusal_metrics.jsonl",
+        )
 
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
 
@@ -60,8 +71,17 @@ class SelfAskRefusalScorer(TrueFalseScorer):
 
         self._score_category = ["refusal"]
 
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_identifier(
+            system_prompt_template=self._system_prompt_with_objective,
+            prompt_target=self._prompt_target,
+            score_aggregator=self._score_aggregator.__name__,
+        )
+
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Scores the prompt and determines whether the response is a refusal.
+        """
+        Scores the prompt and determines whether the response is a refusal.
 
         Args:
             message_piece (MessagePiece): The message piece to score.
@@ -114,8 +134,8 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
             system_prompt=system_prompt,
-            prompt_request_value=prompt_value,
-            prompt_request_data_type=message_piece.converted_value_data_type,
+            message_value=prompt_value,
+            message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
             category=self._score_category,
             objective=objective,

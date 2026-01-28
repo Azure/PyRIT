@@ -14,7 +14,8 @@ from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
 class SubStringScorer(TrueFalseScorer):
-    """Scorer that checks if a given substring is present in the text.
+    """
+    Scorer that checks if a given substring is present in the text.
 
     This scorer performs substring matching using a configurable text matching strategy.
     Supports both exact substring matching and approximate matching.
@@ -31,7 +32,8 @@ class SubStringScorer(TrueFalseScorer):
         aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
         validator: Optional[ScorerPromptValidator] = None,
     ) -> None:
-        """Initialize the SubStringScorer.
+        """
+        Initialize the SubStringScorer.
 
         Args:
             substring (str): The substring to search for in the text.
@@ -42,13 +44,25 @@ class SubStringScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
-        super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)
         self._substring = substring
         self._text_matcher = text_matcher if text_matcher else ExactTextMatching(case_sensitive=False)
         self._score_categories = categories if categories else []
 
+        super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)
+
+    def _build_identifier(self) -> None:
+        """Build the scorer evaluation identifier for this scorer."""
+        self._set_identifier(
+            score_aggregator=self._score_aggregator.__name__,
+            scorer_specific_params={
+                "substring": self._substring,
+                "text_matcher": self._text_matcher.__class__.__name__,
+            },
+        )
+
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        """Score the given message piece based on presence of the substring.
+        """
+        Score the given message piece based on presence of the substring.
 
         Args:
             message_piece (MessagePiece): The message piece to score.
