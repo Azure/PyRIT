@@ -25,7 +25,7 @@ from pyrit.prompt_converter import Base64Converter, StringJoinConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import Scorer, TrueFalseScorer
-from tests.unit.mocks import get_mock_scorer_identifier
+from unit.mocks import get_mock_scorer_identifier, get_mock_target_identifier
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def mock_objective_target():
     """Create a mock prompt target for testing"""
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"id": "mock_target_id"}
+    target.get_identifier.return_value = get_mock_target_identifier("MockTarget")
     return target
 
 
@@ -42,7 +42,7 @@ def mock_adversarial_chat_target():
     """Create a mock adversarial chat target for testing"""
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"id": "mock_adversarial_chat_id"}
+    target.get_identifier.return_value = get_mock_target_identifier("MockAdversarialChat")
     return target
 
 

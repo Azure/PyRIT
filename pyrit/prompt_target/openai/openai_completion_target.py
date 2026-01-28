@@ -72,6 +72,19 @@ class OpenAICompletionTarget(OpenAITarget):
         self._presence_penalty = presence_penalty
         self._n = n
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with OpenAI completion-specific parameters."""
+        self._set_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_tokens": self._max_tokens,
+                "frequency_penalty": self._frequency_penalty,
+                "presence_penalty": self._presence_penalty,
+                "n": self._n,
+            },
+        )
+
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_COMPLETION_MODEL"
         self.endpoint_environment_variable = "OPENAI_COMPLETION_ENDPOINT"

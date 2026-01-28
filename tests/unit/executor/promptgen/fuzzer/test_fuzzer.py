@@ -29,7 +29,7 @@ from pyrit.score import (
     Scorer,
     TrueFalseScorer,
 )
-from tests.unit.mocks import get_mock_scorer_identifier
+from unit.mocks import get_mock_scorer_identifier
 
 
 @pytest.mark.usefixtures("patch_central_database")

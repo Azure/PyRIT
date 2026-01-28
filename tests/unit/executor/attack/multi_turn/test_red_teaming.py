@@ -19,7 +19,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     RTASystemPromptPaths,
 )
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -45,11 +45,21 @@ def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
     )
 
 
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
 @pytest.fixture
 def mock_objective_target() -> MagicMock:
     target = MagicMock(spec=PromptTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test_module"}
+    target.get_identifier.return_value = _mock_target_id("MockTarget")
     return target
 
 
@@ -58,7 +68,7 @@ def mock_adversarial_chat() -> MagicMock:
     chat = MagicMock(spec=PromptChatTarget)
     chat.send_prompt_async = AsyncMock()
     chat.set_system_prompt = MagicMock()
-    chat.get_identifier.return_value = {"__type__": "MockChatTarget", "__module__": "test_module"}
+    chat.get_identifier.return_value = _mock_target_id("MockChatTarget")
     return chat
 
 
@@ -534,10 +544,7 @@ class TestContextValidation:
         mock_chat_objective_target = MagicMock(spec=PromptChatTarget)
         mock_chat_objective_target.send_prompt_async = AsyncMock()
         mock_chat_objective_target.set_system_prompt = MagicMock()
-        mock_chat_objective_target.get_identifier.return_value = {
-            "__type__": "MockChatTarget",
-            "__module__": "test_module",
-        }
+        mock_chat_objective_target.get_identifier.return_value = _mock_target_id("MockChatTarget")
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)

@@ -31,7 +31,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.types import Uuid
 
 from pyrit.common.utils import to_sha256
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -208,7 +208,12 @@ class PromptMemoryEntry(Base):
         self.prompt_metadata = entry.prompt_metadata
         self.targeted_harm_categories = entry.targeted_harm_categories
         self.converter_identifiers = entry.converter_identifiers
-        self.prompt_target_identifier = entry.prompt_target_identifier
+        # Normalize prompt_target_identifier and convert to dict for JSON serialization
+        self.prompt_target_identifier = (
+            TargetIdentifier.normalize(entry.prompt_target_identifier).to_dict()
+            if entry.prompt_target_identifier
+            else {}
+        )
         self.attack_identifier = entry.attack_identifier
 
         self.original_value = entry.original_value
@@ -262,7 +267,9 @@ class PromptMemoryEntry(Base):
             str: Formatted string representation of the memory entry.
         """
         if self.prompt_target_identifier:
-            return f"{self.prompt_target_identifier['__type__']}: {self.role}: {self.converted_value}"
+            # prompt_target_identifier is stored as dict in the database
+            class_name = self.prompt_target_identifier.get("class_name") or self.prompt_target_identifier.get("__type__", "Unknown")
+            return f"{class_name}: {self.role}: {self.converted_value}"
         return f": {self.role}: {self.converted_value}"
 
 
@@ -874,7 +881,8 @@ class ScenarioResultEntry(Base):
         self.scenario_version = entry.scenario_identifier.version
         self.pyrit_version = entry.scenario_identifier.pyrit_version
         self.scenario_init_data = entry.scenario_identifier.init_data
-        self.objective_target_identifier = entry.objective_target_identifier
+        # Convert TargetIdentifier to dict for JSON storage
+        self.objective_target_identifier = entry.objective_target_identifier.to_dict()
         # Convert ScorerIdentifier to dict for JSON storage
         self.objective_scorer_identifier = (
             entry.objective_scorer_identifier.to_dict() if entry.objective_scorer_identifier else None
@@ -921,10 +929,13 @@ class ScenarioResultEntry(Base):
             ScorerIdentifier.from_dict(self.objective_scorer_identifier) if self.objective_scorer_identifier else None
         )
 
+        # Convert dict back to TargetIdentifier for reconstruction
+        target_identifier = TargetIdentifier.from_dict(self.objective_target_identifier)
+
         return ScenarioResult(
             id=self.id,
             scenario_identifier=scenario_identifier,
-            objective_target_identifier=self.objective_target_identifier,
+            objective_target_identifier=target_identifier,
             attack_results=attack_results,
             objective_scorer_identifier=scorer_identifier,
             scenario_run_state=self.scenario_run_state,

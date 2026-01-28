@@ -128,6 +128,14 @@ class PlaywrightCopilotTarget(PromptTarget):
         if page and self.M365_URL_IDENTIFIER not in page.url and copilot_type == CopilotType.M365:
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with Copilot-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "copilot_type": self._type.value,
+            },
+        )
+
     def _get_selectors(self) -> CopilotSelectors:
         """
         Get the appropriate selectors for the current Copilot type.

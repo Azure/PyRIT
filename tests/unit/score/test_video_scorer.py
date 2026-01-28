@@ -15,7 +15,7 @@ from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScor
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
-from tests.unit.mocks import get_mock_scorer_identifier
+from unit.mocks import get_mock_scorer_identifier
 
 
 def is_opencv_installed():

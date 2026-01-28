@@ -93,6 +93,15 @@ class PromptShieldTarget(PromptTarget):
 
         self._force_entry_field: PromptShieldEntryField = field
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with Prompt Shield-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "api_version": self._api_version,
+                "force_entry_field": self._force_entry_field if self._force_entry_field else None,
+            },
+        )
+
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """

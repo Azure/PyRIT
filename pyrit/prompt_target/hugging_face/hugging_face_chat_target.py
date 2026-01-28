@@ -135,6 +135,18 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with HuggingFace chat-specific parameters."""
+        self._set_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_new_tokens": self.max_new_tokens,
+                "skip_special_tokens": self.skip_special_tokens,
+                "use_cuda": self.use_cuda,
+            },
+        )
+
     def _load_from_path(self, path: str, **kwargs: Any) -> None:
         """
         Load the model and tokenizer from a given path.

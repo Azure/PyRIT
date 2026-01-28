@@ -118,6 +118,14 @@ class RealtimeTarget(OpenAITarget):
             "api.openai.com": "wss://api.openai.com/v1",
         }
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with Realtime API-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "voice": self.voice,
+            },
+        )
+
     def _validate_url_for_target(self, endpoint_url: str) -> None:
         """
         Validate URL for Realtime API with websocket-specific checks.

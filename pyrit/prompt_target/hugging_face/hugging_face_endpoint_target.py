@@ -61,6 +61,16 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self._temperature = temperature
         self._top_p = top_p
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with HuggingFace endpoint-specific parameters."""
+        self._set_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_tokens": self.max_tokens,
+            },
+        )
+
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """

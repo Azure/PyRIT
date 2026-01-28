@@ -156,6 +156,16 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     logger.debug("Detected grammar tool: %s", tool_name)
                     self._grammar_name = tool_name
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with OpenAI response-specific parameters."""
+        self._set_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_output_tokens": self._max_output_tokens,
+            },
+        )
+
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"
         self.endpoint_environment_variable = "OPENAI_RESPONSES_ENDPOINT"

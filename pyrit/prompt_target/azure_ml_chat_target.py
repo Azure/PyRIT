@@ -103,6 +103,17 @@ class AzureMLChatTarget(PromptChatTarget):
         self._repetition_penalty = repetition_penalty
         self._extra_parameters = param_kwargs
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with Azure ML-specific parameters."""
+        self._set_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_new_tokens": self._max_new_tokens,
+                "repetition_penalty": self._repetition_penalty,
+            },
+        )
+
     def _initialize_vars(self, endpoint: Optional[str] = None, api_key: Optional[str] = None) -> None:
         """
         Set the endpoint and key for accessing the Azure ML model. Use this function to manually

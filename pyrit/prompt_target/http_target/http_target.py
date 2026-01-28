@@ -82,6 +82,15 @@ class HTTPTarget(PromptTarget):
         if client and httpx_client_kwargs:
             raise ValueError("Cannot provide both a pre-configured client and additional httpx client kwargs.")
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with HTTP target-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "use_tls": self.use_tls,
+                "prompt_regex_string": self.prompt_regex_string,
+            },
+        )
+
     @classmethod
     def with_client(
         cls,

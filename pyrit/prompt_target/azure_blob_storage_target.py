@@ -79,6 +79,14 @@ class AzureBlobStorageTarget(PromptTarget):
 
         super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with Azure Blob Storage-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "blob_content_type": self._blob_content_type,
+            },
+        )
+
     async def _create_container_client_async(self) -> None:
         """
         Create an asynchronous ContainerClient for Azure Storage. If a SAS token is provided via the

@@ -15,6 +15,7 @@ from pyrit.executor.attack import (
     ContextComplianceAttack,
     SingleTurnAttackContext,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -26,12 +27,22 @@ from pyrit.prompt_target import PromptChatTarget
 from pyrit.score import TrueFalseScorer
 
 
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
 @pytest.fixture
 def mock_objective_target():
     """Create a mock PromptChatTarget for testing"""
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"id": "mock_target_id"}
+    target.get_identifier.return_value = _mock_target_id("MockTarget")
     return target
 
 
@@ -40,7 +51,7 @@ def mock_adversarial_chat():
     """Create a mock adversarial chat target for testing"""
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"id": "mock_adversarial_id"}
+    target.get_identifier.return_value = _mock_target_id("MockAdversarialTarget")
     return target
 
 

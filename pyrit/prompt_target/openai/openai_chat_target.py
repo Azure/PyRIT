@@ -163,6 +163,21 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         self._extra_body_parameters = extra_body_parameters
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with OpenAI chat-specific parameters."""
+        self._set_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_completion_tokens": self._max_completion_tokens,
+                "max_tokens": self._max_tokens,
+                "frequency_penalty": self._frequency_penalty,
+                "presence_penalty": self._presence_penalty,
+                "seed": self._seed,
+                "n": self._n,
+            },
+        )
+
     def _set_openai_env_configuration_vars(self) -> None:
         """
         Set deployment_environment_variable, endpoint_environment_variable,

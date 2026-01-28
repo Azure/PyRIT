@@ -16,7 +16,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
 )
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import SeedDataset, SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario.scenarios.airt.scam import Scam, ScamStrategy
@@ -29,6 +29,16 @@ SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "scams.p
 def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
     """Helper to create ScorerIdentifier for tests."""
     return ScorerIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
         class_name=name,
         class_module="test",
         class_description="",
@@ -76,7 +86,7 @@ def mock_runtime_env():
 @pytest.fixture
 def mock_objective_target() -> PromptTarget:
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockObjectiveTarget")
     return mock
 
 
@@ -90,7 +100,7 @@ def mock_objective_scorer() -> TrueFalseCompositeScorer:
 @pytest.fixture
 def mock_adversarial_target() -> PromptChatTarget:
     mock = MagicMock(spec=PromptChatTarget)
-    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockAdversarialTarget")
     return mock
 
 
@@ -163,7 +173,7 @@ class TestScamInitialization:
         self, *, mock_objective_scorer: TrueFalseCompositeScorer, mock_memory_seed_groups: List[SeedGroup]
     ) -> None:
         adversarial_chat = MagicMock(OpenAIChatTarget)
-        adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
+        adversarial_chat.get_identifier.return_value = _mock_target_id("CustomAdversary")
 
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Scam(

@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from unit.mocks import MockPromptTarget
+from unit.mocks import get_mock_target_identifier, MockPromptTarget
 
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_converter import DenylistConverter
@@ -28,6 +28,7 @@ def mock_target() -> MockPromptTarget:
         ]
     )
     target.send_prompt_async = AsyncMock(return_value=[response])
+    target.get_identifier.return_value = get_mock_target_identifier("MockDenylistTarget")
     return target
 
 

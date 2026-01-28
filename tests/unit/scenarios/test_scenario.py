@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 import pytest
 
 from pyrit.executor.attack.core import AttackExecutorResult
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenario import DatasetConfiguration, ScenarioIdentifier, ScenarioResult
@@ -71,7 +71,12 @@ def mock_atomic_attacks():
 def mock_objective_target():
     """Create a mock objective target for testing."""
     target = MagicMock()
-    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test"}
+    target.get_identifier.return_value = TargetIdentifier(
+        class_name="MockTarget",
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
     return target
 
 
@@ -223,7 +228,9 @@ class TestScenarioInitialization2:
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario._objective_target == mock_objective_target
-        assert scenario._objective_target_identifier == {"__type__": "MockTarget", "__module__": "test"}
+        # Verify it's a TargetIdentifier with the expected class_name
+        assert scenario._objective_target_identifier.class_name == "MockTarget"
+        assert scenario._objective_target_identifier.class_module == "test"
 
     @pytest.mark.asyncio
     async def test_initialize_async_requires_objective_target(self):

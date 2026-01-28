@@ -81,6 +81,17 @@ class OpenAITTSTarget(OpenAITarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with TTS-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "voice": self._voice,
+                "response_format": self._response_format,
+                "language": self._language,
+                "speed": self._speed,
+            },
+        )
+
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(self, *, message: Message) -> list[Message]:

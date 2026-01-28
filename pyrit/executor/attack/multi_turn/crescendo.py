@@ -576,7 +576,7 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Raises:
             ValueError: If no response is received from the objective target.
         """
-        objective_target_type = self._objective_target.get_identifier()["__type__"]
+        objective_target_type = self._objective_target.get_identifier().class_name
 
         # Send the generated prompt to the objective target
         prompt_preview = attack_message.get_value()[:100] if attack_message.get_value() else ""

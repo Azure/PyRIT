@@ -85,6 +85,16 @@ class OpenAIImageTarget(OpenAITarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with image generation-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "image_size": self.image_size,
+                "quality": self.quality,
+                "style": self.style,
+            },
+        )
+
     @limit_requests_per_minute
     @pyrit_target_retry
     async def send_prompt_async(

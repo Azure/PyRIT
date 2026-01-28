@@ -208,7 +208,7 @@ class Identifier:
             print_deprecation_message(
                 old_item=f"dict for {cls.__name__}",
                 new_item=cls.__name__,
-                removed_in="0.14.0",
+                removed_in="0.13.0",
             )
             return cls.from_dict(value)
 

@@ -57,6 +57,14 @@ class GandalfTarget(PromptTarget):
 
         self._defender = level.value
 
+    def _build_identifier(self) -> None:
+        """Build the identifier with Gandalf-specific parameters."""
+        self._set_identifier(
+            target_specific_params={
+                "level": self._defender,
+            },
+        )
+
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """

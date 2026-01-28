@@ -14,7 +14,7 @@ from pyrit.models import (
     ScenarioIdentifier,
     ScenarioResult,
 )
-from tests.unit.mocks import get_mock_scorer_identifier
+from unit.mocks import get_mock_scorer_identifier
 
 
 @pytest.fixture
@@ -294,7 +294,7 @@ def test_preserves_metadata(sqlite_instance: MemoryInterface):
     assert retrieved.scenario_identifier.description == "A test scenario with metadata"
     assert retrieved.scenario_identifier.version == 3
     assert retrieved.scenario_identifier.init_data == {"param1": "value1", "param2": 42}
-    assert retrieved.objective_target_identifier == {"target": "test_target", "endpoint": "https://example.com"}
+    assert retrieved.objective_target_identifier.endpoint == "https://example.com"
     # objective_scorer_identifier is now a ScorerIdentifier, check its properties
     assert retrieved.objective_scorer_identifier.class_name == "TestScorer"
     assert retrieved.objective_scorer_identifier.class_module == "test.module"
@@ -630,4 +630,4 @@ def test_combined_filters(sqlite_instance: MemoryInterface):
     )
     assert len(results) == 1
     assert results[0].scenario_identifier.pyrit_version == "0.5.0"
-    assert "gpt-4" in results[0].objective_target_identifier["model_name"]
+    assert "gpt-4" in results[0].objective_target_identifier.model_name

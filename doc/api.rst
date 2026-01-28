@@ -276,6 +276,7 @@ API Reference
     IdentifierType
     ScorerIdentifier
     snake_case_to_class_name
+    TargetIdentifier
 
 :py:mod:`pyrit.memory`
 ======================
