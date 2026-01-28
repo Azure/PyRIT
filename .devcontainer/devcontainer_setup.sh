@@ -68,6 +68,11 @@ fi
 cd /workspace/frontend
 if [ -f "package.json" ]; then
     npm install
+
+    # Install Playwright browsers and system dependencies for E2E testing
+    echo "📦 Installing Playwright browsers..."
+    npx playwright install --with-deps chromium
+
     echo "✅ Frontend dependencies installed."
 fi
 cd /workspace

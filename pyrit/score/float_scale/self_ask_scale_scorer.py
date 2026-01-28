@@ -9,6 +9,7 @@ import yaml
 
 from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_SCALES_PATH
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -83,9 +84,14 @@ class SelfAskScaleScorer(FloatScaleScorer):
 
         self._system_prompt = scoring_instructions_template.render_template_value(**scale_args)
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             system_prompt_template=self._system_prompt,
             user_prompt_template="objective: {objective}\nresponse: {response}",
             prompt_target=self._prompt_target,

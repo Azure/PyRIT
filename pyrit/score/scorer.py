@@ -26,6 +26,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
+from pyrit.identifiers import Identifiable, ScorerIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     ChatMessageRole,
@@ -38,7 +39,6 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
@@ -54,7 +54,7 @@ if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
 
-class Scorer(abc.ABC):
+class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
     """
     Abstract base class for scorers.
     """
@@ -63,7 +63,7 @@ class Scorer(abc.ABC):
     # Specifies glob patterns for datasets and a result file name
     evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
-    _scorer_identifier: Optional[ScorerIdentifier] = None
+    _identifier: Optional[ScorerIdentifier] = None
 
     def __init__(self, *, validator: ScorerPromptValidator):
         """
@@ -95,33 +95,11 @@ class Scorer(abc.ABC):
         else:
             return "unknown"
 
-    @abstractmethod
-    def _build_scorer_identifier(self) -> None:
-        """
-        Build the scorer evaluation identifier for this scorer.
-
-        Subclasses must implement this method to call `_set_scorer_identifier()` with their
-        specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
-        """
-        raise NotImplementedError("Subclasses must implement _build_scorer_identifier")
-
-    @property
-    def scorer_identifier(self) -> ScorerIdentifier:
-        """
-        Get the scorer identifier. Built lazily on first access.
-
-        Returns:
-            ScorerIdentifier: The identifier containing all configuration parameters.
-        """
-        if self._scorer_identifier is None:
-            self._build_scorer_identifier()
-        return self._scorer_identifier
-
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def _set_scorer_identifier(
+    def _create_identifier(
         self,
         *,
         system_prompt_template: Optional[str] = None,
@@ -130,9 +108,9 @@ class Scorer(abc.ABC):
         score_aggregator: Optional[str] = None,
         scorer_specific_params: Optional[Dict[str, Any]] = None,
         prompt_target: Optional[PromptTarget] = None,
-    ) -> None:
+    ) -> ScorerIdentifier:
         """
-        Construct the scorer evaluation identifier.
+        Construct and return the scorer identifier.
 
         Args:
             system_prompt_template (Optional[str]): The system prompt template used by this scorer. Defaults to None.
@@ -142,11 +120,14 @@ class Scorer(abc.ABC):
             scorer_specific_params (Optional[Dict[str, Any]]): Additional scorer-specific parameters.
                 Defaults to None.
             prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
+
+        Returns:
+            ScorerIdentifier: The constructed identifier.
         """
-        # Build sub_identifier from sub_scorers
+        # Build sub_identifier from sub_scorers (store as dicts for storage)
         sub_identifier: Optional[List[ScorerIdentifier]] = None
         if sub_scorers:
-            sub_identifier = [scorer.scorer_identifier for scorer in sub_scorers]
+            sub_identifier = [scorer.get_identifier() for scorer in sub_scorers]
         # Extract target_info from prompt_target
         target_info: Optional[Dict[str, Any]] = None
         if prompt_target:
@@ -157,8 +138,12 @@ class Scorer(abc.ABC):
                 if key in target_id:
                     target_info[key] = target_id[key]
 
-        self._scorer_identifier = ScorerIdentifier(
-            type=self.__class__.__name__,
+        return ScorerIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            class_description=self.__class__.__doc__ or "",
+            identifier_type="instance",
+            scorer_type=self.scorer_type,
             system_prompt_template=system_prompt_template,
             user_prompt_template=user_prompt_template,
             sub_identifier=sub_identifier,
@@ -515,18 +500,6 @@ class Scorer(abc.ABC):
 
         normalized_value = (value - min_value) / (max_value - min_value)
         return normalized_value
-
-    def get_identifier(self) -> Dict[str, Any]:
-        """
-        Get an identifier dictionary for the scorer for database storage.
-
-        Large fields (system_prompt_template, user_prompt_template) are shortened for compact storage.
-        Includes the computed hash of the configuration.
-
-        Returns:
-            dict: The identifier dictionary containing configuration details and hash.
-        """
-        return self.scorer_identifier.to_compact_dict()
 
     @pyrit_json_retry
     async def _score_value_with_llm(
