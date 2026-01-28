@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -71,9 +72,14 @@ class SelfAskRefusalScorer(TrueFalseScorer):
 
         self._score_category = ["refusal"]
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             system_prompt_template=self._system_prompt_with_objective,
             prompt_target=self._prompt_target,
             score_aggregator=self._score_aggregator.__name__,

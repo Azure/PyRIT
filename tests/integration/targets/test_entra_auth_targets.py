@@ -288,3 +288,30 @@ async def test_prompt_shield_target_entra_auth(sqlite_instance):
     result = await attack.execute_async(objective="test")
     assert result is not None
     assert result.last_response is not None
+
+
+@pytest.mark.asyncio
+async def test_openai_chat_target_with_sync_token_provider(sqlite_instance):
+    """Test that OpenAIChatTarget works with synchronous token providers (auto-wrapped)."""
+    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
+    endpoint = os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"]
+    model_name = os.environ["AZURE_OPENAI_GPT4O_MODEL"]
+
+    # Use synchronous token provider - this should be auto-wrapped
+    sync_token_provider = get_bearer_token_provider(
+        DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+    )
+
+    target = OpenAIChatTarget(
+        endpoint=endpoint,
+        model_name=model_name,
+        api_key=sync_token_provider,
+        temperature=0.0,
+        seed=42,
+    )
+
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective="Hello, how are you?")
+    assert result is not None
+    assert result.last_response is not None

@@ -82,7 +82,8 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         lines.append(f"{indent}- **Score Type:** {score.score_type}")
         lines.append(f"{indent}- **Value:** {value_str}")
-        lines.append(f"{indent}- **Category:** {score.score_category or 'N/A'}")
+        category_str = ", ".join(score.score_category) if score.score_category else "N/A"
+        lines.append(f"{indent}- **Category:** {category_str}")
 
         if score.score_rationale:
             # Handle multi-line rationale

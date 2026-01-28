@@ -9,7 +9,13 @@ from uuid import uuid4
 import pytest
 from unit.mocks import MockPromptTarget, get_image_message_piece
 
-from pyrit.exceptions import EmptyResponseException
+from pyrit.exceptions import (
+    ComponentRole,
+    EmptyResponseException,
+    clear_execution_context,
+    execution_context,
+    get_execution_context,
+)
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -428,3 +434,122 @@ async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_gr
         "Test Exception"
         in mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"].message_pieces[0].original_value
     )
+
+
+# Tests for execution context in converter operations (used for error message handling)
+
+
+class ContextCapturingConverter(PromptConverter):
+    """A converter that captures the execution context during conversion."""
+
+    SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+    SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+    captured_context = None
+
+    def __init__(self) -> None:
+        pass
+
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        # Capture the current execution context
+        ContextCapturingConverter.captured_context = get_execution_context()
+        return ConverterResult(output_text=f"converted:{prompt}", output_type="text")
+
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
+
+class FailingConverter(PromptConverter):
+    """A converter that raises an exception during conversion."""
+
+    SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+    SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ("text",)
+
+    def __init__(self) -> None:
+        pass
+
+    async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
+        raise RuntimeError("Converter failed")
+
+    def input_supported(self, input_type: PromptDataType) -> bool:
+        return input_type == "text"
+
+    def output_supported(self, output_type: PromptDataType) -> bool:
+        return output_type == "text"
+
+
+class TestPromptNormalizerConverterContext:
+    """Tests for execution context during converter operations in PromptNormalizer."""
+
+    def teardown_method(self):
+        """Clear context after each test."""
+        clear_execution_context()
+        ContextCapturingConverter.captured_context = None
+
+    @pytest.mark.asyncio
+    async def test_convert_values_sets_converter_context(self, mock_memory_instance):
+        """Test that convert_values sets CONVERTER execution context."""
+        normalizer = PromptNormalizer()
+        message = Message.from_prompt(prompt="test", role="user")
+
+        converter_config = PromptConverterConfiguration(converters=[ContextCapturingConverter()])
+
+        await normalizer.convert_values(converter_configurations=[converter_config], message=message)
+
+        # The converter should have captured the execution context
+        captured = ContextCapturingConverter.captured_context
+        assert captured is not None
+        assert captured.component_role == ComponentRole.CONVERTER
+
+    @pytest.mark.asyncio
+    async def test_convert_values_inherits_outer_context(self, mock_memory_instance):
+        """Test that converter context inherits attack info from outer context."""
+        normalizer = PromptNormalizer()
+        message = Message.from_prompt(prompt="test", role="user")
+
+        converter_config = PromptConverterConfiguration(converters=[ContextCapturingConverter()])
+
+        # Set an outer execution context (simulating being called from an attack)
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            attack_strategy_name="TestAttack",
+            attack_identifier={"id": "attack-123"},
+            objective_target_conversation_id="conv-456",
+        ):
+            await normalizer.convert_values(converter_configurations=[converter_config], message=message)
+
+        # The converter should have captured the context with inherited values
+        captured = ContextCapturingConverter.captured_context
+        assert captured is not None
+        assert captured.component_role == ComponentRole.CONVERTER
+        assert captured.attack_strategy_name == "TestAttack"
+        assert captured.objective_target_conversation_id == "conv-456"
+
+    @pytest.mark.asyncio
+    async def test_convert_values_exception_propagates(self, mock_memory_instance):
+        """Test that converter exceptions propagate correctly."""
+        normalizer = PromptNormalizer()
+        message = Message.from_prompt(prompt="test", role="user")
+
+        converter_config = PromptConverterConfiguration(converters=[FailingConverter()])
+
+        with pytest.raises(RuntimeError, match="Converter failed"):
+            await normalizer.convert_values(converter_configurations=[converter_config], message=message)
+
+    @pytest.mark.asyncio
+    async def test_convert_values_context_includes_converter_identifier(self, mock_memory_instance):
+        """Test that converter context includes the converter's identifier."""
+        normalizer = PromptNormalizer()
+        message = Message.from_prompt(prompt="test", role="user")
+
+        converter = ContextCapturingConverter()
+        converter_config = PromptConverterConfiguration(converters=[converter])
+
+        await normalizer.convert_values(converter_configurations=[converter_config], message=message)
+
+        captured = ContextCapturingConverter.captured_context
+        assert captured is not None
+        assert captured.component_identifier is not None
+        assert "ContextCapturingConverter" in str(captured.component_identifier)

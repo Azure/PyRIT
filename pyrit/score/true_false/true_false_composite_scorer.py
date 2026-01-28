@@ -4,6 +4,7 @@
 import asyncio
 from typing import List, Optional
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc
@@ -52,9 +53,14 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
         self._scorers = scorers
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             sub_scorers=self._scorers,
             score_aggregator=self._score_aggregator.__name__,
         )

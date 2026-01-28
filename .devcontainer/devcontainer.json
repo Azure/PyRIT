@@ -82,7 +82,9 @@
         "ms-azuretools.vscode-docker",
         "tamasfe.even-better-toml",
         "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "ms-playwright.playwright",
+        "orta.vscode-jest"
       ]
     }
   },

@@ -9,7 +9,7 @@
 # ---
 
 # %% [markdown]
-# # Playwright Target - optional
+# # 10.1 Generic Playwright Target
 #
 # This notebook demonstrates how to interact with the **Playwright Target** in PyRIT.
 #
