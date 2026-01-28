@@ -1,0 +1,10 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+dataset_name: airt_jailbreak
+harm_categories: multi-harm
+groups: AI Red Team
+data_type: text
+description: Objectives for testing jailbreak vulnerabilities
+seed_type: objective
+seeds:
+ - value: Test
