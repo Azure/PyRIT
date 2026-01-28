@@ -639,7 +639,7 @@ class _TreeOfAttacksNode:
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self._attack_strategy_name,
             attack_identifier=self._attack_id,
-            component_identifier=self._objective_scorer.get_identifier().to_dict(),
+            component_identifier=self._objective_scorer.get_identifier(),
             objective_target_conversation_id=self.objective_target_conversation_id,
             objective=objective,
         ):

@@ -65,8 +65,8 @@ def test_converters_serialize():
 
     converter = entry.converter_identifiers[0]
 
-    assert converter["__type__"] == "Base64Converter"
-    assert converter["__module__"] == "pyrit.prompt_converter.base64_converter"
+    assert converter.class_name == "Base64Converter"
+    assert converter.class_module == "pyrit.prompt_converter.base64_converter"
 
 
 def test_prompt_targets_serialize(patch_central_database):
@@ -744,7 +744,7 @@ def test_message_piece_to_dict():
     assert result["labels"] == entry.labels
     assert result["targeted_harm_categories"] == entry.targeted_harm_categories
     assert result["prompt_metadata"] == entry.prompt_metadata
-    assert result["converter_identifiers"] == entry.converter_identifiers
+    assert result["converter_identifiers"] == [conv.to_dict() for conv in entry.converter_identifiers]
     assert result["prompt_target_identifier"] == entry.prompt_target_identifier
     assert result["attack_identifier"] == entry.attack_identifier
     assert result["scorer_identifier"] == entry.scorer_identifier.to_dict()

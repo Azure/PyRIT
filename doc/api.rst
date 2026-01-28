@@ -272,6 +272,7 @@ API Reference
     :toctree: _autosummary/
 
     class_name_to_snake_case
+    ConverterIdentifier
     Identifiable
     Identifier
     IdentifierT
