@@ -3,12 +3,12 @@
 
 """Tests for the Jailbreak class."""
 
-from typing import Dict, List
+from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
-import yaml
 
+from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedGroup, SeedObjective
@@ -16,14 +16,12 @@ from pyrit.prompt_target import PromptTarget
 from pyrit.scenario.scenarios.airt.jailbreak import Jailbreak, JailbreakStrategy
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 
-JAILBREAKS = False
-
 
 @pytest.fixture
-def mock_jailbreak_template() -> Dict:
-    """Create mock YAML for jailbreak template."""
-    contents = """
-    ---
+def mock_jailbreak_template_contents() -> str:
+    """Create mock TextJailBreak using sample template."""
+
+    return """
     name: Sample
     description: Sample
     authors:
@@ -33,9 +31,24 @@ def mock_jailbreak_template() -> Dict:
         - prompt
     data_type: text
     value: >
-        Sample. Question: {{ prompt }}
+        Sample: {{ prompt }}
     """
-    return yaml.safe_load(contents)
+
+
+@pytest.fixture
+def mock_text_jailbreak(tmp_path, mock_jailbreak_template_contents) -> TextJailBreak:
+    d = tmp_path / "jailbreak"
+    d.mkdir()
+    d = d / "templates"
+    d.mkdir()
+    p = d / "sample.yaml"
+    p.write_text(mock_jailbreak_template_contents, encoding="utf-8")
+    return TextJailBreak(template_path=str(p.resolve()))
+
+
+@pytest.fixture
+def mock_scenario_result_id() -> str:
+    return "mock-scenario-result-id"
 
 
 @pytest.fixture
@@ -55,8 +68,7 @@ def mock_memory_seed_groups() -> List[SeedGroup]:
 def mock_objective_target() -> PromptTarget:
     """Create a mock objective target for testing."""
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {
-        "__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
     return mock
 
 
@@ -64,8 +76,7 @@ def mock_objective_target() -> PromptTarget:
 def mock_objective_scorer() -> TrueFalseInverterScorer:
     """Create a mock scorer for testing."""
     mock = MagicMock(spec=TrueFalseInverterScorer)
-    mock.get_identifier.return_value = {
-        "__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
     return mock
 
 
@@ -102,25 +113,11 @@ FIXTURES = ["patch_central_database", "mock_runtime_env"]
 class TestJailbreakInitialization:
     """Tests for Jailbreak initialization."""
 
-    def test_init_with_custom_objectives(self, mock_objective_scorer, sample_objectives):
-        """Test initialization with custom objectives."""
-
-        scenario = Jailbreak(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
-
-        assert scenario.name == "Jailbreak"
-        assert scenario.version == 1
-
-    def test_init_with_default_objectives(self, mock_objective_scorer, mock_memory_seed_groups):
-        """Test initialization with default objectives."""
-
+    def test_init_with_scenario_result_id(self, mock_scenario_result_id):
+        """Test initialization with a scenario result ID."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
-            scenario = Jailbreak(objective_scorer=mock_objective_scorer)
-
-            assert scenario.name == "Jailbreak"
-            assert scenario.version == 1
+            scenario = Jailbreak(scenario_result_id=mock_scenario_result_id)
+            assert scenario._scenario_result_id == mock_scenario_result_id
 
     def test_init_with_default_scorer(self, mock_memory_seed_groups):
         """Test initialization with default scorer."""
@@ -133,12 +130,6 @@ class TestJailbreakInitialization:
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
             assert isinstance(scenario._scorer_config, AttackScoringConfig)
-
-    def test_init_jailbreak_templating(
-        self,
-    ):
-        """Test that jailbreak templating works."""
-        pass
 
     @pytest.mark.asyncio
     async def test_init_raises_exception_when_no_datasets_available(self, mock_objective_target, mock_objective_scorer):
@@ -180,8 +171,7 @@ class TestJailbreakAttackGeneration:
             )
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[
-                    pyrit_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[pyrit_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -218,6 +208,21 @@ class TestJailbreakAttackGeneration:
             atomic_attacks = await scenario._get_atomic_attacks_async()
             assert len(atomic_attacks) > 0
             assert all(hasattr(run, "_attack") for run in atomic_attacks)
+
+    @pytest.mark.asyncio
+    async def test_get_atomic_attacks_async_with_custom_jailbreak(
+        self,
+        mock_objective_target,
+        mock_memory_seed_groups,
+    ):
+        """Test that _get_atomic_attack_from_jailbreak_async can successfully parse a YAML jailbreak."""
+
+        with patch("pyrit.datasets.jailbreak.text_jailbreak.TextJailBreak", mock_text_jailbreak):
+            with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+                scenario = Jailbreak()
+                await scenario.initialize_async(objective_target=mock_objective_target)
+                attack = await scenario._get_atomic_attack_from_jailbreak_async(jailbreak_template_name="sample")
+                assert attack.atomic_attack_name == "Sample"
 
 
 @pytest.mark.usefixtures(*FIXTURES)
