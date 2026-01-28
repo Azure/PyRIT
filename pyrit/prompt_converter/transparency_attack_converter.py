@@ -186,7 +186,8 @@ class TransparencyAttackConverter(PromptConverter):
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with transparency attack parameters.
+        """
+        Build identifier with transparency attack parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

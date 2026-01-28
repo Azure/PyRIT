@@ -57,7 +57,8 @@ class InsecureCodeScorer(FloatScaleScorer):
         self._system_prompt = scoring_instructions_template.render_template_value(harm_categories=self._harm_category)
 
     def _build_identifier(self) -> ScorerIdentifier:
-        """Build the scorer evaluation identifier for this scorer.
+        """
+        Build the scorer evaluation identifier for this scorer.
 
         Returns:
             ScorerIdentifier: The identifier for this scorer.

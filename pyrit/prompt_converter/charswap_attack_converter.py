@@ -51,7 +51,8 @@ class CharSwapConverter(WordLevelConverter):
         self._max_iterations = max_iterations
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with charswap parameters.
+        """
+        Build the converter identifier with charswap parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

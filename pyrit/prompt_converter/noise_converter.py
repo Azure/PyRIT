@@ -65,7 +65,8 @@ class NoiseConverter(LLMGenericTextConverter):
         self._number_errors = number_errors
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with noise parameters.
+        """
+        Build the converter identifier with noise parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

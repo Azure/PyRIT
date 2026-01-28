@@ -34,7 +34,8 @@ class AsciiSmugglerConverter(SmugglerConverter):
         super().__init__(action=action)
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with ASCII smuggler parameters.
+        """
+        Build identifier with ASCII smuggler parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

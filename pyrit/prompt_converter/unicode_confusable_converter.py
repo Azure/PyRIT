@@ -60,7 +60,8 @@ class UnicodeConfusableConverter(PromptConverter):
         self._deterministic = deterministic
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with unicode confusable parameters.
+        """
+        Build the converter identifier with unicode confusable parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

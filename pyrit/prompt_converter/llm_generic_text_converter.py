@@ -64,7 +64,8 @@ class LLMGenericTextConverter(PromptConverter):
         self._user_prompt_template_with_objective = user_prompt_template_with_objective
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with LLM and template parameters.
+        """
+        Build the converter identifier with LLM and template parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

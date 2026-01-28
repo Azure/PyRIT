@@ -102,7 +102,8 @@ class CodeChameleonConverter(PromptConverter):
         self._encrypt_type = encrypt_type
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with encryption type.
+        """
+        Build identifier with encryption type.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

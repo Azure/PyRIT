@@ -88,7 +88,8 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         self.done = False
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with speech recognition parameters.
+        """
+        Build identifier with speech recognition parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

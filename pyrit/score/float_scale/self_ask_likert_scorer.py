@@ -191,7 +191,8 @@ class SelfAskLikertScorer(FloatScaleScorer):
         self._set_likert_scale_system_prompt(likert_scale_path=likert_scale.path)
 
     def _build_identifier(self) -> ScorerIdentifier:
-        """Build the scorer evaluation identifier for this scorer.
+        """
+        Build the scorer evaluation identifier for this scorer.
 
         Returns:
             ScorerIdentifier: The identifier for this scorer.

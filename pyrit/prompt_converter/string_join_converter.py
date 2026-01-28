@@ -31,7 +31,8 @@ class StringJoinConverter(WordLevelConverter):
         self._join_value = join_value
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with join parameters.
+        """
+        Build the converter identifier with join parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

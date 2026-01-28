@@ -91,7 +91,8 @@ class SelectiveTextConverter(PromptConverter):
         self._is_token_based = isinstance(selection_strategy, TokenSelectionStrategy)
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with selective text converter parameters.
+        """
+        Build identifier with selective text converter parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

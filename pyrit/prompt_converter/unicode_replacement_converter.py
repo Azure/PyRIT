@@ -31,7 +31,8 @@ class UnicodeReplacementConverter(WordLevelConverter):
         self.encode_spaces = encode_spaces
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with unicode replacement parameters.
+        """
+        Build identifier with unicode replacement parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

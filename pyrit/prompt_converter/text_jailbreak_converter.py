@@ -25,7 +25,8 @@ class TextJailbreakConverter(PromptConverter):
         self.jail_break_template = jailbreak_template
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with jailbreak template path.
+        """
+        Build identifier with jailbreak template path.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

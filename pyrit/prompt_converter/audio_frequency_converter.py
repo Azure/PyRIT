@@ -44,7 +44,8 @@ class AudioFrequencyConverter(PromptConverter):
         self._shift_value = shift_value
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with audio frequency parameters.
+        """
+        Build the converter identifier with audio frequency parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

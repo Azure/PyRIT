@@ -53,7 +53,8 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
         self.embed_in_base = embed_in_base
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with variation selector parameters.
+        """
+        Build identifier with variation selector parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

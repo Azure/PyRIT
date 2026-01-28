@@ -197,11 +197,12 @@ def create_conversation_scorer(
             return self._wrapped_scorer
 
         def _build_identifier(self) -> ScorerIdentifier:
-            """Build the scorer evaluation identifier for this conversation scorer.
+            """
+            Build the scorer evaluation identifier for this conversation scorer.
 
-        Returns:
-            ScorerIdentifier: The identifier for this scorer.
-        """
+            Returns:
+                ScorerIdentifier: The identifier for this scorer.
+            """
             return self._set_identifier(
                 sub_scorers=[self._wrapped_scorer],
             )

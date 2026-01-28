@@ -46,7 +46,8 @@ class Base64Converter(PromptConverter):
         self._encoding_func = encoding_func
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with encoding function.
+        """
+        Build the converter identifier with encoding function.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

@@ -26,7 +26,8 @@ class AsciiArtConverter(PromptConverter):
         self._font = font
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with font parameter.
+        """
+        Build the converter identifier with font parameter.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

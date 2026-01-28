@@ -125,7 +125,8 @@ class ImageCompressionConverter(PromptConverter):
             )
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with image compression parameters.
+        """
+        Build identifier with image compression parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

@@ -230,7 +230,7 @@ class PromptMemoryEntry(Base):
         Returns:
             MessagePiece: The reconstructed message piece with all its data and scores.
         """
-        converter_ids = (
+        converter_ids: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = (
             [ConverterIdentifier.from_dict(c) for c in self.converter_identifiers]
             if self.converter_identifiers
             else None

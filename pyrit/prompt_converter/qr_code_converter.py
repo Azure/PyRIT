@@ -62,7 +62,8 @@ class QRCodeConverter(PromptConverter):
         self._img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with QR code parameters.
+        """
+        Build identifier with QR code parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

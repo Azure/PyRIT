@@ -69,7 +69,8 @@ class VariationConverter(PromptConverter):
         self.system_prompt = str(prompt_template.render_template_value(number_iterations=str(self.number_variations)))
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with variation parameters.
+        """
+        Build the converter identifier with variation parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

@@ -44,7 +44,8 @@ class SneakyBitsSmugglerConverter(SmugglerConverter):
         self.one_char = one_char if one_char is not None else "\u2064"  # Invisible Plus
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with sneaky bits parameters.
+        """
+        Build identifier with sneaky bits parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

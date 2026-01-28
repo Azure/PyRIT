@@ -38,7 +38,8 @@ class SmugglerConverter(PromptConverter, abc.ABC):
         self.action = action
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with smuggler action.
+        """
+        Build identifier with smuggler action.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

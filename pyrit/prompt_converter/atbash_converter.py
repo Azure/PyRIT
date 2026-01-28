@@ -41,7 +41,8 @@ class AtbashConverter(PromptConverter):
         )
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with Atbash cipher parameters.
+        """
+        Build the converter identifier with Atbash cipher parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

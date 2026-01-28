@@ -46,7 +46,8 @@ class InsertPunctuationConverter(PromptConverter):
         self._between_words = between_words
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with punctuation insertion parameters.
+        """
+        Build identifier with punctuation insertion parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

@@ -24,7 +24,8 @@ class UnicodeSubstitutionConverter(PromptConverter):
         self.startValue = start_value
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with unicode substitution parameters.
+        """
+        Build identifier with unicode substitution parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

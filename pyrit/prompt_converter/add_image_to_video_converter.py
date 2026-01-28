@@ -63,7 +63,8 @@ class AddImageVideoConverter(PromptConverter):
         self._video_path = video_path
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with video converter parameters.
+        """
+        Build identifier with video converter parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

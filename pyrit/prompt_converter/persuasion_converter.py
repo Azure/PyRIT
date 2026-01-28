@@ -81,7 +81,8 @@ class PersuasionConverter(PromptConverter):
         self._persuasion_technique = persuasion_technique
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with persuasion parameters.
+        """
+        Build the converter identifier with persuasion parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

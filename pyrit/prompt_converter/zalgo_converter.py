@@ -42,7 +42,8 @@ class ZalgoConverter(WordLevelConverter):
         self._seed = seed
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with zalgo parameters.
+        """
+        Build the converter identifier with zalgo parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

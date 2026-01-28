@@ -48,7 +48,8 @@ class WordLevelConverter(PromptConverter):
         self._word_split_separator = word_split_separator
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with word-level converter parameters.
+        """
+        Build identifier with word-level converter parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

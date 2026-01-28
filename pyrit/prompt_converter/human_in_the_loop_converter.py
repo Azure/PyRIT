@@ -35,7 +35,8 @@ class HumanInTheLoopConverter(PromptConverter):
         self._converters = converters or []
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with sub-converters.
+        """
+        Build identifier with sub-converters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

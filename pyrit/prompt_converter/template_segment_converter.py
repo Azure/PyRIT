@@ -72,7 +72,8 @@ class TemplateSegmentConverter(PromptConverter):
             )
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with template parameters.
+        """
+        Build identifier with template parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

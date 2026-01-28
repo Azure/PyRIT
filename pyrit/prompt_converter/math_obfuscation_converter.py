@@ -90,7 +90,8 @@ class MathObfuscationConverter(PromptConverter):
         self._rng = rng or random.Random()
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with math obfuscation parameters.
+        """
+        Build identifier with math obfuscation parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

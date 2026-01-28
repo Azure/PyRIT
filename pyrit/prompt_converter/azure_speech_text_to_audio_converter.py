@@ -95,7 +95,8 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._output_format = output_format
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with speech synthesis parameters.
+        """
+        Build identifier with speech synthesis parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

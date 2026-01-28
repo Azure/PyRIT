@@ -48,7 +48,8 @@ class BinaryConverter(WordLevelConverter):
         self.bits_per_char = bits_per_char
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with binary converter parameters.
+        """
+        Build identifier with binary converter parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

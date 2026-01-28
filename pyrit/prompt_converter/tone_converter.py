@@ -57,7 +57,8 @@ class ToneConverter(LLMGenericTextConverter):
         self._tone = tone
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with tone parameters.
+        """
+        Build the converter identifier with tone parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

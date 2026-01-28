@@ -56,7 +56,8 @@ class GandalfScorer(TrueFalseScorer):
         self._endpoint = "https://gandalf-api.lakera.ai/api/guess-password"
 
     def _build_identifier(self) -> ScorerIdentifier:
-        """Build the scorer evaluation identifier for this scorer.
+        """
+        Build the scorer evaluation identifier for this scorer.
 
         Returns:
             ScorerIdentifier: The identifier for this scorer.

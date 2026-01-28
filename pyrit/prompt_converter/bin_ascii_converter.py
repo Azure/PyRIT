@@ -59,7 +59,8 @@ class BinAsciiConverter(WordLevelConverter):
         self._encoding_func = encoding_func
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with BinAscii converter parameters.
+        """
+        Build identifier with BinAscii converter parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

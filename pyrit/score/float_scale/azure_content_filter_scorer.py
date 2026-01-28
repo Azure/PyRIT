@@ -148,7 +148,8 @@ class AzureContentFilterScorer(FloatScaleScorer):
         return [category.value for category in self._harm_categories]
 
     def _build_identifier(self) -> ScorerIdentifier:
-        """Build the scorer evaluation identifier for this scorer.
+        """
+        Build the scorer evaluation identifier for this scorer.
 
         Returns:
             ScorerIdentifier: The identifier for this scorer.

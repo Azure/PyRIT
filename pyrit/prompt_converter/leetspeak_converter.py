@@ -53,7 +53,8 @@ class LeetspeakConverter(WordLevelConverter):
         self._has_custom_substitutions = custom_substitutions is not None
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with leetspeak parameters.
+        """
+        Build the converter identifier with leetspeak parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

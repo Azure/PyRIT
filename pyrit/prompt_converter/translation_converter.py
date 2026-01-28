@@ -83,7 +83,8 @@ class TranslationConverter(PromptConverter):
         self.system_prompt = prompt_template.render_template_value(languages=language)
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with translation parameters.
+        """
+        Build the converter identifier with translation parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

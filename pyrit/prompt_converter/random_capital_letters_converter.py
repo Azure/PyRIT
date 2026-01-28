@@ -28,7 +28,8 @@ class RandomCapitalLettersConverter(PromptConverter):
         self.percentage = percentage
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with random capital letters parameters.
+        """
+        Build identifier with random capital letters parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

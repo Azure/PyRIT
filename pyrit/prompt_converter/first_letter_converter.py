@@ -32,7 +32,8 @@ class FirstLetterConverter(WordLevelConverter):
         self.letter_separator = letter_separator
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with first letter converter parameters.
+        """
+        Build identifier with first letter converter parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

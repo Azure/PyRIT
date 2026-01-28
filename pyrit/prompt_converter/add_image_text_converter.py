@@ -65,7 +65,8 @@ class AddImageTextConverter(PromptConverter):
         self._y_pos = y_pos
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with image and text parameters.
+        """
+        Build the converter identifier with image and text parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

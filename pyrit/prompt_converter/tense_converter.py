@@ -54,7 +54,8 @@ class TenseConverter(LLMGenericTextConverter):
         self._tense = tense
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with tense parameters.
+        """
+        Build the converter identifier with tense parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

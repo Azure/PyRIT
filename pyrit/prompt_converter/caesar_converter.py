@@ -47,7 +47,8 @@ class CaesarConverter(PromptConverter):
         )
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with Caesar cipher parameters.
+        """
+        Build the converter identifier with Caesar cipher parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

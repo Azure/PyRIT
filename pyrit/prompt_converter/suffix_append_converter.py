@@ -33,7 +33,8 @@ class SuffixAppendConverter(PromptConverter):
         self._suffix = suffix
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with suffix parameter.
+        """
+        Build the converter identifier with suffix parameter.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

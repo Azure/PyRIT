@@ -83,7 +83,8 @@ class RepeatTokenConverter(PromptConverter):
                 self.insert = insert
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with repeat token parameters.
+        """
+        Build the converter identifier with repeat token parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

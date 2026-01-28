@@ -52,7 +52,8 @@ class QuestionAnswerScorer(TrueFalseScorer):
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
 
     def _build_identifier(self) -> ScorerIdentifier:
-        """Build the scorer evaluation identifier for this scorer.
+        """
+        Build the scorer evaluation identifier for this scorer.
 
         Returns:
             ScorerIdentifier: The identifier for this scorer.

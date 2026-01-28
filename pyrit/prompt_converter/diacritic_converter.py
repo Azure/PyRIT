@@ -45,7 +45,8 @@ class DiacriticConverter(PromptConverter):
         self._accent = accent
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with diacritic parameters.
+        """
+        Build identifier with diacritic parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

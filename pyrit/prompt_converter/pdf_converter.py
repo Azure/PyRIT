@@ -106,7 +106,8 @@ class PDFConverter(PromptConverter):
             raise ValueError("Each injection item must be a dictionary.")
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with PDF converter parameters.
+        """
+        Build identifier with PDF converter parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.

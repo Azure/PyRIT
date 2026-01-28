@@ -32,7 +32,8 @@ class SearchReplaceConverter(PromptConverter):
         self._regex_flags = regex_flags
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build the converter identifier with search/replace parameters.
+        """
+        Build the converter identifier with search/replace parameters.
 
         Returns:
             ConverterIdentifier: The identifier for this converter.
