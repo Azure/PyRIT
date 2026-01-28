@@ -9,7 +9,6 @@ Provides business logic layer for API routes.
 
 from pyrit.backend.services.attack_service import (
     AttackService,
-    AttackState,
     get_attack_service,
 )
 from pyrit.backend.services.converter_service import (
@@ -27,7 +26,6 @@ from pyrit.backend.services.target_service import (
 
 __all__ = [
     "AttackService",
-    "AttackState",
     "get_attack_service",
     "ConverterService",
     "get_converter_service",

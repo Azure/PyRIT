@@ -30,175 +30,41 @@ class ConverterService:
 
     def __init__(self) -> None:
         """Initialize the converter service."""
-        # In-memory storage for converter instances
         self._instances: Dict[str, ConverterInstance] = {}
-        # Actual instantiated converter objects
         self._converter_objects: Dict[str, Any] = {}
 
-    def _get_converter_class(self, converter_type: str) -> type:
-        """
-        Get the converter class for a given type.
-
-        Args:
-            converter_type: Converter type string (e.g., 'base64', 'Base64Converter')
-
-        Returns:
-            The converter class
-        """
-        module = importlib.import_module("pyrit.prompt_converter")
-
-        # Try direct attribute lookup first
-        cls = getattr(module, converter_type, None)
-        if cls is not None:
-            return cast(type, cls)
-
-        # Try common class name patterns
-        class_name_patterns = [
-            converter_type,
-            f"{converter_type}Converter",
-            "".join(word.capitalize() for word in converter_type.split("_")),
-            "".join(word.capitalize() for word in converter_type.split("_")) + "Converter",
-        ]
-
-        for pattern in class_name_patterns:
-            cls = getattr(module, pattern, None)
-            if cls is not None:
-                return cast(type, cls)
-
-        raise ValueError(f"Converter type '{converter_type}' not found in pyrit.prompt_converter")
-
-    def _create_converter_recursive(
-        self,
-        config: Dict[str, Any],
-        source: Literal["initializer", "user"],
-    ) -> Tuple[str, Any, List[ConverterInstance]]:
-        """
-        Recursively create converters, handling nested converter params.
-
-        Args:
-            config: Converter configuration with 'type' and 'params'
-            source: Source of creation
-
-        Returns:
-            Tuple of (converter_id, converter_object, list of all created instances)
-        """
-        converter_type = config["type"]
-        params = dict(config.get("params", {}))
-        created_instances: List[ConverterInstance] = []
-
-        # Check for nested converter in params
-        if "converter" in params and isinstance(params["converter"], dict):
-            nested_config = params["converter"]
-            if "type" in nested_config:
-                # Recursively create nested converter
-                nested_id, nested_obj, nested_instances = self._create_converter_recursive(nested_config, source)
-                created_instances.extend(nested_instances)
-                # Replace inline config with the actual converter object
-                params["converter"] = nested_obj
-
-        # Create this converter
-        converter_class = self._get_converter_class(converter_type)
-        converter_obj = converter_class(**params)
-
-        converter_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
-
-        # Store the converter object
-        self._converter_objects[converter_id] = converter_obj
-
-        # Build resolved params (with nested converter IDs instead of objects)
-        resolved_params = dict(config.get("params", {}))
-        if "converter" in resolved_params and isinstance(resolved_params["converter"], dict):
-            # Replace with the nested converter ID
-            nested_id = created_instances[-1].converter_id if created_instances else None
-            resolved_params["converter"] = {"converter_id": nested_id}
-
-        instance = ConverterInstance(
-            converter_id=converter_id,
-            type=converter_type,
-            display_name=None,
-            params=resolved_params,
-            created_at=now,
-            source=source,
-        )
-        self._instances[converter_id] = instance
-        created_instances.append(instance)
-
-        return converter_id, converter_obj, created_instances
+    # ========================================================================
+    # Public API Methods
+    # ========================================================================
 
     async def list_converters(
-        self,
-        source: Optional[Literal["initializer", "user"]] = None,
+        self, source: Optional[Literal["initializer", "user"]] = None
     ) -> ConverterInstanceListResponse:
-        """
-        List all converter instances.
-
-        Args:
-            source: Optional filter by source
-
-        Returns:
-            ConverterInstanceListResponse: List of converter instances
-        """
+        """List all converter instances."""
         items = list(self._instances.values())
-
         if source is not None:
             items = [c for c in items if c.source == source]
-
         return ConverterInstanceListResponse(items=items)
 
     async def get_converter(self, converter_id: str) -> Optional[ConverterInstance]:
-        """
-        Get a converter instance by ID.
-
-        Args:
-            converter_id: Converter instance ID
-
-        Returns:
-            ConverterInstance or None if not found
-        """
+        """Get a converter instance by ID."""
         return self._instances.get(converter_id)
 
     def get_converter_object(self, converter_id: str) -> Optional[Any]:
-        """
-        Get the actual converter object.
-
-        Args:
-            converter_id: Converter instance ID
-
-        Returns:
-            The instantiated converter object or None
-        """
+        """Get the actual converter object."""
         return self._converter_objects.get(converter_id)
 
     async def create_converter(
-        self,
-        request: CreateConverterRequest,
+        self, request: CreateConverterRequest
     ) -> CreateConverterResponse:
-        """
-        Create a new converter instance.
+        """Create a new converter instance with optional nested converters."""
+        config = {"type": request.type, "params": request.params}
+        converter_id, _, created_instances = self._create_converter_recursive(config, "user")
 
-        Supports nested converters - if params contains a 'converter' key with
-        a type/params dict, the nested converter will be created first.
-
-        Args:
-            request: Converter creation request
-
-        Returns:
-            CreateConverterResponse: Created converter details
-        """
-        config = {
-            "type": request.type,
-            "params": request.params,
-        }
-
-        converter_id, converter_obj, created_instances = self._create_converter_recursive(config, "user")
-
-        # Update display name for the outermost converter
         if request.display_name and converter_id in self._instances:
             self._instances[converter_id].display_name = request.display_name
 
         outer_instance = self._instances[converter_id]
-
         return CreateConverterResponse(
             converter_id=converter_id,
             type=request.type,
@@ -210,15 +76,7 @@ class ConverterService:
         )
 
     async def delete_converter(self, converter_id: str) -> bool:
-        """
-        Delete a converter instance.
-
-        Args:
-            converter_id: Converter instance ID
-
-        Returns:
-            True if deleted, False if not found
-        """
+        """Delete a converter instance."""
         if converter_id in self._instances:
             del self._instances[converter_id]
             self._converter_objects.pop(converter_id, None)
@@ -226,24 +84,148 @@ class ConverterService:
         return False
 
     async def preview_conversion(
-        self,
-        request: ConverterPreviewRequest,
+        self, request: ConverterPreviewRequest
     ) -> ConverterPreviewResponse:
-        """
-        Preview conversion through a converter pipeline.
+        """Preview conversion through a converter pipeline."""
+        converters = self._gather_converters_for_preview(request)
+        steps, final_value, final_type = await self._apply_converters(
+            converters, request.original_value, request.original_value_data_type
+        )
 
-        Args:
-            request: Preview request with content and converters
+        return ConverterPreviewResponse(
+            original_value=request.original_value,
+            original_value_data_type=request.original_value_data_type,
+            converted_value=final_value,
+            converted_value_data_type=final_type,
+            steps=steps,
+        )
 
-        Returns:
-            ConverterPreviewResponse: Conversion results with steps
-        """
-        current_value = request.original_value
-        current_type: PromptDataType = request.original_value_data_type
-        steps: List[PreviewStep] = []
+    def get_converter_objects_for_ids(self, converter_ids: List[str]) -> List[Any]:
+        """Get converter objects for a list of IDs."""
+        converters = []
+        for conv_id in converter_ids:
+            conv_obj = self.get_converter_object(conv_id)
+            if conv_obj is None:
+                raise ValueError(f"Converter instance '{conv_id}' not found")
+            converters.append(conv_obj)
+        return converters
 
-        # Get converters to apply
-        converters_to_apply: List[Tuple[Optional[str], str, Any]] = []
+    def instantiate_inline_converters(self, configs: List[InlineConverterConfig]) -> List[Any]:
+        """Instantiate converters from inline configurations."""
+        return [
+            self._get_converter_class(config.type)(**config.params)
+            for config in configs
+        ]
+
+    # ========================================================================
+    # Private Helper Methods - Class Resolution
+    # ========================================================================
+
+    def _get_converter_class(self, converter_type: str) -> type:
+        """Get the converter class for a given type."""
+        module = importlib.import_module("pyrit.prompt_converter")
+
+        cls = getattr(module, converter_type, None)
+        if cls is not None:
+            return cast(type, cls)
+
+        for pattern in self._class_name_patterns(converter_type):
+            cls = getattr(module, pattern, None)
+            if cls is not None:
+                return cast(type, cls)
+
+        raise ValueError(f"Converter type '{converter_type}' not found in pyrit.prompt_converter")
+
+    def _class_name_patterns(self, type_name: str) -> List[str]:
+        """Generate class name patterns to try."""
+        pascal = "".join(word.capitalize() for word in type_name.split("_"))
+        return [type_name, f"{type_name}Converter", pascal, f"{pascal}Converter"]
+
+    # ========================================================================
+    # Private Helper Methods - Recursive Creation
+    # ========================================================================
+
+    def _create_converter_recursive(
+        self,
+        config: Dict[str, Any],
+        source: Literal["initializer", "user"],
+    ) -> Tuple[str, Any, List[ConverterInstance]]:
+        """Recursively create converters, handling nested converter params."""
+        converter_type = config["type"]
+        params = dict(config.get("params", {}))
+        created_instances: List[ConverterInstance] = []
+
+        # Handle nested converter
+        params, created_instances = self._resolve_nested_converter(params, source)
+
+        # Create this converter
+        converter_obj = self._get_converter_class(converter_type)(**params)
+        converter_id = self._store_converter(converter_type, converter_obj, config, created_instances, source)
+
+        return converter_id, converter_obj, created_instances
+
+    def _resolve_nested_converter(
+        self,
+        params: Dict[str, Any],
+        source: Literal["initializer", "user"],
+    ) -> Tuple[Dict[str, Any], List[ConverterInstance]]:
+        """Resolve nested converter in params if present."""
+        created_instances: List[ConverterInstance] = []
+
+        if "converter" in params and isinstance(params["converter"], dict):
+            nested_config = params["converter"]
+            if "type" in nested_config:
+                _, nested_obj, nested_instances = self._create_converter_recursive(nested_config, source)
+                created_instances.extend(nested_instances)
+                params["converter"] = nested_obj
+
+        return params, created_instances
+
+    def _store_converter(
+        self,
+        converter_type: str,
+        converter_obj: Any,
+        config: Dict[str, Any],
+        created_instances: List[ConverterInstance],
+        source: Literal["initializer", "user"],
+    ) -> str:
+        """Store converter and return its ID."""
+        converter_id = str(uuid.uuid4())
+        self._converter_objects[converter_id] = converter_obj
+
+        resolved_params = self._build_resolved_params(config, created_instances)
+        instance = ConverterInstance(
+            converter_id=converter_id,
+            type=converter_type,
+            display_name=None,
+            params=resolved_params,
+            created_at=datetime.now(timezone.utc),
+            source=source,
+        )
+        self._instances[converter_id] = instance
+        created_instances.append(instance)
+
+        return converter_id
+
+    def _build_resolved_params(
+        self, config: Dict[str, Any], created_instances: List[ConverterInstance]
+    ) -> Dict[str, Any]:
+        """Build resolved params with nested converter IDs."""
+        resolved_params = dict(config.get("params", {}))
+        if "converter" in resolved_params and isinstance(resolved_params["converter"], dict):
+            nested_id = created_instances[-1].converter_id if created_instances else None
+            resolved_params["converter"] = {"converter_id": nested_id}
+        return resolved_params
+
+    # ========================================================================
+    # Private Helper Methods - Preview
+    # ========================================================================
+
+    def _gather_converters_for_preview(
+        self, request: ConverterPreviewRequest
+    ) -> List[Tuple[Optional[str], str, Any]]:
+        """Gather converters to apply from request."""
+        converters: List[Tuple[Optional[str], str, Any]] = []
 
         if request.converter_ids:
             for conv_id in request.converter_ids:
@@ -251,22 +233,30 @@ class ConverterService:
                 if conv_obj is None:
                     raise ValueError(f"Converter instance '{conv_id}' not found")
                 instance = self._instances[conv_id]
-                converters_to_apply.append((conv_id, instance.type, conv_obj))
+                converters.append((conv_id, instance.type, conv_obj))
 
         if request.converters:
             for inline_config in request.converters:
-                converter_class = self._get_converter_class(inline_config.type)
-                conv_obj = converter_class(**inline_config.params)
-                converters_to_apply.append((None, inline_config.type, conv_obj))
+                conv_obj = self._get_converter_class(inline_config.type)(**inline_config.params)
+                converters.append((None, inline_config.type, conv_obj))
 
-        # Apply converters in sequence
-        for conv_id, conv_type, conv_obj in converters_to_apply:
-            input_value = current_value
-            input_type = current_type
+        return converters
 
+    async def _apply_converters(
+        self,
+        converters: List[Tuple[Optional[str], str, Any]],
+        initial_value: str,
+        initial_type: PromptDataType,
+    ) -> Tuple[List[PreviewStep], str, PromptDataType]:
+        """Apply converters and collect steps."""
+        current_value = initial_value
+        current_type = initial_type
+        steps: List[PreviewStep] = []
+
+        for conv_id, conv_type, conv_obj in converters:
+            input_value, input_type = current_value, current_type
             result = await conv_obj.convert_async(prompt=current_value)
-            current_value = result.output_text
-            current_type = result.output_type
+            current_value, current_type = result.output_text, result.output_type
 
             steps.append(
                 PreviewStep(
@@ -279,54 +269,13 @@ class ConverterService:
                 )
             )
 
-        return ConverterPreviewResponse(
-            original_value=request.original_value,
-            original_value_data_type=request.original_value_data_type,
-            converted_value=current_value,
-            converted_value_data_type=current_type,
-            steps=steps,
-        )
-
-    def get_converter_objects_for_ids(self, converter_ids: List[str]) -> List[Any]:
-        """
-        Get converter objects for a list of IDs.
-
-        Args:
-            converter_ids: List of converter instance IDs
-
-        Returns:
-            List of converter objects
-
-        Raises:
-            ValueError: If any converter ID is not found
-        """
-        converters = []
-        for conv_id in converter_ids:
-            conv_obj = self.get_converter_object(conv_id)
-            if conv_obj is None:
-                raise ValueError(f"Converter instance '{conv_id}' not found")
-            converters.append(conv_obj)
-        return converters
-
-    def instantiate_inline_converters(self, configs: List[InlineConverterConfig]) -> List[Any]:
-        """
-        Instantiate converters from inline configurations.
-
-        Args:
-            configs: List of inline converter configs
-
-        Returns:
-            List of converter objects
-        """
-        converters = []
-        for config in configs:
-            converter_class = self._get_converter_class(config.type)
-            conv_obj = converter_class(**config.params)
-            converters.append(conv_obj)
-        return converters
+        return steps, current_value, current_type
 
 
-# Global service instance
+# ============================================================================
+# Singleton
+# ============================================================================
+
 _converter_service: Optional[ConverterService] = None
 
 
@@ -335,7 +284,7 @@ def get_converter_service() -> ConverterService:
     Get the global converter service instance.
 
     Returns:
-        ConverterService: The singleton converter service instance.
+        The singleton ConverterService instance.
     """
     global _converter_service
     if _converter_service is None:

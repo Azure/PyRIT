@@ -168,7 +168,10 @@ class MessagePieceRequest(BaseModel):
     """A piece of content for a message."""
 
     data_type: str = Field(default="text", description="Data type: 'text', 'image', 'audio', etc.")
-    content: str = Field(..., description="Content (text or base64 for media)")
+    original_value: str = Field(..., description="Original value (text or base64 for media)")
+    converted_value: Optional[str] = Field(
+        None, description="Converted value. If provided, bypasses converters."
+    )
     mime_type: Optional[str] = Field(None, description="MIME type for media content")
 
 
@@ -202,4 +205,3 @@ class AddMessageResponse(BaseModel):
     """
 
     attack: AttackDetail = Field(..., description="Updated attack with new message(s)")
-    error: Optional[str] = Field(None, description="Transport-level error if send=True and request failed entirely")

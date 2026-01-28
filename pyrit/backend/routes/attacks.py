@@ -192,26 +192,3 @@ async def add_message(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add message: {str(e)}",
         )
-
-
-@router.delete(
-    "/{attack_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses={
-        404: {"model": ProblemDetail, "description": "Attack not found"},
-    },
-)
-async def delete_attack(attack_id: str) -> None:
-    """
-    Delete an attack.
-
-    Removes the attack and all associated messages.
-    """
-    service = get_attack_service()
-
-    deleted = await service.delete_attack(attack_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Attack '{attack_id}' not found",
-        )

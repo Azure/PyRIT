@@ -2,13 +2,10 @@
 # Licensed under the MIT license.
 
 """
-Target instance API routes.
+Target API routes.
 
-Targets have two concepts:
-- Types: Available via /api/registry/targets (static metadata)
-- Instances: Runtime objects created via this API
-
-This module handles target instances (runtime objects).
+Provides endpoints for managing target instances.
+Target types are set at app startup via initializers - you cannot add new types at runtime.
 """
 
 from typing import Literal, Optional
@@ -55,7 +52,6 @@ async def list_targets(
     status_code=status.HTTP_201_CREATED,
     responses={
         400: {"model": ProblemDetail, "description": "Invalid target type or parameters"},
-        422: {"model": ProblemDetail, "description": "Validation error"},
     },
 )
 async def create_target(request: CreateTargetRequest) -> CreateTargetResponse:
@@ -110,26 +106,3 @@ async def get_target(target_id: str) -> TargetInstance:
         )
 
     return target
-
-
-@router.delete(
-    "/{target_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    responses={
-        404: {"model": ProblemDetail, "description": "Target not found"},
-    },
-)
-async def delete_target(target_id: str) -> None:
-    """
-    Delete a target instance.
-
-    Note: Targets in use by active attacks cannot be deleted.
-    """
-    service = get_target_service()
-
-    deleted = await service.delete_target(target_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Target '{target_id}' not found",
-        )

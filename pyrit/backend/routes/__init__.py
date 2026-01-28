@@ -5,13 +5,12 @@
 API route handlers.
 """
 
-from pyrit.backend.routes import attacks, converters, health, registry, targets, version
+from pyrit.backend.routes import attacks, converters, health, targets, version
 
 __all__ = [
     "attacks",
     "converters",
     "health",
-    "registry",
     "targets",
     "version",
 ]
