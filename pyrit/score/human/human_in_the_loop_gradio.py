@@ -4,6 +4,7 @@
 import asyncio
 from typing import Optional
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -46,9 +47,14 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             score_aggregator=self._score_aggregator.__name__,
         )
 

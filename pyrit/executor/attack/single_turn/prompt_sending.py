@@ -7,6 +7,7 @@ from typing import Any, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import warn_if_set
+from pyrit.exceptions import ComponentRole, execution_context
 from pyrit.executor.attack.component import ConversationManager, PrependedConversationConfig
 from pyrit.executor.attack.core.attack_config import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
@@ -311,15 +312,23 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             Optional[Message]: The model's response if successful, or None if
                 the request was filtered, blocked, or encountered an error.
         """
-        return await self._prompt_normalizer.send_prompt_async(
-            message=message,
-            target=self._objective_target,
-            conversation_id=context.conversation_id,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
-            labels=context.memory_labels,  # combined with strategy labels at _setup()
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-        )
+            component_identifier=self._objective_target.get_identifier(),
+            objective_target_conversation_id=context.conversation_id,
+            objective=context.params.objective,
+        ):
+            return await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                target=self._objective_target,
+                conversation_id=context.conversation_id,
+                request_converter_configurations=self._request_converters,
+                response_converter_configurations=self._response_converters,
+                labels=context.memory_labels,  # combined with strategy labels at _setup()
+                attack_identifier=self.get_identifier(),
+            )
 
     async def _evaluate_response_async(
         self,
@@ -342,14 +351,21 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
                 no objective scorer is set. Note that auxiliary scorer results are not returned
                 but are still executed and stored.
         """
-        scoring_results = await Scorer.score_response_async(
-            response=response,
-            objective_scorer=self._objective_scorer,
-            auxiliary_scorers=self._auxiliary_scorers,
-            role_filter="assistant",
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_SCORER,
+            attack_strategy_name=self.__class__.__name__,
+            attack_identifier=self.get_identifier(),
+            component_identifier=self._objective_scorer.get_identifier() if self._objective_scorer else None,
             objective=objective,
-            skip_on_error_result=True,
-        )
+        ):
+            scoring_results = await Scorer.score_response_async(
+                response=response,
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+                role_filter="assistant",
+                objective=objective,
+                skip_on_error_result=True,
+            )
 
         if not self._objective_scorer:
             return None

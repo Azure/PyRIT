@@ -3,6 +3,7 @@
 
 from typing import Optional
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.prompt_converter.text_selection_strategy import WordSelectionStrategy
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
@@ -29,6 +30,17 @@ class FirstLetterConverter(WordLevelConverter):
         """
         super().__init__(word_selection_strategy=word_selection_strategy, word_split_separator=None)
         self.letter_separator = letter_separator
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """
+        Build identifier with first letter converter parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        base_params = super()._build_identifier().converter_specific_params or {}
+        base_params["letter_separator"] = self.letter_separator
+        return self._create_identifier(converter_specific_params=base_params)
 
     async def convert_word_async(self, word: str) -> str:
         """
