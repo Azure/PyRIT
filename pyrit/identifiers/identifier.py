@@ -102,7 +102,9 @@ class Identifier:
     # Auto-computed fields
     snake_class_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
     hash: str | None = field(default=None, compare=False, kw_only=True, metadata={_EXCLUDE: {_ExcludeFrom.HASH}})
-    unique_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.HASH}})  # {full_snake_case}::{hash[:8]}
+
+    # {full_snake_case}::{hash[:8]}
+    unique_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})  
 
     # Version field - stored but not hashed (allows version tracking without affecting identity)
     pyrit_version: str = field(
