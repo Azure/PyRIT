@@ -4,6 +4,7 @@
 import logging
 from typing import Literal, Optional, Tuple
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.prompt_converter.token_smuggling.base import SmugglerConverter
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,17 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
         super().__init__(action=action)
         self.utf8_base_char = base_char_utf8 if base_char_utf8 is not None else "😊"
         self.embed_in_base = embed_in_base
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with variation selector parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        base_params = super()._build_identifier().converter_specific_params or {}
+        base_params["base_char"] = self.utf8_base_char
+        base_params["embed_in_base"] = self.embed_in_base
+        return self._set_identifier(converter_specific_params=base_params)
 
     def encode_message(self, message: str) -> Tuple[str, str]:
         """

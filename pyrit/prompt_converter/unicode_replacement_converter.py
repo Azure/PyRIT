@@ -3,6 +3,7 @@
 
 from typing import Optional
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.prompt_converter.text_selection_strategy import WordSelectionStrategy
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
@@ -28,6 +29,16 @@ class UnicodeReplacementConverter(WordLevelConverter):
         """
         super().__init__(word_selection_strategy=word_selection_strategy)
         self.encode_spaces = encode_spaces
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with unicode replacement parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        base_params = super()._build_identifier().converter_specific_params or {}
+        base_params["encode_spaces"] = self.encode_spaces
+        return self._set_identifier(converter_specific_params=base_params)
 
     async def convert_word_async(self, word: str) -> str:
         """

@@ -17,6 +17,7 @@ from azure.core.credentials import AzureKeyCredential
 
 from pyrit.auth import TokenProviderCredential
 from pyrit.common import default_values
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import (
     DataTypeSerializer,
     MessagePiece,
@@ -146,9 +147,13 @@ class AzureContentFilterScorer(FloatScaleScorer):
         """Get the string values of the configured harm categories for API calls."""
         return [category.value for category in self._harm_categories]
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._set_identifier(
             scorer_specific_params={
                 "score_categories": self._category_values,
             }

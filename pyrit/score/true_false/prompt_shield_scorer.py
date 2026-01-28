@@ -6,6 +6,7 @@ import logging
 import uuid
 from typing import Any, Optional
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import Message, MessagePiece, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -48,9 +49,13 @@ class PromptShieldScorer(TrueFalseScorer):
 
         super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._set_identifier(
             prompt_target=self._prompt_target,
             score_aggregator=self._score_aggregator.__name__,
         )

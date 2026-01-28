@@ -9,6 +9,7 @@ from typing import Optional
 import numpy as np
 
 from pyrit.common.path import DB_DATA_PATH
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -60,6 +61,20 @@ class AddImageVideoConverter(PromptConverter):
         self._img_position = img_position
         self._img_resize_size = img_resize_size
         self._video_path = video_path
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with video converter parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "video_path": str(self._video_path),
+                "img_position": self._img_position,
+                "img_resize_size": self._img_resize_size,
+            }
+        )
 
     async def _add_image_to_video(self, image_path: str, output_path: str) -> str:
         """

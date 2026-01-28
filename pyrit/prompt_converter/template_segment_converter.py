@@ -1,12 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import hashlib
 import logging
 import pathlib
 import random
 from typing import Optional
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -68,6 +70,20 @@ class TemplateSegmentConverter(PromptConverter):
                 f"Error validating template parameters: {str(e)}. "
                 f"Template parameters: {self.prompt_template.parameters}"
             )
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with template parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        template_hash = hashlib.sha256(str(self.prompt_template.value).encode("utf-8")).hexdigest()[:16]
+        return self._set_identifier(
+            converter_specific_params={
+                "template_hash": template_hash,
+                "number_parameters": self._number_parameters,
+            }
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

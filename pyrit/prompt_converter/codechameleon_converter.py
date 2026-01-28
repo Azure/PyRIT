@@ -9,6 +9,7 @@ import textwrap
 from typing import Any, Callable, Optional
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -97,6 +98,20 @@ class CodeChameleonConverter(PromptConverter):
                     'Encryption type not valid! Must be one of "custom", '
                     '"reverse", "binary_tree", "odd_even" or "length".'
                 )
+
+        self._encrypt_type = encrypt_type
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with encryption type.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "encrypt_type": self._encrypt_type,
+            }
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import base64
+import hashlib
 import logging
 import string
 import textwrap
@@ -11,6 +12,7 @@ from typing import cast
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageFont import FreeTypeFont
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -62,6 +64,24 @@ class AddTextImageConverter(PromptConverter):
         self._color = color
         self._x_pos = x_pos
         self._y_pos = y_pos
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build the converter identifier with text and image parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        text_hash = hashlib.sha256(self._text_to_add.encode("utf-8")).hexdigest()[:16]
+        return self._set_identifier(
+            converter_specific_params={
+                "text_to_add_hash": text_hash,
+                "font_name": self._font_name,
+                "color": self._color,
+                "font_size": self._font_size,
+                "x_pos": self._x_pos,
+                "y_pos": self._y_pos,
+            },
+        )
 
     def _load_font(self) -> FreeTypeFont:
         """

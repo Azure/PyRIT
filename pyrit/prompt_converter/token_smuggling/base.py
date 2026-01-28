@@ -5,6 +5,7 @@ import abc
 import logging
 from typing import Literal, Tuple
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -35,6 +36,18 @@ class SmugglerConverter(PromptConverter, abc.ABC):
         if action not in ["encode", "decode"]:
             raise ValueError("Action must be either 'encode' or 'decode'")
         self.action = action
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with smuggler action.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "action": self.action,
+            }
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

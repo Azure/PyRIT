@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import aiohttp
 from PIL import Image
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -122,6 +123,24 @@ class ImageCompressionConverter(PromptConverter):
             logger.warning(
                 "Using quality > 95 for JPEG may result in larger files. Consider using a lower quality setting."
             )
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with image compression parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "output_format": self._output_format,
+                "quality": self._quality,
+                "optimize": self._optimize,
+                "progressive": self._progressive,
+                "compress_level": self._compress_level,
+                "lossless": self._lossless,
+                "method": self._method,
+            }
+        )
 
     def _should_compress(self, original_size: int) -> bool:
         """

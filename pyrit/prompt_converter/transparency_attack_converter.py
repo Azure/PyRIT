@@ -10,6 +10,7 @@ from typing import Tuple
 import numpy
 from PIL import Image
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -183,6 +184,21 @@ class TransparencyAttackConverter(PromptConverter):
             raise ValueError(f"Convergence patience must be a positive integer, got {convergence_patience}")
 
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with transparency attack parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "benign_image_path": str(self.benign_image_path),
+                "size": self.size,
+                "steps": self.steps,
+                "learning_rate": self.learning_rate,
+            }
+        )
 
     def _load_and_preprocess_image(self, path: str) -> numpy.ndarray:  # type: ignore[type-arg, unused-ignore]
         """

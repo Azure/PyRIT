@@ -9,6 +9,7 @@ from typing import Literal
 from confusable_homoglyphs.confusables import is_confusable
 from confusables import confusable_characters
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -57,6 +58,19 @@ class UnicodeConfusableConverter(PromptConverter):
             )
         self._source_package = source_package
         self._deterministic = deterministic
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build the converter identifier with unicode confusable parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "source_package": self._source_package,
+                "deterministic": self._deterministic,
+            },
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

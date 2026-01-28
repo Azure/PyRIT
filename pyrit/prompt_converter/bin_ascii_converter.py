@@ -4,6 +4,7 @@
 import binascii
 from typing import Literal, Optional
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.prompt_converter.text_selection_strategy import (
     AllWordsSelectionStrategy,
     WordSelectionStrategy,
@@ -56,6 +57,16 @@ class BinAsciiConverter(WordLevelConverter):
             )
 
         self._encoding_func = encoding_func
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with BinAscii converter parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        base_params = super()._build_identifier().converter_specific_params or {}
+        base_params["encoding_func"] = self._encoding_func
+        return self._set_identifier(converter_specific_params=base_params)
 
     async def convert_word_async(self, word: str) -> str:
         """

@@ -6,6 +6,7 @@ import re
 import string
 from typing import List, Optional
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -43,6 +44,19 @@ class InsertPunctuationConverter(PromptConverter):
 
         self._word_swap_ratio = word_swap_ratio
         self._between_words = between_words
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with punctuation insertion parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "word_swap_ratio": self._word_swap_ratio,
+                "between_words": self._between_words,
+            }
+        )
 
     def _is_valid_punctuation(self, punctuation_list: List[str]) -> bool:
         """

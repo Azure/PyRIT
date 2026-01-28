@@ -15,6 +15,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -66,6 +67,16 @@ class VariationConverter(PromptConverter):
         self.number_variations = 1
 
         self.system_prompt = str(prompt_template.render_template_value(number_iterations=str(self.number_variations)))
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build the converter identifier with variation parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_target=self.converter_target,
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

@@ -4,6 +4,7 @@
 import abc
 from typing import Optional
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.text_selection_strategy import (
@@ -45,6 +46,19 @@ class WordLevelConverter(PromptConverter):
         super().__init__()
         self._word_selection_strategy = word_selection_strategy or AllWordsSelectionStrategy()
         self._word_split_separator = word_split_separator
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build identifier with word-level converter parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "word_selection_strategy": self._word_selection_strategy.__class__.__name__,
+                "word_split_separator": self._word_split_separator,
+            }
+        )
 
     @abc.abstractmethod
     async def convert_word_async(self, word: str) -> str:

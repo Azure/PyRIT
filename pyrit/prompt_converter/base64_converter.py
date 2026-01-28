@@ -5,6 +5,7 @@ import base64
 import binascii
 from typing import Literal
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -43,6 +44,18 @@ class Base64Converter(PromptConverter):
             encoding_func: The base64 encoding function to use. Defaults to "b64encode".
         """
         self._encoding_func = encoding_func
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """Build the converter identifier with encoding function.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._set_identifier(
+            converter_specific_params={
+                "encoding_func": self._encoding_func,
+            },
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

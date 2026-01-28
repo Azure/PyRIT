@@ -165,63 +165,57 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
         result = await self.convert_async(prompt=match, input_type="text")
         return result
 
-    def get_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ConverterIdentifier:
         """
-        Get the converter identifier. Built lazily on first access.
-
-        Returns:
-            ConverterIdentifier: The identifier containing all configuration parameters.
-        """
-        if self._identifier is None:
-            self._build_identifier()
-            assert self._identifier is not None, "_build_identifier must set _identifier"
-        return self._identifier
-
-    def _build_identifier(self) -> None:
-        """
-        Build the identifier for this converter.
+        Build and return the identifier for this converter.
 
         Subclasses can override this method to add converter-specific parameters
         by calling _set_identifier with additional arguments.
 
         The default implementation calls _set_identifier with no extra parameters.
+
+        Returns:
+            ConverterIdentifier: The constructed identifier.
         """
-        self._set_identifier()
+        return self._set_identifier()
 
     def _set_identifier(
         self,
         *,
         sub_converters: Optional[Sequence["PromptConverter"]] = None,
-        prompt_target: Optional[Any] = None,
+        converter_target: Optional[Any] = None,
         converter_specific_params: Optional[Dict[str, Any]] = None,
-    ) -> None:
+    ) -> ConverterIdentifier:
         """
-        Construct the converter identifier.
+        Construct and return the converter identifier.
 
         Args:
             sub_converters: List of sub-converters for composite converters
                 (e.g., ConverterPipeline). Defaults to None.
-            prompt_target: The prompt target used by this converter (for LLM-based converters).
+            converter_target: The prompt target used by this converter (for LLM-based converters).
                 Defaults to None.
             converter_specific_params: Additional converter-specific parameters.
                 Defaults to None.
+
+        Returns:
+            ConverterIdentifier: The constructed identifier.
         """
         # Build sub_identifier from sub_converters
         sub_identifier: Optional[List[ConverterIdentifier]] = None
         if sub_converters:
             sub_identifier = [converter.get_identifier() for converter in sub_converters]
 
-        # Extract target_info from prompt_target
+        # Extract target_info from converter_target
         target_info: Optional[Dict[str, Any]] = None
-        if prompt_target:
-            target_id = prompt_target.get_identifier()
+        if converter_target:
+            target_id = converter_target.get_identifier()
             # Extract standard fields for converter identification
             target_info = {}
             for key in ["__type__", "model_name", "temperature", "top_p"]:
                 if key in target_id:
                     target_info[key] = target_id[key]
 
-        self._identifier = ConverterIdentifier(
+        return ConverterIdentifier(
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
             class_description=self.__class__.__doc__ or "",
