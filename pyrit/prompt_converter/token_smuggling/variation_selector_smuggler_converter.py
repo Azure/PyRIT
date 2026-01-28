@@ -62,7 +62,7 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
         base_params = super()._build_identifier().converter_specific_params or {}
         base_params["base_char"] = self.utf8_base_char
         base_params["embed_in_base"] = self.embed_in_base
-        return self._set_identifier(converter_specific_params=base_params)
+        return self._create_identifier(converter_specific_params=base_params)
 
     def encode_message(self, message: str) -> Tuple[str, str]:
         """

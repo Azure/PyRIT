@@ -42,7 +42,7 @@ class AsciiSmugglerConverter(SmugglerConverter):
         """
         base_params = super()._build_identifier().converter_specific_params or {}
         base_params["unicode_tags"] = self.unicode_tags
-        return self._set_identifier(converter_specific_params=base_params)
+        return self._create_identifier(converter_specific_params=base_params)
 
     def encode_message(self, *, message: str) -> tuple[str, str]:
         """

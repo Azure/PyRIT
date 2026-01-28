@@ -58,7 +58,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             score_aggregator=self._score_aggregator.__name__,
             scorer_specific_params={
                 "correct_answer_matching_patterns": self._correct_answer_matching_patterns,

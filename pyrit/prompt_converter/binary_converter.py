@@ -56,7 +56,7 @@ class BinaryConverter(WordLevelConverter):
         """
         base_params = super()._build_identifier().converter_specific_params or {}
         base_params["bits_per_char"] = self.bits_per_char.value
-        return self._set_identifier(converter_specific_params=base_params)
+        return self._create_identifier(converter_specific_params=base_params)
 
     def validate_input(self, prompt: str) -> None:
         """

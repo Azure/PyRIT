@@ -68,7 +68,7 @@ class LeetspeakConverter(WordLevelConverter):
             substitutions_str = json.dumps(self._leet_substitutions, sort_keys=True)
             substitutions_hash = hashlib.sha256(substitutions_str.encode("utf-8")).hexdigest()[:16]
 
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "deterministic": self._deterministic,
                 "custom_substitutions_hash": substitutions_hash,

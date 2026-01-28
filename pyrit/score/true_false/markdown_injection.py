@@ -50,7 +50,7 @@ class MarkdownInjectionScorer(TrueFalseScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             score_aggregator=self._score_aggregator.__name__,
         )
 

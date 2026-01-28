@@ -9,8 +9,6 @@ frozen/hashable properties) is tested via ScorerIdentifier in test_scorer_identi
 These tests focus on converter-specific fields and behaviors.
 """
 
-import pytest
-
 from pyrit.identifiers import ConverterIdentifier
 
 
@@ -222,4 +220,3 @@ class TestConverterIdentifierFromDict:
         assert len(identifier.sub_identifier) == 1
         assert isinstance(identifier.sub_identifier[0], ConverterIdentifier)
         assert identifier.sub_identifier[0].supported_output_types == ("image_path",)
-

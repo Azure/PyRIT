@@ -97,7 +97,7 @@ class SelectiveTextConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             sub_converters=[self._converter],
             converter_specific_params={
                 "selection_strategy": self._selection_strategy.__class__.__name__,

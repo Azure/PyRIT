@@ -54,7 +54,7 @@ class WordLevelConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "word_selection_strategy": self._word_selection_strategy.__class__.__name__,
                 "word_split_separator": self._word_split_separator,

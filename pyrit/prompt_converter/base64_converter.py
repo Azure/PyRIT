@@ -52,7 +52,7 @@ class Base64Converter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "encoding_func": self._encoding_func,
             },

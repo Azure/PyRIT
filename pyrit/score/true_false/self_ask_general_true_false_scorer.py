@@ -92,7 +92,7 @@ class SelfAskGeneralTrueFalseScorer(TrueFalseScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             system_prompt_template=self._system_prompt_format_string,
             user_prompt_template=self._prompt_format_string,
             prompt_target=self._prompt_target,

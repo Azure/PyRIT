@@ -83,7 +83,7 @@ class LLMGenericTextConverter(PromptConverter):
                 str(self._user_prompt_template_with_objective.value).encode("utf-8")
             ).hexdigest()[:16]
 
-        return self._set_identifier(
+        return self._create_identifier(
             converter_target=self._converter_target,
             converter_specific_params={
                 "system_prompt_template_hash": system_prompt_hash,

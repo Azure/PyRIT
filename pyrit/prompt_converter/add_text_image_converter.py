@@ -73,7 +73,7 @@ class AddTextImageConverter(PromptConverter):
             ConverterIdentifier: The identifier for this converter.
         """
         text_hash = hashlib.sha256(self._text_to_add.encode("utf-8")).hexdigest()[:16]
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "text_to_add_hash": text_hash,
                 "font_name": self._font_name,

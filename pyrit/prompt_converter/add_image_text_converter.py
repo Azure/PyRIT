@@ -71,7 +71,7 @@ class AddImageTextConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "img_to_add_path": str(self._img_to_add),
                 "font_name": self._font_name,

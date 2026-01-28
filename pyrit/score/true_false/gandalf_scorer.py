@@ -62,7 +62,7 @@ class GandalfScorer(TrueFalseScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             prompt_target=self._prompt_target,
             score_aggregator=self._score_aggregator.__name__,
         )

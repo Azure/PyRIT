@@ -34,7 +34,7 @@ class MockTrueFalseScorer(TrueFalseScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier()
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -58,7 +58,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier()
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -82,7 +82,7 @@ class MockGenericScorer(Scorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier()
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []

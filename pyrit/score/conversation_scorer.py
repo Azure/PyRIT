@@ -203,7 +203,7 @@ def create_conversation_scorer(
             Returns:
                 ScorerIdentifier: The identifier for this scorer.
             """
-            return self._set_identifier(
+            return self._create_identifier(
                 sub_scorers=[self._wrapped_scorer],
             )
 

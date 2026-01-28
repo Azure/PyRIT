@@ -47,7 +47,7 @@ class MockScorer(TrueFalseScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier()
+        return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -161,7 +161,7 @@ def test_composite_scorer_invalid_scorer_type():
             self._validator = MagicMock()
 
         def _build_identifier(self) -> ScorerIdentifier:
-            return self._set_identifier()
+            return self._create_identifier()
 
         async def _score_piece_async(
             self, message_piece: MessagePiece, *, objective: Optional[str] = None

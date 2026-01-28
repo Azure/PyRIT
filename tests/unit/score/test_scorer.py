@@ -63,7 +63,7 @@ class MockScorer(TrueFalseScorer):
 
     def _build_identifier(self) -> ScorerIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
-        return self._set_identifier()
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -119,7 +119,7 @@ class MockFloatScorer(Scorer):
 
     def _build_identifier(self) -> ScorerIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
-        return self._set_identifier()
+        return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         # Track which pieces get scored
@@ -1121,7 +1121,7 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
 
         def _build_identifier(self) -> ScorerIdentifier:
             """Build the scorer evaluation identifier for this test scorer."""
-            return self._set_identifier()
+            return self._create_identifier()
 
         async def _score_piece_async(
             self, message_piece: MessagePiece, *, objective: Optional[str] = None
@@ -1307,7 +1307,7 @@ class TestTrueFalseScorerEmptyScoreListRationale:
                 super().__init__(validator=validator)
 
             def _build_identifier(self) -> ScorerIdentifier:
-                return self._set_identifier()
+                return self._create_identifier()
 
             async def _score_piece_async(
                 self, message_piece: MessagePiece, *, objective: Optional[str] = None

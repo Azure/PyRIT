@@ -30,7 +30,7 @@ class UnicodeSubstitutionConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "start_value": self.startValue,
             }

@@ -170,16 +170,16 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
         Build and return the identifier for this converter.
 
         Subclasses can override this method to add converter-specific parameters
-        by calling _set_identifier with additional arguments.
+        by calling _create_identifier with additional arguments.
 
-        The default implementation calls _set_identifier with no extra parameters.
+        The default implementation calls _create_identifier with no extra parameters.
 
         Returns:
             ConverterIdentifier: The constructed identifier.
         """
-        return self._set_identifier()
+        return self._create_identifier()
 
-    def _set_identifier(
+    def _create_identifier(
         self,
         *,
         sub_converters: Optional[Sequence["PromptConverter"]] = None,

@@ -89,7 +89,7 @@ class RepeatTokenConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "token_to_repeat": self._token_to_repeat.strip(),
                 "times_to_repeat": self._times_to_repeat,

@@ -38,7 +38,7 @@ class MockFloatScaleScorer(FloatScaleScorer):
         super().__init__(validator=ScorerPromptValidator(supported_data_types=["text"]))
 
     def _build_identifier(self) -> None:
-        self._set_identifier()
+        self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -51,7 +51,7 @@ class MockTrueFalseScorer(TrueFalseScorer):
         super().__init__(validator=ScorerPromptValidator(supported_data_types=["text"]))
 
     def _build_identifier(self) -> None:
-        self._set_identifier()
+        self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -64,7 +64,7 @@ class MockUnsupportedScorer(Scorer):
         super().__init__(validator=ScorerPromptValidator(supported_data_types=["text"]))
 
     def _build_identifier(self) -> None:
-        self._set_identifier()
+        self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return []

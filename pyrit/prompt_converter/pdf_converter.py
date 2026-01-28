@@ -120,7 +120,7 @@ class PDFConverter(PromptConverter):
         if self._existing_pdf_path:
             existing_pdf_path = str(self._existing_pdf_path)
 
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "font_type": self._font_type,
                 "font_size": self._font_size,

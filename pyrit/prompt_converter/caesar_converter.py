@@ -53,7 +53,7 @@ class CaesarConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "caesar_offset": self.caesar_offset,
                 "append_description": self.append_description,

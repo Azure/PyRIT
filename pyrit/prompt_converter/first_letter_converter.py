@@ -40,7 +40,7 @@ class FirstLetterConverter(WordLevelConverter):
         """
         base_params = super()._build_identifier().converter_specific_params or {}
         base_params["letter_separator"] = self.letter_separator
-        return self._set_identifier(converter_specific_params=base_params)
+        return self._create_identifier(converter_specific_params=base_params)
 
     async def convert_word_async(self, word: str) -> str:
         """

@@ -66,7 +66,7 @@ class UnicodeConfusableConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "source_package": self._source_package,
                 "deterministic": self._deterministic,

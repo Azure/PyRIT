@@ -99,7 +99,7 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def _set_identifier(
+    def _create_identifier(
         self,
         *,
         system_prompt_template: Optional[str] = None,

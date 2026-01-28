@@ -79,7 +79,7 @@ class TemplateSegmentConverter(PromptConverter):
             ConverterIdentifier: The identifier for this converter.
         """
         template_hash = hashlib.sha256(str(self.prompt_template.value).encode("utf-8")).hexdigest()[:16]
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "template_hash": template_hash,
                 "number_parameters": self._number_parameters,

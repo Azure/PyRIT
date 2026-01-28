@@ -87,7 +87,7 @@ class PersuasionConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_target=self.converter_target,
             converter_specific_params={
                 "persuasion_technique": self._persuasion_technique,

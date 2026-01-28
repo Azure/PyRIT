@@ -38,7 +38,7 @@ class TrueFalseInverterScorer(TrueFalseScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             sub_scorers=[self._scorer],
             score_aggregator=self._score_aggregator.__name__,
         )

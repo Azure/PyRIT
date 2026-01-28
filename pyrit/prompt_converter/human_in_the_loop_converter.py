@@ -41,7 +41,7 @@ class HumanInTheLoopConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(sub_converters=self._converters)
+        return self._create_identifier(sub_converters=self._converters)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

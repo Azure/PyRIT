@@ -197,7 +197,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             system_prompt_template=self._system_prompt,
             prompt_target=self._prompt_target,
         )

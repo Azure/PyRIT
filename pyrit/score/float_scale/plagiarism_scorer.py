@@ -63,7 +63,7 @@ class PlagiarismScorer(FloatScaleScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             scorer_specific_params={
                 "reference_text": self.reference_text,
                 "metric": self.metric.value,

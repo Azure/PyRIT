@@ -57,7 +57,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             sub_scorers=[self.image_scorer],
             score_aggregator=self._score_aggregator.__name__,
             scorer_specific_params={

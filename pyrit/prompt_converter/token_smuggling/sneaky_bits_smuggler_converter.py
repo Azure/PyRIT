@@ -53,7 +53,7 @@ class SneakyBitsSmugglerConverter(SmugglerConverter):
         base_params = super()._build_identifier().converter_specific_params or {}
         base_params["zero_char_codepoint"] = hex(ord(self.zero_char))
         base_params["one_char_codepoint"] = hex(ord(self.one_char))
-        return self._set_identifier(converter_specific_params=base_params)
+        return self._create_identifier(converter_specific_params=base_params)
 
     def encode_message(self, message: str) -> Tuple[str, str]:
         """

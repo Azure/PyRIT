@@ -31,7 +31,7 @@ class TextJailbreakConverter(PromptConverter):
         Returns:
             ConverterIdentifier: The identifier for this converter.
         """
-        return self._set_identifier(
+        return self._create_identifier(
             converter_specific_params={
                 "jailbreak_template_path": self.jail_break_template.template_source,
             }
