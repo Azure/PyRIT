@@ -33,3 +33,12 @@ Here are some examples:
 | **OpenAIImageTarget**               | **No** (not a `PromptChatTarget`)    | Used for image generation; does not manage conversation history.                                 |
 | **HTTPTarget**                      | **No** (not a `PromptChatTarget`)    | Generic HTTP target. Some apps might allow conversation history, but this target doesn't handle it. |
 | **AzureBlobStorageTarget**          | **No** (not a `PromptChatTarget`)    | Used primarily for storage; not for conversation-based AI.                                       |
+
+## Multi-Modal Targets
+
+Like most of PyRIT, targets can be multi-modal.
+
+- [OpenAI Chat Target](./1_openai_chat_target.ipynb) (*text + image --> text*)
+- [OpenAI Image Target](./3_openai_image_target.ipynb) (*text --> image* or *text + image --> image*)
+- [OpenAI Video Target](./4_openai_video_target.ipynb) (*text --> video*)
+- [OpenAI TTS Target](./5_openai_tts_target.ipynb) (*text --> audio*)
