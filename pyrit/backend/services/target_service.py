@@ -10,7 +10,7 @@ Handles creation, retrieval, and lifecycle of runtime target instances.
 import importlib
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, Literal, Optional, cast
 
 from pyrit.backend.models.common import filter_sensitive_fields
 from pyrit.backend.models.targets import (
@@ -48,7 +48,7 @@ class TargetService:
         # First try direct attribute lookup
         cls = getattr(module, target_type, None)
         if cls is not None:
-            return cls
+            return cast(type, cls)
 
         # Try common class name patterns
         class_name_patterns = [
@@ -61,7 +61,7 @@ class TargetService:
         for pattern in class_name_patterns:
             cls = getattr(module, pattern, None)
             if cls is not None:
-                return cls
+                return cast(type, cls)
 
         raise ValueError(f"Target type '{target_type}' not found in pyrit.prompt_target")
 
@@ -215,7 +215,12 @@ _target_service: Optional[TargetService] = None
 
 
 def get_target_service() -> TargetService:
-    """Get the global target service instance."""
+    """
+    Get the global target service instance.
+
+    Returns:
+        The singleton TargetService instance.
+    """
     global _target_service
     if _target_service is None:
         _target_service = TargetService()

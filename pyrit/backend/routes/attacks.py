@@ -13,12 +13,12 @@ from typing import Literal, Optional
 from fastapi import APIRouter, HTTPException, Query, status
 
 from pyrit.backend.models.attacks import (
+    AddMessageRequest,
+    AddMessageResponse,
     AttackDetail,
     AttackListResponse,
     CreateAttackRequest,
     CreateAttackResponse,
-    SendMessageRequest,
-    SendMessageResponse,
     UpdateAttackRequest,
 )
 from pyrit.backend.models.common import ProblemDetail
@@ -147,21 +147,22 @@ async def update_attack(
 
 @router.post(
     "/{attack_id}/messages",
-    response_model=SendMessageResponse,
+    response_model=AddMessageResponse,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
         400: {"model": ProblemDetail, "description": "Message send failed"},
     },
 )
-async def send_message(
+async def add_message(
     attack_id: str,
-    request: SendMessageRequest,
-) -> SendMessageResponse:
+    request: AddMessageRequest,
+) -> AddMessageResponse:
     """
-    Send a message in an attack.
+    Add a message to an attack.
 
-    Sends the user message to the target, applies converters, and returns
-    both the user message and assistant response.
+    If send=True (default), sends the message to the target and waits for a response.
+    If send=False, just stores the message in memory without sending (useful for
+    system messages, context injection, or replaying assistant responses).
 
     Converters can be specified at three levels (in priority order):
     1. request.converter_ids - per-message converter instances
@@ -169,12 +170,12 @@ async def send_message(
     3. attack.converter_ids - attack-level defaults
 
     Returns:
-        SendMessageResponse: The sent message and assistant response.
+        AddMessageResponse: Updated attack with new message(s).
     """
     service = get_attack_service()
 
     try:
-        return await service.send_message(attack_id, request)
+        return await service.add_message(attack_id, request)
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():
@@ -189,7 +190,7 @@ async def send_message(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send message: {str(e)}",
+            detail=f"Failed to add message: {str(e)}",
         )
 
 

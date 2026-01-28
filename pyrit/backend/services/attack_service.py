@@ -11,11 +11,13 @@ Handles attack lifecycle, message sending, prepended conversations, and scoring.
 import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, cast
 
 from pydantic import BaseModel
 
 from pyrit.backend.models.attacks import (
+    AddMessageRequest,
+    AddMessageResponse,
     AttackDetail,
     AttackListResponse,
     AttackSummary,
@@ -23,11 +25,6 @@ from pyrit.backend.models.attacks import (
     CreateAttackResponse,
     Message,
     MessagePiece,
-    MessagePieceRequest,
-    PrependedMessageRequest,
-    Score,
-    SendMessageRequest,
-    SendMessageResponse,
     UpdateAttackRequest,
 )
 from pyrit.backend.models.common import PaginationInfo
@@ -45,7 +42,6 @@ class AttackState(BaseModel):
     target_type: str
     outcome: Optional[Literal["pending", "success", "failure"]] = None
     prepended_conversation: List[Message] = []
-    converter_ids: List[str] = []
     message_count: int = 0
     created_at: datetime
     updated_at: datetime
@@ -163,7 +159,6 @@ class AttackService:
             outcome=state.outcome,
             prepended_conversation=state.prepended_conversation,
             messages=messages,
-            converter_ids=state.converter_ids,
             created_at=state.created_at,
             updated_at=state.updated_at,
         )
@@ -212,13 +207,6 @@ class AttackService:
                 )
                 prepended_messages.append(msg)
 
-        # Validate converter IDs if provided
-        if request.converter_ids:
-            converter_service = get_converter_service()
-            for conv_id in request.converter_ids:
-                if await converter_service.get_converter(conv_id) is None:
-                    raise ValueError(f"Converter instance '{conv_id}' not found")
-
         state = AttackState(
             attack_id=attack_id,
             name=request.name,
@@ -226,7 +214,6 @@ class AttackService:
             target_type=target_instance.type,
             outcome=None,
             prepended_conversation=prepended_messages,
-            converter_ids=request.converter_ids or [],
             message_count=0,
             created_at=now,
             updated_at=now,
@@ -235,13 +222,7 @@ class AttackService:
 
         return CreateAttackResponse(
             attack_id=attack_id,
-            name=request.name,
-            target_id=request.target_id,
-            target_type=target_instance.type,
-            outcome=None,
-            prepended_conversation=prepended_messages,
             created_at=now,
-            updated_at=now,
         )
 
     async def update_attack(
@@ -268,20 +249,23 @@ class AttackService:
 
         return await self.get_attack(attack_id)
 
-    async def send_message(
+    async def add_message(
         self,
         attack_id: str,
-        request: SendMessageRequest,
-    ) -> SendMessageResponse:
+        request: AddMessageRequest,
+    ) -> AddMessageResponse:
         """
-        Send a message in an attack and get response.
+        Add a message to an attack.
+
+        If send=True, sends to target and waits for response.
+        If send=False, just stores the message in memory.
 
         Args:
             attack_id: Attack ID
-            request: Message send request
+            request: Add message request
 
         Returns:
-            SendMessageResponse: User and assistant messages
+            AddMessageResponse: Updated attack detail
         """
         state = self._attacks.get(attack_id)
         if not state:
@@ -290,25 +274,17 @@ class AttackService:
         target_service = get_target_service()
         converter_service = get_converter_service()
 
-        target_obj = target_service.get_target_object(state.target_id)
-        if not target_obj:
-            raise ValueError(f"Target object for '{state.target_id}' not found")
-
         now = datetime.now(timezone.utc)
         state.message_count += 1
-        user_turn = state.message_count
+        msg_turn = state.message_count
 
-        # Determine which converters to use
+        # Determine which converters to use (only for user messages being sent)
         converters = []
-        if request.converter_ids:
+        if request.send and request.role == "user" and request.converter_ids:
             converters = converter_service.get_converter_objects_for_ids(request.converter_ids)
-        elif request.converters:
-            converters = converter_service.instantiate_inline_converters(request.converters)
-        elif state.converter_ids:
-            converters = converter_service.get_converter_objects_for_ids(state.converter_ids)
 
-        # Build user message pieces
-        user_pieces: List[MessagePiece] = []
+        # Build message pieces
+        msg_pieces: List[MessagePiece] = []
         for piece_req in request.pieces:
             original_value = piece_req.content
             converted_value = original_value
@@ -318,7 +294,7 @@ class AttackService:
                 result = await converter.convert_async(prompt=converted_value)
                 converted_value = result.output_text
 
-            user_pieces.append(
+            msg_pieces.append(
                 MessagePiece(
                     piece_id=str(uuid.uuid4()),
                     data_type=piece_req.data_type,
@@ -330,103 +306,102 @@ class AttackService:
                 )
             )
 
-        user_message = Message(
+        message = Message(
             message_id=str(uuid.uuid4()),
-            turn_number=user_turn,
-            role="user",
-            pieces=user_pieces,
+            turn_number=msg_turn,
+            role=request.role,
+            pieces=msg_pieces,
             created_at=now,
         )
 
-        # Store user message
-        self._messages[attack_id].append(user_message)
+        # Store the message
+        self._messages[attack_id].append(message)
 
-        # Build conversation for target (prepended + all messages)
-        from pyrit.models import Message as PyritMessage, MessagePiece as PyritMessagePiece
+        # If send=True, send to target and get response
+        transport_error: Optional[str] = None
+        if request.send:
+            target_obj = target_service.get_target_object(state.target_id)
+            if not target_obj:
+                raise ValueError(f"Target object for '{state.target_id}' not found")
 
-        # Create prompt pieces for target
-        user_prompt_pieces = []
-        for piece in user_pieces:
-            pyrit_piece = PyritMessagePiece(
-                role="user",
-                original_value=piece.original_value or "",
-                original_value_data_type=piece.data_type,
-                converted_value=piece.converted_value,
-                converted_value_data_type=piece.data_type,
-                conversation_id=attack_id,
-                sequence=user_turn,
-            )
-            user_prompt_pieces.append(pyrit_piece)
+            try:
+                # Build conversation for target
+                from pyrit.models import Message as PyritMessage
+                from pyrit.models import MessagePiece as PyritMessagePiece
+                from pyrit.models import PromptDataType
 
-        user_pyrit_message = PyritMessage(user_prompt_pieces)
+                # Create prompt pieces for target
+                prompt_pieces = []
+                for piece in msg_pieces:
+                    pyrit_piece = PyritMessagePiece(
+                        role=request.role,
+                        original_value=piece.original_value or "",
+                        original_value_data_type=cast(PromptDataType, piece.data_type),
+                        converted_value=piece.converted_value,
+                        converted_value_data_type=cast(PromptDataType, piece.data_type),
+                        conversation_id=attack_id,
+                        sequence=msg_turn,
+                    )
+                    prompt_pieces.append(pyrit_piece)
 
-        # Send to target
-        response_messages = await target_obj.send_prompt_async(message=user_pyrit_message)
+                pyrit_message = PyritMessage(prompt_pieces)
 
-        # Build assistant response
-        state.message_count += 1
-        assistant_turn = state.message_count
+                # Send to target
+                response_messages = await target_obj.send_prompt_async(message=pyrit_message)
 
-        assistant_pieces: List[MessagePiece] = []
-        if response_messages:
-            for resp_msg in response_messages:
-                for resp_piece in resp_msg.message_pieces:
-                    assistant_pieces.append(
+                # Build assistant response
+                state.message_count += 1
+                assistant_turn = state.message_count
+
+                assistant_pieces: List[MessagePiece] = []
+                if response_messages:
+                    for resp_msg in response_messages:
+                        for resp_piece in resp_msg.message_pieces:
+                            assistant_pieces.append(
+                                MessagePiece(
+                                    piece_id=str(uuid.uuid4()),
+                                    data_type=resp_piece.converted_value_data_type or "text",
+                                    original_value=resp_piece.original_value,
+                                    converted_value=resp_piece.converted_value or "",
+                                    scores=[],
+                                    response_error=resp_piece.response_error,
+                                )
+                            )
+
+                assistant_message = Message(
+                    message_id=str(uuid.uuid4()),
+                    turn_number=assistant_turn,
+                    role="assistant",
+                    pieces=assistant_pieces
+                    if assistant_pieces
+                    else [
                         MessagePiece(
                             piece_id=str(uuid.uuid4()),
-                            data_type=resp_piece.converted_value_data_type or "text",
-                            original_value=resp_piece.original_value,
-                            converted_value=resp_piece.converted_value or "",
+                            data_type="text",
+                            converted_value="",
                             scores=[],
                         )
-                    )
-
-        assistant_message = Message(
-            message_id=str(uuid.uuid4()),
-            turn_number=assistant_turn,
-            role="assistant",
-            pieces=assistant_pieces if assistant_pieces else [
-                MessagePiece(
-                    piece_id=str(uuid.uuid4()),
-                    data_type="text",
-                    converted_value="",
-                    scores=[],
+                    ],
+                    created_at=datetime.now(timezone.utc),
                 )
-            ],
-            created_at=datetime.now(timezone.utc),
-        )
 
-        # Store assistant message
-        self._messages[attack_id].append(assistant_message)
+                # Store assistant message
+                self._messages[attack_id].append(assistant_message)
+
+            except Exception as e:
+                transport_error = str(e)
 
         # Update attack timestamp
         state.updated_at = datetime.now(timezone.utc)
 
-        # Build summary
-        messages = self._messages[attack_id]
-        last_message_preview = None
-        if messages:
-            last_msg = messages[-1]
-            if last_msg.pieces:
-                preview_text = last_msg.pieces[0].converted_value
-                last_message_preview = preview_text[:100] + "..." if len(preview_text) > 100 else preview_text
+        # Get updated attack detail
+        attack_detail = await self.get_attack(attack_id)
+        if attack_detail is None:
+            raise ValueError(f"Attack '{attack_id}' not found after update")
 
-        attack_summary = AttackSummary(
-            attack_id=state.attack_id,
-            name=state.name,
-            target_id=state.target_id,
-            target_type=state.target_type,
-            outcome=state.outcome,
-            last_message_preview=last_message_preview,
-            message_count=len(messages),
-            created_at=state.created_at,
-            updated_at=state.updated_at,
-        )
-
-        return SendMessageResponse(
-            user_message=user_message,
-            assistant_message=assistant_message,
-            attack_summary=attack_summary,
+        return AddMessageResponse(
+            attack=attack_detail,
+            error=transport_error,
         )
 
     async def delete_attack(self, attack_id: str) -> bool:
@@ -451,7 +426,12 @@ _attack_service: Optional[AttackService] = None
 
 
 def get_attack_service() -> AttackService:
-    """Get the global attack service instance."""
+    """
+    Get the global attack service instance.
+
+    Returns:
+        AttackService: The singleton attack service instance.
+    """
     global _attack_service
     if _attack_service is None:
         _attack_service = AttackService()

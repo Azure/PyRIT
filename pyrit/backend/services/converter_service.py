@@ -10,7 +10,7 @@ Handles creation, retrieval, and nested converter support.
 import importlib
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple, cast
 
 from pyrit.backend.models.converters import (
     ConverterInstance,
@@ -50,7 +50,7 @@ class ConverterService:
         # Try direct attribute lookup first
         cls = getattr(module, converter_type, None)
         if cls is not None:
-            return cls
+            return cast(type, cls)
 
         # Try common class name patterns
         class_name_patterns = [
@@ -63,7 +63,7 @@ class ConverterService:
         for pattern in class_name_patterns:
             cls = getattr(module, pattern, None)
             if cls is not None:
-                return cls
+                return cast(type, cls)
 
         raise ValueError(f"Converter type '{converter_type}' not found in pyrit.prompt_converter")
 
@@ -91,9 +91,7 @@ class ConverterService:
             nested_config = params["converter"]
             if "type" in nested_config:
                 # Recursively create nested converter
-                nested_id, nested_obj, nested_instances = self._create_converter_recursive(
-                    nested_config, source
-                )
+                nested_id, nested_obj, nested_instances = self._create_converter_recursive(nested_config, source)
                 created_instances.extend(nested_instances)
                 # Replace inline config with the actual converter object
                 params["converter"] = nested_obj
@@ -193,9 +191,7 @@ class ConverterService:
             "params": request.params,
         }
 
-        converter_id, converter_obj, created_instances = self._create_converter_recursive(
-            config, "user"
-        )
+        converter_id, converter_obj, created_instances = self._create_converter_recursive(config, "user")
 
         # Update display name for the outermost converter
         if request.display_name and converter_id in self._instances:
@@ -312,9 +308,7 @@ class ConverterService:
             converters.append(conv_obj)
         return converters
 
-    def instantiate_inline_converters(
-        self, configs: List[InlineConverterConfig]
-    ) -> List[Any]:
+    def instantiate_inline_converters(self, configs: List[InlineConverterConfig]) -> List[Any]:
         """
         Instantiate converters from inline configurations.
 
@@ -337,7 +331,12 @@ _converter_service: Optional[ConverterService] = None
 
 
 def get_converter_service() -> ConverterService:
-    """Get the global converter service instance."""
+    """
+    Get the global converter service instance.
+
+    Returns:
+        ConverterService: The singleton converter service instance.
+    """
     global _converter_service
     if _converter_service is None:
         _converter_service = ConverterService()

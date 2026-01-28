@@ -3,8 +3,6 @@
 
 """
 FastAPI application entry point for PyRIT backend.
-
-This is the attack-centric API - all interactions are modeled as "attacks".
 """
 
 import os

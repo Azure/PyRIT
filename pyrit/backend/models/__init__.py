@@ -8,6 +8,8 @@ Pydantic models for API requests and responses.
 """
 
 from pyrit.backend.models.attacks import (
+    AddMessageRequest,
+    AddMessageResponse,
     AttackDetail,
     AttackListResponse,
     AttackSummary,
@@ -18,8 +20,6 @@ from pyrit.backend.models.attacks import (
     MessagePieceRequest,
     PrependedMessageRequest,
     Score,
-    SendMessageRequest,
-    SendMessageResponse,
     UpdateAttackRequest,
 )
 from pyrit.backend.models.common import (
@@ -65,6 +65,8 @@ from pyrit.backend.models.targets import (
 
 __all__ = [
     # Attacks
+    "AddMessageRequest",
+    "AddMessageResponse",
     "AttackDetail",
     "AttackListResponse",
     "AttackSummary",
@@ -75,8 +77,6 @@ __all__ = [
     "MessagePieceRequest",
     "PrependedMessageRequest",
     "Score",
-    "SendMessageRequest",
-    "SendMessageResponse",
     "UpdateAttackRequest",
     # Common
     "ALLOWED_IDENTIFIER_FIELDS",

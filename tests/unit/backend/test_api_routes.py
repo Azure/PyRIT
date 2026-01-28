@@ -15,13 +15,13 @@ from fastapi.testclient import TestClient
 
 from pyrit.backend.main import app
 from pyrit.backend.models.attacks import (
+    AddMessageResponse,
     AttackDetail,
     AttackListResponse,
     AttackSummary,
     CreateAttackResponse,
     Message,
     MessagePiece,
-    SendMessageResponse,
 )
 from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.models.converters import (
@@ -104,13 +104,7 @@ class TestAttackRoutes:
             mock_service.create_attack = AsyncMock(
                 return_value=CreateAttackResponse(
                     attack_id="attack-1",
-                    name="Test Attack",
-                    target_id="target-1",
-                    target_type="TextTarget",
-                    outcome=None,
-                    prepended_conversation=[],
                     created_at=now,
-                    updated_at=now,
                 )
             )
             mock_get_service.return_value = mock_service
@@ -155,7 +149,6 @@ class TestAttackRoutes:
                     outcome=None,
                     prepended_conversation=[],
                     messages=[],
-                    converter_ids=[],
                     created_at=now,
                     updated_at=now,
                 )
@@ -193,7 +186,6 @@ class TestAttackRoutes:
                     outcome="success",
                     prepended_conversation=[],
                     messages=[],
-                    converter_ids=[],
                     created_at=now,
                     updated_at=now,
                 )
@@ -231,54 +223,49 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_send_message_success(self, client: TestClient) -> None:
-        """Test sending a message in an attack."""
+    def test_add_message_success(self, client: TestClient) -> None:
+        """Test adding a message to an attack."""
         now = datetime.now(timezone.utc)
 
-        user_msg = Message(
-            message_id="msg-1",
-            turn_number=1,
-            role="user",
-            pieces=[
-                MessagePiece(
-                    piece_id="piece-1",
-                    data_type="text",
-                    converted_value="Hello",
-                    scores=[],
-                )
-            ],
-            created_at=now,
-        )
-        assistant_msg = Message(
-            message_id="msg-2",
-            turn_number=2,
-            role="assistant",
-            pieces=[
-                MessagePiece(
-                    piece_id="piece-2",
-                    data_type="text",
-                    converted_value="Hi there!",
-                    scores=[],
-                )
-            ],
-            created_at=now,
-        )
-        summary = AttackSummary(
+        attack_detail = AttackDetail(
             attack_id="attack-1",
             target_id="target-1",
             target_type="TextTarget",
-            message_count=2,
+            messages=[
+                Message(
+                    message_id="msg-1",
+                    turn_number=1,
+                    role="user",
+                    pieces=[
+                        MessagePiece(
+                            piece_id="piece-1",
+                            converted_value="Hello",
+                        )
+                    ],
+                    created_at=now,
+                ),
+                Message(
+                    message_id="msg-2",
+                    turn_number=2,
+                    role="assistant",
+                    pieces=[
+                        MessagePiece(
+                            piece_id="piece-2",
+                            converted_value="Hi there!",
+                        )
+                    ],
+                    created_at=now,
+                ),
+            ],
             created_at=now,
             updated_at=now,
         )
 
         with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.send_message = AsyncMock(
-                return_value=SendMessageResponse(
-                    user_message=user_msg,
-                    assistant_message=assistant_msg,
-                    attack_summary=summary,
+            mock_service.add_message = AsyncMock(
+                return_value=AddMessageResponse(
+                    attack=attack_detail,
                 )
             )
             mock_get_service.return_value = mock_service
@@ -290,7 +277,7 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["user_message"]["pieces"][0]["converted_value"] == "Hello"
+            assert len(data["attack"]["messages"]) == 2
 
 
 # ============================================================================

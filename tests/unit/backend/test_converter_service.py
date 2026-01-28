@@ -6,7 +6,6 @@ Tests for backend converter service.
 """
 
 from datetime import datetime, timezone
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,7 +17,6 @@ from pyrit.backend.models.converters import (
     InlineConverterConfig,
 )
 from pyrit.backend.services.converter_service import ConverterService
-from pyrit.models import PromptDataType
 
 
 class TestConverterServiceInit:
@@ -516,10 +514,10 @@ class TestConverterServiceSingleton:
 
     def test_get_converter_service_returns_converter_service(self) -> None:
         """Test that get_converter_service returns a ConverterService instance."""
-        from pyrit.backend.services.converter_service import get_converter_service
-
         # Reset singleton for clean test
         import pyrit.backend.services.converter_service as module
+        from pyrit.backend.services.converter_service import get_converter_service
+
         module._converter_service = None
 
         service = get_converter_service()
@@ -527,10 +525,10 @@ class TestConverterServiceSingleton:
 
     def test_get_converter_service_returns_same_instance(self) -> None:
         """Test that get_converter_service returns the same instance."""
-        from pyrit.backend.services.converter_service import get_converter_service
-
         # Reset singleton for clean test
         import pyrit.backend.services.converter_service as module
+        from pyrit.backend.services.converter_service import get_converter_service
+
         module._converter_service = None
 
         service1 = get_converter_service()

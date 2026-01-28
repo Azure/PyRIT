@@ -12,10 +12,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.backend.models.attacks import (
+    AddMessageRequest,
     CreateAttackRequest,
     MessagePieceRequest,
     PrependedMessageRequest,
-    SendMessageRequest,
     UpdateAttackRequest,
 )
 from pyrit.backend.models.targets import TargetInstance
@@ -258,9 +258,14 @@ class TestCreateAttack:
             result = await service.create_attack(request)
 
             assert result.attack_id is not None
-            assert result.name == "My Attack"
-            assert result.target_id == "target-1"
-            assert result.target_type == "TextTarget"
+            assert result.created_at is not None
+
+            # Verify the attack was stored correctly by fetching it
+            attack = await service.get_attack(result.attack_id)
+            assert attack is not None
+            assert attack.name == "My Attack"
+            assert attack.target_id == "target-1"
+            assert attack.target_type == "TextTarget"
 
     @pytest.mark.asyncio
     async def test_create_attack_with_prepended_conversation(self) -> None:
@@ -291,43 +296,11 @@ class TestCreateAttack:
 
             result = await service.create_attack(request)
 
-            assert len(result.prepended_conversation) == 1
-            assert result.prepended_conversation[0].role == "system"
-
-    @pytest.mark.asyncio
-    async def test_create_attack_validates_converter_ids(self) -> None:
-        """Test that create_attack validates converter IDs exist."""
-        service = AttackService()
-
-        mock_target = TargetInstance(
-            target_id="target-1",
-            type="TextTarget",
-            params={},
-            created_at=datetime.now(timezone.utc),
-            source="user",
-        )
-
-        with patch(
-            "pyrit.backend.services.attack_service.get_target_service"
-        ) as mock_get_target_service:
-            mock_target_service = MagicMock()
-            mock_target_service.get_target = AsyncMock(return_value=mock_target)
-            mock_get_target_service.return_value = mock_target_service
-
-            with patch(
-                "pyrit.backend.services.attack_service.get_converter_service"
-            ) as mock_get_converter_service:
-                mock_converter_service = MagicMock()
-                mock_converter_service.get_converter = AsyncMock(return_value=None)
-                mock_get_converter_service.return_value = mock_converter_service
-
-                request = CreateAttackRequest(
-                    target_id="target-1",
-                    converter_ids=["nonexistent-converter"],
-                )
-
-                with pytest.raises(ValueError, match="Converter instance"):
-                    await service.create_attack(request)
+            # Verify the attack was stored with prepended conversation
+            attack = await service.get_attack(result.attack_id)
+            assert attack is not None
+            assert len(attack.prepended_conversation) == 1
+            assert attack.prepended_conversation[0].role == "system"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -419,24 +392,24 @@ class TestDeleteAttack:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestSendMessage:
-    """Tests for AttackService.send_message method."""
+class TestAddMessage:
+    """Tests for AttackService.add_message method."""
 
     @pytest.mark.asyncio
-    async def test_send_message_raises_for_nonexistent_attack(self) -> None:
-        """Test that send_message raises ValueError for non-existent attack."""
+    async def test_add_message_raises_for_nonexistent_attack(self) -> None:
+        """Test that add_message raises ValueError for non-existent attack."""
         service = AttackService()
 
-        request = SendMessageRequest(
+        request = AddMessageRequest(
             pieces=[MessagePieceRequest(content="Hello")],
         )
 
         with pytest.raises(ValueError, match="Attack"):
-            await service.send_message("nonexistent", request)
+            await service.add_message("nonexistent", request)
 
     @pytest.mark.asyncio
-    async def test_send_message_raises_for_missing_target_object(self) -> None:
-        """Test that send_message raises when target object is not found."""
+    async def test_add_message_with_send_raises_for_missing_target_object(self) -> None:
+        """Test that add_message with send=True raises when target object is not found."""
         service = AttackService()
         now = datetime.now(timezone.utc)
 
@@ -461,12 +434,185 @@ class TestSendMessage:
                 mock_converter_service = MagicMock()
                 mock_get_converter_service.return_value = mock_converter_service
 
-                request = SendMessageRequest(
+                request = AddMessageRequest(
                     pieces=[MessagePieceRequest(content="Hello")],
+                    send=True,
                 )
 
                 with pytest.raises(ValueError, match="Target object"):
-                    await service.send_message("test-id", request)
+                    await service.add_message("test-id", request)
+
+    @pytest.mark.asyncio
+    async def test_add_message_without_send_stores_message(self) -> None:
+        """Test that add_message with send=False just stores the message."""
+        service = AttackService()
+        now = datetime.now(timezone.utc)
+
+        service._attacks["test-id"] = AttackState(
+            attack_id="test-id",
+            target_id="target-1",
+            target_type="TextTarget",
+            created_at=now,
+            updated_at=now,
+        )
+
+        with patch(
+            "pyrit.backend.services.attack_service.get_target_service"
+        ) as mock_get_target_service:
+            mock_target_service = MagicMock()
+            mock_get_target_service.return_value = mock_target_service
+
+            with patch(
+                "pyrit.backend.services.attack_service.get_converter_service"
+            ) as mock_get_converter_service:
+                mock_converter_service = MagicMock()
+                mock_get_converter_service.return_value = mock_converter_service
+
+                request = AddMessageRequest(
+                    role="system",
+                    pieces=[MessagePieceRequest(content="You are a helpful assistant.")],
+                    send=False,
+                )
+
+                result = await service.add_message("test-id", request)
+
+                assert result.attack is not None
+                assert len(result.attack.messages) == 1
+                assert result.attack.messages[0].role == "system"
+                assert result.error is None
+
+    @pytest.mark.asyncio
+    async def test_add_message_with_converter_ids_applies_converters(self) -> None:
+        """Test that add_message with converter_ids applies the converters."""
+        service = AttackService()
+        now = datetime.now(timezone.utc)
+
+        service._attacks["test-id"] = AttackState(
+            attack_id="test-id",
+            target_id="target-1",
+            target_type="TextTarget",
+            created_at=now,
+            updated_at=now,
+        )
+
+        # Create mock converter
+        mock_converter = MagicMock()
+        mock_converter.convert_async = AsyncMock(
+            return_value=MagicMock(output_text="converted text")
+        )
+
+        # Create mock target
+        mock_target = AsyncMock()
+        mock_target.send_prompt_async = AsyncMock(
+            return_value=MagicMock(
+                request_pieces=[
+                    MagicMock(
+                        original_value="assistant response",
+                        converted_value="assistant response",
+                        original_value_data_type="text",
+                    )
+                ],
+                response_error_description="none",
+            )
+        )
+
+        with patch(
+            "pyrit.backend.services.attack_service.get_target_service"
+        ) as mock_get_target_service:
+            mock_target_service = MagicMock()
+            mock_target_service.get_target_object.return_value = mock_target
+            mock_get_target_service.return_value = mock_target_service
+
+            with patch(
+                "pyrit.backend.services.attack_service.get_converter_service"
+            ) as mock_get_converter_service:
+                mock_converter_service = MagicMock()
+                mock_converter_service.get_converter_objects_for_ids.return_value = [
+                    mock_converter
+                ]
+                mock_get_converter_service.return_value = mock_converter_service
+
+                request = AddMessageRequest(
+                    role="user",
+                    pieces=[MessagePieceRequest(content="Hello")],
+                    send=True,
+                    converter_ids=["converter-1"],
+                )
+
+                result = await service.add_message("test-id", request)
+
+                # Verify converter was applied
+                mock_converter_service.get_converter_objects_for_ids.assert_called_once_with(
+                    ["converter-1"]
+                )
+                mock_converter.convert_async.assert_called_once_with(prompt="Hello")
+
+                # Verify message was converted
+                assert result.attack is not None
+                # First message is the user message with conversion
+                user_msg = result.attack.messages[0]
+                assert user_msg.role == "user"
+                assert user_msg.pieces[0].converted_value == "converted text"
+
+    @pytest.mark.asyncio
+    async def test_add_message_without_converter_ids_does_not_apply_converters(self) -> None:
+        """Test that add_message without converter_ids does not apply any converters."""
+        service = AttackService()
+        now = datetime.now(timezone.utc)
+
+        service._attacks["test-id"] = AttackState(
+            attack_id="test-id",
+            target_id="target-1",
+            target_type="TextTarget",
+            created_at=now,
+            updated_at=now,
+        )
+
+        # Create mock target
+        mock_target = AsyncMock()
+        mock_target.send_prompt_async = AsyncMock(
+            return_value=MagicMock(
+                request_pieces=[
+                    MagicMock(
+                        original_value="response",
+                        converted_value="response",
+                        original_value_data_type="text",
+                    )
+                ],
+                response_error_description="none",
+            )
+        )
+
+        with patch(
+            "pyrit.backend.services.attack_service.get_target_service"
+        ) as mock_get_target_service:
+            mock_target_service = MagicMock()
+            mock_target_service.get_target_object.return_value = mock_target
+            mock_get_target_service.return_value = mock_target_service
+
+            with patch(
+                "pyrit.backend.services.attack_service.get_converter_service"
+            ) as mock_get_converter_service:
+                mock_converter_service = MagicMock()
+                mock_get_converter_service.return_value = mock_converter_service
+
+                # No converter_ids in request - should not apply any converters
+                request = AddMessageRequest(
+                    role="user",
+                    pieces=[MessagePieceRequest(content="Hello")],
+                    send=True,
+                )
+
+                result = await service.add_message("test-id", request)
+
+                # Verify no converter lookup was done
+                mock_converter_service.get_converter_objects_for_ids.assert_not_called()
+
+                # Verify original value equals converted value (no conversion)
+                assert result.attack is not None
+                user_msg = result.attack.messages[0]
+                assert user_msg.pieces[0].original_value == "Hello"
+                assert user_msg.pieces[0].converted_value == "Hello"
 
 
 @pytest.mark.usefixtures("patch_central_database")
