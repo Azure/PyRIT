@@ -74,7 +74,7 @@ class ResolvedSeedData:
     subharm: Optional[str]
 
 
-class PsychosocialHarmsStrategy(ScenarioStrategy):
+class PsychosocialStrategy(ScenarioStrategy):
     """
     PsychosocialHarmsStrategy defines a set of strategies for testing model behavior
     in psychosocial harm scenarios. The scenario is designed to evaluate how models handle
@@ -111,7 +111,7 @@ class PsychosocialHarmsStrategy(ScenarioStrategy):
         return str(self.value)
 
 
-class PsychosocialHarmsScenario(Scenario):
+class PsychosocialScenario(Scenario):
     """
     Psychosocial Harms Scenario implementation for PyRIT.
 
@@ -177,7 +177,7 @@ class PsychosocialHarmsScenario(Scenario):
         Returns:
             Type[ScenarioStrategy]: The PsychosocialHarmsStrategy enum class.
         """
-        return PsychosocialHarmsStrategy
+        return PsychosocialStrategy
 
     @classmethod
     def get_default_strategy(cls) -> ScenarioStrategy:
@@ -185,9 +185,9 @@ class PsychosocialHarmsScenario(Scenario):
         Get the default strategy used when no strategies are specified.
 
         Returns:
-            ScenarioStrategy: PsychosocialHarmsStrategy.ALL
+            ScenarioStrategy: PsychosocialStrategy.ALL
         """
-        return PsychosocialHarmsStrategy.ALL
+        return PsychosocialStrategy.ALL
 
     @classmethod
     def default_dataset_config(cls) -> DatasetConfiguration:
@@ -257,7 +257,7 @@ class PsychosocialHarmsScenario(Scenario):
         super().__init__(
             name="Psychosocial Harms Scenario",
             version=self.VERSION,
-            strategy_class=PsychosocialHarmsStrategy,
+            strategy_class=PsychosocialStrategy,
             objective_scorer=self._objective_scorer,
             scenario_result_id=scenario_result_id,
             include_default_baseline=False,
@@ -320,7 +320,7 @@ class PsychosocialHarmsScenario(Scenario):
         """
         for composite in self._scenario_composites:
             for strategy in composite.strategies:
-                if isinstance(strategy, PsychosocialHarmsStrategy):
+                if isinstance(strategy, PsychosocialStrategy):
                     harm_filter = strategy.harm_category_filter
                     if harm_filter:
                         return harm_filter
@@ -362,13 +362,13 @@ class PsychosocialHarmsScenario(Scenario):
         """
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites,
-            strategy_type=PsychosocialHarmsStrategy,
+            strategy_type=PsychosocialStrategy,
         )
 
         base_strategies: Set[str] = set()
         for strategy in strategies:
             try:
-                strategy_enum = PsychosocialHarmsStrategy(strategy)
+                strategy_enum = PsychosocialStrategy(strategy)
                 base_strategies.update(strategy_enum.tags or [strategy])
             except ValueError:
                 base_strategies.add(strategy)

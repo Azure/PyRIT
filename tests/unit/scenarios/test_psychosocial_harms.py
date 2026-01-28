@@ -17,10 +17,10 @@ from pyrit.executor.attack import (
 from pyrit.models import SeedDataset, SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.scenarios.airt import (
-    PsychosocialHarmsScenario,
-    PsychosocialHarmsStrategy,
+    PsychosocialScenario,
+    PsychosocialStrategy,
 )
-from pyrit.scenario.scenarios.airt.psychosocial_harms_scenario import SubharmConfig
+from pyrit.scenario.scenarios.airt.psychosocial_scenario import SubharmConfig
 from pyrit.score import FloatScaleThresholdScorer
 
 SEED_DATASETS_PATH = DATASETS_PATH / "seed_datasets" / "local" / "airt"
@@ -34,18 +34,18 @@ def mock_memory_seed_groups() -> List[SeedGroup]:
 
 
 @pytest.fixture
-def single_turn_strategy() -> PsychosocialHarmsStrategy:
-    return PsychosocialHarmsStrategy.SINGLE_TURN
+def single_turn_strategy() -> PsychosocialStrategy:
+    return PsychosocialStrategy.SINGLE_TURN
 
 
 @pytest.fixture
-def multi_turn_strategy() -> PsychosocialHarmsStrategy:
-    return PsychosocialHarmsStrategy.MULTI_TURN
+def multi_turn_strategy() -> PsychosocialStrategy:
+    return PsychosocialStrategy.MULTI_TURN
 
 
 @pytest.fixture
-def imminent_crisis_strategy() -> PsychosocialHarmsStrategy:
-    return PsychosocialHarmsStrategy.imminent_crisis
+def imminent_crisis_strategy() -> PsychosocialStrategy:
+    return PsychosocialStrategy.imminent_crisis
 
 
 @pytest.fixture
@@ -133,7 +133,7 @@ class TestPsychosocialHarmsInitialization:
         sample_objectives: List[str],
     ) -> None:
         """Test initialization with custom objectives (deprecated parameter)."""
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -148,7 +148,7 @@ class TestPsychosocialHarmsInitialization:
         mock_objective_scorer: FloatScaleThresholdScorer,
     ) -> None:
         """Test initialization with default objectives."""
-        scenario = PsychosocialHarmsScenario(objective_scorer=mock_objective_scorer)
+        scenario = PsychosocialScenario(objective_scorer=mock_objective_scorer)
 
         # _deprecated_objectives should be None when not provided
         assert scenario._deprecated_objectives is None
@@ -157,26 +157,25 @@ class TestPsychosocialHarmsInitialization:
 
     def test_init_with_default_scorer(self) -> None:
         """Test initialization with default scorer."""
-        scenario = PsychosocialHarmsScenario()
+        scenario = PsychosocialScenario()
         assert scenario._objective_scorer is not None
 
     def test_init_with_custom_scorer(self) -> None:
         """Test initialization with custom scorer."""
         scorer = MagicMock(spec=FloatScaleThresholdScorer)
 
-        scenario = PsychosocialHarmsScenario(objective_scorer=scorer)
+        scenario = PsychosocialScenario(objective_scorer=scorer)
         assert scenario._objective_scorer == scorer
 
     def test_init_default_adversarial_chat(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
-        scenario = PsychosocialHarmsScenario(objective_scorer=mock_objective_scorer)
-
+        scenario = PsychosocialScenario(objective_scorer=mock_objective_scorer)
         assert isinstance(scenario._adversarial_chat, OpenAIChatTarget)
 
     def test_init_with_adversarial_chat(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
         adversarial_chat = MagicMock(OpenAIChatTarget)
         adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
 
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             adversarial_chat=adversarial_chat,
             objective_scorer=mock_objective_scorer,
         )
@@ -192,7 +191,7 @@ class TestPsychosocialHarmsInitialization:
             ),
         }
 
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             subharm_configs=custom_configs,
             objective_scorer=mock_objective_scorer,
         )
@@ -203,7 +202,7 @@ class TestPsychosocialHarmsInitialization:
 
     def test_init_with_custom_max_turns(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
         """Test initialization with custom max_turns."""
-        scenario = PsychosocialHarmsScenario(max_turns=10, objective_scorer=mock_objective_scorer)
+        scenario = PsychosocialScenario(max_turns=10, objective_scorer=mock_objective_scorer)
         assert scenario._max_turns == 10
 
     @pytest.mark.asyncio
@@ -212,7 +211,7 @@ class TestPsychosocialHarmsInitialization:
     ):
         """Test that initialization raises ValueError when datasets are not available in memory."""
         # Don't provide objectives, let it try to load from empty memory
-        scenario = PsychosocialHarmsScenario(objective_scorer=mock_objective_scorer)
+        scenario = PsychosocialScenario(objective_scorer=mock_objective_scorer)
 
         # Error should occur during initialize_async when _get_atomic_attacks_async resolves seed groups
         with pytest.raises(ValueError, match="DatasetConfiguration has no seed_groups"):
@@ -231,7 +230,7 @@ class TestPsychosocialHarmsAttackGeneration:
         sample_objectives: List[str],
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        scenario = PsychosocialHarmsScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
+        scenario = PsychosocialScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
 
         await scenario.initialize_async(objective_target=mock_objective_target)
         atomic_attacks = await scenario._get_atomic_attacks_async()
@@ -249,7 +248,7 @@ class TestPsychosocialHarmsAttackGeneration:
         sample_objectives: List[str],
     ) -> None:
         """Test that the single turn strategy attack generation works."""
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -269,10 +268,10 @@ class TestPsychosocialHarmsAttackGeneration:
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
         sample_objectives: List[str],
-        multi_turn_strategy: PsychosocialHarmsStrategy,
+        multi_turn_strategy: PsychosocialStrategy,
     ) -> None:
         """Test that the multi turn attack generation works."""
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -292,10 +291,10 @@ class TestPsychosocialHarmsAttackGeneration:
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
         sample_objectives: List[str],
-        imminent_crisis_strategy: PsychosocialHarmsStrategy,
+        imminent_crisis_strategy: PsychosocialStrategy,
     ) -> None:
         """Test that the imminent crisis strategy generates both single and multi-turn attacks."""
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -319,7 +318,7 @@ class TestPsychosocialHarmsAttackGeneration:
         sample_objectives: List[str],
     ) -> None:
         """Test that attack runs include objectives for each seed prompt."""
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -342,7 +341,7 @@ class TestPsychosocialHarmsAttackGeneration:
         sample_objectives: List[str],
     ) -> None:
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -381,7 +380,7 @@ class TestPsychosocialHarmsLifecycle:
         """Test initialization with memory labels."""
         memory_labels = {"type": "psychosocial", "category": "crisis"}
 
-        scenario = PsychosocialHarmsScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
+        scenario = PsychosocialScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
         await scenario.initialize_async(
             memory_labels=memory_labels,
             objective_target=mock_objective_target,
@@ -390,8 +389,8 @@ class TestPsychosocialHarmsLifecycle:
 
 
 @pytest.mark.usefixtures(*FIXTURES)
-class TestPsychosocialHarmsProperties:
-    """Tests for PsychosocialHarmsScenario properties."""
+class TestPsychosocialProperties:
+    """Tests for PsychosocialScenario properties."""
 
     def test_scenario_version_is_set(
         self,
@@ -400,7 +399,7 @@ class TestPsychosocialHarmsProperties:
         sample_objectives: List[str],
     ) -> None:
         """Test that scenario version is properly set."""
-        scenario = PsychosocialHarmsScenario(
+        scenario = PsychosocialScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
@@ -408,12 +407,12 @@ class TestPsychosocialHarmsProperties:
         assert scenario.VERSION == 1
 
     def test_get_strategy_class(self) -> None:
-        """Test that the strategy class is PsychosocialHarmsStrategy."""
-        assert PsychosocialHarmsScenario.get_strategy_class() == PsychosocialHarmsStrategy
+        """Test that the strategy class is PsychosocialStrategy."""
+        assert PsychosocialScenario.get_strategy_class() == PsychosocialStrategy
 
     def test_get_default_strategy(self) -> None:
         """Test that the default strategy is ALL."""
-        assert PsychosocialHarmsScenario.get_default_strategy() == PsychosocialHarmsStrategy.ALL
+        assert PsychosocialScenario.get_default_strategy() == PsychosocialStrategy.ALL
 
     @pytest.mark.asyncio
     async def test_no_target_duplication_async(
@@ -423,7 +422,7 @@ class TestPsychosocialHarmsProperties:
         sample_objectives: List[str],
     ) -> None:
         """Test that all three targets (adversarial, objective, scorer) are distinct."""
-        scenario = PsychosocialHarmsScenario(objectives=sample_objectives)
+        scenario = PsychosocialScenario(objectives=sample_objectives)
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         objective_target = scenario._objective_target
@@ -440,14 +439,14 @@ class TestPsychosocialHarmsStrategy:
 
     def test_strategy_tags(self):
         """Test that strategies have correct tags."""
-        assert PsychosocialHarmsStrategy.ALL.tags == {"all"}
-        assert PsychosocialHarmsStrategy.SINGLE_TURN.tags == {"single_turn"}
-        assert PsychosocialHarmsStrategy.MULTI_TURN.tags == {"multi_turn"}
-        assert PsychosocialHarmsStrategy.imminent_crisis.tags == {"single_turn", "multi_turn"}
+        assert PsychosocialStrategy.ALL.tags == {"all"}
+        assert PsychosocialStrategy.SINGLE_TURN.tags == {"single_turn"}
+        assert PsychosocialStrategy.MULTI_TURN.tags == {"multi_turn"}
+        assert PsychosocialStrategy.imminent_crisis.tags == {"single_turn", "multi_turn"}
 
     def test_aggregate_tags(self):
         """Test that only 'all' is an aggregate tag."""
-        aggregate_tags = PsychosocialHarmsStrategy.get_aggregate_tags()
+        aggregate_tags = PsychosocialStrategy.get_aggregate_tags()
         assert "all" in aggregate_tags
         # single_turn and multi_turn are concrete strategies, not aggregates
         assert "single_turn" not in aggregate_tags
@@ -455,7 +454,7 @@ class TestPsychosocialHarmsStrategy:
 
     def test_strategy_values(self):
         """Test that strategy values are correct."""
-        assert PsychosocialHarmsStrategy.ALL.value == "all"
-        assert PsychosocialHarmsStrategy.SINGLE_TURN.value == "single_turn"
-        assert PsychosocialHarmsStrategy.MULTI_TURN.value == "multi_turn"
-        assert PsychosocialHarmsStrategy.imminent_crisis.value == "imminent_crisis"
+        assert PsychosocialStrategy.ALL.value == "all"
+        assert PsychosocialStrategy.SINGLE_TURN.value == "single_turn"
+        assert PsychosocialStrategy.MULTI_TURN.value == "multi_turn"
+        assert PsychosocialStrategy.imminent_crisis.value == "imminent_crisis"
