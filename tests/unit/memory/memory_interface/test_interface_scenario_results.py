@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import pytest
+from unit.mocks import get_mock_scorer_identifier
 
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import MemoryInterface
@@ -14,7 +15,6 @@ from pyrit.models import (
     ScenarioIdentifier,
     ScenarioResult,
 )
-from unit.mocks import get_mock_scorer_identifier
 
 
 @pytest.fixture

@@ -7,8 +7,8 @@ from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from unit.mocks import get_mock_target_identifier
+
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score

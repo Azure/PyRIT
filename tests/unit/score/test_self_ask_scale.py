@@ -7,8 +7,8 @@ from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from unit.mocks import get_mock_target_identifier
+
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import Message, MessagePiece, UnvalidatedScore
 from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer

@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import numpy as np
 import pytest
+from unit.mocks import get_mock_scorer_identifier
 
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -15,7 +16,6 @@ from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScor
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
-from unit.mocks import get_mock_scorer_identifier
 
 
 def is_opencv_installed():

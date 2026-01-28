@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from unit.mocks import get_mock_scorer_identifier
 
 from pyrit.executor.attack import ConversationManager, ConversationState
 from pyrit.executor.attack.component import PrependedConversationConfig
@@ -37,7 +38,6 @@ from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from unit.mocks import get_mock_scorer_identifier
 
 
 def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
@@ -48,6 +48,7 @@ def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
         class_description="",
         identifier_type="instance",
     )
+
 
 # =============================================================================
 # Test Context Class

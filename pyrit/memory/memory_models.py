@@ -268,7 +268,9 @@ class PromptMemoryEntry(Base):
         """
         if self.prompt_target_identifier:
             # prompt_target_identifier is stored as dict in the database
-            class_name = self.prompt_target_identifier.get("class_name") or self.prompt_target_identifier.get("__type__", "Unknown")
+            class_name = self.prompt_target_identifier.get("class_name") or self.prompt_target_identifier.get(
+                "__type__", "Unknown"
+            )
             return f"{class_name}: {self.role}: {self.converted_value}"
         return f": {self.role}: {self.converted_value}"
 

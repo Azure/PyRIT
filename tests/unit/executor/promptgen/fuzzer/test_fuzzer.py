@@ -5,7 +5,7 @@ import pathlib
 from unittest.mock import MagicMock, patch
 
 import pytest
-from unit.mocks import MockPromptTarget
+from unit.mocks import MockPromptTarget, get_mock_scorer_identifier
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
@@ -29,7 +29,6 @@ from pyrit.score import (
     Scorer,
     TrueFalseScorer,
 )
-from unit.mocks import get_mock_scorer_identifier
 
 
 @pytest.mark.usefixtures("patch_central_database")

@@ -3,7 +3,7 @@
 
 import abc
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from pyrit.identifiers import Identifiable, TargetIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface

@@ -6,8 +6,8 @@ from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from unit.mocks import get_mock_target_identifier
+
 from pyrit.exceptions.exception_classes import PyritException
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece

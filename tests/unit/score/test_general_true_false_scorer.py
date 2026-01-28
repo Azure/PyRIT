@@ -5,8 +5,8 @@ from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from unit.mocks import get_mock_target_identifier
+
 from pyrit.models import Message, MessagePiece
 from pyrit.score import SelfAskGeneralTrueFalseScorer
 

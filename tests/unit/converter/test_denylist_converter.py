@@ -3,7 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from unit.mocks import get_mock_target_identifier, MockPromptTarget
+from unit.mocks import MockPromptTarget, get_mock_target_identifier
 
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_converter import DenylistConverter
