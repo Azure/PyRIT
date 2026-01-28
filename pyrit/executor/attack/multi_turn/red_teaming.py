@@ -11,6 +11,7 @@ from typing import Any, Callable, Optional, Union
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
 from pyrit.common.utils import warn_if_set
+from pyrit.exceptions import ComponentRole, execution_context
 from pyrit.executor.attack.component import (
     ConversationManager,
     get_adversarial_chat_messages,
@@ -361,13 +362,21 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
         prompt_message = Message.from_prompt(prompt=prompt_text, role="user")
 
-        response = await self._prompt_normalizer.send_prompt_async(
-            message=prompt_message,
-            conversation_id=context.session.adversarial_chat_conversation_id,
-            target=self._adversarial_chat,
+        with execution_context(
+            component_role=ComponentRole.ADVERSARIAL_CHAT,
+            attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-            labels=context.memory_labels,
-        )
+            component_identifier=self._adversarial_chat.get_identifier(),
+            objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
+        ):
+            response = await self._prompt_normalizer.send_prompt_async(
+                message=prompt_message,
+                conversation_id=context.session.adversarial_chat_conversation_id,
+                target=self._adversarial_chat,
+                attack_identifier=self.get_identifier(),
+                labels=context.memory_labels,
+            )
 
         # Check if the response is valid
         if response is None:
@@ -512,16 +521,24 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         """
         logger.info(f"Sending prompt to target: {message.get_value()[:50]}...")
 
-        # Send the message to the target
-        response = await self._prompt_normalizer.send_prompt_async(
-            message=message,
-            conversation_id=context.session.conversation_id,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
-            target=self._objective_target,
-            labels=context.memory_labels,
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-        )
+            component_identifier=self._objective_target.get_identifier(),
+            objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
+        ):
+            # Send the message to the target
+            response = await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                conversation_id=context.session.conversation_id,
+                request_converter_configurations=self._request_converters,
+                response_converter_configurations=self._response_converters,
+                target=self._objective_target,
+                labels=context.memory_labels,
+                attack_identifier=self.get_identifier(),
+            )
 
         if response is None:
             # Easiest way to handle this is to raise an error
@@ -552,12 +569,21 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             logger.warning("No response available in context to score")
             return None
 
-        # score_async handles blocked, filtered, other errors
-        scoring_results = await self._objective_scorer.score_async(
-            message=context.last_response,
-            role_filter="assistant",
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_SCORER,
+            attack_strategy_name=self.__class__.__name__,
+            attack_identifier=self.get_identifier(),
+            component_identifier=self._objective_scorer.get_identifier().to_dict(),
+            objective_target_conversation_id=context.session.conversation_id,
             objective=context.objective,
-        )
+        ):
+            # score_async handles blocked, filtered, other errors
+            scoring_results = await self._objective_scorer.score_async(
+                message=context.last_response,
+                role_filter="assistant",
+                objective=context.objective,
+            )
+
         objective_scores = scoring_results
         return objective_scores[0] if objective_scores else None
 
