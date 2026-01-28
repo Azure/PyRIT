@@ -207,7 +207,7 @@ class PromptMemoryEntry(Base):
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
         self.targeted_harm_categories = entry.targeted_harm_categories
-        self.converter_identifiers = entry.converter_identifiers
+        self.converter_identifiers = [conv.to_dict() for conv in entry.converter_identifiers]
         self.prompt_target_identifier = entry.prompt_target_identifier
         self.attack_identifier = entry.attack_identifier
 

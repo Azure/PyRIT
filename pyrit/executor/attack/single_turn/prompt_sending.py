@@ -355,7 +355,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             component_role=ComponentRole.OBJECTIVE_SCORER,
             attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-            component_identifier=self._objective_scorer.get_identifier().to_dict() if self._objective_scorer else None,
+            component_identifier=self._objective_scorer.get_identifier() if self._objective_scorer else None,
             objective=objective,
         ):
             scoring_results = await Scorer.score_response_async(

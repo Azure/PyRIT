@@ -61,10 +61,16 @@ class ConverterIdentifier(Identifier):
         if "supported_input_types" in data and data["supported_input_types"] is not None:
             if isinstance(data["supported_input_types"], list):
                 data["supported_input_types"] = tuple(data["supported_input_types"])
+        else:
+            # Provide default for legacy dicts that don't have this field
+            data["supported_input_types"] = ()
 
         if "supported_output_types" in data and data["supported_output_types"] is not None:
             if isinstance(data["supported_output_types"], list):
                 data["supported_output_types"] = tuple(data["supported_output_types"])
+        else:
+            # Provide default for legacy dicts that don't have this field
+            data["supported_output_types"] = ()
 
         # Delegate to parent class for standard processing
         result = Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]
