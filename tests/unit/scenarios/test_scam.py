@@ -59,6 +59,7 @@ def mock_dataset_config(mock_memory_seed_groups):
     mock_config.has_data_source.return_value = True
     return mock_config
 
+
 @pytest.fixture
 def single_turn_strategy() -> ScamStrategy:
     return ScamStrategy.SINGLE_TURN
@@ -232,7 +233,6 @@ class TestScamAttackGeneration:
     ) -> None:
         """Test that the single turn strategy attack generation works."""
         scenario = Scam(
-            objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
 
@@ -322,7 +322,9 @@ class TestScamLifecycle:
         """Test initialization with custom max_concurrency."""
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Scam(objective_scorer=mock_objective_scorer)
-            await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20, dataset_config=mock_dataset_config)
+            await scenario.initialize_async(
+                objective_target=mock_objective_target, max_concurrency=20, dataset_config=mock_dataset_config
+            )
             assert scenario._max_concurrency == 20
 
     @pytest.mark.asyncio
