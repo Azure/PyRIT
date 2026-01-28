@@ -9,9 +9,10 @@ import pytest
 
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
-from pyrit.models import SeedPrompt
+from pyrit.models import SeedAttackGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
+from pyrit.scenario import DatasetConfiguration
 from pyrit.scenario.garak import Encoding, EncodingStrategy
 from pyrit.score import DecodingScorer, TrueFalseScorer
 
@@ -45,6 +46,17 @@ def mock_memory_seeds():
         SeedPrompt(value="test web html 1", data_type="text"),
         SeedPrompt(value="test web html 2", data_type="text"),
     ]
+
+
+@pytest.fixture
+def mock_dataset_config(mock_memory_seeds):
+    """Create a mock dataset config that returns the seed groups."""
+    seed_groups = [SeedAttackGroup(seeds=[SeedObjective(value=seed.value)]) for seed in mock_memory_seeds]
+    mock_config = MagicMock(spec=DatasetConfiguration)
+    mock_config.get_all_seed_attack_groups.return_value = seed_groups
+    mock_config.get_default_dataset_names.return_value = ["garak_encoding"]
+    mock_config.has_data_source.return_value = True
+    return mock_config
 
 
 @pytest.fixture
@@ -168,7 +180,9 @@ class TestEncodingInitialization:
             assert scenario._max_concurrency == 1
 
     @pytest.mark.asyncio
-    async def test_init_attack_strategies(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
+    async def test_init_attack_strategies(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
+    ):
         """Test that attack strategies are set correctly."""
         from unittest.mock import patch
 
@@ -177,7 +191,7 @@ class TestEncodingInitialization:
                 objective_scorer=mock_objective_scorer,
             )
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
 
             # By default, EncodingStrategy.ALL is used, which expands to all encoding strategies
             assert len(scenario._scenario_composites) > 0
@@ -199,7 +213,7 @@ class TestEncodingAtomicAttacks:
 
     @pytest.mark.asyncio
     async def test_get_atomic_attacks_async_returns_attacks(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         from unittest.mock import patch
@@ -209,7 +223,7 @@ class TestEncodingAtomicAttacks:
                 objective_scorer=mock_objective_scorer,
             )
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
             atomic_attacks = await scenario._get_atomic_attacks_async()
 
             # Should return multiple atomic attacks (one for each encoding type)
@@ -218,7 +232,7 @@ class TestEncodingAtomicAttacks:
 
     @pytest.mark.asyncio
     async def test_get_converter_attacks_returns_multiple_encodings(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test that _get_converter_attacks returns attacks for multiple encoding types."""
         from unittest.mock import patch
@@ -228,7 +242,7 @@ class TestEncodingAtomicAttacks:
                 objective_scorer=mock_objective_scorer,
             )
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
             attack_runs = scenario._get_converter_attacks()
 
             # Should have multiple attack runs for different encodings
@@ -238,7 +252,7 @@ class TestEncodingAtomicAttacks:
 
     @pytest.mark.asyncio
     async def test_get_prompt_attacks_creates_attack_runs(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test that _get_prompt_attacks creates attack runs with correct structure."""
         from unittest.mock import patch
@@ -248,7 +262,7 @@ class TestEncodingAtomicAttacks:
                 objective_scorer=mock_objective_scorer,
             )
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
             attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
 
             # Should create attack runs
@@ -263,7 +277,7 @@ class TestEncodingAtomicAttacks:
 
     @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test that attack runs include objectives for each seed prompt."""
         from unittest.mock import patch
@@ -273,7 +287,7 @@ class TestEncodingAtomicAttacks:
                 objective_scorer=mock_objective_scorer,
             )
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
             attack_runs = scenario._get_prompt_attacks(converters=[Base64Converter()], encoding_name="Base64")
 
             # Check that objectives are created for each seed prompt
@@ -289,7 +303,9 @@ class TestEncodingExecution:
     """Tests for Encoding execution."""
 
     @pytest.mark.asyncio
-    async def test_scenario_initialization(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
+    async def test_scenario_initialization(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
+    ):
         """Test that scenario can be initialized successfully."""
         from unittest.mock import patch
 
@@ -298,14 +314,14 @@ class TestEncodingExecution:
                 objective_scorer=mock_objective_scorer,
             )
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
 
             # Verify initialization creates atomic attacks
             assert scenario.atomic_attack_count > 0
 
     @pytest.mark.asyncio
     async def test_resolve_seed_prompts_loads_garak_data(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test that _resolve_seed_prompts loads data from Garak datasets."""
         from unittest.mock import patch

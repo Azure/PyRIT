@@ -715,9 +715,13 @@ def test_set_auth_with_entra_auth(patch_central_database):
         api_key=mock_token_provider,
     )
 
-    # Verify token provider was stored as api_key
+    # Verify token provider was stored as api_key (wrapped in async)
     assert callable(target._api_key)
-    assert target._api_key() == "mock-entra-token"
+    # Since sync provider is wrapped, _api_key is now async
+    import asyncio
+
+    assert asyncio.iscoroutinefunction(target._api_key)
+    assert asyncio.run(target._api_key()) == "mock-entra-token"
 
 
 def test_set_auth_with_api_key(patch_central_database):

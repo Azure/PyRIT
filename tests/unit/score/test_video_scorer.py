@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 from unit.mocks import get_mock_scorer_identifier
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
@@ -68,9 +69,13 @@ class MockTrueFalseScorer(TrueFalseScorer):
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -96,9 +101,13 @@ class MockFloatScaleScorer(FloatScaleScorer):
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         return [

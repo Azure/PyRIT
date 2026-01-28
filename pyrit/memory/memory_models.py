@@ -31,7 +31,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.types import Uuid
 
 from pyrit.common.utils import to_sha256
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -164,7 +164,7 @@ class PromptMemoryEntry(Base):
     labels: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
     targeted_harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON)
-    converter_identifiers: Mapped[Optional[List[dict[str, str]]]] = mapped_column(JSON)
+    converter_identifiers: Mapped[Optional[List[Dict[str, str]]]] = mapped_column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     response_error: Mapped[Literal["blocked", "none", "processing", "unknown"]] = mapped_column(String, nullable=True)
@@ -207,7 +207,7 @@ class PromptMemoryEntry(Base):
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
         self.targeted_harm_categories = entry.targeted_harm_categories
-        self.converter_identifiers = entry.converter_identifiers
+        self.converter_identifiers = [conv.to_dict() for conv in entry.converter_identifiers]
         # Normalize prompt_target_identifier and convert to dict for JSON serialization
         self.prompt_target_identifier = (
             TargetIdentifier.normalize(entry.prompt_target_identifier).to_dict()
@@ -235,6 +235,11 @@ class PromptMemoryEntry(Base):
         Returns:
             MessagePiece: The reconstructed message piece with all its data and scores.
         """
+        converter_ids: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = (
+            [ConverterIdentifier.from_dict(c) for c in self.converter_identifiers]
+            if self.converter_identifiers
+            else None
+        )
         message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
@@ -247,7 +252,7 @@ class PromptMemoryEntry(Base):
             labels=self.labels,
             prompt_metadata=self.prompt_metadata,
             targeted_harm_categories=self.targeted_harm_categories,
-            converter_identifiers=self.converter_identifiers,
+            converter_identifiers=converter_ids,
             prompt_target_identifier=self.prompt_target_identifier,
             attack_identifier=self.attack_identifier,
             original_value_data_type=self.original_value_data_type,

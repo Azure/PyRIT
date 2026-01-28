@@ -1165,6 +1165,7 @@ class TestTreeOfAttacksNode:
             "response_converters": [],
             "auxiliary_scorers": [],
             "attack_id": {"id": "test_attack"},
+            "attack_strategy_name": "TreeOfAttacksWithPruningAttack",
             "memory_labels": {"test": "label"},
             "parent_id": None,
             "prompt_normalizer": prompt_normalizer,

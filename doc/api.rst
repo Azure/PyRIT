@@ -30,6 +30,8 @@ API Reference
     Authenticator
     AzureAuth
     AzureStorageAuth
+    CopilotAuthenticator
+    ManualCopilotAuthenticator
 
 :py:mod:`pyrit.auxiliary_attacks`
 =================================
@@ -270,6 +272,7 @@ API Reference
     :toctree: _autosummary/
 
     class_name_to_snake_case
+    ConverterIdentifier
     Identifiable
     Identifier
     IdentifierT
@@ -536,6 +539,7 @@ API Reference
     PromptTarget
     RealtimeTarget
     TextTarget
+    WebSocketCopilotTarget
 
 :py:mod:`pyrit.score`
 =====================

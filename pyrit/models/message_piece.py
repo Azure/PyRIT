@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -37,7 +37,7 @@ class MessagePiece:
         sequence: int = -1,
         labels: Optional[Dict[str, str]] = None,
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
-        converter_identifiers: Optional[List[Dict[str, str]]] = None,
+        converter_identifiers: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = None,
         prompt_target_identifier: Optional[Union[TargetIdentifier, Dict[str, Any]]] = None,
         attack_identifier: Optional[Dict[str, str]] = None,
         scorer_identifier: Optional[Union[ScorerIdentifier, Dict[str, str]]] = None,
@@ -68,7 +68,8 @@ class MessagePiece:
                 Because memory is how components talk with each other, this can be component specific.
                 e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
                 Defaults to None.
-            converter_identifiers: The converter identifiers for the prompt. Defaults to None.
+            converter_identifiers: The converter identifiers for the prompt. Can be ConverterIdentifier
+                objects or dicts (deprecated, will be removed in 0.14.0). Defaults to None.
             prompt_target_identifier: The target identifier for the prompt. Defaults to None.
             attack_identifier: The attack identifier for the prompt. Defaults to None.
             scorer_identifier: The scorer identifier for the prompt. Can be a ScorerIdentifier or a
@@ -105,7 +106,19 @@ class MessagePiece:
         self.labels = labels or {}
         self.prompt_metadata = prompt_metadata or {}
 
-        self.converter_identifiers = converter_identifiers if converter_identifiers else []
+        # Handle converter_identifiers: convert dicts to ConverterIdentifier with deprecation warning
+        self.converter_identifiers: List[ConverterIdentifier] = []
+        if converter_identifiers:
+            for conv_id in converter_identifiers:
+                if isinstance(conv_id, dict):
+                    print_deprecation_message(
+                        old_item="dict for converter_identifiers",
+                        new_item="ConverterIdentifier",
+                        removed_in="0.14.0",
+                    )
+                    self.converter_identifiers.append(ConverterIdentifier.from_dict(conv_id))
+                else:
+                    self.converter_identifiers.append(conv_id)
 
         # Handle prompt_target_identifier: normalize to TargetIdentifier (handles dict with deprecation warning)
         self.prompt_target_identifier: Optional[TargetIdentifier] = (
@@ -273,7 +286,7 @@ class MessagePiece:
             "labels": self.labels,
             "targeted_harm_categories": self.targeted_harm_categories if self.targeted_harm_categories else None,
             "prompt_metadata": self.prompt_metadata,
-            "converter_identifiers": self.converter_identifiers,
+            "converter_identifiers": [conv.to_dict() for conv in self.converter_identifiers],
             "prompt_target_identifier": (
                 self.prompt_target_identifier.to_dict() if self.prompt_target_identifier else None
             ),

@@ -95,24 +95,11 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
         else:
             return "unknown"
 
-    def get_identifier(self) -> ScorerIdentifier:
-        """
-        Get the scorer identifier. Built lazily on first access.
-
-        Returns:
-            ScorerIdentifier: The identifier containing all configuration parameters.
-        """
-        if self._identifier is None:
-            self._build_identifier()
-            if self._identifier is None:
-                raise RuntimeError("_build_identifier must set _identifier")
-        return self._identifier
-
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def _set_identifier(
+    def _create_identifier(
         self,
         *,
         system_prompt_template: Optional[str] = None,
@@ -121,9 +108,9 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
         score_aggregator: Optional[str] = None,
         scorer_specific_params: Optional[Dict[str, Any]] = None,
         prompt_target: Optional[PromptTarget] = None,
-    ) -> None:
+    ) -> ScorerIdentifier:
         """
-        Construct the scorer identifier.
+        Construct and return the scorer identifier.
 
         Args:
             system_prompt_template (Optional[str]): The system prompt template used by this scorer. Defaults to None.
@@ -133,6 +120,9 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
             scorer_specific_params (Optional[Dict[str, Any]]): Additional scorer-specific parameters.
                 Defaults to None.
             prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
+
+        Returns:
+            ScorerIdentifier: The constructed identifier.
         """
         # Build sub_identifier from sub_scorers (store as dicts for storage)
         sub_identifier: Optional[List[ScorerIdentifier]] = None
@@ -151,7 +141,7 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
             if target_id.top_p is not None:
                 target_info["top_p"] = target_id.top_p
 
-        self._identifier = ScorerIdentifier(
+        return ScorerIdentifier(
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
             class_description=" ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else "",

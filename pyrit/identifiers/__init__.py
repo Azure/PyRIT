@@ -7,6 +7,7 @@ from pyrit.identifiers.class_name_utils import (
     class_name_to_snake_case,
     snake_case_to_class_name,
 )
+from pyrit.identifiers.converter_identifier import ConverterIdentifier
 from pyrit.identifiers.identifiable import Identifiable, IdentifierT, LegacyIdentifiable
 from pyrit.identifiers.identifier import (
     Identifier,
@@ -17,6 +18,7 @@ from pyrit.identifiers.target_identifier import TargetIdentifier
 
 __all__ = [
     "class_name_to_snake_case",
+    "ConverterIdentifier",
     "Identifiable",
     "Identifier",
     "IdentifierT",

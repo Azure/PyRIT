@@ -9,11 +9,14 @@ from pyrit.scenario.scenarios.airt.content_harms import (
 )
 from pyrit.scenario.scenarios.airt.cyber import Cyber, CyberStrategy
 from pyrit.scenario.scenarios.airt.leakage_scenario import LeakageScenario, LeakageStrategy
+from pyrit.scenario.scenarios.airt.psychosocial_scenario import PsychosocialScenario, PsychosocialStrategy
 from pyrit.scenario.scenarios.airt.scam import Scam, ScamStrategy
 
 __all__ = [
     "ContentHarms",
     "ContentHarmsStrategy",
+    "PsychosocialScenario",
+    "PsychosocialStrategy",
     "Cyber",
     "CyberStrategy",
     "LeakageScenario",

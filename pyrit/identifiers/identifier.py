@@ -64,7 +64,7 @@ class Identifier:
         """
         Compute a stable SHA256 hash from storable identifier fields.
 
-        Fields marked with metadata={"exclude_from_storage": True}, 'hash', and 'name'
+        Fields marked with metadata={"exclude_from_storage": True}, 'hash', and 'unique_name'
         are excluded from the hash computation.
 
         Returns:

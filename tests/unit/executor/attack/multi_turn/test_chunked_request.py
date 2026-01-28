@@ -40,6 +40,7 @@ class TestChunkedRequestAttackContext:
         assert context.chunk_responses == ["abc", "def", "ghi"]
 
 
+@pytest.mark.usefixtures("patch_central_database")
 class TestChunkedRequestAttack:
     """Test the ChunkedRequestAttack class."""
 
