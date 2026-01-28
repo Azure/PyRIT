@@ -10,40 +10,21 @@ scorers are registered explicitly via initializers as pre-configured instances.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.models.identifiers import Identifier
+from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
-from pyrit.registry.name_utils import class_name_to_registry_name
-from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
-from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 if TYPE_CHECKING:
     from pyrit.score.scorer import Scorer
-    from pyrit.score.scorer_identifier import ScorerIdentifier
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class ScorerMetadata(Identifier):
-    """
-    Metadata describing a registered scorer instance.
-
-    Unlike ScenarioMetadata/InitializerMetadata which describe classes,
-    ScorerMetadata describes an already-instantiated scorer.
-
-    Use get() to retrieve the actual scorer instance.
-    """
-
-    scorer_type: str
-    scorer_identifier: "ScorerIdentifier"
-
-
-class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
+class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
     """
     Registry for managing available scorer instances.
 
@@ -80,13 +61,13 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
         Args:
             scorer: The pre-configured scorer instance (not a class).
             name: Optional custom registry name. If not provided,
-                derived from class name with scorer_identifier hash appended
+                derived from class name with identifier hash appended
                 (e.g., SelfAskRefusalScorer -> self_ask_refusal_abc123).
         """
         if name is None:
-            base_name = class_name_to_registry_name(scorer.__class__.__name__, suffix="Scorer")
-            # Append scorer_identifier hash if available for uniqueness
-            identifier_hash = scorer.scorer_identifier.compute_hash()[:8]
+            base_name = class_name_to_snake_case(scorer.__class__.__name__, suffix="Scorer")
+            # Append identifier hash if available for uniqueness
+            identifier_hash = scorer.get_identifier().hash[:8]
             name = f"{base_name}_{identifier_hash}"
 
         self.register(scorer, name=name)
@@ -106,7 +87,7 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: "Scorer") -> ScorerMetadata:
+    def _build_metadata(self, name: str, instance: "Scorer") -> ScorerIdentifier:
         """
         Build metadata for a scorer instance.
 
@@ -115,26 +96,6 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerMetadata]):
             instance: The scorer instance.
 
         Returns:
-            ScorerMetadata dictionary describing the scorer.
+            ScorerIdentifier: The scorer's identifier
         """
-        # Get description from docstring
-        doc = instance.__class__.__doc__ or ""
-        description = " ".join(doc.split()) if doc else "No description available"
-
-        # Determine scorer_type from class hierarchy
-        if isinstance(instance, TrueFalseScorer):
-            scorer_type = "true_false"
-        elif isinstance(instance, FloatScaleScorer):
-            scorer_type = "float_scale"
-        else:
-            scorer_type = "unknown"
-
-        return ScorerMetadata(
-            identifier_type="instance",
-            name=name,
-            class_name=instance.__class__.__name__,
-            class_module=instance.__class__.__module__,
-            class_description=description,
-            scorer_type=scorer_type,
-            scorer_identifier=instance.scorer_identifier,
-        )
+        return instance.get_identifier()

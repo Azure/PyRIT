@@ -213,12 +213,14 @@ class ScenarioStrategy(Enum):
             strategies (Sequence[T | ScenarioCompositeStrategy] | None): The strategies to prepare.
                 Can be a mix of bare strategy enums and composite strategies.
                 If None, uses default_aggregate to determine defaults.
+                If an empty sequence, returns an empty list (useful for baseline-only execution).
             default_aggregate (T | None): The aggregate strategy to use when strategies is None.
                 Common values: MyStrategy.ALL, MyStrategy.EASY. If None when strategies is None,
                 raises ValueError.
 
         Returns:
             List[ScenarioCompositeStrategy]: Normalized list of composite strategies ready for use.
+                May be empty if an empty sequence was explicitly provided.
 
         Raises:
             ValueError: If strategies is None and default_aggregate is None, or if compositions
@@ -251,7 +253,10 @@ class ScenarioStrategy(Enum):
                     # For now, skip to allow flexibility
                     pass
 
+        # Allow empty list if explicitly provided (for baseline-only execution)
         if not composite_strategies:
+            if strategies is not None and len(strategies) == 0:
+                return []
             raise ValueError(
                 f"No valid {cls.__name__} strategies provided. "
                 f"Provide at least one {cls.__name__} enum or ScenarioCompositeStrategy."

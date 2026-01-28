@@ -3,11 +3,11 @@
 
 from typing import Optional
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import Message, MessagePiece, Score
-from pyrit.registry.instance_registries.scorer_registry import ScorerMetadata, ScorerRegistry
+from pyrit.registry.instance_registries.scorer_registry import ScorerRegistry
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer import Scorer
-from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -28,9 +28,13 @@ class MockTrueFalseScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_scorer_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -48,9 +52,13 @@ class MockFloatScaleScorer(FloatScaleScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_scorer_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -68,9 +76,13 @@ class MockGenericScorer(Scorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_scorer_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -215,7 +227,8 @@ class TestScorerRegistryBuildMetadata:
         assert len(metadata) == 1
         assert metadata[0].scorer_type == "true_false"
         assert metadata[0].class_name == "MockTrueFalseScorer"
-        assert metadata[0].name == "tf_scorer"
+        # unique_name is auto-computed from class_name, not the registry key
+        assert "mock_true_false_scorer" in metadata[0].unique_name
 
     def test_build_metadata_float_scale_scorer(self):
         """Test that metadata correctly identifies FloatScaleScorer type."""
@@ -236,14 +249,14 @@ class TestScorerRegistryBuildMetadata:
         assert len(metadata) == 1
         assert metadata[0].scorer_type == "unknown"
 
-    def test_build_metadata_includes_scorer_identifier(self):
-        """Test that metadata includes the scorer_identifier."""
+    def test_build_metadata_is_scorer_identifier(self):
+        """Test that metadata is the scorer's ScorerIdentifier."""
         scorer = MockTrueFalseScorer()
         self.registry.register_instance(scorer, name="tf_scorer")
 
         metadata = self.registry.list_metadata()
-        assert hasattr(metadata[0], "scorer_identifier")
-        assert isinstance(metadata[0].scorer_identifier, ScorerIdentifier)
+        assert isinstance(metadata[0], ScorerIdentifier)
+        assert metadata[0] == scorer.get_identifier()
 
     def test_build_metadata_description_from_docstring(self):
         """Test that class_description is derived from the scorer's docstring."""
@@ -285,11 +298,11 @@ class TestScorerRegistryListMetadataFiltering:
         assert len(fs_metadata) == 1
         assert fs_metadata[0].scorer_type == "float_scale"
 
-    def test_list_metadata_filter_by_name(self):
-        """Test filtering metadata by name."""
-        metadata = self.registry.list_metadata(include_filters={"name": "tf_scorer_1"})
-        assert len(metadata) == 1
-        assert metadata[0].name == "tf_scorer_1"
+    def test_list_metadata_filter_by_class_name(self):
+        """Test filtering metadata by class_name."""
+        metadata = self.registry.list_metadata(include_filters={"class_name": "MockTrueFalseScorer"})
+        assert len(metadata) == 2
+        assert all(m.class_name == "MockTrueFalseScorer" for m in metadata)
 
     def test_list_metadata_no_filter_returns_all(self):
         """Test that list_metadata without filters returns all items."""
@@ -304,11 +317,21 @@ class TestScorerRegistryListMetadataFiltering:
 
     def test_list_metadata_combined_include_and_exclude(self):
         """Test combined include and exclude filters."""
+        # Filter to include true_false scorers, exclude float_scale
+        # This tests that both filters work together
         metadata = self.registry.list_metadata(
-            include_filters={"scorer_type": "true_false"}, exclude_filters={"name": "tf_scorer_1"}
+            include_filters={"scorer_type": "true_false"}, exclude_filters={"scorer_type": "float_scale"}
         )
-        assert len(metadata) == 1
-        assert metadata[0].name == "tf_scorer_2"
+        # Should return both true_false scorers (exclude filter doesn't match any of them)
+        assert len(metadata) == 2
+        assert all(m.scorer_type == "true_false" for m in metadata)
+
+        # Test excluding by class_name
+        metadata = self.registry.list_metadata(
+            include_filters={"scorer_type": "true_false"}, exclude_filters={"class_name": "MockTrueFalseScorer"}
+        )
+        # Should return 0 since all true_false scorers are MockTrueFalseScorer
+        assert len(metadata) == 0
 
 
 class TestScorerRegistryInheritedMethods:
@@ -351,28 +374,23 @@ class TestScorerRegistryInheritedMethods:
         assert names == ["alpha_scorer", "test_scorer", "zeta_scorer"]
 
 
-class TestScorerMetadata:
-    """Tests for ScorerMetadata dataclass."""
+class TestScorerIdentifierType:
+    """Tests for ScorerIdentifier scorer_type field."""
 
-    def test_scorer_metadata_has_required_fields(self):
-        """Test that ScorerMetadata includes all required fields."""
-        # Create a mock scorer identifier
-        mock_identifier = ScorerIdentifier(type="test_type")
-
-        metadata = ScorerMetadata(
-            identifier_type="instance",
-            name="test_scorer",
+    def test_scorer_identifier_has_scorer_type_field(self):
+        """Test that ScorerIdentifier includes scorer_type field."""
+        identifier = ScorerIdentifier(
             class_name="TestScorer",
             class_module="test.module",
             class_description="A test scorer",
+            identifier_type="instance",
             scorer_type="true_false",
-            scorer_identifier=mock_identifier,
         )
 
-        assert metadata.identifier_type == "instance"
-        assert metadata.name == "test_scorer"
-        assert metadata.class_name == "TestScorer"
-        assert metadata.class_module == "test.module"
-        assert metadata.class_description == "A test scorer"
-        assert metadata.scorer_type == "true_false"
-        assert metadata.scorer_identifier == mock_identifier
+        assert identifier.identifier_type == "instance"
+        assert identifier.class_name == "TestScorer"
+        assert identifier.class_module == "test.module"
+        assert identifier.class_description == "A test scorer"
+        assert identifier.scorer_type == "true_false"
+        # unique_name is auto-computed
+        assert identifier.unique_name is not None

@@ -31,6 +31,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.types import Uuid
 
 from pyrit.common.utils import to_sha256
+from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -163,7 +164,7 @@ class PromptMemoryEntry(Base):
     labels: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
     targeted_harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON)
-    converter_identifiers: Mapped[Optional[List[dict[str, str]]]] = mapped_column(JSON)
+    converter_identifiers: Mapped[Optional[List[Dict[str, str]]]] = mapped_column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     response_error: Mapped[Literal["blocked", "none", "processing", "unknown"]] = mapped_column(String, nullable=True)
@@ -206,7 +207,7 @@ class PromptMemoryEntry(Base):
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
         self.targeted_harm_categories = entry.targeted_harm_categories
-        self.converter_identifiers = entry.converter_identifiers
+        self.converter_identifiers = [conv.to_dict() for conv in entry.converter_identifiers]
         self.prompt_target_identifier = entry.prompt_target_identifier
         self.attack_identifier = entry.attack_identifier
 
@@ -229,6 +230,11 @@ class PromptMemoryEntry(Base):
         Returns:
             MessagePiece: The reconstructed message piece with all its data and scores.
         """
+        converter_ids: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = (
+            [ConverterIdentifier.from_dict(c) for c in self.converter_identifiers]
+            if self.converter_identifiers
+            else None
+        )
         message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
@@ -241,7 +247,7 @@ class PromptMemoryEntry(Base):
             labels=self.labels,
             prompt_metadata=self.prompt_metadata,
             targeted_harm_categories=self.targeted_harm_categories,
-            converter_identifiers=self.converter_identifiers,
+            converter_identifiers=converter_ids,
             prompt_target_identifier=self.prompt_target_identifier,
             attack_identifier=self.attack_identifier,
             original_value_data_type=self.original_value_data_type,
@@ -310,7 +316,7 @@ class ScoreEntry(Base):
     score_category: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     score_rationale = mapped_column(String, nullable=True)
     score_metadata: Mapped[dict[str, Union[str, int, float]]] = mapped_column(JSON)
-    scorer_class_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
+    scorer_class_identifier: Mapped[dict[str, Any]] = mapped_column(JSON)
     prompt_request_response_id = mapped_column(CustomUUID, ForeignKey(f"{PromptMemoryEntry.__tablename__}.id"))
     timestamp = mapped_column(DateTime, nullable=False)
     task = mapped_column(String, nullable=True)  # Deprecated: Use objective instead
@@ -331,34 +337,15 @@ class ScoreEntry(Base):
         self.score_category = entry.score_category
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
-        self.scorer_class_identifier = self._normalize_scorer_identifier(entry.scorer_class_identifier)
+        # Normalize to ScorerIdentifier (handles dict with deprecation warning) then convert to dict for JSON storage
+        normalized_scorer = ScorerIdentifier.normalize(entry.scorer_class_identifier)
+        self.scorer_class_identifier = normalized_scorer.to_dict()
         self.prompt_request_response_id = entry.message_piece_id if entry.message_piece_id else None
         self.timestamp = entry.timestamp
         # Store in both columns for backward compatibility
         # New code should only read from objective
         self.task = entry.objective
         self.objective = entry.objective
-
-    @staticmethod
-    def _normalize_scorer_identifier(identifier: Dict[str, Any]) -> Dict[str, str]:
-        """
-        Normalize scorer identifier to ensure all values are strings for database storage.
-        Handles nested sub_identifiers by converting them to JSON strings.
-
-        Args:
-            identifier: The scorer class identifier dictionary.
-
-        Returns:
-            Dict[str, str]: Normalized identifier with all string values.
-        """
-        normalized = {}
-        for key, value in identifier.items():
-            if key == "sub_identifier" and value is not None:
-                # Convert dict or list of dicts to JSON string
-                normalized[key] = json.dumps(value)
-            else:
-                normalized[key] = str(value) if value is not None else None
-        return normalized
 
     def get_score(self) -> Score:
         """
@@ -367,6 +354,10 @@ class ScoreEntry(Base):
         Returns:
             Score: The reconstructed score object with all its data.
         """
+        # Convert dict back to ScorerIdentifier (Score.__init__ handles None by creating default)
+        scorer_identifier = (
+            ScorerIdentifier.from_dict(self.scorer_class_identifier) if self.scorer_class_identifier else None
+        )
         return Score(
             id=self.id,
             score_value=self.score_value,
@@ -375,34 +366,11 @@ class ScoreEntry(Base):
             score_category=self.score_category,
             score_rationale=self.score_rationale,
             score_metadata=self.score_metadata,
-            scorer_class_identifier=self._denormalize_scorer_identifier(self.scorer_class_identifier),
+            scorer_class_identifier=scorer_identifier,
             message_piece_id=self.prompt_request_response_id,
             timestamp=self.timestamp,
             objective=self.objective,
         )
-
-    @staticmethod
-    def _denormalize_scorer_identifier(identifier: Dict[str, str]) -> Dict[str, Any]:
-        """
-        Denormalize scorer identifier when reading from database.
-        Parses JSON strings back into dicts/lists for sub_identifier field.
-
-        Args:
-            identifier: The normalized identifier from the database.
-
-        Returns:
-            Dict: Denormalized identifier with proper nested structures.
-        """
-        denormalized = dict(identifier)
-        if "sub_identifier" in denormalized and denormalized["sub_identifier"] is not None:
-            try:
-                # Try to parse as JSON if it's a string
-                if isinstance(denormalized["sub_identifier"], str):
-                    denormalized["sub_identifier"] = json.loads(denormalized["sub_identifier"])
-            except (json.JSONDecodeError, TypeError):
-                # If it fails to parse, keep as-is (backward compatibility)
-                pass
-        return denormalized
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -912,7 +880,10 @@ class ScenarioResultEntry(Base):
         self.pyrit_version = entry.scenario_identifier.pyrit_version
         self.scenario_init_data = entry.scenario_identifier.init_data
         self.objective_target_identifier = entry.objective_target_identifier
-        self.objective_scorer_identifier = entry.objective_scorer_identifier
+        # Convert ScorerIdentifier to dict for JSON storage
+        self.objective_scorer_identifier = (
+            entry.objective_scorer_identifier.to_dict() if entry.objective_scorer_identifier else None
+        )
         self.scenario_run_state = entry.scenario_run_state
         self.labels = entry.labels
         self.number_tries = entry.number_tries
@@ -950,12 +921,17 @@ class ScenarioResultEntry(Base):
         # Return empty attack_results - will be populated by memory_interface
         attack_results: dict[str, list[AttackResult]] = {}
 
+        # Convert dict back to ScorerIdentifier for reconstruction
+        scorer_identifier = (
+            ScorerIdentifier.from_dict(self.objective_scorer_identifier) if self.objective_scorer_identifier else None
+        )
+
         return ScenarioResult(
             id=self.id,
             scenario_identifier=scenario_identifier,
             objective_target_identifier=self.objective_target_identifier,
             attack_results=attack_results,
-            objective_scorer_identifier=self.objective_scorer_identifier,
+            objective_scorer_identifier=scorer_identifier,
             scenario_run_state=self.scenario_run_state,
             labels=self.labels,
             number_tries=self.number_tries,
