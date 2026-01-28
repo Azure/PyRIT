@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Tests for the PsychosocialHarmsScenario class."""
+"""Tests for the PsychosocialScenario class."""
 
 from typing import Dict, List, Sequence
 from unittest.mock import MagicMock, patch
@@ -123,8 +123,8 @@ FIXTURES = ["patch_central_database", "mock_runtime_env"]
 
 
 @pytest.mark.usefixtures(*FIXTURES)
-class TestPsychosocialHarmsInitialization:
-    """Tests for PsychosocialHarmsScenario initialization."""
+class TestPsychosocialScenarioInitialization:
+    """Tests for PsychosocialScenario initialization."""
 
     def test_init_with_custom_objectives(
         self,
@@ -219,8 +219,8 @@ class TestPsychosocialHarmsInitialization:
 
 
 @pytest.mark.usefixtures(*FIXTURES)
-class TestPsychosocialHarmsAttackGeneration:
-    """Tests for PsychosocialHarmsScenario attack generation."""
+class TestPsychosocialScenarioAttackGeneration:
+    """Tests for PsychosocialScenario attack generation."""
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_all(
@@ -244,7 +244,7 @@ class TestPsychosocialHarmsAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        single_turn_strategy: PsychosocialHarmsStrategy,
+        single_turn_strategy: PsychosocialStrategy,
         sample_objectives: List[str],
     ) -> None:
         """Test that the single turn strategy attack generation works."""
@@ -354,7 +354,7 @@ class TestPsychosocialHarmsAttackGeneration:
 
 @pytest.mark.usefixtures(*FIXTURES)
 class TestPsychosocialHarmsLifecycle:
-    """Tests for PsychosocialHarmsScenario lifecycle behavior."""
+    """Tests for PsychosocialScenario lifecycle behavior."""
 
     @pytest.mark.asyncio
     async def test_initialize_async_with_max_concurrency(
@@ -365,7 +365,7 @@ class TestPsychosocialHarmsLifecycle:
         sample_objectives: List[str],
     ) -> None:
         """Test initialization with custom max_concurrency."""
-        scenario = PsychosocialHarmsScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
+        scenario = PsychosocialScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
         await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20)
         assert scenario._max_concurrency == 20
 
