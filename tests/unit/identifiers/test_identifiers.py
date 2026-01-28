@@ -1,11 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 
 import pytest
 
+import pyrit
 from pyrit.identifiers import Identifier, LegacyIdentifiable
+from pyrit.identifiers.identifier import _EXCLUDE, _ExcludeFrom
 
 
 class TestLegacyIdentifiable:
@@ -182,7 +184,7 @@ class TestIdentifierStorage:
     """Tests for Identifier storage functionality."""
 
     def test_to_dict_excludes_marked_fields(self):
-        """Test that to_dict excludes fields marked with exclude_from_storage."""
+        """Test that to_dict excludes fields marked with _EXCLUDE containing _ExcludeFrom.STORAGE."""
         identifier = Identifier(
             identifier_type="class",
             class_name="TestClass",
@@ -226,7 +228,7 @@ class TestIdentifierSubclass:
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
-            extra_field: str
+            extra_field: str = field(kw_only=True)
 
         extended = ExtendedIdentifier(
             class_name="TestClass",
@@ -243,7 +245,7 @@ class TestIdentifierSubclass:
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
-            extra_field: str
+            extra_field: str = field(kw_only=True)
 
         extended1 = ExtendedIdentifier(
             class_name="TestClass",
@@ -263,11 +265,11 @@ class TestIdentifierSubclass:
         assert extended1.hash != extended2.hash
 
     def test_subclass_excluded_fields_not_in_hash(self):
-        """Test that subclass fields marked exclude_from_storage are excluded from hash."""
+        """Test that subclass fields with _ExcludeFrom.HASH in _EXCLUDE are excluded from hash."""
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
-            display_only: str = field(default="", metadata={"exclude_from_storage": True})
+            display_only: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
 
         extended1 = ExtendedIdentifier(
             class_name="TestClass",
@@ -291,8 +293,8 @@ class TestIdentifierSubclass:
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
-            extra_field: str
-            display_only: str = field(default="", metadata={"exclude_from_storage": True})
+            extra_field: str = field(kw_only=True)
+            display_only: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
 
         extended = ExtendedIdentifier(
             class_name="TestClass",
@@ -378,3 +380,175 @@ class TestIdentifierFromDict:
         assert len(identifier.hash) == 64
         # unique_name should use the computed hash
         assert identifier.unique_name == f"test_class::{identifier.hash[:8]}"
+
+
+class TestPyritVersion:
+    """Tests for the pyrit_version field on Identifier."""
+
+    def test_pyrit_version_is_set_by_default(self):
+        """Test that pyrit_version is automatically set to the current pyrit version."""
+        identifier = Identifier(
+            identifier_type="class",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+        )
+        assert identifier.pyrit_version == pyrit.__version__
+
+    def test_pyrit_version_can_be_overridden(self):
+        """Test that pyrit_version can be explicitly provided."""
+        identifier = Identifier(
+            identifier_type="class",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+            pyrit_version="1.0.0",
+        )
+        assert identifier.pyrit_version == "1.0.0"
+
+    def test_pyrit_version_is_excluded_from_hash(self):
+        """Test that pyrit_version is excluded from hash computation."""
+        identifier1 = Identifier(
+            identifier_type="class",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="Description",
+            pyrit_version="1.0.0",
+        )
+        identifier2 = Identifier(
+            identifier_type="class",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="Description",
+            pyrit_version="2.0.0",
+        )
+        # Hash should be the same since pyrit_version is excluded
+        assert identifier1.hash == identifier2.hash
+
+    def test_pyrit_version_is_included_in_storage(self):
+        """Test that pyrit_version is included in to_dict output."""
+        identifier = Identifier(
+            identifier_type="class",
+            class_name="TestClass",
+            class_module="test.module",
+            class_description="A test description",
+            pyrit_version="1.0.0",
+        )
+        storage_dict = identifier.to_dict()
+        assert "pyrit_version" in storage_dict
+        assert storage_dict["pyrit_version"] == "1.0.0"
+
+    def test_from_dict_preserves_pyrit_version(self):
+        """Test that from_dict preserves the pyrit_version from the dict."""
+        data = {
+            "class_name": "TestClass",
+            "class_module": "test.module",
+            "pyrit_version": "0.5.0",
+        }
+
+        identifier = Identifier.from_dict(data)
+        assert identifier.pyrit_version == "0.5.0"
+
+    def test_from_dict_defaults_pyrit_version_when_missing(self):
+        """Test that from_dict defaults pyrit_version to current version when not in dict."""
+        data = {
+            "class_name": "TestClass",
+            "class_module": "test.module",
+        }
+
+        identifier = Identifier.from_dict(data)
+        assert identifier.pyrit_version == pyrit.__version__
+
+
+class TestExcludeMetadata:
+    """Tests for the _EXCLUDE metadata field configuration."""
+
+    def test_storage_exclusion_implies_hash_exclusion(self):
+        """Test that all fields with _ExcludeFrom.STORAGE in _EXCLUDE also have _ExcludeFrom.HASH.
+
+        This is a validation test to ensure that fields excluded from storage are
+        also excluded from hash computation. A field should never be excluded from
+        storage but included in the hash.
+        """
+        for f in fields(Identifier):
+            exclude_set = f.metadata.get(_EXCLUDE, set())
+            if _ExcludeFrom.STORAGE in exclude_set:
+                assert _ExcludeFrom.HASH in exclude_set, (
+                    f"Field '{f.name}' has _ExcludeFrom.STORAGE in _EXCLUDE but not _ExcludeFrom.HASH. "
+                    f"Fields excluded from storage must also be excluded from hash."
+                )
+
+    def test_subclass_storage_exclusion_implies_hash_exclusion(self):
+        """Test that subclass fields with _ExcludeFrom.STORAGE in _EXCLUDE also have _ExcludeFrom.HASH."""
+
+        @dataclass(frozen=True)
+        class InvalidIdentifier(Identifier):
+            # This is invalid - storage exclusion without hash exclusion
+            bad_field: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
+
+        # Verify the invariant is violated (this is what the test guards against)
+        for f in fields(InvalidIdentifier):
+            if f.name == "bad_field":
+                exclude_set = f.metadata.get(_EXCLUDE, set())
+                assert _ExcludeFrom.STORAGE in exclude_set
+                assert _ExcludeFrom.HASH not in exclude_set  # This is the problematic case
+
+    def test_hash_only_exclusion_works(self):
+        """Test that a field can be excluded from hash only (still stored)."""
+
+        @dataclass(frozen=True)
+        class ExtendedIdentifier(Identifier):
+            metadata_field: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.HASH}})
+
+        extended1 = ExtendedIdentifier(
+            class_name="TestClass",
+            class_module="test.module",
+            identifier_type="class",
+            class_description="Description",
+            metadata_field="value1",
+        )
+        extended2 = ExtendedIdentifier(
+            class_name="TestClass",
+            class_module="test.module",
+            identifier_type="class",
+            class_description="Description",
+            metadata_field="value2",
+        )
+
+        # Hash should be the same since metadata_field is excluded from hash
+        assert extended1.hash == extended2.hash
+
+        # But both values should be in storage
+        storage1 = extended1.to_dict()
+        storage2 = extended2.to_dict()
+        assert storage1["metadata_field"] == "value1"
+        assert storage2["metadata_field"] == "value2"
+
+    def test_hash_and_storage_exclusion_works(self):
+        """Test that a field can be excluded from both hash and storage."""
+
+        @dataclass(frozen=True)
+        class ExtendedIdentifier(Identifier):
+            transient_field: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
+
+        extended1 = ExtendedIdentifier(
+            class_name="TestClass",
+            class_module="test.module",
+            identifier_type="class",
+            class_description="Description",
+            transient_field="value1",
+        )
+        extended2 = ExtendedIdentifier(
+            class_name="TestClass",
+            class_module="test.module",
+            identifier_type="class",
+            class_description="Description",
+            transient_field="value2",
+        )
+
+        # Hash should be the same since transient_field is excluded from hash
+        assert extended1.hash == extended2.hash
+
+        # Field should not be in storage
+        storage1 = extended1.to_dict()
+        assert "transient_field" not in storage1
