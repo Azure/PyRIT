@@ -69,14 +69,16 @@ chapters:
     - file: code/targets/0_prompt_targets
       sections:
       - file: code/targets/1_openai_chat_target
-      - file: code/targets/2_custom_targets
-      - file: code/targets/3_non_open_ai_chat_targets
-      - file: code/targets/4_non_llm_targets
-      - file: code/targets/5_multi_modal_targets
-      - file: code/targets/6_rate_limiting
-      - file: code/targets/7_http_target
-      - file: code/targets/8_openai_responses_target
-      - file: code/targets/9_message_normalizer
+      - file: code/targets/2_openai_responses_target
+      - file: code/targets/3_openai_image_target
+      - file: code/targets/4_openai_video_target
+      - file: code/targets/5_openai_tts_target
+      - file: code/targets/6_custom_targets
+      - file: code/targets/7_non_open_ai_chat_targets
+      - file: code/targets/8_non_llm_targets
+      - file: code/targets/9_rate_limiting
+      - file: code/targets/10_http_target
+      - file: code/targets/11_message_normalizer
       - file: code/targets/10_1_playwright_target
       - file: code/targets/10_2_playwright_target_copilot
       - file: code/targets/10_3_websocket_copilot_target
