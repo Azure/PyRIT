@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Type, cast
+from urllib.parse import urlparse
 
 from pyrit.identifiers.identifier import Identifier
 
@@ -36,6 +37,37 @@ class TargetIdentifier(Identifier):
 
     target_specific_params: Optional[Dict[str, Any]] = None
     """Additional target-specific parameters."""
+
+    def __post_init__(self) -> None:
+        """
+        Compute derived fields with target-specific unique_name format.
+
+        Overrides the base Identifier to include model_name and endpoint in unique_name.
+        Format: {snake_name}::{model_name}::{endpoint_host}::{hash[:8]}
+        Only includes model_name and endpoint if they have values.
+        """
+        # Call parent to set up snake_class_name and hash
+        super().__post_init__()
+
+        # Build unique_name with model_name and endpoint if available
+        parts = [self.snake_class_name]
+
+        if self.model_name:
+            parts.append(self.model_name)
+
+        if self.endpoint:
+            # Simplify endpoint to just the host for readability
+            try:
+                parsed = urlparse(self.endpoint)
+                host = parsed.netloc or self.endpoint
+                parts.append(host)
+            except Exception:
+                # Fallback: truncate if parsing fails
+                parts.append(self.endpoint[:20] if len(self.endpoint) > 20 else self.endpoint)
+
+        parts.append(self.hash[:8])
+
+        object.__setattr__(self, "unique_name", "::".join(parts))
 
     @classmethod
     def from_dict(cls: Type["TargetIdentifier"], data: dict[str, Any]) -> "TargetIdentifier":

@@ -250,6 +250,12 @@ class PromptMemoryEntry(Base):
                 ConverterIdentifier.from_dict({**c, "pyrit_version": stored_version})
                 for c in self.converter_identifiers
             ]
+
+        # Reconstruct TargetIdentifier with the stored pyrit_version
+        target_id: Optional[TargetIdentifier] = None
+        if self.prompt_target_identifier:
+            target_id = TargetIdentifier.from_dict({**self.prompt_target_identifier, "pyrit_version": stored_version})
+
         message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
@@ -263,7 +269,7 @@ class PromptMemoryEntry(Base):
             prompt_metadata=self.prompt_metadata,
             targeted_harm_categories=self.targeted_harm_categories,
             converter_identifiers=converter_ids,
-            prompt_target_identifier=self.prompt_target_identifier,
+            prompt_target_identifier=target_id,
             attack_identifier=self.attack_identifier,
             original_value_data_type=self.original_value_data_type,
             converted_value_data_type=self.converted_value_data_type,

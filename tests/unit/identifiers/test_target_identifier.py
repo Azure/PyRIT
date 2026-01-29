@@ -37,8 +37,8 @@ class TestTargetIdentifierBasic:
         assert identifier.hash is not None
         assert len(identifier.hash) == 64  # SHA256 hex digest length
 
-    def test_target_identifier_unique_name_auto_computed(self):
-        """Test that unique_name is auto-computed from class_name and hash."""
+    def test_target_identifier_unique_name_minimal(self):
+        """Test that unique_name is auto-computed with minimal fields (no model_name or endpoint)."""
         identifier = TargetIdentifier(
             class_name="OpenAIChatTarget",
             class_module="pyrit.prompt_target.openai.openai_chat_target",
@@ -46,10 +46,48 @@ class TestTargetIdentifierBasic:
             identifier_type="instance",
         )
 
-        # unique_name format: {snake_case_class_name}::{hash[:8]}
-        assert identifier.unique_name.startswith("open_ai_chat_target::")
-        assert len(identifier.unique_name.split("::")[1]) == 8
+        # unique_name format with no model/endpoint: {snake_class_name}::{hash[:8]}
         assert identifier.unique_name == f"open_ai_chat_target::{identifier.hash[:8]}"
+
+    def test_target_identifier_unique_name_with_model(self):
+        """Test that unique_name includes model_name when provided."""
+        identifier = TargetIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            class_description="OpenAI chat target",
+            identifier_type="instance",
+            model_name="gpt-4o",
+        )
+
+        # unique_name format: {snake_class_name}::{model_name}::{hash[:8]}
+        assert identifier.unique_name == f"open_ai_chat_target::gpt-4o::{identifier.hash[:8]}"
+
+    def test_target_identifier_unique_name_with_endpoint(self):
+        """Test that unique_name includes endpoint host when provided."""
+        identifier = TargetIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            class_description="OpenAI chat target",
+            identifier_type="instance",
+            endpoint="https://api.openai.com/v1/chat/completions",
+        )
+
+        # unique_name format: {snake_class_name}::{endpoint_host}::{hash[:8]}
+        assert identifier.unique_name == f"open_ai_chat_target::api.openai.com::{identifier.hash[:8]}"
+
+    def test_target_identifier_unique_name_with_model_and_endpoint(self):
+        """Test that unique_name includes both model_name and endpoint when provided."""
+        identifier = TargetIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            class_description="OpenAI chat target",
+            identifier_type="instance",
+            model_name="gpt-4o",
+            endpoint="https://api.openai.com/v1/chat/completions",
+        )
+
+        # unique_name format: {snake_class_name}::{model_name}::{endpoint_host}::{hash[:8]}
+        assert identifier.unique_name == f"open_ai_chat_target::gpt-4o::api.openai.com::{identifier.hash[:8]}"
 
     def test_target_identifier_creation_all_fields(self):
         """Test creating a TargetIdentifier with all fields."""
@@ -259,10 +297,10 @@ class TestTargetIdentifierToDict:
         assert result["class_name"] == "TestTarget"
         assert result["class_module"] == "pyrit.prompt_target.test_target"
         assert result["hash"] == identifier.hash
-        assert result["unique_name"] == identifier.unique_name
-        # class_description and identifier_type should be excluded
+        # class_description, identifier_type, and unique_name are excluded from storage
         assert "class_description" not in result
         assert "identifier_type" not in result
+        assert "unique_name" not in result
 
     def test_to_dict_includes_endpoint_and_model_name(self):
         """Test that endpoint and model_name are included in to_dict."""
