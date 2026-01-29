@@ -1,13 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 
 import pytest
 
 import pyrit
 from pyrit.identifiers import Identifier, LegacyIdentifiable
-from pyrit.identifiers.identifier import _EXCLUDE, _ExcludeFrom
+from pyrit.identifiers.identifier import _EXCLUDE, _ExcludeFrom, _expand_exclusions
 
 
 class TestLegacyIdentifiable:
@@ -269,11 +269,12 @@ class TestIdentifierSubclass:
         assert extended1.hash != extended2.hash
 
     def test_subclass_excluded_fields_not_in_hash(self):
-        """Test that subclass fields with _ExcludeFrom.HASH in _EXCLUDE are excluded from hash."""
+        """Test that subclass fields with _ExcludeFrom.STORAGE in _EXCLUDE are excluded from hash via expansion."""
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
-            display_only: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
+            # Only need STORAGE - HASH is implied via expansion
+            display_only: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
 
         extended1 = ExtendedIdentifier(
             class_name="TestClass",
@@ -298,7 +299,8 @@ class TestIdentifierSubclass:
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
             extra_field: str = field(kw_only=True)
-            display_only: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
+            # Only need STORAGE - HASH is implied via expansion
+            display_only: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
 
         extended = ExtendedIdentifier(
             class_name="TestClass",
@@ -468,34 +470,56 @@ class TestExcludeMetadata:
     """Tests for the _EXCLUDE metadata field configuration."""
 
     def test_storage_exclusion_implies_hash_exclusion(self):
-        """Test that all fields with _ExcludeFrom.STORAGE in _EXCLUDE also have _ExcludeFrom.HASH.
+        """Test that STORAGE exclusion automatically implies HASH exclusion via expansion.
 
-        This is a validation test to ensure that fields excluded from storage are
-        also excluded from hash computation. A field should never be excluded from
-        storage but included in the hash.
+        This validates the catalog expansion pattern where _ExcludeFrom.STORAGE.expands_to
+        returns {STORAGE, HASH}, ensuring fields excluded from storage are also excluded
+        from hash computation.
         """
-        for f in fields(Identifier):
-            exclude_set = f.metadata.get(_EXCLUDE, set())
-            if _ExcludeFrom.STORAGE in exclude_set:
-                assert _ExcludeFrom.HASH in exclude_set, (
-                    f"Field '{f.name}' has _ExcludeFrom.STORAGE in _EXCLUDE but not _ExcludeFrom.HASH. "
-                    f"Fields excluded from storage must also be excluded from hash."
-                )
+        # Verify the expansion catalog works correctly
+        assert _ExcludeFrom.HASH in _ExcludeFrom.STORAGE.expands_to
+        assert _ExcludeFrom.STORAGE in _ExcludeFrom.STORAGE.expands_to
 
-    def test_subclass_storage_exclusion_implies_hash_exclusion(self):
-        """Test that subclass fields with _ExcludeFrom.STORAGE in _EXCLUDE also have _ExcludeFrom.HASH."""
+        # Verify HASH only expands to itself
+        assert _ExcludeFrom.HASH.expands_to == {_ExcludeFrom.HASH}
+
+        # Verify _expand_exclusions works on sets
+        expanded = _expand_exclusions({_ExcludeFrom.STORAGE})
+        assert _ExcludeFrom.HASH in expanded
+        assert _ExcludeFrom.STORAGE in expanded
+
+    def test_subclass_storage_only_exclusion_works_via_expansion(self):
+        """Test that subclass fields with only _ExcludeFrom.STORAGE work correctly via expansion.
+
+        With the catalog expansion pattern, specifying only STORAGE automatically implies HASH.
+        This is the recommended pattern - no need to explicitly specify both.
+        """
 
         @dataclass(frozen=True)
-        class InvalidIdentifier(Identifier):
-            # This is invalid - storage exclusion without hash exclusion
-            bad_field: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
+        class ValidIdentifier(Identifier):
+            # Only STORAGE is needed - HASH is implied via expansion
+            transient_field: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
 
-        # Verify the invariant is violated (this is what the test guards against)
-        for f in fields(InvalidIdentifier):
-            if f.name == "bad_field":
-                exclude_set = f.metadata.get(_EXCLUDE, set())
-                assert _ExcludeFrom.STORAGE in exclude_set
-                assert _ExcludeFrom.HASH not in exclude_set  # This is the problematic case
+        id1 = ValidIdentifier(
+            class_name="Test",
+            class_module="test",
+            identifier_type="class",
+            class_description="desc",
+            transient_field="value1",
+        )
+        id2 = ValidIdentifier(
+            class_name="Test",
+            class_module="test",
+            identifier_type="class",
+            class_description="desc",
+            transient_field="value2",
+        )
+
+        # Hash should be the same (HASH exclusion is implied by STORAGE)
+        assert id1.hash == id2.hash
+
+        # Field should not be in storage
+        assert "transient_field" not in id1.to_dict()
 
     def test_hash_only_exclusion_works(self):
         """Test that a field can be excluded from hash only (still stored)."""
@@ -528,12 +552,13 @@ class TestExcludeMetadata:
         assert storage1["metadata_field"] == "value1"
         assert storage2["metadata_field"] == "value2"
 
-    def test_hash_and_storage_exclusion_works(self):
-        """Test that a field can be excluded from both hash and storage."""
+    def test_storage_exclusion_works(self):
+        """Test that a field excluded from storage is also excluded from hash via expansion."""
 
         @dataclass(frozen=True)
         class ExtendedIdentifier(Identifier):
-            transient_field: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
+            # Only need STORAGE - HASH is implied via expansion
+            transient_field: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
 
         extended1 = ExtendedIdentifier(
             class_name="TestClass",

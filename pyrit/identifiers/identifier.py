@@ -25,17 +25,55 @@ class _ExcludeFrom(Enum):
     Values:
         HASH: Exclude the field from hash computation (field is still stored).
         STORAGE: Exclude the field from storage (implies HASH - field is also excluded from hash).
+
+    The `expands_to` property returns the full set of exclusions that apply.
+    For example, STORAGE.expands_to returns {STORAGE, HASH} since excluding
+    from storage implicitly means excluding from hash as well.
     """
 
     HASH = "hash"
     STORAGE = "storage"
+
+    @property
+    def expands_to(self) -> set["_ExcludeFrom"]:
+        """
+        Get the full set of exclusions that this value implies.
+
+        This implements a catalog pattern where certain exclusions automatically
+        include others. For example, STORAGE expands to {STORAGE, HASH} because
+        a field excluded from storage should never be included in the hash.
+
+        Returns:
+            set[_ExcludeFrom]: The complete set of exclusions including implied ones.
+        """
+        _EXPANSION_CATALOG: dict[_ExcludeFrom, set[_ExcludeFrom]] = {
+            _ExcludeFrom.HASH: {_ExcludeFrom.HASH},
+            _ExcludeFrom.STORAGE: {_ExcludeFrom.STORAGE, _ExcludeFrom.HASH},
+        }
+        return _EXPANSION_CATALOG[self]
+
+
+def _expand_exclusions(exclude_set: set[_ExcludeFrom]) -> set[_ExcludeFrom]:
+    """
+    Expand a set of exclusions to include all implied exclusions.
+
+    Args:
+        exclude_set: A set of _ExcludeFrom values.
+
+    Returns:
+        set[_ExcludeFrom]: The expanded set including all implied exclusions.
+    """
+    expanded: set[_ExcludeFrom] = set()
+    for exclusion in exclude_set:
+        expanded.update(exclusion.expands_to)
+    return expanded
 
 
 # Metadata keys for field configuration
 # _EXCLUDE is a metadata key whose value is a set of _ExcludeFrom enum values.
 # Examples:
 #   field(metadata={_EXCLUDE: {_ExcludeFrom.HASH}})  # Stored but not hashed
-#   field(metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})  # Not stored and not hashed
+#   field(metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})  # Not stored and not hashed (STORAGE implies HASH)
 _EXCLUDE = "exclude"
 _MAX_STORAGE_LENGTH = "max_storage_length"
 
@@ -44,8 +82,8 @@ def _is_excluded_from_hash(f: Field[Any]) -> bool:
     """
     Check if a field should be excluded from hash computation.
 
-    A field is excluded from hash if it has _EXCLUDE metadata containing
-    _ExcludeFrom.HASH or _ExcludeFrom.STORAGE.
+    A field is excluded from hash if, after expansion, the exclusion set contains _ExcludeFrom.HASH.
+    This uses the catalog expansion pattern where STORAGE automatically implies HASH.
 
     Args:
         f: A dataclass field object.
@@ -54,14 +92,15 @@ def _is_excluded_from_hash(f: Field[Any]) -> bool:
         True if the field should be excluded from hash computation.
     """
     exclude_set = f.metadata.get(_EXCLUDE, set())
-    return _ExcludeFrom.HASH in exclude_set or _ExcludeFrom.STORAGE in exclude_set
+    expanded = _expand_exclusions(exclude_set)
+    return _ExcludeFrom.HASH in expanded
 
 
 def _is_excluded_from_storage(f: Field[Any]) -> bool:
     """
     Check if a field should be excluded from storage.
 
-    A field is excluded from storage if it has _EXCLUDE metadata containing _ExcludeFrom.STORAGE.
+    A field is excluded from storage if, after expansion, the exclusion set contains _ExcludeFrom.STORAGE.
 
     Args:
         f: A dataclass field object.
@@ -70,7 +109,8 @@ def _is_excluded_from_storage(f: Field[Any]) -> bool:
         True if the field should be excluded from storage.
     """
     exclude_set = f.metadata.get(_EXCLUDE, set())
-    return _ExcludeFrom.STORAGE in exclude_set
+    expanded = _expand_exclusions(exclude_set)
+    return _ExcludeFrom.STORAGE in expanded
 
 
 T = TypeVar("T", bound="Identifier")
@@ -95,16 +135,16 @@ class Identifier:
     class_name: str  # The actual class name, equivalent to __type__ (e.g., "SelfAskRefusalScorer")
     class_module: str  # The module path, equivalent to __module__ (e.g., "pyrit.score.self_ask_refusal_scorer")
 
-    # Fields excluded from storage and hash
-    class_description: str = field(metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
-    identifier_type: IdentifierType = field(metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
+    # Fields excluded from storage (STORAGE auto-expands to include HASH)
+    class_description: str = field(metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
+    identifier_type: IdentifierType = field(metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
 
     # Auto-computed fields
-    snake_class_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
+    snake_class_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
     hash: str | None = field(default=None, compare=False, kw_only=True, metadata={_EXCLUDE: {_ExcludeFrom.HASH}})
 
     # {full_snake_case}::{hash[:8]}
-    unique_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
+    unique_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
 
     # Version field - stored but not hashed (allows version tracking without affecting identity)
     pyrit_version: str = field(
