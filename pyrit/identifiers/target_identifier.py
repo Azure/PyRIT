@@ -17,14 +17,6 @@ class TargetIdentifier(Identifier):
     This frozen dataclass extends Identifier with target-specific fields.
     It provides a stable, hashable identifier for prompt targets that can be
     used for scorer evaluation, registry tracking, and memory storage.
-
-    Attributes:
-        endpoint: The target endpoint URL, if applicable.
-        model_name: The model or deployment name. Uses underlying_model if specified,
-            otherwise falls back to the deployment name.
-        temperature: The temperature parameter for generation, if applicable.
-        top_p: The top_p parameter for generation, if applicable.
-        target_specific_params: Additional target-specific parameters.
     """
 
     endpoint: str = ""

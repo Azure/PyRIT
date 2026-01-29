@@ -781,7 +781,7 @@ def test_message_piece_scorer_identifier_dict_backward_compatibility():
         # Check that a deprecation warning was issued
         assert len(w) == 1
         assert "deprecated" in str(w[0].message).lower()
-        assert "0.13.0" in str(w[0].message)
+        assert "0.14.0" in str(w[0].message)
 
     # Check that scorer_identifier is now a ScorerIdentifier
     assert isinstance(entry.scorer_identifier, ScorerIdentifier)
