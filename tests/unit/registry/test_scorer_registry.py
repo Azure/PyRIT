@@ -28,9 +28,13 @@ class MockTrueFalseScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -48,9 +52,13 @@ class MockFloatScaleScorer(FloatScaleScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []
@@ -68,9 +76,13 @@ class MockGenericScorer(Scorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_identifier()
+    def _build_identifier(self) -> ScorerIdentifier:
+        """Build the scorer evaluation identifier for this mock scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return []

@@ -13,7 +13,9 @@ meaningful context in their messages.
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
+
+from pyrit.identifiers import Identifier
 
 
 class ComponentRole(Enum):
@@ -191,7 +193,7 @@ def execution_context(
     component_role: ComponentRole,
     attack_strategy_name: Optional[str] = None,
     attack_identifier: Optional[Dict[str, Any]] = None,
-    component_identifier: Optional[Dict[str, Any]] = None,
+    component_identifier: Optional[Union[Identifier, Dict[str, Any]]] = None,
     objective_target_conversation_id: Optional[str] = None,
     objective: Optional[str] = None,
 ) -> ExecutionContextManager:
@@ -203,6 +205,7 @@ def execution_context(
         attack_strategy_name: The name of the attack strategy class.
         attack_identifier: The identifier from attack.get_identifier().
         component_identifier: The identifier from component.get_identifier().
+            Can be an Identifier object or a dict (legacy format).
         objective_target_conversation_id: The objective target conversation ID if available.
         objective: The attack objective if available.
 
@@ -212,15 +215,22 @@ def execution_context(
     # Extract endpoint and component_name from component_identifier if available
     endpoint = None
     component_name = None
+    component_id_dict: Optional[Dict[str, Any]] = None
     if component_identifier:
-        endpoint = component_identifier.get("endpoint")
-        component_name = component_identifier.get("__type__")
+        if isinstance(component_identifier, Identifier):
+            endpoint = getattr(component_identifier, "endpoint", None)
+            component_name = component_identifier.class_name
+            component_id_dict = component_identifier.to_dict()
+        else:
+            endpoint = component_identifier.get("endpoint")
+            component_name = component_identifier.get("__type__")
+            component_id_dict = component_identifier
 
     context = ExecutionContext(
         component_role=component_role,
         attack_strategy_name=attack_strategy_name,
         attack_identifier=attack_identifier,
-        component_identifier=component_identifier,
+        component_identifier=component_id_dict,
         objective_target_conversation_id=objective_target_conversation_id,
         endpoint=endpoint,
         component_name=component_name,

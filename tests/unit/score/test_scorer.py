@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
@@ -60,9 +61,9 @@ class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_identifier(self) -> None:
+    def _build_identifier(self) -> ScorerIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_identifier()
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -116,9 +117,9 @@ class MockFloatScorer(Scorer):
         self.scored_piece_ids: list[str] = []
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> None:
+    def _build_identifier(self) -> ScorerIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_identifier()
+        return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         # Track which pieces get scored
@@ -1118,9 +1119,9 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
             self.scored_piece_ids = []
             super().__init__(validator=validator)
 
-        def _build_identifier(self) -> None:
+        def _build_identifier(self) -> ScorerIdentifier:
             """Build the scorer evaluation identifier for this test scorer."""
-            self._set_identifier()
+            return self._create_identifier()
 
         async def _score_piece_async(
             self, message_piece: MessagePiece, *, objective: Optional[str] = None
@@ -1305,8 +1306,8 @@ class TestTrueFalseScorerEmptyScoreListRationale:
             def __init__(self, validator):
                 super().__init__(validator=validator)
 
-            def _build_identifier(self) -> None:
-                self._set_identifier()
+            def _build_identifier(self) -> ScorerIdentifier:
+                return self._create_identifier()
 
             async def _score_piece_async(
                 self, message_piece: MessagePiece, *, objective: Optional[str] = None
