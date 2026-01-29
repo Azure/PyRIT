@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedAttackGroup, SeedGroup
+from pyrit.models.seeds.seed import Seed
 
 if TYPE_CHECKING:
     from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy
@@ -244,3 +245,34 @@ class DatasetConfiguration:
             bool: True if seed_groups or dataset_names is configured.
         """
         return self._seed_groups is not None or self._dataset_names is not None
+
+    def get_all_seeds(self) -> List[Seed]:
+        """
+        Load all seed prompts from memory for all configured datasets.
+
+        This is a convenience method that retrieves SeedPrompt objects directly
+        from memory for all configured datasets. If max_dataset_size is set, randomly
+        samples up to that many prompts per dataset (without replacement).
+
+        Returns:
+            List[SeedPrompt]: List of SeedPrompt objects from all configured datasets.
+                Returns an empty list if no prompts are found.
+
+        Raises:
+            ValueError: If no dataset names are configured.
+        """
+        if self._dataset_names is None:
+            raise ValueError("No dataset names configured. Set dataset_names to use get_all_seed_prompts.")
+
+        memory = CentralMemory.get_memory_instance()
+        all_seeds: List[Seed] = []
+
+        for dataset_name in self._dataset_names:
+            seeds = memory.get_seeds(dataset_name=dataset_name)
+
+            # Apply max_dataset_size sampling per dataset if configured
+            if self.max_dataset_size is not None and len(seeds) > self.max_dataset_size:
+                seeds = random.sample(seeds, self.max_dataset_size)
+            all_seeds.extend(seeds)
+
+        return all_seeds
