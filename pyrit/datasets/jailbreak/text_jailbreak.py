@@ -40,7 +40,8 @@ class TextJailBreak:
         # Track the template source for error reporting
         self.template_source: str = "<unknown>"
         # Count how many template sources are provided
-        template_sources = [template_path, template_file_name, string_template, random_template]
+        template_sources = [template_path, template_file_name,
+                            string_template, random_template]
         provided_sources = [source for source in template_sources if source]
 
         if len(provided_sources) != 1:
@@ -58,26 +59,30 @@ class TextJailBreak:
             # Get all yaml files in the jailbreak directory and its subdirectories
             jailbreak_dir = JAILBREAK_TEMPLATES_PATH
             # Get all yaml files but exclude those in multi_parameter subdirectory
-            yaml_files = [f for f in jailbreak_dir.rglob("*.yaml") if "multi_parameter" not in f.parts]
+            yaml_files = [f for f in jailbreak_dir.rglob(
+                "*.yaml") if "multi_parameter" not in f.parts]
             if not yaml_files:
                 raise ValueError(
                     "No YAML templates found in jailbreak directory (excluding multi_parameter subdirectory)"
                 )
 
             if template_file_name:
-                matching_files = [f for f in yaml_files if f.name == template_file_name]
+                matching_files = [
+                    f for f in yaml_files if f.name == template_file_name]
                 if not matching_files:
                     raise ValueError(
                         f"Template file '{template_file_name}' not found in jailbreak directory or its subdirectories"
                     )
                 if len(matching_files) > 1:
-                    raise ValueError(f"Multiple files named '{template_file_name}' found in jailbreak directory")
+                    raise ValueError(
+                        f"Multiple files named '{template_file_name}' found in jailbreak directory")
                 self.template = SeedPrompt.from_yaml_file(matching_files[0])
                 self.template_source = str(matching_files[0])
             else:
                 while True:
                     random_template_path = random.choice(yaml_files)
-                    self.template = SeedPrompt.from_yaml_file(random_template_path)
+                    self.template = SeedPrompt.from_yaml_file(
+                        random_template_path)
 
                     if self.template.parameters == ["prompt"]:
                         self.template_source = str(random_template_path)
@@ -87,10 +92,12 @@ class TextJailBreak:
                             break
                         except ValueError as e:
                             # Template has syntax errors - fail fast with clear error
-                            raise ValueError(f"Invalid jailbreak template '{random_template_path}': {str(e)}") from e
+                            raise ValueError(
+                                f"Invalid jailbreak template '{random_template_path}': {str(e)}") from e
 
         # Validate that all required parameters (except 'prompt') are provided in kwargs
-        required_params = [p for p in self.template.parameters if p != "prompt"]
+        required_params = [
+            p for p in self.template.parameters if p != "prompt"]
         missing_params = [p for p in required_params if p not in kwargs]
         if missing_params:
             raise ValueError(
@@ -102,7 +109,8 @@ class TextJailBreak:
         if kwargs:
             kwargs.pop("prompt", None)
             # Apply remaining kwargs to the template while preserving template variables
-            self.template.value = self.template.render_template_value_silent(**kwargs)
+            self.template.value = self.template.render_template_value_silent(
+                **kwargs)
 
     @classmethod
     def get_all_jailbreak_templates(cls) -> List[str]:
@@ -115,9 +123,11 @@ class TextJailBreak:
         Raises:
             ValueError: If no jailbreak templates are found in the jailbreak directory.
         """
-        jailbreak_template_names = [f for f in os.listdir(JAILBREAK_TEMPLATES_PATH) if f.endswith(".yaml")]
+        jailbreak_template_names = [
+            str(f).split("/")[-1] for f in JAILBREAK_TEMPLATES_PATH.glob("*.yaml")]
         if not jailbreak_template_names:
-            raise ValueError("No jailbreak templates found in the jailbreak directory")
+            raise ValueError(
+                "No jailbreak templates found in the jailbreak directory")
         return jailbreak_template_names
 
     def get_jailbreak_system_prompt(self) -> str:
