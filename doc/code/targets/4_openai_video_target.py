@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.0
+#       jupytext_version: 1.17.2
 # ---
 
 # %% [markdown]
@@ -24,9 +24,11 @@ from pyrit.executor.attack import (
 )
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIVideoTarget
 from pyrit.score import (
+    AudioTrueFalseScorer,
     AzureContentFilterScorer,
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
+    TrueFalseScoreAggregator,
     VideoFloatScaleScorer,
     VideoTrueFalseScorer,
 )
@@ -35,6 +37,18 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 video_target = OpenAIVideoTarget()
+
+# %% [markdown]
+# ## Generating and scoring a video:
+#
+# Using the video target you can send prompts to generate a video. The video scorer can evaluate the video content itself. Note this section is simply scoring the **video** not the audio.
+
+# %%
+objectives = [
+    "Video of a raccoon pirate eating flan at a cafe in Spain",
+    "Video of a raccoon pirate eating a croissant at a cafe in France",
+]
+
 objective_scorer = SelfAskTrueFalseScorer(
     chat_target=OpenAIChatTarget(),
     true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
@@ -53,10 +67,57 @@ attack = PromptSendingAttack(
     ),
 )
 
+results = await AttackExecutor().execute_attack_async(  # type: ignore
+    attack=attack,
+    objectives=objectives,
+)
+
+for result in results:
+    await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
+
+# %% [markdown]
+# ## Scoring video and audio **together**:
+#
+# The audio scorer can be added in in order to evaluate both the video content and the audio present in the generated video.
+#
+# *Note*: the current audio scoring will use transcription, so if the audio is not able to be transcribed this will return False
+
+# %%
+# Scorer for audio content (transcript) - checks what is HEARD/SAID in the video
 objectives = [
-    "Video of a raccoon pirate eating flan at a cafe in Spain",
-    "Video of a raccoon pirate eating a croissant at a cafe in France",
+    "Video of a raccoon pirate eating a croissant at a cafe in France who says 'Bonjour tout le monde!, my name is Roakey and this is the best croissant ever!' Ensure the video contains all the audio.",
+    "Video of a raccoon pirate eating a croissant at a cafe in Spain who says 'Hola a todos, my name is Roakey and I am in Spain!' Ensure the video contains all the audio.",
 ]
+
+# Visual scorer - checks what is SEEN in the video frames
+visual_scorer = SelfAskTrueFalseScorer(
+    chat_target=OpenAIChatTarget(),
+    true_false_question=TrueFalseQuestion(true_description="A raccoon dressed as a pirate is actively eating a pastry"),
+)
+
+# Audio transcript scorer - checks what is SAID in the video
+audio_text_scorer = SelfAskTrueFalseScorer(
+    chat_target=OpenAIChatTarget(),
+    true_false_question=TrueFalseQuestion(
+        true_description="Someone introduces themselves and expresses enjoyment of a croissant"
+    ),
+)
+
+# Use AND aggregation: both visual AND audio must be true for the overall score to be true
+# ie here we evaluate for a pirate racoon actively eating a pastry AND they introduce themselves and they say they like the croisant.
+audio_and_video_scorer = VideoTrueFalseScorer(
+    image_capable_scorer=visual_scorer,
+    num_sampled_frames=10,
+    audio_scorer=AudioTrueFalseScorer(text_capable_scorer=audio_text_scorer),
+    score_aggregator=TrueFalseScoreAggregator.AND,  # Both visual and audio must be true
+)
+
+attack = PromptSendingAttack(
+    objective_target=video_target,
+    attack_scoring_config=AttackScoringConfig(
+        objective_scorer=audio_and_video_scorer,
+    ),
+)
 
 results = await AttackExecutor().execute_attack_async(  # type: ignore
     attack=attack,

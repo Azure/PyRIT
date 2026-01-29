@@ -178,11 +178,14 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             memory.add_message_to_memory(request=audio_message)
 
             # Score the audio using the audio_scorer
+            # We pass objective=None because when used within a video scorer,
+            # the audio should be evaluated independently using only its true_description,
+            # not the overall video objective (which describes visual elements)
             if self.audio_scorer is None:
                 return None
             audio_scores = await self.audio_scorer.score_prompts_batch_async(
                 messages=[audio_message],
-                objectives=[objective] if objective else None,
+                objectives=None,  # Audio uses only its own true_description, not video objective
                 batch_size=1,
             )
 

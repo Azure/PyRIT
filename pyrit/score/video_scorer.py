@@ -78,9 +78,6 @@ class _BaseVideoScorer(ABC):
         if not frames:
             raise ValueError("No frames extracted from video for scoring.")
 
-        # Score each frame
-        objectives = [objective] * len(frames) if objective else None
-
         image_requests = []
 
         for frame in frames:
@@ -106,8 +103,10 @@ class _BaseVideoScorer(ABC):
         for request in image_requests:
             memory.add_message_to_memory(request=request)
 
+        # Score frames using only the image_scorer's true_description, not the video objective
+        # This ensures visual scoring is based purely on the scorer's criteria
         frame_scores = await self.image_scorer.score_prompts_batch_async(
-            messages=image_requests, objectives=objectives, batch_size=len(frames)
+            messages=image_requests, objectives=None, batch_size=len(frames)
         )
 
         if not frame_scores:
