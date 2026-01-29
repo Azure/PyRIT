@@ -8,6 +8,7 @@ including harm detection, objective completion, and content classification.
 
 from pyrit.score.batch_scorer import BatchScorer
 from pyrit.score.conversation_scorer import ConversationScorer, create_conversation_scorer
+from pyrit.score.float_scale.audio_float_scale_scorer import AudioFloatScaleScorer
 from pyrit.score.float_scale.azure_content_filter_scorer import AzureContentFilterScorer
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleScoreAggregator,
@@ -68,9 +69,12 @@ from pyrit.score.true_false.true_false_composite_scorer import TrueFalseComposit
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc, TrueFalseScoreAggregator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+from pyrit.score.true_false.audio_true_false_scorer import AudioTrueFalseScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 
 __all__ = [
+    "AudioFloatScaleScorer",
+    "AudioTrueFalseScorer",
     "AzureContentFilterScorer",
     "BatchScorer",
     "ContentClassifierPaths",
