@@ -12,7 +12,7 @@ from pyrit.score import (
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 ACF_ENDPOINT = "https://guidance-acf.cognitiveservices.azure.com/"
-AOAI_ENDPOINT = "https://aoai-guidance.openai.azure.com/openai/responses/"
+AOAI_ENDPOINT = "https://aoai-guidance.openai.azure.com/openai/"
 AOAI_DEPLOYMENT = "guidance-gpt-5"
 
 
