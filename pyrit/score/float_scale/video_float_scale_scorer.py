@@ -71,7 +71,6 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         self._score_aggregator = score_aggregator
         self.audio_scorer = audio_scorer
 
-<<<<<<< Updated upstream
     def _build_identifier(self) -> ScorerIdentifier:
         """
         Build the scorer evaluation identifier for this scorer.
@@ -79,18 +78,12 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         Returns:
             ScorerIdentifier: The identifier for this scorer.
         """
-        return self._create_identifier(
-            sub_scorers=[self.image_scorer],
-=======
-    def _build_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
         sub_scorers = [self.image_scorer]
         if self.audio_scorer:
             sub_scorers.append(self.audio_scorer)
 
-        self._set_identifier(
+        return self._create_identifier(
             sub_scorers=sub_scorers,
->>>>>>> Stashed changes
             score_aggregator=self._score_aggregator.__name__,
             scorer_specific_params={
                 "num_sampled_frames": self.num_sampled_frames,
@@ -197,8 +190,9 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
             memory.add_message_to_memory(request=audio_message)
 
             # Score the audio using the audio_scorer
-            # audio_scorer is guaranteed to be not None when this method is called
-            audio_scores = await self.audio_scorer.score_prompts_batch_async(  # type: ignore[union-attr]
+            if self.audio_scorer is None:
+                return []
+            audio_scores = await self.audio_scorer.score_prompts_batch_async(
                 messages=[audio_message],
                 objectives=[objective] if objective else None,
                 batch_size=1,
