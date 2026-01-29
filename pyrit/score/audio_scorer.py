@@ -1,0 +1,240 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import logging
+import os
+import tempfile
+import uuid
+from abc import ABC
+from typing import Optional
+
+from pyrit.models import MessagePiece, Score
+from pyrit.score.scorer import Scorer
+
+logger = logging.getLogger(__name__)
+
+
+class _BaseAudioScorer(ABC):
+    """
+    Abstract base class for audio scorers that process audio by transcribing and scoring the text.
+
+    This class provides common functionality for transcribing audio files and delegating
+    scoring to a text-capable scorer. Concrete implementations handle aggregation logic
+    specific to their scoring type (true/false or float scale).
+    """
+
+    def __init__(
+        self,
+        *,
+        text_capable_scorer: Scorer,
+    ) -> None:
+        """
+        Initialize the base audio scorer.
+
+        Args:
+            text_capable_scorer: A scorer capable of processing text that will be used to score
+                the transcribed audio content.
+        """
+        self.text_scorer = text_capable_scorer
+
+    async def _score_audio_async(self, *, message_piece: MessagePiece, objective: Optional[str] = None) -> list[Score]:
+        """
+        Transcribe audio and score the transcript.
+
+        Args:
+            message_piece: The message piece containing the audio file path.
+            objective: Optional objective description for scoring.
+
+        Returns:
+            List of scores for the transcribed audio.
+
+        Raises:
+            FileNotFoundError: If the audio file does not exist.
+            ValueError: If transcription fails or returns empty text.
+        """
+        audio_path = message_piece.converted_value
+
+        if not os.path.exists(audio_path):
+            raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+        # Transcribe audio to text
+        transcript = await self._transcribe_audio_async(audio_path)
+
+        if not transcript or not transcript.strip():
+            logger.warning(f"Empty transcript from audio file: {audio_path}")
+            # Return empty list - no text to score
+            return []
+
+        # Create a MessagePiece for the transcript
+        original_prompt_id = message_piece.original_prompt_id
+        if isinstance(original_prompt_id, str):
+            original_prompt_id = uuid.UUID(original_prompt_id)
+
+        text_piece = MessagePiece(
+            original_value=transcript,
+            role=message_piece.get_role_for_storage(),
+            original_prompt_id=original_prompt_id,
+            converted_value=transcript,
+            converted_value_data_type="text",
+        )
+
+        text_message = text_piece.to_message()
+
+        # Add to memory so score references are valid
+        from pyrit.memory import CentralMemory
+
+        memory = CentralMemory.get_memory_instance()
+        memory.add_message_to_memory(request=text_message)
+
+        # Score the transcript
+        transcript_scores = await self.text_scorer.score_prompts_batch_async(
+            messages=[text_message],
+            objectives=[objective] if objective else None,
+            batch_size=1,
+        )
+
+        return transcript_scores
+
+    async def _transcribe_audio_async(self, audio_path: str) -> str:
+        """
+        Transcribe an audio file to text.
+
+        Args:
+            audio_path: Path to the audio file.
+
+        Returns:
+            Transcribed text from the audio.
+
+        Raises:
+            ModuleNotFoundError: If required transcription dependencies are not installed.
+        """
+        from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
+
+        # Convert audio to WAV if needed (Azure Speech requires WAV)
+        wav_path = await self._ensure_wav_format(audio_path)
+        logger.info(f"Audio transcription: WAV file path = {wav_path}")
+
+        # Check if WAV file exists and has content
+        if os.path.exists(wav_path):
+            file_size = os.path.getsize(wav_path)
+            logger.info(f"Audio transcription: WAV file size = {file_size} bytes")
+        else:
+            logger.error(f"Audio transcription: WAV file does not exist at {wav_path}")
+
+        try:
+            converter = AzureSpeechAudioToTextConverter()
+            logger.info("Audio transcription: Starting Azure Speech transcription...")
+            result = await converter.convert_async(prompt=wav_path, input_type="audio_path")
+            logger.info(f"Audio transcription: Result = '{result.output_text}'")
+            return result.output_text
+        except Exception as e:
+            logger.error(f"Audio transcription failed: {type(e).__name__}: {e}")
+            raise
+        finally:
+            # Clean up temporary WAV file if it exists (ie for scoring audio from videos)
+            if wav_path != audio_path and os.path.exists(wav_path):
+                os.unlink(wav_path)
+
+    async def _ensure_wav_format(self, audio_path: str) -> str:
+        """
+        Ensure audio file is in WAV format for transcription.
+
+        Args:
+            audio_path: Path to the audio file.
+
+        Returns:
+            Path to WAV file (original if already WAV, or converted temporary file).
+
+        Raises:
+            ModuleNotFoundError: If pydub is not installed.
+        """
+        if audio_path.lower().endswith(".wav"):
+            return audio_path
+
+        try:
+            from pydub import AudioSegment
+        except ModuleNotFoundError as e:
+            logger.error("Could not import pydub. Install it via 'pip install pydub'")
+            raise e
+
+        # Convert to WAV
+        audio = AudioSegment.from_file(audio_path)
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
+            audio.export(temp_wav.name, format="wav")
+            return temp_wav.name
+
+    def _extract_audio_from_video(self, video_path: str) -> Optional[str]:
+        """
+        Extract audio track from a video file.
+
+        Args:
+            video_path: Path to the video file.
+
+        Returns:
+            Path to the extracted audio file (WAV format), or None if extraction fails.
+
+        Raises:
+            ModuleNotFoundError: If pydub/ffmpeg is not installed.
+        """
+        return _BaseAudioScorer.extract_audio_from_video(video_path)
+
+    @staticmethod
+    def extract_audio_from_video(video_path: str) -> Optional[str]:
+        """
+        Extract audio track from a video file (static version).
+
+        Args:
+            video_path: Path to the video file.
+
+        Returns:
+            Path to the extracted audio file (WAV format), or None if extraction fails.
+
+        Raises:
+            ModuleNotFoundError: If pydub/ffmpeg is not installed.
+        """
+        try:
+            from pydub import AudioSegment
+        except ModuleNotFoundError as e:
+            logger.error("Could not import pydub. Install it via 'pip install pydub'")
+            raise e
+
+        try:
+            # Extract audio from video using pydub (requires ffmpeg)
+            logger.info(f"Extracting audio from video: {video_path}")
+            audio = AudioSegment.from_file(video_path)
+            logger.info(
+                f"Audio extracted: duration={len(audio)}ms, channels={audio.channels}, "
+                f"sample_width={audio.sample_width}, frame_rate={audio.frame_rate}"
+            )
+
+            # Optimize for Azure Speech recognition:
+            # Azure Speech works best with 16kHz mono audio (same as Azure TTS output)
+            target_sample_rate = 16000  # Azure Speech optimal rate
+            if audio.frame_rate != target_sample_rate:
+                logger.info(f"Resampling audio from {audio.frame_rate}Hz to {target_sample_rate}Hz")
+                audio = audio.set_frame_rate(target_sample_rate)
+
+            # Ensure 16-bit audio
+            if audio.sample_width != 2:
+                logger.info(f"Converting sample width from {audio.sample_width * 8}-bit to 16-bit")
+                audio = audio.set_sample_width(2)
+
+            # Convert to mono (Azure Speech prefers mono)
+            if audio.channels > 1:
+                logger.info(f"Converting from {audio.channels} channels to mono")
+                audio = audio.set_channels(1)
+
+            # Create temporary WAV file with PCM encoding for best compatibility
+            with tempfile.NamedTemporaryFile(suffix="_video_audio.wav", delete=False) as temp_audio:
+                audio.export(
+                    temp_audio.name,
+                    format="wav",
+                    parameters=["-acodec", "pcm_s16le"],  # 16-bit PCM for best compatibility
+                )
+                logger.info(
+                    f"Audio exported to: {temp_audio.name} (duration={len(audio)}ms, rate={audio.frame_rate}Hz, mono)"
+                )
+                return temp_audio.name
+        except Exception as e:
+            logger.warning(f"Failed to extract audio from video {video_path}: {e}")
+            return None
