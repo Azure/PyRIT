@@ -32,7 +32,7 @@ def sync_version():
         pyrit_version = pyrit.__version__
 
         # Convert Python version format to npm format
-        # e.g., "0.10.1.dev0" -> "0.10.1-dev.0"
+        # e.g., "0.11.0.dev0" -> "0.11.0-dev.0"
         npm_version = pyrit_version.replace(".dev", "-dev.")
 
         # Read package.json
