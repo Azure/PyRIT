@@ -251,7 +251,6 @@ class TestJailbreakProperties:
         self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: List[SeedGroup]
     ) -> None:
         """Test that all three targets (adversarial, object, scorer) are distinct."""
-        # TODO confirm that DatasetConfig does/doesn't intercept this
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak()
             await scenario.initialize_async(objective_target=mock_objective_target)
