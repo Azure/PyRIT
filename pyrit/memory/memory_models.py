@@ -30,6 +30,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.types import Uuid
 
+import pyrit
 from pyrit.common.utils import to_sha256
 from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier
 from pyrit.models import (
@@ -49,6 +50,9 @@ from pyrit.models import (
     SeedSimulatedConversation,
     SeedType,
 )
+
+# Default pyrit_version for database records created before version tracking was added
+LEGACY_PYRIT_VERSION = "<0.10.0"
 
 
 class CustomUUID(TypeDecorator[uuid.UUID]):
@@ -185,6 +189,10 @@ class PromptMemoryEntry(Base):
 
     original_prompt_id = mapped_column(CustomUUID, nullable=False)
 
+    # Version of PyRIT used when this entry was created
+    # Nullable for backwards compatibility with existing databases
+    pyrit_version = mapped_column(String, nullable=True)
+
     scores: Mapped[List["ScoreEntry"]] = relationship(
         "ScoreEntry",
         primaryjoin="ScoreEntry.prompt_request_response_id == PromptMemoryEntry.original_prompt_id",
@@ -222,6 +230,7 @@ class PromptMemoryEntry(Base):
         self.response_error = entry.response_error  # type: ignore
 
         self.original_prompt_id = entry.original_prompt_id
+        self.pyrit_version = pyrit.__version__
 
     def get_message_piece(self) -> MessagePiece:
         """
@@ -230,11 +239,14 @@ class PromptMemoryEntry(Base):
         Returns:
             MessagePiece: The reconstructed message piece with all its data and scores.
         """
-        converter_ids: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = (
-            [ConverterIdentifier.from_dict(c) for c in self.converter_identifiers]
-            if self.converter_identifiers
-            else None
-        )
+        # Reconstruct ConverterIdentifiers with the stored pyrit_version
+        converter_ids: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = None
+        stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
+        if self.converter_identifiers:
+            converter_ids = []
+            for c in self.converter_identifiers:
+                converter = ConverterIdentifier.from_dict(c)
+                converter_ids.append(converter.with_pyrit_version(stored_version))
         message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
@@ -321,6 +333,9 @@ class ScoreEntry(Base):
     timestamp = mapped_column(DateTime, nullable=False)
     task = mapped_column(String, nullable=True)  # Deprecated: Use objective instead
     objective = mapped_column(String, nullable=True)
+    # Version of PyRIT used when this score was created
+    # Nullable for backwards compatibility with existing databases
+    pyrit_version = mapped_column(String, nullable=True)
     prompt_request_piece: Mapped["PromptMemoryEntry"] = relationship("PromptMemoryEntry", back_populates="scores")
 
     def __init__(self, *, entry: Score):
@@ -346,6 +361,7 @@ class ScoreEntry(Base):
         # New code should only read from objective
         self.task = entry.objective
         self.objective = entry.objective
+        self.pyrit_version = pyrit.__version__
 
     def get_score(self) -> Score:
         """
@@ -354,10 +370,12 @@ class ScoreEntry(Base):
         Returns:
             Score: The reconstructed score object with all its data.
         """
-        # Convert dict back to ScorerIdentifier (Score.__init__ handles None by creating default)
-        scorer_identifier = (
-            ScorerIdentifier.from_dict(self.scorer_class_identifier) if self.scorer_class_identifier else None
-        )
+        # Convert dict back to ScorerIdentifier with the stored pyrit_version
+        scorer_identifier = None
+        stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
+        if self.scorer_class_identifier:
+            scorer_identifier = ScorerIdentifier.from_dict(self.scorer_class_identifier)
+            scorer_identifier = scorer_identifier.with_pyrit_version(stored_version)
         return Score(
             id=self.id,
             score_value=self.score_value,
@@ -677,6 +695,9 @@ class AttackResultEntry(Base):
     pruned_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
+    # Version of PyRIT used when this attack result was created
+    # Nullable for backwards compatibility with existing databases
+    pyrit_version = mapped_column(String, nullable=True)
 
     last_response: Mapped[Optional["PromptMemoryEntry"]] = relationship(
         "PromptMemoryEntry",
@@ -720,6 +741,7 @@ class AttackResultEntry(Base):
         ] or None
 
         self.timestamp = datetime.now()
+        self.pyrit_version = pyrit.__version__
 
     @staticmethod
     def _get_id_as_uuid(obj: Any) -> Optional[uuid.UUID]:
@@ -910,21 +932,23 @@ class ScenarioResultEntry(Base):
             ScenarioResult object with scenario metadata but empty attack_results
         """
         # Recreate ScenarioIdentifier with the stored pyrit_version
+        stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
         scenario_identifier = ScenarioIdentifier(
             name=self.scenario_name,
             description=self.scenario_description or "",
             scenario_version=self.scenario_version,
             init_data=self.scenario_init_data,
-            pyrit_version=self.pyrit_version,
+            pyrit_version=stored_version,
         )
 
         # Return empty attack_results - will be populated by memory_interface
         attack_results: dict[str, list[AttackResult]] = {}
 
-        # Convert dict back to ScorerIdentifier for reconstruction
-        scorer_identifier = (
-            ScorerIdentifier.from_dict(self.objective_scorer_identifier) if self.objective_scorer_identifier else None
-        )
+        # Convert dict back to ScorerIdentifier with the stored pyrit_version
+        scorer_identifier = None
+        if self.objective_scorer_identifier:
+            scorer_identifier = ScorerIdentifier.from_dict(self.objective_scorer_identifier)
+            scorer_identifier = scorer_identifier.with_pyrit_version(stored_version)
 
         return ScenarioResult(
             id=self.id,

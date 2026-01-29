@@ -104,7 +104,7 @@ class Identifier:
     hash: str | None = field(default=None, compare=False, kw_only=True, metadata={_EXCLUDE: {_ExcludeFrom.HASH}})
 
     # {full_snake_case}::{hash[:8]}
-    unique_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})  
+    unique_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.HASH, _ExcludeFrom.STORAGE}})
 
     # Version field - stored but not hashed (allows version tracking without affecting identity)
     pyrit_version: str = field(
@@ -237,6 +237,28 @@ class Identifier:
         filtered_data = {k: v for k, v in data.items() if k in valid_fields}
 
         return cls(**filtered_data)
+
+    def with_pyrit_version(self: T, version: str) -> T:
+        """
+        Create a copy of this Identifier with a different pyrit_version.
+
+        Since Identifier is frozen, this returns a new instance with all the same
+        field values except for pyrit_version which is set to the provided value.
+
+        Args:
+            version: The pyrit_version to set on the new instance.
+
+        Returns:
+            A new Identifier instance with the updated pyrit_version.
+        """
+        # Get all current field values
+        current_data = self.to_dict()
+        # Override pyrit_version
+        current_data["pyrit_version"] = version
+        # Add back fields excluded from storage that are needed for from_dict
+        current_data["class_description"] = self.class_description
+        current_data["identifier_type"] = self.identifier_type
+        return type(self).from_dict(current_data)
 
     @classmethod
     def normalize(cls: Type[T], value: T | dict[str, Any]) -> T:

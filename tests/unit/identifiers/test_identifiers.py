@@ -194,14 +194,16 @@ class TestIdentifierStorage:
         storage_dict = identifier.to_dict()
 
         # Should include storable fields
-        assert "unique_name" in storage_dict
         assert "class_name" in storage_dict
         assert "class_module" in storage_dict
         assert "hash" in storage_dict
+        assert "pyrit_version" in storage_dict
 
-        # Should exclude non-storable fields
+        # Should exclude non-storable fields (marked with _ExcludeFrom.STORAGE)
         assert "class_description" not in storage_dict
         assert "identifier_type" not in storage_dict
+        assert "snake_class_name" not in storage_dict
+        assert "unique_name" not in storage_dict
 
     def test_to_dict_values_match(self):
         """Test that to_dict values match the original identifier."""
@@ -213,8 +215,10 @@ class TestIdentifierStorage:
         )
         storage_dict = identifier.to_dict()
 
-        # unique_name is auto-computed
-        assert storage_dict["unique_name"] == identifier.unique_name
+        # unique_name and snake_class_name are excluded from storage
+        assert "unique_name" not in storage_dict
+        assert "snake_class_name" not in storage_dict
+        # Stored fields match
         assert storage_dict["class_name"] == "MyScorer"
         assert storage_dict["class_module"] == "pyrit.score.my_scorer"
         assert storage_dict["hash"] == identifier.hash
