@@ -85,7 +85,7 @@ class Jailbreak(Scenario):
         Returns:
             DatasetConfiguration: Configuration with airt_jailbreak dataset.
         """
-        return DatasetConfiguration(dataset_names=["airt_jailbreak"], max_dataset_size=4)
+        return DatasetConfiguration(dataset_names=["airt_harms"], max_dataset_size=4)
 
     @apply_defaults
     def __init__(
@@ -107,7 +107,8 @@ class Jailbreak(Scenario):
         """
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(
+            objective_scorer=objective_scorer)
 
         super().__init__(
             name="Jailbreak",
@@ -135,9 +136,12 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -172,7 +176,8 @@ class Jailbreak(Scenario):
             f for f in os.listdir(DATASETS_PATH / "jailbreak" / "templates") if f.endswith(".yaml")
         ]
         if not jailbreak_template_names:
-            raise ValueError("No jailbreak templates found in the jailbreak directory")
+            raise ValueError(
+                "No jailbreak templates found in the jailbreak directory")
         return jailbreak_template_names
 
     async def _get_atomic_attack_from_jailbreak_async(self, *, jailbreak_template_name: str) -> AtomicAttack:
@@ -190,12 +195,14 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(
+                template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(
+                converters=[jailbreak_converter])
         )
 
         # Create the attack

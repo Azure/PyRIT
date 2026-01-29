@@ -1,4 +1,4 @@
-dataset_name: airt_jailbreak
+dataset_name: airt_harms
 harm_categories: multi-harm
 data_type: text
 description: |
