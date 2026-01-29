@@ -5,11 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
+#       jupytext_version: 1.19.0
 # ---
 
 # %% [markdown]
@@ -43,7 +39,7 @@ from pyrit.prompt_target import CopilotType, OpenAIChatTarget, PlaywrightCopilot
 from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestion
 from pyrit.setup.initialization import IN_MEMORY, initialize_pyrit_async
 
-await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)
 
 # %% [markdown]
 # ## Connecting to an Existing Browser Session
@@ -98,7 +94,6 @@ async def connect_to_existing_browser(browser_debug_port, run_function):
 # Now, we can use the `PlaywrightCopilotTarget` which has built-in Copilot functionality.
 # This target automatically handles text inputs without needing custom interaction functions.
 # %%
-
 # Set the event loop policy for Windows before any async operations
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
@@ -155,6 +150,7 @@ async def run_multimodal(page: Page) -> None:
             SeedPrompt(value=objective, data_type="text"),
         ]
     )
+
     attack_context: SingleTurnAttackContext = SingleTurnAttackContext(
         params=AttackParameters(
             objective=objective,
