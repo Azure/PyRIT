@@ -16,7 +16,7 @@ from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
 )
-from pyrit.identifiers.target_identifier import TargetIdentifier
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 

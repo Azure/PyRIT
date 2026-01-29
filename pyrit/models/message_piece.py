@@ -107,9 +107,11 @@ class MessagePiece:
         self.prompt_metadata = prompt_metadata or {}
 
         # Handle converter_identifiers: normalize to ConverterIdentifier (handles dict with deprecation warning)
-        self.converter_identifiers: List[ConverterIdentifier] = [
-            ConverterIdentifier.normalize(conv_id) for conv_id in converter_identifiers
-        ] if converter_identifiers else []
+        self.converter_identifiers: List[ConverterIdentifier] = (
+            [ConverterIdentifier.normalize(conv_id) for conv_id in converter_identifiers]
+            if converter_identifiers
+            else []
+        )
 
         # Handle prompt_target_identifier: normalize to TargetIdentifier (handles dict with deprecation warning)
         self.prompt_target_identifier: Optional[TargetIdentifier] = (

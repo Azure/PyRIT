@@ -13,7 +13,6 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 from pyrit.identifiers import ScorerIdentifier
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )

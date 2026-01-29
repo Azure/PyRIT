@@ -111,7 +111,7 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             top_p (Optional[float]): The top_p parameter for generation. Defaults to None.
             target_specific_params (Optional[dict[str, Any]]): Additional target-specific parameters
                 that should be included in the identifier. Defaults to None.
-        
+
         Returns:
             TargetIdentifier: The identifier for this prompt target.
         """
