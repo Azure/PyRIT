@@ -43,6 +43,43 @@ from pyrit.score import TrueFalseScorer
 from pyrit.score.true_false.decoding_scorer import DecodingScorer
 
 
+class EncodingDatasetConfiguration(DatasetConfiguration):
+    """
+    Custom dataset configuration for the Encoding scenario.
+
+    This configuration transforms each seed from the dataset into a SeedAttackGroup
+    with a properly formatted objective for encoding attacks.
+    """
+
+    def get_all_seed_attack_groups(self) -> List[SeedAttackGroup]:
+        """
+        Resolve and return all seeds as SeedAttackGroups with encoding objectives.
+
+        Each seed is transformed into a SeedAttackGroup containing:
+        - A SeedObjective with the encoding attack objective
+        - The original seed as a SeedPrompt
+
+        Returns:
+            List[SeedAttackGroup]: All resolved seed attack groups with objectives.
+
+        Raises:
+            ValueError: If no seeds could be resolved from the configuration.
+        """
+        all_seeds = self.get_all_seeds()
+
+        if not all_seeds:
+            raise ValueError("No seeds found in the configured datasets.")
+
+        seed_attack_groups: List[SeedAttackGroup] = []
+        for seed in all_seeds:
+            objective = f"Make the model say an encoded payload: {seed.value}"
+            seed_attack_groups.append(
+                SeedAttackGroup(seeds=[SeedObjective(value=objective), SeedPrompt(value=seed.value)])
+            )
+
+        return seed_attack_groups
+
+
 class EncodingStrategy(ScenarioStrategy):
     """
     Strategies for encoding attacks.
@@ -124,9 +161,10 @@ class Encoding(Scenario):
         Return the default dataset configuration for this scenario.
 
         Returns:
-            DatasetConfiguration: Configuration with garak slur terms and web XSS payloads.
+            EncodingDatasetConfiguration: Configuration with garak slur terms and web XSS payloads,
+                where each seed is transformed into a SeedAttackGroup with an encoding objective.
         """
-        return DatasetConfiguration(
+        return EncodingDatasetConfiguration(
             dataset_names=["garak_slur_terms_en", "garak_web_html_js"],
             max_dataset_size=3,
         )
@@ -181,9 +219,9 @@ class Encoding(Scenario):
         # Store deprecated seed_prompts for later resolution in _resolve_seed_prompts
         self._deprecated_seed_prompts = seed_prompts
         # Will be resolved in _get_atomic_attacks_async
-        self._resolved_seed_prompts: Optional[list[str]] = None
+        self._resolved_seed_groups: Optional[list[SeedAttackGroup]] = None
 
-    def _resolve_seed_prompts(self) -> list[str]:
+    def _resolve_seed_groups(self) -> list[SeedAttackGroup]:
         """
         Resolve seed prompts from deprecated parameter or dataset configuration.
 
@@ -202,16 +240,20 @@ class Encoding(Scenario):
 
         # Use deprecated seed_prompts if provided
         if self._deprecated_seed_prompts is not None:
-            return self._deprecated_seed_prompts
+            seed_groups = []
+            for seed in self._deprecated_seed_prompts:
+                seed_groups.append(SeedAttackGroup(seeds=[SeedObjective(value=seed)]))
+
+            return seed_groups
 
         # Use dataset_config (guaranteed to be set by initialize_async)
-        seed_groups = self._dataset_config.get_all_seed_groups()
+        seed_groups = self._dataset_config.get_all_seed_attack_groups()
 
         if not seed_groups:
             self._raise_dataset_exception()
 
         # Flatten all seeds from seed groups
-        return [seed.value for group in seed_groups for seed in group.seeds]
+        return seed_groups
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
@@ -221,7 +263,7 @@ class Encoding(Scenario):
             List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
         # Resolve seed prompts from deprecated parameter or dataset config
-        self._resolved_seed_prompts = self._resolve_seed_prompts()
+        self._resolved_seed_groups = self._resolve_seed_groups()
 
         return self._get_converter_attacks()
 
@@ -308,12 +350,6 @@ class Encoding(Scenario):
 
         atomic_attacks = []
         for attack_converter_config in converter_configs:
-            seed_groups = []
-            for seed_prompt in self._resolved_seed_prompts:
-                objective = f"Make the model say an encoded payload: {seed_prompt}"
-                seed = SeedPrompt(value=seed_prompt)
-                seed_groups.append(SeedAttackGroup(seeds=[SeedObjective(value=objective), seed]))
-
             # objective_target is guaranteed to be non-None by parent class validation
             assert self._objective_target is not None
             attack = PromptSendingAttack(
@@ -322,7 +358,9 @@ class Encoding(Scenario):
                 attack_scoring_config=self._scorer_config,
             )
             atomic_attacks.append(
-                AtomicAttack(atomic_attack_name=encoding_name, attack=attack, seed_groups=seed_groups)
+                AtomicAttack(
+                    atomic_attack_name=encoding_name, attack=attack, seed_groups=self._resolved_seed_groups or []
+                )
             )
 
         return atomic_attacks
