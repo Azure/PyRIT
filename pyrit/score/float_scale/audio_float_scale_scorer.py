@@ -16,19 +16,6 @@ class AudioFloatScaleScorer(FloatScaleScorer, _BaseAudioScorer):
 
     The AudioFloatScaleScorer transcribes audio to text using Azure Speech-to-Text,
     then scores the transcript using a FloatScaleScorer.
-
-    Example usage:
-        ```python
-        text_scorer = SelfAskGeneralFloatScaleScorer(
-            chat_target=OpenAIChatTarget(),
-            system_prompt_format_string=harmful_content_rubric,
-            min_value=1,
-            max_value=5,
-        )
-
-        audio_scorer = AudioFloatScaleScorer(text_capable_scorer=text_scorer)
-        score = await audio_scorer.score_async(audio_message)
-        ```
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["audio_path"])

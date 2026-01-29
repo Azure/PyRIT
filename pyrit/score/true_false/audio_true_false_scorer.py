@@ -16,19 +16,6 @@ class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioScorer):
 
     The AudioTrueFalseScorer transcribes audio to text using Azure Speech-to-Text,
     then scores the transcript using a TrueFalseScorer.
-
-    Example usage:
-        ```python
-        text_scorer = SelfAskTrueFalseScorer(
-            chat_target=OpenAIChatTarget(),
-            true_false_question=TrueFalseQuestion(
-                true_description="The audio contains harmful content"
-            ),
-        )
-
-        audio_scorer = AudioTrueFalseScorer(text_capable_scorer=text_scorer)
-        score = await audio_scorer.score_async(audio_message)
-        ```
     """
 
     _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["audio_path"])
