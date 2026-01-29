@@ -106,19 +106,10 @@ class MessagePiece:
         self.labels = labels or {}
         self.prompt_metadata = prompt_metadata or {}
 
-        # Handle converter_identifiers: convert dicts to ConverterIdentifier with deprecation warning
-        self.converter_identifiers: List[ConverterIdentifier] = []
-        if converter_identifiers:
-            for conv_id in converter_identifiers:
-                if isinstance(conv_id, dict):
-                    print_deprecation_message(
-                        old_item="dict for converter_identifiers",
-                        new_item="ConverterIdentifier",
-                        removed_in="0.14.0",
-                    )
-                    self.converter_identifiers.append(ConverterIdentifier.from_dict(conv_id))
-                else:
-                    self.converter_identifiers.append(conv_id)
+        # Handle converter_identifiers: normalize to ConverterIdentifier (handles dict with deprecation warning)
+        self.converter_identifiers: List[ConverterIdentifier] = [
+            ConverterIdentifier.normalize(conv_id) for conv_id in converter_identifiers
+        ] if converter_identifiers else []
 
         # Handle prompt_target_identifier: normalize to TargetIdentifier (handles dict with deprecation warning)
         self.prompt_target_identifier: Optional[TargetIdentifier] = (

@@ -210,7 +210,7 @@ class PromptMemoryEntry(Base):
         self.converter_identifiers = [conv.to_dict() for conv in entry.converter_identifiers]
         # Normalize prompt_target_identifier and convert to dict for JSON serialization
         self.prompt_target_identifier = (
-            TargetIdentifier.normalize(entry.prompt_target_identifier).to_dict()
+            entry.prompt_target_identifier.to_dict()
             if entry.prompt_target_identifier
             else {}
         )
