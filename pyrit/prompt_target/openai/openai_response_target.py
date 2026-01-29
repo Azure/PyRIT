@@ -160,7 +160,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         # Set up a fresh construction
         self._init_args = {
             "custom_functions": deepcopy(custom_functions),
-            "api_version": api_version,
             "max_output_tokens": max_output_tokens,
             "temperature": temperature,
             "top_p": top_p,
