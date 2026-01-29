@@ -101,10 +101,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(logger=logger, context_type=SingleTurnAttackContext)
-
-        # Store the objective target
-        self._objective_target = objective_target
+        super().__init__(objective_target=objective_target,logger=logger, context_type=SingleTurnAttackContext)
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
