@@ -6,7 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Type, cast
 
-from pyrit.identifiers.identifier import MAX_STORAGE_LENGTH, Identifier
+from pyrit.identifiers.identifier import _MAX_STORAGE_LENGTH, Identifier
 from pyrit.models.score import ScoreType
 
 
@@ -22,10 +22,10 @@ class ScorerIdentifier(Identifier):
     scorer_type: ScoreType = "unknown"
     """The type of scorer ("true_false", "float_scale", or "unknown")."""
 
-    system_prompt_template: Optional[str] = field(default=None, metadata={MAX_STORAGE_LENGTH: 100})
+    system_prompt_template: Optional[str] = field(default=None, metadata={_MAX_STORAGE_LENGTH: 100})
     """The system prompt template used by the scorer. Truncated for storage if > 100 characters."""
 
-    user_prompt_template: Optional[str] = field(default=None, metadata={MAX_STORAGE_LENGTH: 100})
+    user_prompt_template: Optional[str] = field(default=None, metadata={_MAX_STORAGE_LENGTH: 100})
     """The user prompt template used by the scorer. Truncated for storage if > 100 characters."""
 
     sub_identifier: Optional[List["ScorerIdentifier"]] = None

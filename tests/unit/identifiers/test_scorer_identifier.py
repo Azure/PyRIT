@@ -162,7 +162,8 @@ class TestScorerIdentifierToDict:
         assert result["class_name"] == "TestScorer"
         assert result["class_module"] == "pyrit.score.test_scorer"
         assert result["hash"] == identifier.hash
-        assert result["unique_name"] == identifier.unique_name
+        # unique_name is excluded from storage (has _ExcludeFrom.STORAGE metadata)
+        assert "unique_name" not in result
         # class_description and identifier_type should be excluded
         assert "class_description" not in result
         assert "identifier_type" not in result
