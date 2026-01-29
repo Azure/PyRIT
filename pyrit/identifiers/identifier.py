@@ -46,11 +46,14 @@ class _ExcludeFrom(Enum):
         Returns:
             set[_ExcludeFrom]: The complete set of exclusions including implied ones.
         """
-        _EXPANSION_CATALOG: dict[_ExcludeFrom, set[_ExcludeFrom]] = {
-            _ExcludeFrom.HASH: {_ExcludeFrom.HASH},
-            _ExcludeFrom.STORAGE: {_ExcludeFrom.STORAGE, _ExcludeFrom.HASH},
-        }
         return _EXPANSION_CATALOG[self]
+
+
+# Lookup table for exclusion expansion - defined after enum so values exist
+_EXPANSION_CATALOG: dict[_ExcludeFrom, set[_ExcludeFrom]] = {
+    _ExcludeFrom.HASH: {_ExcludeFrom.HASH},
+    _ExcludeFrom.STORAGE: {_ExcludeFrom.STORAGE, _ExcludeFrom.HASH},
+}
 
 
 def _expand_exclusions(exclude_set: set[_ExcludeFrom]) -> set[_ExcludeFrom]:
@@ -277,28 +280,6 @@ class Identifier:
         filtered_data = {k: v for k, v in data.items() if k in valid_fields}
 
         return cls(**filtered_data)
-
-    def with_pyrit_version(self: T, version: str) -> T:
-        """
-        Create a copy of this Identifier with a different pyrit_version.
-
-        Since Identifier is frozen, this returns a new instance with all the same
-        field values except for pyrit_version which is set to the provided value.
-
-        Args:
-            version: The pyrit_version to set on the new instance.
-
-        Returns:
-            A new Identifier instance with the updated pyrit_version.
-        """
-        # Get all current field values
-        current_data = self.to_dict()
-        # Override pyrit_version
-        current_data["pyrit_version"] = version
-        # Add back fields excluded from storage that are needed for from_dict
-        current_data["class_description"] = self.class_description
-        current_data["identifier_type"] = self.identifier_type
-        return type(self).from_dict(current_data)
 
     @classmethod
     def normalize(cls: Type[T], value: T | dict[str, Any]) -> T:

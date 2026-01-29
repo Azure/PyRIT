@@ -243,10 +243,10 @@ class PromptMemoryEntry(Base):
         converter_ids: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = None
         stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
         if self.converter_identifiers:
-            converter_ids = []
-            for c in self.converter_identifiers:
-                converter = ConverterIdentifier.from_dict(c)
-                converter_ids.append(converter.with_pyrit_version(stored_version))
+            converter_ids = [
+                ConverterIdentifier.from_dict({**c, "pyrit_version": stored_version})
+                for c in self.converter_identifiers
+            ]
         message_piece = MessagePiece(
             role=self.role,
             original_value=self.original_value,
@@ -374,8 +374,9 @@ class ScoreEntry(Base):
         scorer_identifier = None
         stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
         if self.scorer_class_identifier:
-            scorer_identifier = ScorerIdentifier.from_dict(self.scorer_class_identifier)
-            scorer_identifier = scorer_identifier.with_pyrit_version(stored_version)
+            scorer_identifier = ScorerIdentifier.from_dict(
+                {**self.scorer_class_identifier, "pyrit_version": stored_version}
+            )
         return Score(
             id=self.id,
             score_value=self.score_value,
@@ -947,8 +948,9 @@ class ScenarioResultEntry(Base):
         # Convert dict back to ScorerIdentifier with the stored pyrit_version
         scorer_identifier = None
         if self.objective_scorer_identifier:
-            scorer_identifier = ScorerIdentifier.from_dict(self.objective_scorer_identifier)
-            scorer_identifier = scorer_identifier.with_pyrit_version(stored_version)
+            scorer_identifier = ScorerIdentifier.from_dict(
+                {**self.objective_scorer_identifier, "pyrit_version": stored_version}
+            )
 
         return ScenarioResult(
             id=self.id,
