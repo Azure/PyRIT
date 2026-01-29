@@ -7,6 +7,7 @@ import logging
 from typing import Optional
 
 from pyrit.common import net_utility
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
@@ -57,9 +58,14 @@ class GandalfTarget(PromptTarget):
 
         self._defender = level.value
 
-    def _build_identifier(self) -> None:
-        """Build the identifier with Gandalf-specific parameters."""
-        self._set_identifier(
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with Gandalf-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
             target_specific_params={
                 "level": self._defender,
             },

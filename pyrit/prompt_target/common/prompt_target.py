@@ -93,13 +93,13 @@ class PromptTarget(Identifiable[TargetIdentifier]):
         """
         self._memory.dispose_engine()
 
-    def _set_identifier(
+    def _create_identifier(
         self,
         *,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
         target_specific_params: Optional[dict[str, Any]] = None,
-    ) -> None:
+    ) -> TargetIdentifier:
         """
         Construct the target identifier.
 
@@ -111,6 +111,9 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             top_p (Optional[float]): The top_p parameter for generation. Defaults to None.
             target_specific_params (Optional[dict[str, Any]]): Additional target-specific parameters
                 that should be included in the identifier. Defaults to None.
+        
+        Returns:
+            TargetIdentifier: The identifier for this prompt target.
         """
         # Determine the model name to use
         model_name = ""
@@ -119,7 +122,7 @@ class PromptTarget(Identifiable[TargetIdentifier]):
         elif self._model_name:
             model_name = self._model_name
 
-        self._identifier = TargetIdentifier(
+        return TargetIdentifier(
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
             class_description=" ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else "",
@@ -128,38 +131,21 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             model_name=model_name,
             temperature=temperature,
             top_p=top_p,
+            max_requests_per_minute=self._max_requests_per_minute,
             target_specific_params=target_specific_params,
         )
 
-    def _build_identifier(self) -> None:
+    def _build_identifier(self) -> TargetIdentifier:
         """
         Build the identifier for this target.
 
-        Subclasses should override this method to call _set_identifier() with
+        Subclasses can override this method to call _create_identifier() with
         their specific parameters (temperature, top_p, target_specific_params).
 
-        The base implementation calls _set_identifier() with no parameters,
+        The base implementation calls _create_identifier() with no parameters,
         which works for targets that don't have model-specific settings.
-        """
-        self._set_identifier()
-
-    def get_identifier(self) -> TargetIdentifier:
-        """
-        Get the target identifier. Built lazily on first access.
 
         Returns:
-            TargetIdentifier: The identifier containing all configuration parameters.
-
-        Note:
-            If `self._underlying_model` is specified (via instantiation or environment
-            variable), it is used as the "model_name". Otherwise, `self._model_name`
-            (which is often the deployment name in Azure) is used.
-
-            For storage in memory/database, call `.to_dict()` on the returned
-            identifier to get a dictionary suitable for JSON serialization.
+            TargetIdentifier: The identifier for this prompt target.
         """
-        if self._identifier is None:
-            self._build_identifier()
-            if self._identifier is None:
-                raise RuntimeError("_build_identifier must set _identifier")
-        return self._identifier
+        return self._create_identifier()

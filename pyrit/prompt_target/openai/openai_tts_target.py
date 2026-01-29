@@ -7,6 +7,7 @@ from typing import Any, Literal, Optional
 from pyrit.exceptions import (
     pyrit_target_retry,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     construct_response_from_request,
@@ -81,9 +82,14 @@ class OpenAITTSTarget(OpenAITarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
-    def _build_identifier(self) -> None:
-        """Build the identifier with TTS-specific parameters."""
-        self._set_identifier(
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with TTS-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
             target_specific_params={
                 "voice": self._voice,
                 "response_format": self._response_format,

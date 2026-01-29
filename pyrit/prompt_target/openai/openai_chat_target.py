@@ -12,6 +12,7 @@ from pyrit.exceptions import (
     PyritException,
     pyrit_target_retry,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
@@ -163,9 +164,14 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         self._extra_body_parameters = extra_body_parameters
 
-    def _build_identifier(self) -> None:
-        """Build the identifier with OpenAI chat-specific parameters."""
-        self._set_identifier(
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with OpenAI chat-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
             temperature=self._temperature,
             top_p=self._top_p,
             target_specific_params={

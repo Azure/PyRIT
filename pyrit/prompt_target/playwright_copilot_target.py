@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, List, Tuple, Union
 
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -128,9 +129,14 @@ class PlaywrightCopilotTarget(PromptTarget):
         if page and self.M365_URL_IDENTIFIER not in page.url and copilot_type == CopilotType.M365:
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
 
-    def _build_identifier(self) -> None:
-        """Build the identifier with Copilot-specific parameters."""
-        self._set_identifier(
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with Copilot-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
             target_specific_params={
                 "copilot_type": self._type.value,
             },

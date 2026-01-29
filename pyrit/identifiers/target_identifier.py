@@ -39,6 +39,9 @@ class TargetIdentifier(Identifier):
     top_p: Optional[float] = None
     """The top_p parameter for generation."""
 
+    max_requests_per_minute: Optional[int] = None
+    """Maximum number of requests per minute."""
+
     target_specific_params: Optional[Dict[str, Any]] = None
     """Additional target-specific parameters."""
 

@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Optional, Sequence
 
 import httpx
 
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -82,12 +83,18 @@ class HTTPTarget(PromptTarget):
         if client and httpx_client_kwargs:
             raise ValueError("Cannot provide both a pre-configured client and additional httpx client kwargs.")
 
-    def _build_identifier(self) -> None:
-        """Build the identifier with HTTP target-specific parameters."""
-        self._set_identifier(
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with HTTP target-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
             target_specific_params={
                 "use_tls": self.use_tls,
                 "prompt_regex_string": self.prompt_regex_string,
+                "callback_function": getattr(self.callback_function, "__name__", None),
             },
         )
 

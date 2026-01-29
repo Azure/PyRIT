@@ -7,6 +7,7 @@ from typing import Any
 from pyrit.exceptions import (
     pyrit_target_retry,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -95,9 +96,14 @@ class OpenAIVideoTarget(OpenAITarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
-    def _build_identifier(self) -> None:
-        """Build the identifier with video generation-specific parameters."""
-        self._set_identifier(
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with video generation-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
             target_specific_params={
                 "resolution": self._size,
                 "n_seconds": self._n_seconds,
