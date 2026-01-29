@@ -6,7 +6,7 @@ import copy
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
@@ -82,7 +82,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
     def __init__(
         self,
         *,
-        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        objective_target: OpenAIResponseTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -202,7 +202,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 tasks = [
                     tg.create_task(
                         self._propagate_beam(
-                            beam=beam, first_call=step == 0, prompt_group=prompt_group, context=context
+                            beam=beam, first_call=step == 0, message=message, context=context
                         )
                     )
                     for beam in beams
