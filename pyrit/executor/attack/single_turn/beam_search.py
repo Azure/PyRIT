@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from pyrit.common.apply_defaults import apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
-from pyrit.executor.attack.component import ConversationManager
+from pyrit.executor.attack.component import ConversationManager, PrependedConversationConfig
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
@@ -88,6 +88,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         num_beams: int = 2,
         max_iterations: int = 4,
         num_chars_per_step: int = 100,
+        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -127,6 +128,9 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         self._num_beams = num_beams
         self._max_iterations = max_iterations
         self._num_chars_per_step = num_chars_per_step
+        
+        # Store the prepended conversation configuration
+        self._prepended_conversation_config = prepended_conversation_config
 
     def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
         """
@@ -151,16 +155,14 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
 
-        # Combine memory labels from context and attack strategy
-        context.memory_labels = combine_dict(self._memory_labels, context.memory_labels)
-
-        # Process prepended conversation if provided
-        await self._conversation_manager.update_conversation_state_async(
+        # Initialize context with prepended conversation and merged labels
+        await self._conversation_manager.initialize_context_async(
+            context=context,
             target=self._objective_target,
             conversation_id=context.conversation_id,
-            prepended_conversation=context.prepended_conversation,
             request_converters=self._request_converters,
-            response_converters=self._response_converters,
+            prepended_conversation_config=self._prepended_conversation_config,
+            memory_labels=self._memory_labels,
         )
 
     async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
