@@ -5,13 +5,14 @@ import asyncio
 import copy
 import logging
 import uuid
-from typing import Optional
 from dataclasses import dataclass, field
+from typing import Any, Optional
 
-from pyrit.common.apply_defaults import apply_defaults
+from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import combine_dict, warn_if_set
 from pyrit.executor.attack.component import ConversationManager, PrependedConversationConfig
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
+from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
@@ -29,7 +30,6 @@ from pyrit.models import (
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.score import Scorer
-
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,7 @@ def _print_message(message: Message) -> None:
 
                 print(piece.converted_value)
 
+
 @dataclass
 class Beam:
     id: str
@@ -81,14 +82,15 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
     def __init__(
         self,
         *,
-        objective_target: OpenAIResponseTarget,
-        attack_scoring_config: AttackScoringConfig,
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
+        attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
+        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
         num_beams: int = 2,
         max_iterations: int = 4,
         num_chars_per_step: int = 100,
-        prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
         Initialize the prompt injection attack strategy.
@@ -102,7 +104,12 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             ValueError: If the objective scorer is not a true/false scorer.
         """
         # Initialize base class
-        super().__init__(objective_target=objective_target,logger=logger, context_type=SingleTurnAttackContext)
+        super().__init__(
+            objective_target=objective_target,
+            logger=logger,
+            context_type=SingleTurnAttackContext,
+            params_type=params_type,
+        )
 
         # Initialize the converter configuration
         attack_converter_config = attack_converter_config or AttackConverterConfig()
@@ -110,7 +117,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         self._response_converters = attack_converter_config.response_converters
 
         # Initialize scoring configuration
-        assert len(attack_scoring_config.auxiliary_scorers) > 0, "At least one auxiliary scorer must be provided."
+        attack_scoring_config = attack_scoring_config or AttackScoringConfig()
 
         # Check for unused optional parameters and warn if they are set
         warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"], log=logger)
@@ -128,7 +135,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         self._num_beams = num_beams
         self._max_iterations = max_iterations
         self._num_chars_per_step = num_chars_per_step
-        
+
         # Store the prepended conversation configuration
         self._prepended_conversation_config = prepended_conversation_config
 
@@ -165,7 +172,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             memory_labels=self._memory_labels,
         )
 
-    async def _perform_async(self, *, context: SingleTurnAttackContext) -> AttackResult:
+    async def _perform_async(self, *, context: SingleTurnAttackContext[Any]) -> AttackResult:
         """
         Perform the attack.
 
@@ -184,33 +191,37 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         response = None
         score = None
 
-        # Prepare the prompt
-        prompt_group = self._get_prompt_group(context)
-        print(f"Prepared prompt group: {[x for x in prompt_group.prompts]}")
+        # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
+        message = self._get_message(context)
 
         beams = [Beam(id=context.conversation_id, text="", score=0.0) for _ in range(self._num_beams)]
 
         for step in range(self._max_iterations):
-
             print(f"Starting iteration {step}")
             async with asyncio.TaskGroup() as tg:
-                    tasks = [tg.create_task(self._propagate_beam(beam=beam, first_call=step==0, prompt_group=prompt_group, context=context)) for beam in beams]
-                    await asyncio.gather(*tasks)
+                tasks = [
+                    tg.create_task(
+                        self._propagate_beam(
+                            beam=beam, first_call=step == 0, prompt_group=prompt_group, context=context
+                        )
+                    )
+                    for beam in beams
+                ]
+                await asyncio.gather(*tasks)
 
-            for (i, beam) in enumerate(beams):
+            for i, beam in enumerate(beams):
                 print(f"Beam {i} text after iteration {step}: {beam.text}")
 
             print("Scoring beams")
             async with asyncio.TaskGroup() as tg:
-                    tasks = [tg.create_task(self._score_beam(beam=beam)) for beam in beams]
-                    scores = await asyncio.gather(*tasks)
+                tasks = [tg.create_task(self._score_beam(beam=beam)) for beam in beams]
+                scores = await asyncio.gather(*tasks)
 
-            for (i, beam) in enumerate(beams):
+            for i, beam in enumerate(beams):
                 print(f"Beam {i} score: {beam.score}")
 
             for s in scores:
                 print(f"Score: {s}")
-
 
         result = AttackResult(
             conversation_id=context.conversation_id,
@@ -225,8 +236,10 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         )
 
         return result
-    
-    async def _propagate_beam(self, *, beam: Beam, first_call: bool, prompt_group: SeedGroup, context: SingleTurnAttackContext):
+
+    async def _propagate_beam(
+        self, *, beam: Beam, first_call: bool, message: Message, context: SingleTurnAttackContext[Any]
+    ):
         print(f"Propagating beam with text: {beam.text}")
         target = self._get_target_for_beam(beam)
 
@@ -241,7 +254,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         beam.context = new_context
 
         model_response = await self._prompt_normalizer.send_prompt_async(
-            seed_group=prompt_group,
+            message=message,
             target=target,
             conversation_id=new_context.conversation_id,
             request_converter_configurations=self._request_converters,
@@ -321,26 +334,29 @@ CONTINUATION: /.{{0,{n_chars}}}/
 
         return target
 
-    def _get_prompt_group(self, context: SingleTurnAttackContext) -> SeedGroup:
+    def _get_message(self, context: SingleTurnAttackContext[Any]) -> Message:
         """
-        Prepare the seed group for the attack.
+        Prepare the message for the attack.
 
-        If a seed_group is provided in the context, it will be used directly.
-        Otherwise, creates a new SeedGroup with the objective as a text prompt.
+        If a message is provided in the context, it will be used directly.
+        Otherwise, creates a new Message from the objective as a text prompt.
 
         Args:
             context (SingleTurnAttackContext): The attack context containing the objective
-                and optionally a pre-configured seed_group.
+                and optionally a pre-configured message template.
 
         Returns:
-            SeedGroup: The seed group to be used in the attack.
+            Message: The message to be used in the attack.
         """
-        if context.seed_group:
-            return context.seed_group
+        if context.next_message:
+            # Deep copy the message to preserve all fields, then assign new IDs
+            return context.next_message.duplicate_message()
+
+        return Message.from_prompt(prompt=context.objective, role="user")
 
         return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
 
     async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
-        """Clean up after attack execution"""
+        """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
