@@ -5,11 +5,11 @@ import asyncio
 import copy
 import logging
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional, Type
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
-from pyrit.common.utils import combine_dict, warn_if_set
+from pyrit.common.utils import warn_if_set
 from pyrit.executor.attack.component import ConversationManager, PrependedConversationConfig
 from pyrit.executor.attack.core import AttackConverterConfig, AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
@@ -20,12 +20,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
-    ConversationReference,
-    ConversationType,
     Message,
     Score,
-    SeedGroup,
-    SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import OpenAIResponseTarget
@@ -75,6 +71,7 @@ class Beam:
     score: float
     message: Message | None = None
 
+
 class BeamPruner:
     def prune(self, beams: list[Beam]) -> list[Beam]:
         raise NotImplementedError("BeamPruner.prune() must be implemented in subclasses")
@@ -93,7 +90,7 @@ class TopKBeamPruner(BeamPruner):
         for i in range(len(beams) - len(new_beams)):
             nxt = copy.deepcopy(new_beams[i % self.k])
             if len(nxt.text) > self.drop_chars:
-                nxt.text = nxt.text[:-self.drop_chars]
+                nxt.text = nxt.text[: -self.drop_chars]
             new_beams.append(nxt)
         assert len(beams) == len(new_beams)
         return new_beams
@@ -105,7 +102,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         self,
         *,
         objective_target: OpenAIResponseTarget = REQUIRED_VALUE,  # type: ignore[assignment]
-        beam_pruner: BeamPruner = REQUIRED_VALUE, # type: ignore[assignment]
+        beam_pruner: BeamPruner = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -244,7 +241,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             for i, beam in enumerate(beams):
                 print(f"Beam {i} score: {beam.score}")
 
-
         result = AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
@@ -304,8 +300,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         aux_scores = scoring_results["auxiliary_scores"]
         beam.score = 0.0
         for s in aux_scores:
-            #print(f"Auxiliary score: {s}")
-            #print(f"{s.get_value()=}")
+            # print(f"Auxiliary score: {s}")
+            # print(f"{s.get_value()=}")
             beam.score += s.get_value()
 
         objective_scores = scoring_results["objective_scores"]
