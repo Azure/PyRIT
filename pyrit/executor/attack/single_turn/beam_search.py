@@ -260,7 +260,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         return result
 
     async def _propagate_beam(self, *, beam: Beam):
-        print(f"Propagating beam with text: {beam.text}")
+        # print(f"Propagating beam with text: {beam.text}")
         target = self._get_target_for_beam(beam)
 
         current_context = copy.deepcopy(self._start_context)
@@ -286,7 +286,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             model_response.message_pieces[0].role = "assistant"
             beam.text = model_response.message_pieces[0].converted_value
             beam.message = model_response
-            print(f"Updated beam text: {beam.text}")
+            # print(f"Updated beam text: {beam.text}")
         except Exception as e:
             # Just log the error and skip the update
             logger.warning(f"Error propagating beam: {e}")
