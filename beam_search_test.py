@@ -3,7 +3,7 @@ import asyncio
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.executor.attack import AttackScoringConfig
 from pyrit.executor.attack.single_turn.beam_search import BeamSearchAttack
-from pyrit.prompt_target import OpenAIResponseTarget
+from pyrit.prompt_target import OpenAIResponseTarget, OpenAIChatTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskRefusalScorer,
@@ -25,12 +25,18 @@ async def main():
         temperature=1.0,
     )
 
-    acf_scorer = AzureContentFilterScorer(
-        endpoint=ACF_ENDPOINT,
-        api_key=get_azure_token_provider('https://cognitiveservices.azure.com/.default'),
+    base_chat_target = OpenAIChatTarget(
+        endpoint=AOAI_ENDPOINT,
+        model_name=AOAI_DEPLOYMENT,
+        api_key=get_azure_openai_auth(AOAI_ENDPOINT),
     )
 
-    objective_scorer = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=base_response_target))
+    acf_scorer = AzureContentFilterScorer(
+        endpoint=ACF_ENDPOINT,
+        api_key=get_azure_token_provider("https://cognitiveservices.azure.com/.default"),
+    )
+
+    objective_scorer = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=base_chat_target))
 
     scoring_config = AttackScoringConfig(
         objective_scorer=objective_scorer,
