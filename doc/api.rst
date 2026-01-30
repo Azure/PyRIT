@@ -30,6 +30,8 @@ API Reference
     Authenticator
     AzureAuth
     AzureStorageAuth
+    CopilotAuthenticator
+    ManualCopilotAuthenticator
 
 :py:mod:`pyrit.auxiliary_attacks`
 =================================
@@ -258,6 +260,27 @@ API Reference
     XPIAProcessingCallback
     XPIAStatus
 
+:py:mod:`pyrit.identifiers`
+===========================
+
+.. automodule:: pyrit.identifiers
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    class_name_to_snake_case
+    ConverterIdentifier
+    Identifiable
+    Identifier
+    IdentifierT
+    IdentifierType
+    ScorerIdentifier
+    snake_case_to_class_name
+    TargetIdentifier
+
 :py:mod:`pyrit.memory`
 ======================
 
@@ -332,7 +355,6 @@ API Reference
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
     HarmDefinition
-    Identifier
     ImagePathDataTypeSerializer
     AllowedCategories
     AttackOutcome
@@ -517,6 +539,7 @@ API Reference
     PromptTarget
     RealtimeTarget
     TextTarget
+    WebSocketCopilotTarget
 
 :py:mod:`pyrit.score`
 =====================
@@ -564,7 +587,6 @@ API Reference
     Scorer
     ScorerEvalDatasetFiles
     ScorerEvaluator
-    ScorerIdentifier
     ScorerMetrics
     ScorerMetricsWithIdentity
     ScorerPrinter

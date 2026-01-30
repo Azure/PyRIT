@@ -19,6 +19,7 @@ from pyrit.executor.attack import (
     RedTeamingAttack,
     RTASystemPromptPaths,
 )
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -34,11 +35,31 @@ from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import Scorer, TrueFalseScorer
 
 
+def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
 @pytest.fixture
 def mock_objective_target() -> MagicMock:
     target = MagicMock(spec=PromptTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test_module"}
+    target.get_identifier.return_value = _mock_target_id("MockTarget")
     return target
 
 
@@ -47,7 +68,7 @@ def mock_adversarial_chat() -> MagicMock:
     chat = MagicMock(spec=PromptChatTarget)
     chat.send_prompt_async = AsyncMock()
     chat.set_system_prompt = MagicMock()
-    chat.get_identifier.return_value = {"__type__": "MockChatTarget", "__module__": "test_module"}
+    chat.get_identifier.return_value = _mock_target_id("MockChatTarget")
     return chat
 
 
@@ -55,7 +76,7 @@ def mock_adversarial_chat() -> MagicMock:
 def mock_objective_scorer() -> MagicMock:
     scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_async = AsyncMock()
-    scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test_module"}
+    scorer.get_identifier.return_value = _mock_scorer_id("MockScorer")
     return scorer
 
 
@@ -99,7 +120,7 @@ def success_score() -> Score:
         score_rationale="Test rationale for success",
         score_metadata={},
         message_piece_id=str(uuid.uuid4()),
-        scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
+        scorer_class_identifier=_mock_scorer_id("MockScorer"),
     )
 
 
@@ -113,7 +134,7 @@ def failure_score() -> Score:
         score_rationale="Test rationale for failure",
         score_metadata={},
         message_piece_id=str(uuid.uuid4()),
-        scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
+        scorer_class_identifier=_mock_scorer_id("MockScorer"),
     )
 
 
@@ -127,7 +148,7 @@ def float_score() -> Score:
         score_rationale="Test rationale for high score",
         score_metadata={},
         message_piece_id=str(uuid.uuid4()),
-        scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
+        scorer_class_identifier=_mock_scorer_id("MockScorer"),
     )
 
 
@@ -523,10 +544,7 @@ class TestContextValidation:
         mock_chat_objective_target = MagicMock(spec=PromptChatTarget)
         mock_chat_objective_target.send_prompt_async = AsyncMock()
         mock_chat_objective_target.set_system_prompt = MagicMock()
-        mock_chat_objective_target.get_identifier.return_value = {
-            "__type__": "MockChatTarget",
-            "__module__": "test_module",
-        }
+        mock_chat_objective_target.get_identifier.return_value = _mock_target_id("MockChatTarget")
 
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
@@ -708,7 +726,7 @@ class TestSetupPhase:
             score_rationale="Other rationale",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
+            scorer_class_identifier=_mock_scorer_id("OtherScorer"),
         )
 
         mock_state = ConversationState(
@@ -1337,7 +1355,7 @@ class TestAttackExecution:
             score_rationale="Test rationale",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
+            scorer_class_identifier=_mock_scorer_id("MockScorer"),
         )
 
         # Mock methods

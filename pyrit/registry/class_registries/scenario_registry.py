@@ -15,7 +15,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.registry.base import RegistryItemMetadata
+from pyrit.identifiers import Identifier
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -24,7 +25,6 @@ from pyrit.registry.discovery import (
     discover_in_package,
     discover_subclasses_in_loaded_modules,
 )
-from pyrit.registry.name_utils import class_name_to_registry_name
 
 if TYPE_CHECKING:
     from pyrit.scenario.core import Scenario
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class ScenarioMetadata(RegistryItemMetadata):
+class ScenarioMetadata(Identifier):
     """
     Metadata describing a registered Scenario class.
 
@@ -137,7 +137,7 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
                 # Check if this is a user-defined class (not from pyrit.scenario.scenarios)
                 if not scenario_class.__module__.startswith("pyrit.scenario.scenarios"):
                     # Convert class name to snake_case for scenario name
-                    registry_name = class_name_to_registry_name(scenario_class.__name__, suffix="Scenario")
+                    registry_name = class_name_to_snake_case(scenario_class.__name__, suffix="Scenario")
                     entry = ClassEntry(registered_class=scenario_class)
                     self._class_entries[registry_name] = entry
                     logger.info(f"Registered user-defined scenario: {registry_name} ({scenario_class.__name__})")
@@ -170,9 +170,10 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         max_dataset_size = dataset_config.max_dataset_size
 
         return ScenarioMetadata(
-            name=name,
+            identifier_type="class",
             class_name=scenario_class.__name__,
-            description=description,
+            class_module=scenario_class.__module__,
+            class_description=description,
             default_strategy=scenario_class.get_default_strategy().value,
             all_strategies=tuple(s.value for s in strategy_class.get_all_strategies()),
             aggregate_strategies=tuple(s.value for s in strategy_class.get_aggregate_strategies()),

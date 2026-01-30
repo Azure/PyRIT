@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import yaml
+from unit.mocks import get_mock_scorer_identifier, get_mock_target_identifier
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -32,7 +33,7 @@ def mock_objective_target():
     """Create a mock prompt target for testing"""
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"id": "mock_target_id"}
+    target.get_identifier.return_value = get_mock_target_identifier("MockTarget")
     return target
 
 
@@ -41,7 +42,7 @@ def mock_adversarial_chat_target():
     """Create a mock adversarial chat target for testing"""
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"id": "mock_adversarial_chat_id"}
+    target.get_identifier.return_value = get_mock_target_identifier("MockAdversarialChat")
     return target
 
 
@@ -271,6 +272,7 @@ class TestRolePlayAttack:
             score_rationale="Test rationale for success",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
 
         # Mock the attack execution to return a successful result

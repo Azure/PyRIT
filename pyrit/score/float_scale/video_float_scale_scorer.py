@@ -3,6 +3,7 @@
 
 from typing import List, Optional
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
@@ -61,9 +62,14 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         )
         self._score_aggregator = score_aggregator
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             sub_scorers=[self.image_scorer],
             score_aggregator=self._score_aggregator.__name__,
             scorer_specific_params={

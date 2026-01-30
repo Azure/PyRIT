@@ -3,15 +3,16 @@
 
 import abc
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
+from pyrit.identifiers import Identifiable, TargetIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import Identifier, Message
+from pyrit.models import Message
 
 logger = logging.getLogger(__name__)
 
 
-class PromptTarget(abc.ABC, Identifier):
+class PromptTarget(Identifiable[TargetIdentifier]):
     """
     Abstract base class for prompt targets.
 
@@ -24,6 +25,8 @@ class PromptTarget(abc.ABC, Identifier):
     #: A list of PromptConverters that are supported by the prompt target.
     #: An empty list implies that the prompt target supports all converters.
     supported_converters: List[Any]
+
+    _identifier: Optional[TargetIdentifier] = None
 
     def __init__(
         self,
@@ -90,34 +93,59 @@ class PromptTarget(abc.ABC, Identifier):
         """
         self._memory.dispose_engine()
 
-    def get_identifier(self) -> Dict[str, Any]:
+    def _create_identifier(
+        self,
+        *,
+        temperature: Optional[float] = None,
+        top_p: Optional[float] = None,
+        target_specific_params: Optional[dict[str, Any]] = None,
+    ) -> TargetIdentifier:
         """
-        Get an identifier dictionary for this prompt target.
+        Construct the target identifier.
 
-        This includes essential attributes needed for scorer evaluation and registry tracking.
+        Subclasses should call this method in their _build_identifier() implementation
+        to set the identifier with their specific parameters.
+
+        Args:
+            temperature (Optional[float]): The temperature parameter for generation. Defaults to None.
+            top_p (Optional[float]): The top_p parameter for generation. Defaults to None.
+            target_specific_params (Optional[dict[str, Any]]): Additional target-specific parameters
+                that should be included in the identifier. Defaults to None.
 
         Returns:
-            Dict[str, Any]: A dictionary containing identification attributes.
-
-        Note:
-            If the `self._underlying_model` is specified, either passed in during instantiation
-            or via environment variable, it is used as the "model_name" for the identifier.
-            Otherwise, `self._model_name` (which is often the deployment name in Azure) is used.
+            TargetIdentifier: The identifier for this prompt target.
         """
-        public_attributes: Dict[str, Any] = {}
-        public_attributes["__type__"] = self.__class__.__name__
-        public_attributes["__module__"] = self.__class__.__module__
-        if self._endpoint:
-            public_attributes["endpoint"] = self._endpoint
-        # if the underlying model is specified, use it as the model name for identification
-        # otherwise, use self._model_name (which is often the deployment name in Azure)
+        # Determine the model name to use
+        model_name = ""
         if self._underlying_model:
-            public_attributes["model_name"] = self._underlying_model
+            model_name = self._underlying_model
         elif self._model_name:
-            public_attributes["model_name"] = self._model_name
-        # Include temperature and top_p if available (set by subclasses)
-        if hasattr(self, "_temperature") and self._temperature is not None:
-            public_attributes["temperature"] = self._temperature
-        if hasattr(self, "_top_p") and self._top_p is not None:
-            public_attributes["top_p"] = self._top_p
-        return public_attributes
+            model_name = self._model_name
+
+        return TargetIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            class_description=" ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else "",
+            identifier_type="instance",
+            endpoint=self._endpoint,
+            model_name=model_name,
+            temperature=temperature,
+            top_p=top_p,
+            max_requests_per_minute=self._max_requests_per_minute,
+            target_specific_params=target_specific_params,
+        )
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier for this target.
+
+        Subclasses can override this method to call _create_identifier() with
+        their specific parameters (temperature, top_p, target_specific_params).
+
+        The base implementation calls _create_identifier() with no parameters,
+        which works for targets that don't have model-specific settings.
+
+        Returns:
+            TargetIdentifier: The identifier for this prompt target.
+        """
+        return self._create_identifier()

@@ -8,6 +8,7 @@ from typing import Literal
 import numpy as np
 from scipy.io import wavfile
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -41,6 +42,20 @@ class AudioFrequencyConverter(PromptConverter):
         """
         self._output_format = output_format
         self._shift_value = shift_value
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """
+        Build the converter identifier with audio frequency parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._create_identifier(
+            converter_specific_params={
+                "output_format": self._output_format,
+                "shift_value": self._shift_value,
+            },
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """

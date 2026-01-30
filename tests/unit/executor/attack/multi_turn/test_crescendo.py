@@ -24,6 +24,7 @@ from pyrit.executor.attack import (
     CrescendoAttackContext,
     CrescendoAttackResult,
 )
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     ChatMessageRole,
@@ -39,6 +40,26 @@ from pyrit.score import FloatScaleThresholdScorer, SelfAskRefusalScorer, TrueFal
 from pyrit.score.score_utils import ORIGINAL_FLOAT_VALUE_KEY
 
 
+def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
 def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
     """Create a mock chat target with common setup.
 
@@ -48,7 +69,7 @@ def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
     target.set_system_prompt = MagicMock()
-    target.get_identifier.return_value = {"__type__": name, "__module__": "test_module"}
+    target.get_identifier.return_value = _mock_target_id(name)
     return target
 
 
@@ -60,7 +81,7 @@ def create_mock_scorer(*, class_name: str) -> MagicMock:
     """
     scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_async = AsyncMock()
-    scorer.get_identifier.return_value = {"__type__": class_name, "__module__": "test_module"}
+    scorer.get_identifier.return_value = _mock_scorer_id(class_name)
     return scorer
 
 
@@ -87,7 +108,7 @@ def create_score(
         score_rationale=score_rationale,
         score_metadata=score_metadata or {},
         message_piece_id=str(uuid.uuid4()),
-        scorer_class_identifier={"__type__": scorer_class, "__module__": "test_module"},
+        scorer_class_identifier=_mock_scorer_id(scorer_class),
     )
 
 

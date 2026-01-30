@@ -7,8 +7,10 @@ from typing import Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from unit.mocks import get_mock_target_identifier
 
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
@@ -60,9 +62,9 @@ class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> ScorerIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_scorer_identifier()
+        return self._create_identifier()
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         return [
@@ -116,9 +118,9 @@ class MockFloatScorer(Scorer):
         self.scored_piece_ids: list[str] = []
         super().__init__(validator=validator)
 
-    def _build_scorer_identifier(self) -> None:
+    def _build_identifier(self) -> ScorerIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
-        self._set_scorer_identifier()
+        return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         # Track which pieces get scored
@@ -150,6 +152,7 @@ class MockFloatScorer(Scorer):
 @pytest.mark.parametrize("bad_json", [BAD_JSON, KEY_ERROR_JSON, KEY_ERROR2_JSON])
 async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json: str):
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     bad_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=bad_json, conversation_id="test-convo")]
     )
@@ -173,6 +176,7 @@ async def test_scorer_send_chat_target_async_bad_json_exception_retries(bad_json
 @pytest.mark.asyncio
 async def test_scorer_score_value_with_llm_exception_display_prompt_id():
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     chat_target.send_prompt_async = AsyncMock(side_effect=Exception("Test exception"))
 
     scorer = MockScorer()
@@ -197,6 +201,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     chat_target.send_prompt_async = AsyncMock(return_value=[message])
     chat_target.set_system_prompt = MagicMock()
 
@@ -232,6 +237,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     chat_target.send_prompt_async = AsyncMock(return_value=[message])
     chat_target.set_system_prompt = MagicMock()
 
@@ -258,6 +264,7 @@ async def test_scorer_score_value_with_llm_does_not_add_score_prompt_id_for_empt
 @pytest.mark.asyncio
 async def test_scorer_send_chat_target_async_good_response(good_json):
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
 
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
@@ -282,6 +289,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
 @pytest.mark.asyncio
 async def test_scorer_remove_markdown_json_called(good_json):
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
@@ -307,6 +315,7 @@ async def test_scorer_remove_markdown_json_called(good_json):
 async def test_score_value_with_llm_prepended_text_message_piece_creates_multipiece_message(good_json):
     """Test that prepended_text_message_piece creates a multi-piece message (text context + main content)."""
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
@@ -350,6 +359,7 @@ async def test_score_value_with_llm_prepended_text_message_piece_creates_multipi
 async def test_score_value_with_llm_no_prepended_text_creates_single_piece_message(good_json):
     """Test that without prepended_text_message_piece, only a single piece message is created."""
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
@@ -385,6 +395,7 @@ async def test_score_value_with_llm_no_prepended_text_creates_single_piece_messa
 async def test_score_value_with_llm_prepended_text_works_with_audio(good_json):
     """Test that prepended_text_message_piece works with audio content (type-independent)."""
     chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     good_json_resp = Message(
         message_pieces=[MessagePiece(role="assistant", original_value=good_json, conversation_id="test-convo")]
     )
@@ -1118,9 +1129,9 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
             self.scored_piece_ids = []
             super().__init__(validator=validator)
 
-        def _build_scorer_identifier(self) -> None:
+        def _build_identifier(self) -> ScorerIdentifier:
             """Build the scorer evaluation identifier for this test scorer."""
-            self._set_scorer_identifier()
+            return self._create_identifier()
 
         async def _score_piece_async(
             self, message_piece: MessagePiece, *, objective: Optional[str] = None
@@ -1205,26 +1216,25 @@ async def test_base_scorer_score_async_implementation(patch_central_database):
     assert len(scores) == 2
 
 
-# Tests for get_identifier and scorer_identifier
+# Tests for get_identifier and identifier
 
 
 def test_mock_scorer_get_identifier_returns_type():
-    """Test that get_identifier returns the correct __type__ key."""
+    """Test that get_identifier returns a ScorerIdentifier with the correct class_name."""
     scorer = MockScorer()
     identifier = scorer.get_identifier()
 
-    assert "__type__" in identifier
-    assert identifier["__type__"] == "MockScorer"
+    assert identifier.class_name == "MockScorer"
 
 
 def test_mock_scorer_get_identifier_includes_hash():
-    """Test that get_identifier includes a hash field."""
+    """Test that get_identifier returns an identifier with a hash field."""
     scorer = MockScorer()
     identifier = scorer.get_identifier()
 
-    assert "hash" in identifier
-    assert isinstance(identifier["hash"], str)
-    assert len(identifier["hash"]) == 64  # SHA256 hex digest length
+    assert hasattr(identifier, "hash")
+    assert isinstance(identifier.hash, str)
+    assert len(identifier.hash) == 64  # SHA256 hex digest length
 
 
 def test_mock_scorer_get_identifier_deterministic():
@@ -1241,33 +1251,33 @@ def test_mock_scorer_get_identifier_hash_deterministic():
     """Test that the hash is consistent across multiple calls."""
     scorer = MockScorer()
 
-    hash1 = scorer.get_identifier()["hash"]
-    hash2 = scorer.get_identifier()["hash"]
+    hash1 = scorer.get_identifier().hash
+    hash2 = scorer.get_identifier().hash
 
     assert hash1 == hash2
 
 
-def test_mock_scorer_scorer_identifier_property():
-    """Test that scorer_identifier property returns a ScorerIdentifier."""
-    from pyrit.score.scorer_identifier import ScorerIdentifier
+def test_mock_scorer_get_identifier_is_scorer_identifier():
+    """Test that get_identifier returns a ScorerIdentifier."""
+    from pyrit.identifiers import ScorerIdentifier
 
     scorer = MockScorer()
-    sid = scorer.scorer_identifier
+    sid = scorer.get_identifier()
 
     assert isinstance(sid, ScorerIdentifier)
-    assert sid.type == "MockScorer"
+    assert sid.class_name == "MockScorer"
 
 
-def test_mock_scorer_scorer_identifier_lazy_build():
-    """Test that scorer_identifier is built lazily on first access."""
+def test_mock_scorer_identifier_lazy_build():
+    """Test that identifier is built lazily on first access."""
     scorer = MockScorer()
 
-    # Before accessing, _scorer_identifier should be None
-    assert scorer._scorer_identifier is None
+    # Before accessing, _identifier should be None
+    assert scorer._identifier is None
 
-    # After accessing, it should be built
-    _ = scorer.scorer_identifier
-    assert scorer._scorer_identifier is not None
+    # After accessing via get_identifier(), it should be built
+    _ = scorer.get_identifier()
+    assert scorer._identifier is not None
 
 
 def test_mock_float_scorer_get_identifier():
@@ -1277,8 +1287,8 @@ def test_mock_float_scorer_get_identifier():
 
     identifier = scorer.get_identifier()
 
-    assert identifier["__type__"] == "MockFloatScorer"
-    assert "hash" in identifier
+    assert identifier.class_name == "MockFloatScorer"
+    assert hasattr(identifier, "hash")
 
 
 class TestTrueFalseScorerEmptyScoreListRationale:
@@ -1306,8 +1316,8 @@ class TestTrueFalseScorerEmptyScoreListRationale:
             def __init__(self, validator):
                 super().__init__(validator=validator)
 
-            def _build_scorer_identifier(self) -> None:
-                self._set_scorer_identifier()
+            def _build_identifier(self) -> ScorerIdentifier:
+                return self._create_identifier()
 
             async def _score_piece_async(
                 self, message_piece: MessagePiece, *, objective: Optional[str] = None

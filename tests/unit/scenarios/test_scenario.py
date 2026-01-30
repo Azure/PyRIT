@@ -8,11 +8,20 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 import pytest
 
 from pyrit.executor.attack.core import AttackExecutorResult
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenario import DatasetConfiguration, ScenarioIdentifier, ScenarioResult
 from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
 from pyrit.score import Scorer
+
+# Reusable test scorer identifier
+_TEST_SCORER_ID = ScorerIdentifier(
+    class_name="MockScorer",
+    class_module="tests.unit.scenarios",
+    class_description="",
+    identifier_type="instance",
+)
 
 
 def save_attack_results_to_memory(attack_results):
@@ -30,14 +39,6 @@ def create_mock_run_async(attack_results):
         return AttackExecutorResult(completed_results=attack_results, incomplete_objectives=[])
 
     return AsyncMock(side_effect=mock_run_async)
-
-
-def create_mock_scorer():
-    """Create a mock scorer for testing ScenarioResult."""
-    mock_scorer = MagicMock(spec=Scorer)
-    mock_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
-    mock_scorer.get_scorer_metrics.return_value = None
-    return mock_scorer
 
 
 @pytest.fixture
@@ -70,7 +71,12 @@ def mock_atomic_attacks():
 def mock_objective_target():
     """Create a mock objective target for testing."""
     target = MagicMock()
-    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test"}
+    target.get_identifier.return_value = TargetIdentifier(
+        class_name="MockTarget",
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
     return target
 
 
@@ -81,7 +87,11 @@ def sample_attack_results():
         AttackResult(
             conversation_id=f"conv-{i}",
             objective=f"objective{i}",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
+            attack_identifier={
+                "__type__": "TestAttack",
+                "__module__": "test",
+                "id": str(i),
+            },
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
         )
@@ -111,7 +121,7 @@ class ConcreteScenario(Scenario):
         # Add a mock scorer if not provided
         if "objective_scorer" not in kwargs:
             mock_scorer = MagicMock(spec=Scorer)
-            mock_scorer.get_identifier.return_value = {"__type__": "MockScorer", "__module__": "test"}
+            mock_scorer.get_identifier.return_value = _TEST_SCORER_ID
             mock_scorer.get_scorer_metrics.return_value = None
             kwargs["objective_scorer"] = mock_scorer
 
@@ -222,7 +232,9 @@ class TestScenarioInitialization2:
         await scenario.initialize_async(objective_target=mock_objective_target)
 
         assert scenario._objective_target == mock_objective_target
-        assert scenario._objective_target_identifier == {"__type__": "MockTarget", "__module__": "test"}
+        # Verify it's a TargetIdentifier with the expected class_name
+        assert scenario._objective_target_identifier.class_name == "MockTarget"
+        assert scenario._objective_target_identifier.class_module == "test"
 
     @pytest.mark.asyncio
     async def test_initialize_async_requires_objective_target(self):
@@ -431,7 +443,11 @@ class TestScenarioExecution:
         assert result.scenario_identifier.name == "ConcreteScenario"
         assert result.scenario_identifier.version == 5
         assert result.scenario_identifier.pyrit_version is not None
-        assert result.get_strategies_used() == ["attack_run_1", "attack_run_2", "attack_run_3"]
+        assert result.get_strategies_used() == [
+            "attack_run_1",
+            "attack_run_2",
+            "attack_run_3",
+        ]
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -508,12 +524,11 @@ class TestScenarioResult:
     def test_scenario_result_initialization(self, sample_attack_results):
         """Test ScenarioResult initialization."""
         identifier = ScenarioIdentifier(name="Test", scenario_version=1)
-        mock_scorer = create_mock_scorer()
         result = ScenarioResult(
             scenario_identifier=identifier,
             objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
             attack_results={"base64": sample_attack_results[:3], "rot13": sample_attack_results[3:]},
-            objective_scorer=mock_scorer,
+            objective_scorer_identifier=_TEST_SCORER_ID,
         )
 
         assert result.scenario_identifier == identifier
@@ -525,12 +540,14 @@ class TestScenarioResult:
     def test_scenario_result_with_empty_results(self):
         """Test ScenarioResult with empty attack results."""
         identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1)
-        mock_scorer = create_mock_scorer()
         result = ScenarioResult(
             scenario_identifier=identifier,
-            objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
+            objective_target_identifier={
+                "__type__": "TestTarget",
+                "__module__": "test",
+            },
             attack_results={"base64": []},
-            objective_scorer=mock_scorer,
+            objective_scorer_identifier=_TEST_SCORER_ID,
         )
 
         assert len(result.attack_results["base64"]) == 0
@@ -539,14 +556,16 @@ class TestScenarioResult:
     def test_scenario_result_objective_achieved_rate(self, sample_attack_results):
         """Test objective_achieved_rate calculation."""
         identifier = ScenarioIdentifier(name="Test", scenario_version=1)
-        mock_scorer = create_mock_scorer()
 
         # All successful
         result = ScenarioResult(
             scenario_identifier=identifier,
-            objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
+            objective_target_identifier={
+                "__type__": "TestTarget",
+                "__module__": "test",
+            },
             attack_results={"base64": sample_attack_results},
-            objective_scorer=mock_scorer,
+            objective_scorer_identifier=_TEST_SCORER_ID,
         )
         assert result.objective_achieved_rate() == 100
 
@@ -555,23 +574,34 @@ class TestScenarioResult:
             AttackResult(
                 conversation_id="conv-fail",
                 objective="objective",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
+                attack_identifier={
+                    "__type__": "TestAttack",
+                    "__module__": "test",
+                    "id": "1",
+                },
                 outcome=AttackOutcome.FAILURE,
                 executed_turns=1,
             ),
             AttackResult(
                 conversation_id="conv-fail2",
                 objective="objective",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "2"},
+                attack_identifier={
+                    "__type__": "TestAttack",
+                    "__module__": "test",
+                    "id": "2",
+                },
                 outcome=AttackOutcome.FAILURE,
                 executed_turns=1,
             ),
         ]
         result2 = ScenarioResult(
             scenario_identifier=identifier,
-            objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
+            objective_target_identifier={
+                "__type__": "TestTarget",
+                "__module__": "test",
+            },
             attack_results={"base64": mixed_results},
-            objective_scorer=mock_scorer,
+            objective_scorer_identifier=_TEST_SCORER_ID,
         )
         assert result2.objective_achieved_rate() == 60  # 3 out of 5
 
@@ -601,3 +631,197 @@ class TestScenarioIdentifier:
         identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1, init_data=init_data)
 
         assert identifier.init_data == init_data
+
+
+def create_mock_truefalse_scorer():
+    """Create a mock TrueFalseScorer for testing baseline-only execution."""
+    from pyrit.score import TrueFalseScorer
+
+    mock_scorer = MagicMock(spec=TrueFalseScorer)
+    mock_scorer.get_identifier.return_value = {
+        "__type__": "MockTrueFalseScorer",
+        "__module__": "test",
+    }
+    mock_scorer.get_scorer_metrics.return_value = None
+    # Make isinstance check work
+    mock_scorer.__class__ = TrueFalseScorer
+    return mock_scorer
+
+
+class ConcreteScenarioWithTrueFalseScorer(Scenario):
+    """Concrete implementation of Scenario for testing baseline-only execution."""
+
+    def __init__(self, atomic_attacks_to_return=None, **kwargs):
+        # Add required strategy_class if not provided
+
+        class TestStrategy(ScenarioStrategy):
+            TEST = ("test", {"concrete"})
+            ALL = ("all", {"all"})
+
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return {"all"}
+
+        kwargs.setdefault("strategy_class", TestStrategy)
+
+        # Use TrueFalseScorer mock if not provided
+        if "objective_scorer" not in kwargs:
+            kwargs["objective_scorer"] = create_mock_truefalse_scorer()
+
+        super().__init__(**kwargs)
+        self._atomic_attacks_to_return = atomic_attacks_to_return or []
+
+    @classmethod
+    def get_strategy_class(cls):
+        """Return a mock strategy class for testing."""
+
+        from pyrit.scenario.core.scenario_strategy import ScenarioStrategy
+
+        class TestStrategy(ScenarioStrategy):
+            TEST = ("test", {"concrete"})
+            ALL = ("all", {"all"})
+
+            @classmethod
+            def get_aggregate_tags(cls) -> set[str]:
+                return {"all"}
+
+        return TestStrategy
+
+    @classmethod
+    def get_default_strategy(cls):
+        """Return the default strategy for testing."""
+        return cls.get_strategy_class().ALL
+
+    @classmethod
+    def default_dataset_config(cls) -> DatasetConfiguration:
+        """Return the default dataset configuration for testing."""
+        return DatasetConfiguration()
+
+    async def _get_atomic_attacks_async(self):
+        return self._atomic_attacks_to_return
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestScenarioBaselineOnlyExecution:
+    """Tests for baseline-only execution (empty strategies with include_baseline=True)."""
+
+    @pytest.mark.asyncio
+    async def test_initialize_async_with_empty_strategies_and_baseline(self, mock_objective_target):
+        """Test that baseline-only execution works when include_baseline=True and strategies is empty."""
+        from pyrit.models import SeedAttackGroup, SeedObjective
+
+        # Create a scenario with include_default_baseline=True and TrueFalseScorer
+        scenario = ConcreteScenarioWithTrueFalseScorer(
+            name="Baseline Only Test",
+            version=1,
+            include_default_baseline=True,
+        )
+
+        # Create a mock dataset config with seed groups
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+        mock_dataset_config.get_all_seed_attack_groups.return_value = [
+            SeedAttackGroup(seeds=[SeedObjective(value="test objective 1")]),
+            SeedAttackGroup(seeds=[SeedObjective(value="test objective 2")]),
+        ]
+
+        # Initialize with empty strategies
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],  # Empty list - baseline only
+            dataset_config=mock_dataset_config,
+        )
+
+        # Should have exactly one attack - the baseline
+        assert scenario.atomic_attack_count == 1
+        assert scenario._atomic_attacks[0].atomic_attack_name == "baseline"
+
+    @pytest.mark.asyncio
+    async def test_baseline_only_execution_runs_successfully(self, mock_objective_target, sample_attack_results):
+        """Test that baseline-only scenario can run successfully."""
+        from pyrit.models import SeedAttackGroup, SeedObjective
+
+        # Create a scenario with include_default_baseline=True and TrueFalseScorer
+        scenario = ConcreteScenarioWithTrueFalseScorer(
+            name="Baseline Only Test",
+            version=1,
+            include_default_baseline=True,
+        )
+
+        # Create a mock dataset config with seed groups
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+        mock_dataset_config.get_all_seed_attack_groups.return_value = [
+            SeedAttackGroup(seeds=[SeedObjective(value="test objective 1")]),
+        ]
+
+        # Initialize with empty strategies
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],  # Empty list - baseline only
+            dataset_config=mock_dataset_config,
+        )
+
+        # Mock the baseline attack's run_async
+        scenario._atomic_attacks[0].run_async = create_mock_run_async([sample_attack_results[0]])
+
+        # Run the scenario
+        result = await scenario.run_async()
+
+        # Verify the result
+        assert isinstance(result, ScenarioResult)
+        assert "baseline" in result.attack_results
+        assert len(result.attack_results["baseline"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_empty_strategies_without_baseline_allows_initialization(self, mock_objective_target):
+        """Test that empty strategies without include_baseline allows initialization but fails at run time."""
+        scenario = ConcreteScenario(
+            name="No Baseline Test",
+            version=1,
+            include_default_baseline=False,  # No baseline
+        )
+
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+
+        # Empty strategies are now always allowed during initialization
+        # (no allow_empty parameter required)
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],  # Empty list without baseline
+            dataset_config=mock_dataset_config,
+        )
+
+        # But running should fail because there are no atomic attacks
+        with pytest.raises(ValueError, match="Cannot run scenario with no atomic attacks"):
+            await scenario.run_async()
+
+    @pytest.mark.asyncio
+    async def test_standalone_baseline_uses_dataset_config_seeds(self, mock_objective_target):
+        """Test that standalone baseline uses seed groups from dataset_config."""
+        from pyrit.models import SeedAttackGroup, SeedObjective
+
+        scenario = ConcreteScenarioWithTrueFalseScorer(
+            name="Baseline Seeds Test",
+            version=1,
+            include_default_baseline=True,
+        )
+
+        # Create specific seed groups to verify they're used
+        expected_seeds = [
+            SeedAttackGroup(seeds=[SeedObjective(value="objective_a")]),
+            SeedAttackGroup(seeds=[SeedObjective(value="objective_b")]),
+            SeedAttackGroup(seeds=[SeedObjective(value="objective_c")]),
+        ]
+
+        mock_dataset_config = MagicMock(spec=DatasetConfiguration)
+        mock_dataset_config.get_all_seed_attack_groups.return_value = expected_seeds
+
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[],
+            dataset_config=mock_dataset_config,
+        )
+
+        # Verify the baseline attack has the expected seed groups
+        baseline_attack = scenario._atomic_attacks[0]
+        assert baseline_attack.atomic_attack_name == "baseline"
+        assert baseline_attack.seed_groups == expected_seeds

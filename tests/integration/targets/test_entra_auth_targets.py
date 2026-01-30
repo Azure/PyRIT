@@ -2,6 +2,8 @@
 # Licensed under the MIT license.
 
 import os
+import uuid
+from pathlib import Path
 
 import pytest
 
@@ -9,7 +11,9 @@ from pyrit.auth import (
     get_azure_openai_auth,
     get_azure_token_provider,
 )
+from pyrit.common.path import HOME_PATH
 from pyrit.executor.attack import PromptSendingAttack
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import (
     OpenAIChatTarget,
     OpenAIImageTarget,
@@ -84,6 +88,104 @@ async def test_openai_image_target_entra_auth(sqlite_instance, endpoint, model_n
     result = await attack.execute_async(objective="A cute baby sea otter")
     assert result is not None
     assert result.last_response is not None
+
+
+# Path to sample image file for image editing tests
+SAMPLE_IMAGE_FILE = HOME_PATH / "assets" / "pyrit_architecture.png"
+
+
+@pytest.mark.asyncio
+async def test_openai_image_editing_single_image_entra_auth(sqlite_instance):
+    """
+    Test image editing with a single image input using Entra authentication.
+    Uses gpt-image-1 (OPENAI_IMAGE_ENDPOINT2) which supports image editing/remix.
+
+    Verifies that:
+    1. Entra authentication works correctly for image editing
+    2. A text prompt + single image generates a modified image
+    """
+    endpoint = os.environ["OPENAI_IMAGE_ENDPOINT2"]
+    target = OpenAIImageTarget(
+        endpoint=endpoint,
+        model_name=os.environ["OPENAI_IMAGE_MODEL2"],
+        api_key=get_azure_openai_auth(endpoint),
+    )
+
+    conv_id = str(uuid.uuid4())
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Make this image grayscale",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+    image_piece = MessagePiece(
+        role="user",
+        original_value=str(SAMPLE_IMAGE_FILE),
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+
+    message = Message(message_pieces=[text_piece, image_piece])
+    result = await target.send_prompt_async(message=message)
+
+    assert result is not None
+    assert len(result) >= 1
+    assert result[0].message_pieces[0].response_error == "none"
+
+    # Validate we got a valid image file path
+    output_path = Path(result[0].message_pieces[0].converted_value)
+    assert output_path.exists(), f"Output image file not found at path: {output_path}"
+    assert output_path.is_file(), f"Path exists but is not a file: {output_path}"
+
+
+@pytest.mark.asyncio
+async def test_openai_image_editing_multiple_images_entra_auth(sqlite_instance):
+    """
+    Test image editing with multiple image inputs using Entra authentication.
+    Uses gpt-image-1 which supports 1-16 image inputs.
+
+    Verifies that:
+    1. Entra authentication works for multi-image editing
+    2. Multiple images can be passed to the edit endpoint
+    """
+    endpoint = os.environ["OPENAI_IMAGE_ENDPOINT2"]
+    target = OpenAIImageTarget(
+        endpoint=endpoint,
+        model_name=os.environ["OPENAI_IMAGE_MODEL2"],
+        api_key=get_azure_openai_auth(endpoint),
+    )
+
+    conv_id = str(uuid.uuid4())
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Blend these images together",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+    image_piece1 = MessagePiece(
+        role="user",
+        original_value=str(SAMPLE_IMAGE_FILE),
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+    image_piece2 = MessagePiece(
+        role="user",
+        original_value=str(SAMPLE_IMAGE_FILE),
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+
+    message = Message(message_pieces=[text_piece, image_piece1, image_piece2])
+    result = await target.send_prompt_async(message=message)
+
+    assert result is not None
+    assert len(result) >= 1
+    assert result[0].message_pieces[0].response_error == "none"
+
+    # Validate we got a valid image file path
+    output_path = Path(result[0].message_pieces[0].converted_value)
+    assert output_path.exists(), f"Output image file not found at path: {output_path}"
+    assert output_path.is_file(), f"Path exists but is not a file: {output_path}"
 
 
 @pytest.mark.asyncio
@@ -184,5 +286,32 @@ async def test_prompt_shield_target_entra_auth(sqlite_instance):
     )
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="test")
+    assert result is not None
+    assert result.last_response is not None
+
+
+@pytest.mark.asyncio
+async def test_openai_chat_target_with_sync_token_provider(sqlite_instance):
+    """Test that OpenAIChatTarget works with synchronous token providers (auto-wrapped)."""
+    from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+
+    endpoint = os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"]
+    model_name = os.environ["AZURE_OPENAI_GPT4O_MODEL"]
+
+    # Use synchronous token provider - this should be auto-wrapped
+    sync_token_provider = get_bearer_token_provider(
+        DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default"
+    )
+
+    target = OpenAIChatTarget(
+        endpoint=endpoint,
+        model_name=model_name,
+        api_key=sync_token_provider,
+        temperature=0.0,
+        seed=42,
+    )
+
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective="Hello, how are you?")
     assert result is not None
     assert result.last_response is not None
