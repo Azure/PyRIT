@@ -46,6 +46,8 @@ class VideoFloatScaleScorer(
         num_sampled_frames: Optional[int] = None,
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: FloatScaleAggregatorFunc = FloatScaleScorerByCategory.MAX,
+        ignore_objective_for_images: bool = False,
+        ignore_objective_for_audio: bool = True,
     ) -> None:
         """
         Initialize the VideoFloatScaleScorer.
@@ -64,6 +66,11 @@ class VideoFloatScaleScorer(
                 (returns single score with all categories combined).
                 Use FloatScaleScoreAggregator.MAX/AVERAGE/MIN for simple aggregation preserving all categories
                 (returns single score with all categories preserved).
+            ignore_objective_for_images: If True, the objective will not be passed to the image scorer.
+                Defaults to False (objective is passed to image scorer).
+            ignore_objective_for_audio: If True, the objective will not be passed to the audio scorer.
+                Defaults to True because video objectives typically describe visual content that
+                doesn't apply to audio transcription.
 
         Raises:
             ValueError: If audio_scorer is provided and does not support audio_path data type.
@@ -71,7 +78,11 @@ class VideoFloatScaleScorer(
         FloatScaleScorer.__init__(self, validator=validator or self._default_validator)
 
         _BaseVideoScorer.__init__(
-            self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
+            self,
+            image_capable_scorer=image_capable_scorer,
+            num_sampled_frames=num_sampled_frames,
+            ignore_objective_for_images=ignore_objective_for_images,
+            ignore_objective_for_audio=ignore_objective_for_audio,
         )
         self._score_aggregator = score_aggregator
 
@@ -96,6 +107,8 @@ class VideoFloatScaleScorer(
             scorer_specific_params={
                 "num_sampled_frames": self.num_sampled_frames,
                 "has_audio_scorer": self.audio_scorer is not None,
+                "ignore_objective_for_images": self.ignore_objective_for_images,
+                "ignore_objective_for_audio": self.ignore_objective_for_audio,
             },
         )
 
@@ -119,7 +132,7 @@ class VideoFloatScaleScorer(
         # Score audio if audio_scorer is provided
         if self.audio_scorer:
             audio_scores = await self._score_video_audio_async(
-                message_piece=message_piece, audio_scorer=self.audio_scorer
+                message_piece=message_piece, audio_scorer=self.audio_scorer, objective=objective
             )
             if audio_scores:
                 all_scores.extend(audio_scores)

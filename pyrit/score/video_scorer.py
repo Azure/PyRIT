@@ -9,6 +9,7 @@ import uuid
 from abc import ABC
 from typing import Optional
 
+from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer import Scorer
 
@@ -31,6 +32,8 @@ class _BaseVideoScorer(ABC):
         *,
         image_capable_scorer: Scorer,
         num_sampled_frames: Optional[int] = None,
+        ignore_objective_for_images: bool = False,
+        ignore_objective_for_audio: bool = True,
     ) -> None:
         """
         Initialize the base video scorer.
@@ -39,11 +42,18 @@ class _BaseVideoScorer(ABC):
             image_capable_scorer: A scorer capable of processing images that will be used to score
                 individual video frames.
             num_sampled_frames: Number of frames to extract from the video for scoring (default: 5).
+            ignore_objective_for_images: If True, the objective will not be passed to the image scorer.
+                Defaults to False (objective is passed to image scorer).
+            ignore_objective_for_audio: If True, the objective will not be passed to the audio scorer.
+                Defaults to True because video objectives typically describe visual content that
+                doesn't apply to audio transcription.
 
         Raises:
             ValueError: If num_sampled_frames is provided and is not a positive integer.
         """
         self.image_scorer = image_capable_scorer
+        self.ignore_objective_for_images = ignore_objective_for_images
+        self.ignore_objective_for_audio = ignore_objective_for_audio
 
         # Validate num_sampled_frames if provided
         if num_sampled_frames is not None and num_sampled_frames <= 0:
@@ -114,16 +124,20 @@ class _BaseVideoScorer(ABC):
             image_requests.append(response)
 
         # Add the frame pieces to memory before scoring so that score references are valid
-        from pyrit.memory import CentralMemory
 
         memory = CentralMemory.get_memory_instance()
         for request in image_requests:
             memory.add_message_to_memory(request=request)
 
-        # Score frames using only the image_scorer's true_description, not the video objective
-        # This ensures visual scoring is based purely on the scorer's criteria
+        # Pass objective to image scorer unless ignore_objective_for_images is True
+        # objectives must be a list matching the number of messages, or None
+        if self.ignore_objective_for_images or objective is None:
+            scoring_objectives = None
+        else:
+            scoring_objectives = [objective] * len(image_requests)
+
         frame_scores = await self.image_scorer.score_prompts_batch_async(
-            messages=image_requests, objectives=None, batch_size=len(frames)
+            messages=image_requests, objectives=scoring_objectives, batch_size=len(frames)
         )
 
         if not frame_scores:
@@ -182,7 +196,7 @@ class _BaseVideoScorer(ABC):
         return frame_paths
 
     async def _score_video_audio_async(
-        self, *, message_piece: MessagePiece, audio_scorer: Optional[Scorer] = None
+        self, *, message_piece: MessagePiece, audio_scorer: Optional[Scorer] = None, objective: Optional[str] = None
     ) -> list[Score]:
         """
         Extract and score audio from the video.
@@ -190,6 +204,7 @@ class _BaseVideoScorer(ABC):
         Args:
             message_piece: The message piece containing the video.
             audio_scorer: The scorer to use for audio scoring.
+            objective: Optional objective description for scoring.
 
         Returns:
             List of scores for the audio content, or empty list if audio extraction/scoring fails.
@@ -228,12 +243,16 @@ class _BaseVideoScorer(ABC):
             memory.add_message_to_memory(request=audio_message)
 
             # Score the audio using the audio_scorer
-            # We pass objectives=None because when used within a video scorer,
-            # the audio should be evaluated independently using only its scorer criteria,
-            # not the overall video objective (which describes visual elements)
+            # Pass objective to audio scorer unless ignore_objective_for_audio is True
+            # objectives must be a list matching the number of messages, or None
+            if self.ignore_objective_for_audio or objective is None:
+                scoring_objectives = None
+            else:
+                scoring_objectives = [objective]
+
             audio_scores = await audio_scorer.score_prompts_batch_async(
                 messages=[audio_message],
-                objectives=None,  # Audio uses only its own scoring criteria, not video objective
+                objectives=scoring_objectives,
                 batch_size=1,
             )
 

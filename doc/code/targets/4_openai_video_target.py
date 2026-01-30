@@ -6,6 +6,10 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
+#   kernelspec:
+#     display_name: pyrit
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -85,7 +89,7 @@ for result in results:
 # %%
 # Scorer for audio content (transcript) - checks what is HEARD/SAID in the video
 objectives = [
-    "Video of a raccoon pirate eating a croissant at a cafe in France who says 'Bonjour tout le monde!, my name is Roakey and this is the best croissant ever!' Ensure the video contains all the audio.",
+    "Video of a raccoon pirate eating a croissant at a cafe in France who says 'Bonjour!, my name is Roakey and this is the best croissant ever!' Ensure the video contains all the audio.",
     "Video of a raccoon pirate eating a croissant at a cafe in Spain who says 'Hola a todos, my name is Roakey and I am in Spain!' Ensure the video contains all the audio.",
 ]
 
@@ -110,6 +114,8 @@ audio_and_video_scorer = VideoTrueFalseScorer(
     num_sampled_frames=10,
     audio_scorer=AudioTrueFalseScorer(text_capable_scorer=audio_text_scorer),
     score_aggregator=TrueFalseScoreAggregator.AND,  # Both visual and audio must be true
+    ignore_objective_for_audio=True,  # Ignore objective for audio scoring so that audio is scored independently of visual objective
+    ignore_objective_for_images=True,  # Use only visual scorer true/false question as the objective so it is independent of the audio objective
 )
 
 attack = PromptSendingAttack(
