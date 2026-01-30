@@ -28,6 +28,14 @@ from pyrit.score import (
     TrueFalseScorer,
 )
 
+"""
+TODO REMOVE
+Featurelist
+-> Enhanced JailbreakStrategy
+-> n tries per jailbreak
+-> Choose subset of jailbreaks explicitly
+"""
+
 
 class JailbreakStrategy(ScenarioStrategy):
     """
@@ -93,7 +101,8 @@ class Jailbreak(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = False,
         scenario_result_id: Optional[str] = None,
-        n_jailbreaks: Optional[int] = None,
+        k_jailbreaks: Optional[int] = None,
+        num_tries: Optional[int] = 1
     ) -> None:
         """
         Initialize the jailbreak scenario.
@@ -105,12 +114,15 @@ class Jailbreak(Scenario):
                 objectives without modifications. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
             n_jailbreaks (Optional[int]): Choose n random jailbreaks rather than using all of them.
+            num_tries (Optional[int]): Number of times to try each jailbreak.
         """
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(
+            objective_scorer=objective_scorer)
 
-        self._n = n_jailbreaks
+        self._k = k_jailbreaks
+        self._n = num_tries
 
         super().__init__(
             name="Jailbreak",
@@ -138,9 +150,12 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -168,10 +183,10 @@ class Jailbreak(Scenario):
         Returns:
             List[str]: List of jailbreak template file names.
         """
-        if not self._n:
+        if not self._k:
             return TextJailBreak.get_all_jailbreak_templates()
         else:
-            return TextJailBreak.get_all_jailbreak_templates(n=self._n)
+            return TextJailBreak.get_all_jailbreak_templates(n=self._k)
 
     async def _get_atomic_attack_from_jailbreak_async(self, *, jailbreak_template_name: str) -> AtomicAttack:
         """
@@ -188,12 +203,14 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(
+                template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(
+                converters=[jailbreak_converter])
         )
 
         # Create the attack
@@ -215,7 +232,6 @@ class Jailbreak(Scenario):
         Generate atomic attacks for each jailbreak template.
 
         This method creates an atomic attack for each retrieved jailbreak template.
-        The number of prompts depends on whether BASIC or ADVANCED strategy is being used.
 
         Returns:
             List[AtomicAttack]: List of atomic attacks to execute, one per jailbreak template.
