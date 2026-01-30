@@ -13,6 +13,7 @@ from pyrit.executor.attack.core.attack_strategy import (
     _DefaultAttackStrategyEventHandler,
 )
 from pyrit.executor.core import StrategyEvent, StrategyEventData
+from pyrit.identifiers import TargetIdentifier
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -20,6 +21,16 @@ from pyrit.models import (
     Message,
 )
 from pyrit.prompt_target import PromptTarget
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 @pytest.fixture
@@ -34,7 +45,7 @@ def mock_memory():
 def mock_objective_target():
     """Mock PromptTarget instance"""
     target = MagicMock(spec=PromptTarget)
-    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test"}
+    target.get_identifier.return_value = _mock_target_id("MockTarget")
     return target
 
 

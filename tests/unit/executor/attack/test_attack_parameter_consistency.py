@@ -23,7 +23,7 @@ from pyrit.executor.attack import (
     TreeOfAttacksWithPruningAttack,
 )
 from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     ChatMessageRole,
@@ -40,6 +40,16 @@ from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
 def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
     """Helper to create ScorerIdentifier for tests."""
     return ScorerIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
         class_name=name,
         class_module="test_module",
         class_description="",
@@ -137,7 +147,7 @@ def mock_chat_target() -> MagicMock:
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
     target.set_system_prompt = MagicMock()
-    target.get_identifier.return_value = {"__type__": "MockChatTarget", "__module__": "test_module"}
+    target.get_identifier.return_value = _mock_target_id("MockChatTarget")
     return target
 
 
@@ -146,7 +156,7 @@ def mock_non_chat_target() -> MagicMock:
     """Create a mock PromptTarget (non-chat) with common setup."""
     target = MagicMock(spec=PromptTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test_module"}
+    target.get_identifier.return_value = _mock_target_id("MockTarget")
     return target
 
 
@@ -156,7 +166,7 @@ def mock_adversarial_chat() -> MagicMock:
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
     target.set_system_prompt = MagicMock()
-    target.get_identifier.return_value = {"__type__": "MockAdversarialChat", "__module__": "test_module"}
+    target.get_identifier.return_value = _mock_target_id("MockAdversarialChat")
     return target
 
 

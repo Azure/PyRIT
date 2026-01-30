@@ -13,7 +13,6 @@ import logging
 from typing import TYPE_CHECKING, Optional
 
 from pyrit.identifiers import ScorerIdentifier
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
@@ -65,10 +64,7 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
                 (e.g., SelfAskRefusalScorer -> self_ask_refusal_abc123).
         """
         if name is None:
-            base_name = class_name_to_snake_case(scorer.__class__.__name__, suffix="Scorer")
-            # Append identifier hash if available for uniqueness
-            identifier_hash = scorer.get_identifier().hash[:8]
-            name = f"{base_name}_{identifier_hash}"
+            name = scorer.get_identifier().unique_name
 
         self.register(scorer, name=name)
         logger.debug(f"Registered scorer instance: {name} ({scorer.__class__.__name__})")

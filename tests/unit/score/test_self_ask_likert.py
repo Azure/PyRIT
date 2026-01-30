@@ -5,6 +5,7 @@ from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from unit.mocks import get_mock_target_identifier
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory, MemoryInterface
@@ -36,6 +37,7 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
         chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
 
         scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale=LikertScalePaths.CYBER_SCALE)
@@ -58,6 +60,7 @@ async def test_likert_scorer_set_system_prompt(scorer_likert_response: Message):
 async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
     memory = MagicMock(MemoryInterface)
     chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         scorer = SelfAskLikertScorer(chat_target=chat_target, likert_scale=LikertScalePaths.CYBER_SCALE)
@@ -70,6 +73,7 @@ async def test_likert_scorer_adds_to_memory(scorer_likert_response: Message):
 @pytest.mark.asyncio
 async def test_likert_scorer_score(patch_central_database, scorer_likert_response: Message):
     chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
 
     chat_target.send_prompt_async = AsyncMock(return_value=[scorer_likert_response])
 
@@ -91,6 +95,7 @@ async def test_likert_scorer_score(patch_central_database, scorer_likert_respons
 @pytest.mark.asyncio
 async def test_self_ask_scorer_bad_json_exception_retries():
     chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
 
     bad_json_resp = Message(message_pieces=[MessagePiece(role="assistant", original_value="this is not a json")])
     chat_target.send_prompt_async = AsyncMock(return_value=[bad_json_resp])
@@ -105,6 +110,7 @@ async def test_self_ask_scorer_bad_json_exception_retries():
 @pytest.mark.asyncio
 async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
     chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
 
     json_response = (
         dedent(

@@ -14,6 +14,7 @@ from pyrit.identifiers.identifier import (
     IdentifierType,
 )
 from pyrit.identifiers.scorer_identifier import ScorerIdentifier
+from pyrit.identifiers.target_identifier import TargetIdentifier
 
 __all__ = [
     "class_name_to_snake_case",
@@ -25,4 +26,5 @@ __all__ = [
     "LegacyIdentifiable",
     "ScorerIdentifier",
     "snake_case_to_class_name",
+    "TargetIdentifier",
 ]

@@ -10,7 +10,7 @@ import pyrit
 from pyrit.models import AttackOutcome, AttackResult
 
 if TYPE_CHECKING:
-    from pyrit.identifiers import ScorerIdentifier
+    from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
     from pyrit.score import Scorer
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
@@ -59,7 +59,7 @@ class ScenarioResult:
         self,
         *,
         scenario_identifier: ScenarioIdentifier,
-        objective_target_identifier: dict[str, str],
+        objective_target_identifier: Union[Dict[str, Any], "TargetIdentifier"],
         attack_results: dict[str, List[AttackResult]],
         objective_scorer_identifier: Union[Dict[str, Any], "ScorerIdentifier"],
         scenario_run_state: ScenarioRunState = "CREATED",
@@ -71,11 +71,13 @@ class ScenarioResult:
         objective_scorer: Optional["Scorer"] = None,
     ) -> None:
         from pyrit.common import print_deprecation_message
-        from pyrit.identifiers import ScorerIdentifier
+        from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 
         self.id = id if id is not None else uuid.uuid4()
         self.scenario_identifier = scenario_identifier
-        self.objective_target_identifier = objective_target_identifier
+
+        # Normalize objective_target_identifier to TargetIdentifier
+        self.objective_target_identifier = TargetIdentifier.normalize(objective_target_identifier)
 
         # Handle deprecated objective_scorer parameter
         if objective_scorer is not None:
