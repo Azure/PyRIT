@@ -53,6 +53,23 @@ class _BaseVideoScorer(ABC):
             num_sampled_frames if num_sampled_frames is not None else self._DEFAULT_VIDEO_FRAMES_SAMPLING_NUM
         )
 
+    @staticmethod
+    def _validate_audio_scorer(scorer: Scorer) -> None:
+        """
+        Validate that a scorer supports the audio_path data type.
+
+        Args:
+            scorer: The scorer to validate.
+
+        Raises:
+            ValueError: If the scorer does not support audio_path data type.
+        """
+        if "audio_path" not in scorer._validator._supported_data_types:
+            raise ValueError(
+                f"audio_scorer must support 'audio_path' data type. "
+                f"Supported types: {scorer._validator._supported_data_types}"
+            )
+
     async def _score_frames_async(self, *, message_piece: MessagePiece, objective: Optional[str] = None) -> list[Score]:
         """
         Extract frames from video and score them.

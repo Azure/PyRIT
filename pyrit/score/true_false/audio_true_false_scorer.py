@@ -5,12 +5,12 @@ from typing import Optional
 
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_scorer import _BaseAudioScorer
+from pyrit.score.audio_transcript_scorer import _BaseAudioTranscriptScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
-class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioScorer):
+class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioTranscriptScorer):
     """
     A scorer that processes audio files by transcribing them and scoring the transcript.
 
@@ -33,8 +33,11 @@ class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioScorer):
             text_capable_scorer: A TrueFalseScorer capable of processing text.
                 This scorer will be used to evaluate the transcribed audio content.
             validator: Validator for the scorer. Defaults to audio_path data type validator.
+
+        Raises:
+            ValueError: If text_capable_scorer does not support text data type.
         """
-        _BaseAudioScorer.__init__(self, text_capable_scorer=text_capable_scorer)
+        _BaseAudioTranscriptScorer.__init__(self, text_capable_scorer=text_capable_scorer)
         TrueFalseScorer.__init__(self, validator=validator or self._default_validator)
 
     def _build_identifier(self) -> ScorerIdentifier:
@@ -76,8 +79,8 @@ class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioScorer):
                 )
             ]
 
-        # Update rationale to indicate this was from audio transcription
+        # Add context to indicate this was scored from audio transcription
         for score in scores:
-            score.score_rationale = f"Audio transcript scored: {score.score_rationale}"
+            score.score_rationale += f"\nAudio transcript scored: {score.score_rationale}"
 
         return scores

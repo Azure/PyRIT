@@ -1,11 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
+import uuid
 from typing import List, Optional
 
 from pyrit.identifiers import ScorerIdentifier
+from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_scorer import _BaseAudioScorer
+from pyrit.score.audio_transcript_scorer import _BaseAudioTranscriptScorer
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
     FloatScaleScorerByCategory,
@@ -16,7 +19,10 @@ from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.video_scorer import _BaseVideoScorer
 
 
-class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
+class VideoFloatScaleScorer(
+    FloatScaleScorer,
+    _BaseVideoScorer,
+):
     """
     A scorer that processes videos by extracting frames and scoring them using a float scale image scorer.
 
@@ -62,6 +68,9 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
                 (returns single score with all categories combined).
                 Use FloatScaleScoreAggregator.MAX/AVERAGE/MIN for simple aggregation preserving all categories
                 (returns single score with all categories preserved).
+
+        Raises:
+            ValueError: If audio_scorer is provided and does not support audio_path data type.
         """
         FloatScaleScorer.__init__(self, validator=validator or self._default_validator)
 
@@ -69,6 +78,9 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
             self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
         )
         self._score_aggregator = score_aggregator
+
+        if audio_scorer is not None:
+            self._validate_audio_scorer(audio_scorer)
         self.audio_scorer = audio_scorer
 
     def _build_identifier(self) -> ScorerIdentifier:
@@ -157,15 +169,10 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
         Returns:
             List of scores for the audio content, or empty list if audio extraction/scoring fails.
         """
-        import os
-        import uuid
-
-        from pyrit.memory import CentralMemory
-
         video_path = message_piece.converted_value
 
         # Use _BaseAudioScorer's static method to extract audio
-        audio_path = _BaseAudioScorer.extract_audio_from_video(video_path)
+        audio_path = _BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
         if not audio_path:
             return []
 

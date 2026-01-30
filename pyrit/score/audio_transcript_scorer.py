@@ -8,13 +8,14 @@ import uuid
 from abc import ABC
 from typing import Optional
 
+from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 
 
-class _BaseAudioScorer(ABC):
+class _BaseAudioTranscriptScorer(ABC):
     """
     Abstract base class for audio scorers that process audio by transcribing and scoring the text.
 
@@ -34,8 +35,29 @@ class _BaseAudioScorer(ABC):
         Args:
             text_capable_scorer: A scorer capable of processing text that will be used to score
                 the transcribed audio content.
+
+        Raises:
+            ValueError: If text_capable_scorer does not support text data type.
         """
+        self._validate_text_scorer(text_capable_scorer)
         self.text_scorer = text_capable_scorer
+
+    @staticmethod
+    def _validate_text_scorer(scorer: Scorer) -> None:
+        """
+        Validate that a scorer supports the text data type.
+
+        Args:
+            scorer: The scorer to validate.
+
+        Raises:
+            ValueError: If the scorer does not support text data type.
+        """
+        if "text" not in scorer._validator._supported_data_types:
+            raise ValueError(
+                f"text_capable_scorer must support 'text' data type. "
+                f"Supported types: {scorer._validator._supported_data_types}"
+            )
 
     async def _score_audio_async(self, *, message_piece: MessagePiece, objective: Optional[str] = None) -> list[Score]:
         """
@@ -81,7 +103,6 @@ class _BaseAudioScorer(ABC):
         text_message = text_piece.to_message()
 
         # Add to memory so score references are valid
-        from pyrit.memory import CentralMemory
 
         memory = CentralMemory.get_memory_instance()
         memory.add_message_to_memory(request=text_message)
@@ -176,7 +197,7 @@ class _BaseAudioScorer(ABC):
         Raises:
             ModuleNotFoundError: If pydub/ffmpeg is not installed.
         """
-        return _BaseAudioScorer.extract_audio_from_video(video_path)
+        return _BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
 
     @staticmethod
     def extract_audio_from_video(video_path: str) -> Optional[str]:

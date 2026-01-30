@@ -5,7 +5,7 @@ from typing import Optional
 
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_scorer import _BaseAudioScorer
+from pyrit.score.audio_transcript_scorer import _BaseAudioTranscriptScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
     TrueFalseAggregatorFunc,
@@ -50,6 +50,9 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             num_sampled_frames: Number of frames to extract from the video for scoring (default: 5).
             validator: Validator for the scorer. Defaults to video_path data type validator.
             score_aggregator: Aggregator for combining frame scores. Defaults to TrueFalseScoreAggregator.OR.
+
+        Raises:
+            ValueError: If audio_scorer is provided and does not support audio_path data type.
         """
         _BaseVideoScorer.__init__(
             self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
@@ -59,6 +62,8 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             self, validator=validator or self._default_validator, score_aggregator=score_aggregator
         )
 
+        if audio_scorer is not None:
+            self._validate_audio_scorer(audio_scorer)
         self.audio_scorer = audio_scorer
 
     def _build_identifier(self) -> ScorerIdentifier:
@@ -152,8 +157,8 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
 
         video_path = message_piece.converted_value
 
-        # Use _BaseAudioScorer's static method to extract audio
-        audio_path = _BaseAudioScorer.extract_audio_from_video(video_path)
+        # Use _BaseAudioTranscriptScorer's static method to extract audio
+        audio_path = _BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
         if not audio_path:
             return None
 
