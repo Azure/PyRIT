@@ -159,6 +159,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         Args:
             context (SingleTurnAttackContext): The attack context containing attack parameters.
         """
+        self._start_context = copy.deepcopy(context)
+
         # Ensure the context has a conversation ID
         context.conversation_id = str(uuid.uuid4())
 
@@ -192,29 +194,23 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         score = None
 
         # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
-        message = self._get_message(context)
+        #  message = self._get_message(context)
 
         beams = [Beam(id=context.conversation_id, text="", score=0.0) for _ in range(self._num_beams)]
 
         for step in range(self._max_iterations):
             print(f"Starting iteration {step}")
             async with asyncio.TaskGroup() as tg:
-                tasks = [
-                    tg.create_task(
-                        self._propagate_beam(
-                            beam=beam, first_call=step == 0, message=message, context=context
-                        )
-                    )
-                    for beam in beams
-                ]
+                tasks = [tg.create_task(self._propagate_beam(beam=beam)) for beam in beams]
                 await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
                 print(f"Beam {i} text after iteration {step}: {beam.text}")
 
+            continue
             print("Scoring beams")
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(self._score_beam(beam=beam)) for beam in beams]
+                tasks = [tg.create_task(self._score_beam(beam=beam, context=context)) for beam in beams]
                 scores = await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
@@ -237,33 +233,27 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         return result
 
-    async def _propagate_beam(
-        self, *, beam: Beam, first_call: bool, message: Message, context: SingleTurnAttackContext[Any]
-    ):
+    async def _propagate_beam(self, *, beam: Beam):
         print(f"Propagating beam with text: {beam.text}")
         target = self._get_target_for_beam(beam)
 
-        if first_call:
-            new_conversation_id = target._memory.duplicate_conversation(conversation_id=context.conversation_id)
-        else:
-            new_conversation_id = target._memory.duplicate_conversation(conversation_id=context.conversation_id)
+        current_context = copy.deepcopy(self._start_context)
+        await self._setup_async(context=current_context)
 
-        new_context = copy.deepcopy(context)
-        new_context.conversation_id = new_conversation_id
-        beam.id = new_conversation_id
-        beam.context = new_context
+        message = self._get_message(current_context)
+        beam.id = current_context.conversation_id
 
         model_response = await self._prompt_normalizer.send_prompt_async(
             message=message,
             target=target,
-            conversation_id=new_context.conversation_id,
+            conversation_id=current_context.conversation_id,
             request_converter_configurations=self._request_converters,
             response_converter_configurations=self._response_converters,
-            labels=context.memory_labels,  # combined with strategy labels at _setup()
+            labels=current_context.memory_labels,  # combined with strategy labels at _setup()
             attack_identifier=self.get_identifier(),
         )
 
-        # _print_message(model_response)
+        _print_message(model_response)
         assert len(model_response.message_pieces) == 2, "Expected exactly two message pieces in the response"
         model_response.message_pieces = model_response.message_pieces[1:]
         model_response.message_pieces[0].role = "assistant"
@@ -271,15 +261,14 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         beam.message = model_response
         print(f"Updated beam text: {beam.text}")
 
-    async def _score_beam(self, *, beam: Beam) -> Optional[Score]:
+    async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]) -> Optional[Score]:
         assert beam.message is not None, "Beam message must be set before scoring"
-        assert beam.context is not None, "Beam context must be set before scoring"
         scoring_results = await Scorer.score_response_async(
             response=beam.message,
             objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
             role_filter="assistant",
-            objective=beam.context.objective,
+            objective=context.objective,
         )
 
         aux_scores = scoring_results["auxiliary_scores"]
@@ -353,8 +342,6 @@ CONTINUATION: /.{{0,{n_chars}}}/
             return context.next_message.duplicate_message()
 
         return Message.from_prompt(prompt=context.objective, role="user")
-
-        return SeedGroup(prompts=[SeedPrompt(value=context.objective, data_type="text")])
 
     async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
         """Clean up after attack execution."""
