@@ -9,17 +9,13 @@ Targets are registered explicitly via initializers as pre-configured instances.
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
-from pyrit.registry.base import RegistryItemMetadata
+from pyrit.identifiers import TargetIdentifier
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
-from pyrit.registry.name_utils import class_name_to_registry_name
 
 if TYPE_CHECKING:
     from pyrit.prompt_target import PromptTarget
@@ -27,21 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
-class TargetMetadata(RegistryItemMetadata):
-    """
-    Metadata describing a registered target instance.
-
-    Unlike ScenarioMetadata/InitializerMetadata which describe classes,
-    TargetMetadata describes an already-instantiated prompt target.
-
-    Use get() to retrieve the actual target instance.
-    """
-
-    target_identifier: Dict[str, Any]
-
-
-class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetMetadata]):
+class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
     """
     Registry for managing available prompt target instances.
 
@@ -82,10 +64,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetMetadata]):
                 (e.g., OpenAIChatTarget -> openai_chat_abc123).
         """
         if name is None:
-            base_name = class_name_to_registry_name(target.__class__.__name__, suffix="Target")
-            # Append identifier hash for uniqueness
-            identifier_hash = self._compute_identifier_hash(target)[:8]
-            name = f"{base_name}_{identifier_hash}"
+            name = target.get_identifier().unique_name
 
         self.register(target, name=name)
         logger.debug(f"Registered target instance: {name} ({target.__class__.__name__})")
@@ -104,7 +83,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetMetadata]):
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: "PromptTarget") -> TargetMetadata:
+    def _build_metadata(self, name: str, instance: "PromptTarget") -> TargetIdentifier:
         """
         Build metadata for a target instance.
 
@@ -113,33 +92,6 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetMetadata]):
             instance: The target instance.
 
         Returns:
-            TargetMetadata describing the target.
+            TargetIdentifier describing the target.
         """
-        # Get description from docstring
-        doc = instance.__class__.__doc__ or ""
-        description = " ".join(doc.split()) if doc else "No description available"
-
-        # Get identifier from the target
-        target_identifier = instance.get_identifier()
-
-        return TargetMetadata(
-            name=name,
-            class_name=instance.__class__.__name__,
-            description=description,
-            target_identifier=target_identifier,
-        )
-
-    @staticmethod
-    def _compute_identifier_hash(target: "PromptTarget") -> str:
-        """
-        Compute a hash from the target's identifier for unique naming.
-
-        Args:
-            target: The target instance.
-
-        Returns:
-            A hex string hash of the identifier.
-        """
-        identifier = target.get_identifier()
-        identifier_str = json.dumps(identifier, sort_keys=True)
-        return hashlib.sha256(identifier_str.encode()).hexdigest()
+        return instance.get_identifier()

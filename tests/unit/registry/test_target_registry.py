@@ -4,8 +4,10 @@
 
 import pytest
 
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.registry.instance_registries.target_registry import TargetRegistry
 
 
@@ -30,15 +32,12 @@ class MockPromptTarget(PromptTarget):
     def _validate_request(self, *, message: Message) -> None:
         pass
 
-    async def dispose_async(self) -> None:
-        pass
 
+class MockPromptChatTarget(PromptChatTarget):
+    """Mock PromptChatTarget for testing conversation history support."""
 
-class MockChatTarget(PromptTarget):
-    """Mock chat target for testing different target types."""
-
-    def __init__(self, *, endpoint: str = "http://test") -> None:
-        super().__init__(endpoint=endpoint)
+    def __init__(self, *, model_name: str = "mock_chat_model", endpoint: str = "http://chat-test") -> None:
+        super().__init__(model_name=model_name, endpoint=endpoint)
 
     async def send_prompt_async(
         self,
@@ -55,8 +54,8 @@ class MockChatTarget(PromptTarget):
     def _validate_request(self, *, message: Message) -> None:
         pass
 
-    async def dispose_async(self) -> None:
-        pass
+    def is_json_response_supported(self) -> bool:
+        return False
 
 
 class TestTargetRegistrySingleton:
@@ -125,7 +124,7 @@ class TestTargetRegistryRegisterInstance:
     def test_register_instance_multiple_targets_unique_names(self):
         """Test registering multiple targets generates unique names."""
         target1 = MockPromptTarget()
-        target2 = MockChatTarget()
+        target2 = MockPromptChatTarget()
 
         self.registry.register_instance(target1)
         self.registry.register_instance(target2)
@@ -184,33 +183,31 @@ class TestTargetRegistryBuildMetadata:
         TargetRegistry.reset_instance()
 
     def test_build_metadata_includes_class_name(self):
-        """Test that metadata includes the class name."""
+        """Test that metadata (TargetIdentifier) includes the class name."""
         target = MockPromptTarget()
         self.registry.register_instance(target, name="mock_target")
 
         metadata = self.registry.list_metadata()
         assert len(metadata) == 1
+        assert isinstance(metadata[0], TargetIdentifier)
         assert metadata[0].class_name == "MockPromptTarget"
-        assert metadata[0].name == "mock_target"
 
-    def test_build_metadata_includes_target_identifier(self):
-        """Test that metadata includes the target_identifier."""
+    def test_build_metadata_includes_model_name(self):
+        """Test that metadata includes the model_name."""
         target = MockPromptTarget(model_name="test_model")
         self.registry.register_instance(target, name="mock_target")
 
         metadata = self.registry.list_metadata()
-        assert hasattr(metadata[0], "target_identifier")
-        assert isinstance(metadata[0].target_identifier, dict)
-        assert metadata[0].target_identifier.get("model_name") == "test_model"
+        assert metadata[0].model_name == "test_model"
 
     def test_build_metadata_description_from_docstring(self):
-        """Test that description is derived from the target's docstring."""
+        """Test that class_description is derived from the target's docstring."""
         target = MockPromptTarget()
         self.registry.register_instance(target, name="mock_target")
 
         metadata = self.registry.list_metadata()
         # MockPromptTarget has a docstring
-        assert "Mock PromptTarget for testing" in metadata[0].description
+        assert "Mock PromptTarget for testing" in metadata[0].class_description
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -224,7 +221,7 @@ class TestTargetRegistryListMetadata:
 
         self.target1 = MockPromptTarget(model_name="model_a")
         self.target2 = MockPromptTarget(model_name="model_b")
-        self.chat_target = MockChatTarget()
+        self.chat_target = MockPromptChatTarget()
 
         self.registry.register_instance(self.target1, name="target_1")
         self.registry.register_instance(self.target2, name="target_2")
@@ -249,43 +246,32 @@ class TestTargetRegistryListMetadata:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestTargetRegistryComputeIdentifierHash:
-    """Tests for _compute_identifier_hash functionality."""
+class TestTargetRegistrySupportsConversationHistory:
+    """Tests for supports_conversation_history field in TargetIdentifier."""
 
     def setup_method(self):
-        """Reset the singleton before each test."""
+        """Reset and get a fresh registry for each test."""
         TargetRegistry.reset_instance()
+        self.registry = TargetRegistry.get_registry_singleton()
 
     def teardown_method(self):
         """Reset the singleton after each test."""
         TargetRegistry.reset_instance()
 
-    def test_compute_identifier_hash_deterministic(self):
-        """Test that identifier hash is deterministic for same config."""
-        target1 = MockPromptTarget(model_name="same_model")
-        target2 = MockPromptTarget(model_name="same_model")
+    def test_registered_chat_target_has_supports_conversation_history_true(self):
+        """Test that registered chat targets have supports_conversation_history=True in metadata."""
+        chat_target = MockPromptChatTarget()
+        self.registry.register_instance(chat_target, name="chat_target")
 
-        hash1 = TargetRegistry._compute_identifier_hash(target1)
-        hash2 = TargetRegistry._compute_identifier_hash(target2)
+        metadata = self.registry.list_metadata()
+        assert len(metadata) == 1
+        assert metadata[0].supports_conversation_history is True
 
-        assert hash1 == hash2
-
-    def test_compute_identifier_hash_different_for_different_config(self):
-        """Test that identifier hash is different for different configs."""
-        target1 = MockPromptTarget(model_name="model_a")
-        target2 = MockPromptTarget(model_name="model_b")
-
-        hash1 = TargetRegistry._compute_identifier_hash(target1)
-        hash2 = TargetRegistry._compute_identifier_hash(target2)
-
-        assert hash1 != hash2
-
-    def test_compute_identifier_hash_is_string(self):
-        """Test that identifier hash returns a hex string."""
+    def test_registered_non_chat_target_has_supports_conversation_history_false(self):
+        """Test that registered non-chat targets have supports_conversation_history=False in metadata."""
         target = MockPromptTarget()
-        hash_value = TargetRegistry._compute_identifier_hash(target)
+        self.registry.register_instance(target, name="prompt_target")
 
-        assert isinstance(hash_value, str)
-        # Should be a valid hex string (SHA256 = 64 hex chars)
-        assert len(hash_value) == 64
-        assert all(c in "0123456789abcdef" for c in hash_value)
+        metadata = self.registry.list_metadata()
+        assert len(metadata) == 1
+        assert metadata[0].supports_conversation_history is False

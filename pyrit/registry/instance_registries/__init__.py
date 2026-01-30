@@ -18,7 +18,6 @@ from pyrit.registry.instance_registries.scorer_registry import (
     ScorerRegistry,
 )
 from pyrit.registry.instance_registries.target_registry import (
-    TargetMetadata,
     TargetRegistry,
 )
 
@@ -27,6 +26,5 @@ __all__ = [
     "BaseInstanceRegistry",
     # Concrete registries
     "ScorerRegistry",
-    "TargetMetadata",
     "TargetRegistry",
 ]

@@ -210,11 +210,11 @@ class AIRTTargetInitializer(PyRITInitializer):
         }
 
         # Only add model_name if the target supports it (PromptShieldTarget doesn't)
-        if model_name:
+        if model_name is not None:
             kwargs["model_name"] = model_name
 
         # Add underlying_model if specified (for Azure deployments where name differs from model)
-        if underlying_model:
+        if underlying_model is not None:
             kwargs["underlying_model"] = underlying_model
 
         target = config.target_class(**kwargs)
