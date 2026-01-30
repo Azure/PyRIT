@@ -17,6 +17,11 @@ from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterS
 
 
 @pytest.fixture
+def mock_random_n() -> int:
+    return 3
+
+
+@pytest.fixture
 def mock_scenario_result_id() -> str:
     return "mock-scenario-result-id"
 
@@ -190,6 +195,16 @@ class TestJailbreakAttackGeneration:
             )
             await scenario.initialize_async(objective_target=mock_objective_target)
             assert len(scenario._get_all_jailbreak_templates()) > 0
+
+    @pytest.mark.asyncio
+    async def test_get_some_jailbreak_templates(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, mock_random_n
+    ):
+        """Test that random jailbreak template selection works."""
+        with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Jailbreak(objective_scorer=mock_objective_scorer, n_jailbreaks=mock_random_n)
+            await scenario.initialize_async(objective_target=mock_objective_target)
+            assert len(scenario._get_all_jailbreak_templates()) == 3
 
 
 @pytest.mark.usefixtures(*FIXTURES)

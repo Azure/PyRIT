@@ -104,9 +104,12 @@ class TextJailBreak:
             self.template.value = self.template.render_template_value_silent(**kwargs)
 
     @classmethod
-    def get_all_jailbreak_templates(cls) -> List[str]:
+    def get_all_jailbreak_templates(cls, n: Optional[int] = None) -> List[str]:
         """
         Retrieve all jailbreaks from the JAILBREAK_TEMPLATES_PATH.
+
+        Args:
+            n (int, optional): Number of jailbreak templates to return. None to get all.
 
         Returns:
             List[str]: List of jailbreak template file names.
@@ -118,6 +121,8 @@ class TextJailBreak:
         if not jailbreak_template_names:
             raise ValueError("No jailbreak templates found in the jailbreak directory")
 
+        if n:
+            jailbreak_template_names = random.choices(jailbreak_template_names, k=n)
         return jailbreak_template_names
 
     def get_jailbreak_system_prompt(self) -> str:
