@@ -20,7 +20,7 @@ def test_crucible_initializes(crucible_target: CrucibleTarget):
 def test_crucible_sets_endpoint_and_rate_limit():
     target = CrucibleTarget(endpoint="https://crucible", api_key="abc", max_requests_per_minute=10)
     identifier = target.get_identifier()
-    assert identifier["endpoint"] == "https://crucible"
+    assert identifier.endpoint == "https://crucible"
     assert target._max_requests_per_minute == 10
 
 

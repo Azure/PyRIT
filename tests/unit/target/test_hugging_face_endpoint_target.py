@@ -29,7 +29,7 @@ def test_hugging_face_endpoint_sets_endpoint_and_rate_limit():
         max_requests_per_minute=30,
     )
     identifier = target.get_identifier()
-    assert identifier["endpoint"] == "https://api-inference.huggingface.co/models/test-model"
+    assert identifier.endpoint == "https://api-inference.huggingface.co/models/test-model"
     assert target._max_requests_per_minute == 30
 
 

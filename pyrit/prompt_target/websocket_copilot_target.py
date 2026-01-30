@@ -16,6 +16,7 @@ from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
@@ -113,6 +114,19 @@ class WebSocketCopilotTarget(PromptTarget):
             max_requests_per_minute=max_requests_per_minute,
             endpoint=self._websocket_base_url,
             model_name=model_name,
+        )
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with WebSocketCopilot-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            target_specific_params={
+                "response_timeout_seconds": self._response_timeout_seconds,
+            },
         )
 
     @staticmethod
