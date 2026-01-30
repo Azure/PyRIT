@@ -122,6 +122,10 @@ class TextJailBreak:
             raise ValueError("No jailbreak templates found in the jailbreak directory")
 
         if n:
+            if n > len(jailbreak_template_names):
+                raise ValueError(
+                    f"Attempted to pull {n} jailbreaks from a dataset with only {len(jailbreak_template_names)} jailbreaks!"
+                )
             jailbreak_template_names = random.choices(jailbreak_template_names, k=n)
         return jailbreak_template_names
 
