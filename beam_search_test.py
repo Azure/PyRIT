@@ -43,7 +43,7 @@ async def main():
         auxiliary_scorers=[acf_scorer],  # provide the list of aux scorers here
     )
 
-    pruner = TopKBeamPruner(k=3, drop_chars=5)
+    pruner = TopKBeamPruner(k=6, drop_chars=25)
 
     beam_search_attack = BeamSearchAttack(
         objective_target=base_response_target,

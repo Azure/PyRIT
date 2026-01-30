@@ -269,23 +269,27 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         message = self._get_message(current_context)
         beam.id = current_context.conversation_id
 
-        model_response = await self._prompt_normalizer.send_prompt_async(
-            message=message,
-            target=target,
-            conversation_id=current_context.conversation_id,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
-            labels=current_context.memory_labels,  # combined with strategy labels at _setup()
-            attack_identifier=self.get_identifier(),
-        )
+        try:
+            model_response = await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                target=target,
+                conversation_id=current_context.conversation_id,
+                request_converter_configurations=self._request_converters,
+                response_converter_configurations=self._response_converters,
+                labels=current_context.memory_labels,  # combined with strategy labels at _setup()
+                attack_identifier=self.get_identifier(),
+            )
 
-        # _print_message(model_response)
-        assert len(model_response.message_pieces) == 2, "Expected exactly two message pieces in the response"
-        model_response.message_pieces = model_response.message_pieces[1:]
-        model_response.message_pieces[0].role = "assistant"
-        beam.text = model_response.message_pieces[0].converted_value
-        beam.message = model_response
-        print(f"Updated beam text: {beam.text}")
+            # _print_message(model_response)
+            assert len(model_response.message_pieces) == 2, "Expected exactly two message pieces in the response"
+            model_response.message_pieces = model_response.message_pieces[1:]
+            model_response.message_pieces[0].role = "assistant"
+            beam.text = model_response.message_pieces[0].converted_value
+            beam.message = model_response
+            print(f"Updated beam text: {beam.text}")
+        except Exception as e:
+            # Just log the error and skip the update
+            logger.warning(f"Error propagating beam: {e}")
 
     async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]) -> Optional[Score]:
         assert beam.message is not None, "Beam message must be set before scoring"
