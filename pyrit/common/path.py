@@ -33,6 +33,10 @@ PYRIT_PATH = pathlib.Path(__file__, "..", "..").resolve()
 
 CONFIGURATION_DIRECTORY_PATH = pathlib.Path.home() / ".pyrit"
 
+# Default configuration file name and path
+DEFAULT_CONFIG_FILENAME = ".pyrit_conf"
+DEFAULT_CONFIG_PATH = CONFIGURATION_DIRECTORY_PATH / DEFAULT_CONFIG_FILENAME
+
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()
 
@@ -54,22 +58,30 @@ LOG_PATH.touch(exist_ok=True)
 DATASETS_PATH = pathlib.Path(PYRIT_PATH, "datasets").resolve()
 
 EXECUTOR_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "executors").resolve()
-EXECUTOR_RED_TEAM_PATH = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH, "red_teaming").resolve()
-EXECUTOR_SIMULATED_TARGET_PATH = pathlib.Path(EXECUTOR_SEED_PROMPT_PATH, "simulated_target").resolve()
-CONVERTER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "prompt_converters").resolve()
+EXECUTOR_RED_TEAM_PATH = pathlib.Path(
+    EXECUTOR_SEED_PROMPT_PATH, "red_teaming").resolve()
+EXECUTOR_SIMULATED_TARGET_PATH = pathlib.Path(
+    EXECUTOR_SEED_PROMPT_PATH, "simulated_target").resolve()
+CONVERTER_SEED_PROMPT_PATH = pathlib.Path(
+    DATASETS_PATH, "prompt_converters").resolve()
 SCORER_SEED_PROMPT_PATH = pathlib.Path(DATASETS_PATH, "score").resolve()
-SCORER_CONTENT_CLASSIFIERS_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "content_classifiers").resolve()
+SCORER_CONTENT_CLASSIFIERS_PATH = pathlib.Path(
+    SCORER_SEED_PROMPT_PATH, "content_classifiers").resolve()
 SCORER_LIKERT_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "likert").resolve()
 SCORER_SCALES_PATH = pathlib.Path(SCORER_SEED_PROMPT_PATH, "scales").resolve()
 HARM_DEFINITION_PATH = pathlib.Path(DATASETS_PATH, "harm_definition").resolve()
 
-JAILBREAK_TEMPLATES_PATH = pathlib.Path(DATASETS_PATH, "jailbreak", "templates").resolve()
+JAILBREAK_TEMPLATES_PATH = pathlib.Path(
+    DATASETS_PATH, "jailbreak", "templates").resolve()
 
 SCORER_EVALS_PATH = pathlib.Path(DATASETS_PATH, "scorer_evals").resolve()
 SCORER_EVALS_HARM_PATH = pathlib.Path(SCORER_EVALS_PATH, "harm").resolve()
-SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(SCORER_EVALS_PATH, "objective").resolve()
-SCORER_EVALS_REFUSAL_SCORER_PATH = pathlib.Path(SCORER_EVALS_PATH, "refusal_scorer").resolve()
-SCORER_EVALS_TRUE_FALSE_PATH = pathlib.Path(SCORER_EVALS_PATH, "true_false").resolve()
+SCORER_EVALS_OBJECTIVE_PATH = pathlib.Path(
+    SCORER_EVALS_PATH, "objective").resolve()
+SCORER_EVALS_REFUSAL_SCORER_PATH = pathlib.Path(
+    SCORER_EVALS_PATH, "refusal_scorer").resolve()
+SCORER_EVALS_TRUE_FALSE_PATH = pathlib.Path(
+    SCORER_EVALS_PATH, "true_false").resolve()
 SCORER_EVALS_LIKERT_PATH = pathlib.Path(SCORER_EVALS_PATH, "likert").resolve()
 
 
