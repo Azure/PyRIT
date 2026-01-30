@@ -73,8 +73,30 @@ class Beam:
     id: str
     text: str
     score: float
-    context: SingleTurnAttackContext | None = None
     message: Message | None = None
+
+class BeamPruner:
+    def prune(self, beams: list[Beam]) -> list[Beam]:
+        raise NotImplementedError("BeamPruner.prune() must be implemented in subclasses")
+
+
+class TopKBeamPruner(BeamPruner):
+    def __init__(self, k: int, drop_chars: int):
+        self.k = k
+        self.drop_chars = drop_chars
+
+    def prune(self, beams: list[Beam]) -> list[Beam]:
+        # Sort beams by score in descending order and select top k
+        sorted_beams = sorted(beams, key=lambda b: b.score, reverse=True)
+
+        new_beams = list(reversed(sorted_beams[: self.k]))
+        for i in range(len(beams) - len(new_beams)):
+            nxt = copy.deepcopy(new_beams[i % self.k])
+            if len(nxt.text) > self.drop_chars:
+                nxt.text = nxt.text[:-self.drop_chars]
+            new_beams.append(nxt)
+        assert len(beams) == len(new_beams)
+        return new_beams
 
 
 class BeamSearchAttack(SingleTurnAttackStrategy):
@@ -83,6 +105,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         self,
         *,
         objective_target: OpenAIResponseTarget = REQUIRED_VALUE,  # type: ignore[assignment]
+        beam_pruner: BeamPruner = REQUIRED_VALUE, # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -131,6 +154,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             attack_identifier=self.get_identifier(),
             prompt_normalizer=self._prompt_normalizer,
         )
+
+        self._beam_pruner = beam_pruner
 
         self._num_beams = num_beams
         self._max_iterations = max_iterations
@@ -200,6 +225,10 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         for step in range(self._max_iterations):
             print(f"Starting iteration {step}")
+
+            # Prune beams at the top of the loop for simplicity
+            beams = self._beam_pruner.prune(beams)
+
             async with asyncio.TaskGroup() as tg:
                 tasks = [tg.create_task(self._propagate_beam(beam=beam)) for beam in beams]
                 await asyncio.gather(*tasks)
@@ -215,8 +244,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             for i, beam in enumerate(beams):
                 print(f"Beam {i} score: {beam.score}")
 
-            for s in scores:
-                print(f"Score: {s}")
 
         result = AttackResult(
             conversation_id=context.conversation_id,
@@ -273,8 +300,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         aux_scores = scoring_results["auxiliary_scores"]
         beam.score = 0.0
         for s in aux_scores:
-            print(f"Auxiliary score: {s}")
-            print(f"{s.get_value()=}")
+            #print(f"Auxiliary score: {s}")
+            #print(f"{s.get_value()=}")
             beam.score += s.get_value()
 
         objective_scores = scoring_results["objective_scores"]
