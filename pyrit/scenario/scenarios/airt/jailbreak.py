@@ -31,9 +31,9 @@ from pyrit.score import (
 """
 TODO REMOVE
 Featurelist
--> Enhanced JailbreakStrategy
--> n tries per jailbreak
--> Choose subset of jailbreaks explicitly
+- [ ] Enhanced JailbreakStrategy
+- [X] n tries per jailbreak
+- [ ] Choose subset of jailbreaks explicitly
 """
 
 
@@ -102,7 +102,8 @@ class Jailbreak(Scenario):
         include_baseline: bool = False,
         scenario_result_id: Optional[str] = None,
         k_jailbreaks: Optional[int] = None,
-        num_tries: Optional[int] = 1
+        which_jailbreaks: Optional[List[str]] = None,
+        num_tries: int = 1,
     ) -> None:
         """
         Initialize the jailbreak scenario.
@@ -113,13 +114,23 @@ class Jailbreak(Scenario):
             include_baseline (bool): Whether to include a baseline atomic attack that sends all
                 objectives without modifications. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
-            n_jailbreaks (Optional[int]): Choose n random jailbreaks rather than using all of them.
+            k_jailbreaks (Optional[int]): Choose k random jailbreaks rather than using all of them.
             num_tries (Optional[int]): Number of times to try each jailbreak.
+            which_jailbreaks (Optional[int]): Dedicated list of jailbreaks to run.
+
+        Raises:
+            ValueError: If both which_jailbreaks and k_jailbreaks are provided, as random selection
+            is incompatible with a predetermined list.
+
         """
+        if which_jailbreaks and k_jailbreaks:
+            raise ValueError(
+                "Please provide only one of `k_jailbreaks` (random selection) or `which_jailbreaks` (specific selection)."
+            )
+
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(
-            objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
         self._k = k_jailbreaks
         self._n = num_tries
@@ -150,12 +161,9 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -186,7 +194,7 @@ class Jailbreak(Scenario):
         if not self._k:
             return TextJailBreak.get_all_jailbreak_templates()
         else:
-            return TextJailBreak.get_all_jailbreak_templates(n=self._k)
+            return TextJailBreak.get_all_jailbreak_templates(k=self._k)
 
     async def _get_atomic_attack_from_jailbreak_async(self, *, jailbreak_template_name: str) -> AtomicAttack:
         """
@@ -203,14 +211,12 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(
-                template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(
-                converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
         # Create the attack
@@ -245,7 +251,10 @@ class Jailbreak(Scenario):
         jailbreak_template_names = self._get_all_jailbreak_templates()
 
         for template_name in jailbreak_template_names:
-            atomic_attack = await self._get_atomic_attack_from_jailbreak_async(jailbreak_template_name=template_name)
-            atomic_attacks.append(atomic_attack)
+            for _ in range(0, self._n):
+                atomic_attack = await self._get_atomic_attack_from_jailbreak_async(
+                    jailbreak_template_name=template_name
+                )
+                atomic_attacks.append(atomic_attack)
 
         return atomic_attacks
