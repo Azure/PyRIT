@@ -207,7 +207,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             for i, beam in enumerate(beams):
                 print(f"Beam {i} text after iteration {step}: {beam.text}")
 
-            continue
             print("Scoring beams")
             async with asyncio.TaskGroup() as tg:
                 tasks = [tg.create_task(self._score_beam(beam=beam, context=context)) for beam in beams]
@@ -253,7 +252,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             attack_identifier=self.get_identifier(),
         )
 
-        _print_message(model_response)
+        # _print_message(model_response)
         assert len(model_response.message_pieces) == 2, "Expected exactly two message pieces in the response"
         model_response.message_pieces = model_response.message_pieces[1:]
         model_response.message_pieces[0].role = "assistant"
