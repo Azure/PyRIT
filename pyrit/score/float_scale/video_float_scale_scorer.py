@@ -1,14 +1,10 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import os
-import uuid
 from typing import List, Optional
 
 from pyrit.identifiers import ScorerIdentifier
-from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_transcript_scorer import _BaseAudioTranscriptScorer
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
     FloatScaleScorerByCategory,
@@ -122,7 +118,9 @@ class VideoFloatScaleScorer(
 
         # Score audio if audio_scorer is provided
         if self.audio_scorer:
-            audio_scores = await self._score_video_audio_async(message_piece=message_piece, objective=objective)
+            audio_scores = await self._score_video_audio_async(
+                message_piece=message_piece, audio_scorer=self.audio_scorer
+            )
             if audio_scores:
                 all_scores.extend(audio_scores)
                 audio_scored = True
@@ -155,62 +153,3 @@ class VideoFloatScaleScorer(
             aggregate_scores.append(aggregate_score)
 
         return aggregate_scores
-
-    async def _score_video_audio_async(
-        self, *, message_piece: MessagePiece, objective: Optional[str] = None
-    ) -> List[Score]:
-        """
-        Extract and score audio from the video.
-
-        Args:
-            message_piece: The message piece containing the video.
-            objective: Optional objective description for scoring.
-
-        Returns:
-            List of scores for the audio content, or empty list if audio extraction/scoring fails.
-        """
-        video_path = message_piece.converted_value
-
-        # Use _BaseAudioScorer's static method to extract audio
-        audio_path = _BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
-        if not audio_path:
-            return []
-
-        try:
-            # Create a message piece for the audio
-            original_prompt_id = message_piece.original_prompt_id
-            if isinstance(original_prompt_id, str):
-                original_prompt_id = uuid.UUID(original_prompt_id)
-
-            audio_piece = MessagePiece(
-                original_value=audio_path,
-                role=message_piece.get_role_for_storage(),
-                original_prompt_id=original_prompt_id,
-                converted_value=audio_path,
-                converted_value_data_type="audio_path",
-            )
-
-            audio_message = audio_piece.to_message()
-
-            # Add to memory
-            memory = CentralMemory.get_memory_instance()
-            memory.add_message_to_memory(request=audio_message)
-
-            # Score the audio using the audio_scorer
-            # We pass objective=None because when used within a video scorer,
-            # the audio should be evaluated independently using only its scorer criteria,
-            # not the overall video objective (which describes visual elements)
-            if self.audio_scorer is None:
-                return []
-            audio_scores = await self.audio_scorer.score_prompts_batch_async(
-                messages=[audio_message],
-                objectives=None,  # Audio uses only its own scoring criteria, not video objective
-                batch_size=1,
-            )
-
-            return audio_scores if audio_scores else []
-
-        finally:
-            # Clean up temporary audio file
-            if os.path.exists(audio_path):
-                os.unlink(audio_path)
