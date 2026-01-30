@@ -246,6 +246,11 @@ class TestJailbreakProperties:
 
         assert scenario.version == 1
 
+    def test_scenario_default_dataset(self) -> None:
+        """Test that scenario default dataset is correct."""
+
+        assert Jailbreak.required_datasets() == ["airt_harms"]
+
     @pytest.mark.asyncio
     async def test_no_target_duplication_async(
         self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: List[SeedGroup]
