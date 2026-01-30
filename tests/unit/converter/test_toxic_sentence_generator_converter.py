@@ -4,6 +4,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from unit.mocks import get_mock_target_identifier
 
 from pyrit.models import MessagePiece, SeedPrompt
 from pyrit.prompt_converter import ToxicSentenceGeneratorConverter
@@ -20,7 +21,7 @@ def mock_target():
         conversation_id="test-conversation",
     ).to_message()
     mock.send_prompt_async = AsyncMock(return_value=[response])
-    mock.get_identifier = MagicMock(return_value="mock_target")
+    mock.get_identifier.return_value = get_mock_target_identifier("MockToxicTarget")
     return mock
 
 

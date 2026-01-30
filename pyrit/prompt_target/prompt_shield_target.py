@@ -6,6 +6,7 @@ import logging
 from typing import Any, Callable, Literal, Optional, Sequence
 
 from pyrit.common import default_values, net_utility
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -92,6 +93,20 @@ class PromptShieldTarget(PromptTarget):
         )
 
         self._force_entry_field: PromptShieldEntryField = field
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with Prompt Shield-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            target_specific_params={
+                "api_version": self._api_version,
+                "force_entry_field": self._force_entry_field if self._force_entry_field else None,
+            },
+        )
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:

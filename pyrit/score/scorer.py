@@ -132,16 +132,19 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
         target_info: Optional[Dict[str, Any]] = None
         if prompt_target:
             target_id = prompt_target.get_identifier()
-            # Extract standard fields for scorer evaluation
-            target_info = {}
-            for key in ["__type__", "model_name", "temperature", "top_p"]:
-                if key in target_id:
-                    target_info[key] = target_id[key]
+            # Extract standard fields for scorer evaluation, excluding None values
+            target_info = {"class_name": target_id.class_name}
+            if target_id.model_name:
+                target_info["model_name"] = target_id.model_name
+            if target_id.temperature is not None:
+                target_info["temperature"] = target_id.temperature
+            if target_id.top_p is not None:
+                target_info["top_p"] = target_id.top_p
 
         return ScorerIdentifier(
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
-            class_description=self.__class__.__doc__ or "",
+            class_description=" ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else "",
             identifier_type="instance",
             scorer_type=self.scorer_type,
             system_prompt_template=system_prompt_template,

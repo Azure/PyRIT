@@ -24,7 +24,7 @@ from pyrit.executor.attack import (
     CrescendoAttackContext,
     CrescendoAttackResult,
 )
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     ChatMessageRole,
@@ -50,6 +50,16 @@ def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
     )
 
 
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
 def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
     """Create a mock chat target with common setup.
 
@@ -59,7 +69,7 @@ def create_mock_chat_target(*, name: str = "MockChatTarget") -> MagicMock:
     target = MagicMock(spec=PromptChatTarget)
     target.send_prompt_async = AsyncMock()
     target.set_system_prompt = MagicMock()
-    target.get_identifier.return_value = {"__type__": name, "__module__": "test_module"}
+    target.get_identifier.return_value = _mock_target_id(name)
     return target
 
 
