@@ -74,7 +74,7 @@ class Jailbreak(Scenario):
     @classmethod
     def required_datasets(cls) -> list[str]:
         """Return a list of dataset names required by this scenario."""
-        return ["airt_jailbreak"]
+        return ["airt_harms"]
 
     @classmethod
     def default_dataset_config(cls) -> DatasetConfiguration:
@@ -82,7 +82,7 @@ class Jailbreak(Scenario):
         Return the default dataset configuration for this scenario.
 
         Returns:
-            DatasetConfiguration: Configuration with airt_jailbreak dataset.
+            DatasetConfiguration: Configuration with airt_harms dataset.
         """
         return DatasetConfiguration(dataset_names=["airt_harms"], max_dataset_size=4)
 
@@ -106,7 +106,8 @@ class Jailbreak(Scenario):
         """
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(
+            objective_scorer=objective_scorer)
 
         super().__init__(
             name="Jailbreak",
@@ -134,9 +135,12 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -181,12 +185,14 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(
+                template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(
+                converters=[jailbreak_converter])
         )
 
         # Create the attack
