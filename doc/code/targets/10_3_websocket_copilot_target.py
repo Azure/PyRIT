@@ -81,6 +81,54 @@ result = await multi_turn_attack.execute_async(
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)
 
 # %% [markdown]
+# ## Multimodal Support (Text and Images)
+#
+# The `WebSocketCopilotTarget` supports multimodal input, allowing you to send both text and images in a single message. Images are automatically uploaded to Copilot's file service and referenced in the conversation using the same process as the Copilot web interface.
+#
+# Here's an example of sending an image along with a text prompt:
+
+# %%
+from pathlib import Path
+
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import WebSocketCopilotTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, silent=True)
+
+target = WebSocketCopilotTarget()
+attack = PromptSendingAttack(objective_target=target)
+
+# Replace with the path to your actual image file
+image_path = Path("../converters/benign_cake_question.jpg")
+
+# Create a multimodal message with both text and image pieces
+multimodal_message = Message(
+    message_pieces=[
+        MessagePiece(
+            role="user",
+            original_value="Answer the question from the image",
+            converted_value="Answer the question from the image",
+            conversation_id="test_conversation",
+            original_value_data_type="text",
+            converted_value_data_type="text",
+        ),
+        MessagePiece(
+            role="user",
+            original_value=str(image_path),
+            converted_value=str(image_path),
+            conversation_id="test_conversation",
+            original_value_data_type="image_path",
+            converted_value_data_type="image_path",
+        ),
+    ]
+)
+
+result = await attack.execute_async(objective="Answer the question from the image", next_message=multimodal_message)
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)
+
+# %% [markdown]
 # ## Alternative Authentication with `ManualCopilotAuthenticator`
 #
 # If browser automation is not suitable for your environment, you can use the `ManualCopilotAuthenticator` instead. This authenticator accepts a pre-obtained access token that you can extract from your browser's DevTools.
