@@ -571,8 +571,10 @@ class WebSocketCopilotTarget(PromptTarget):
         for piece in message.message_pieces:
             piece_type = piece.converted_value_data_type
             if piece_type not in self.SUPPORTED_DATA_TYPES:
-                supported_types = ", ".join(self.SUPPORTED_DATA_TYPES)
-                raise ValueError(f"This target only supports {supported_types} prompt input. Received: {piece_type}.")
+                supported_types = ", ".join(sorted(self.SUPPORTED_DATA_TYPES))
+                raise ValueError(
+                    f"This target supports only the following data types: {supported_types}. Received: {piece_type}."
+                )
 
     def _is_start_of_session(self, *, conversation_id: str) -> bool:
         """

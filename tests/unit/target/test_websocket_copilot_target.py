@@ -25,6 +25,29 @@ def mock_authenticator():
     return authenticator
 
 
+@pytest.fixture
+def sample_text_pieces():
+    return [
+        MessagePiece(
+            role="user",
+            original_value="Hello",
+            converted_value="Hello",
+            conversation_id="conv_456",
+            original_value_data_type="text",
+            converted_value_data_type="text",
+        )
+    ]
+
+
+@pytest.fixture
+def mock_websocket():
+    ws = AsyncMock()
+    ws.send = AsyncMock()
+    ws.__aenter__ = AsyncMock(return_value=ws)
+    ws.__aexit__ = AsyncMock(return_value=None)
+    return ws
+
+
 @pytest.mark.usefixtures("patch_central_database")
 class TestWebSocketCopilotTargetInit:
     def test_init_with_default_parameters(self):
@@ -188,65 +211,53 @@ class TestBuildWebsocketUrl:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestBuildPromptMessage:
-    def test_build_prompt_message_structure(self, mock_authenticator):
+    @pytest.mark.asyncio
+    async def test_build_prompt_message_structure(self, mock_authenticator, sample_text_pieces):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
 
-        prompt = "Hello Copilot"
-        session_id = "session_123"
-        copilot_conversation_id = "conv_456"
-        is_start_of_session = True
-
-        message = target._build_prompt_message(
-            prompt=prompt,
-            session_id=session_id,
-            copilot_conversation_id=copilot_conversation_id,
-            is_start_of_session=is_start_of_session,
+        message = await target._build_prompt_message(
+            message_pieces=sample_text_pieces,
+            session_id="session_123",
+            copilot_conversation_id="conv_456",
+            is_start_of_session=True,
         )
-
-        assert "arguments" in message
-        assert "invocationId" in message
-        assert "target" in message
-        assert "type" in message
 
         assert message["target"] == "chat"
         assert message["type"] == CopilotMessageType.USER_PROMPT
         assert message["invocationId"] == "0"
 
         args = message["arguments"][0]
-        assert args["sessionId"] == session_id
-        assert args["conversationId"] == copilot_conversation_id
+        assert args["sessionId"] == "session_123"
+        assert args["conversationId"] == "conv_456"
         assert args["isStartOfSession"] is True
         assert args["source"] == "officeweb"
         assert args["productThreadType"] == "Office"
 
         msg = args["message"]
-        assert msg["text"] == prompt
+        assert msg["text"] == "Hello"
         assert msg["author"] == "user"
         assert msg["messageType"] == "Chat"
-        assert msg["locale"] == "en-US"
+        assert msg["locale"] == "en-us"
 
-    def test_build_prompt_message_with_different_session_states(self, mock_authenticator):
+    @pytest.mark.asyncio
+    async def test_build_prompt_message_with_different_session_states(self, mock_authenticator, sample_text_pieces):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
 
-        message = target._build_prompt_message(
-            prompt="Follow-up question",
+        message = await target._build_prompt_message(
+            message_pieces=sample_text_pieces,
             session_id="session_123",
             copilot_conversation_id="conv_456",
             is_start_of_session=False,
         )
 
-        args = message["arguments"][0]
-        assert args["isStartOfSession"] is False
+        assert message["arguments"][0]["isStartOfSession"] is False
 
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestConnectAndSend:
     @pytest.mark.asyncio
-    async def test_connect_and_send_successful_response(self, mock_authenticator):
+    async def test_connect_and_send_successful_response(self, mock_authenticator, sample_text_pieces, mock_websocket):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(
             side_effect=[
                 '{"type":6}\x1e',  # PING response to handshake
@@ -254,12 +265,10 @@ class TestConnectAndSend:
                 '{"type":2,"item":{"result":{"message":"Hello from Copilot"}}}\x1e',  # final content
             ]
         )
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             response = await target._connect_and_send(
-                prompt="Hello",
+                message_pieces=sample_text_pieces,
                 session_id="session_123",
                 copilot_conversation_id="conv_456",
                 is_start_of_session=True,
@@ -269,61 +278,43 @@ class TestConnectAndSend:
         assert mock_websocket.send.call_count == 2  # handshake + user prompt
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_timeout(self, mock_authenticator):
+    async def test_connect_and_send_timeout(self, mock_authenticator, sample_text_pieces, mock_websocket):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator, response_timeout_seconds=1)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(side_effect=asyncio.TimeoutError())
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             with pytest.raises(TimeoutError, match="Timed out waiting for Copilot response"):
                 await target._connect_and_send(
-                    prompt="Hello",
+                    message_pieces=sample_text_pieces,
                     session_id="session_123",
                     copilot_conversation_id="conv_456",
                     is_start_of_session=True,
                 )
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_none_response(self, mock_authenticator):
+    async def test_connect_and_send_none_response(self, mock_authenticator, sample_text_pieces, mock_websocket):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(return_value=None)
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             with pytest.raises(RuntimeError, match="WebSocket connection closed unexpectedly"):
                 await target._connect_and_send(
-                    prompt="Hello",
+                    message_pieces=sample_text_pieces,
                     session_id="session_123",
                     copilot_conversation_id="conv_456",
                     is_start_of_session=True,
                 )
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_stream_end_without_final_content(self, mock_authenticator):
+    async def test_connect_and_send_stream_end_without_final_content(
+        self, mock_authenticator, sample_text_pieces, mock_websocket
+    ):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
-        mock_websocket.recv = AsyncMock(
-            side_effect=[
-                '{"type":6}\x1e',
-                '{"type":3}\x1e',
-            ]
-        )
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
+        mock_websocket.recv = AsyncMock(side_effect=['{"type":6}\x1e', '{"type":3}\x1e'])
 
         with patch("websockets.connect", return_value=mock_websocket):
             response = await target._connect_and_send(
-                prompt="Hello",
+                message_pieces=sample_text_pieces,
                 session_id="sid",
                 copilot_conversation_id="cid",
                 is_start_of_session=True,
@@ -332,19 +323,16 @@ class TestConnectAndSend:
         assert response == ""
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_exceeds_max_iterations(self, mock_authenticator):
+    async def test_connect_and_send_exceeds_max_iterations(
+        self, mock_authenticator, sample_text_pieces, mock_websocket
+    ):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(return_value='{"type":1}\x1e')
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             with pytest.raises(RuntimeError, match="Exceeded maximum message iterations"):
                 await target._connect_and_send(
-                    prompt="Hello",
+                    message_pieces=sample_text_pieces,
                     session_id="sid",
                     copilot_conversation_id="cid",
                     is_start_of_session=True,
@@ -353,63 +341,51 @@ class TestConnectAndSend:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestValidateRequest:
-    def test_validate_request_with_single_text_piece(self, mock_authenticator):
+    @pytest.mark.parametrize(
+        "data_type,should_pass",
+        [
+            ("text", True),
+            ("image_path", True),
+            ("audio_path", False),
+            ("video_path", False),
+        ],
+    )
+    def test_validate_request_data_types(self, mock_authenticator, data_type, should_pass):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
         message_piece = MessagePiece(
             role="user",
             original_value="test",
             converted_value="test",
             conversation_id="123",
-            original_value_data_type="text",
-            converted_value_data_type="text",
+            original_value_data_type=data_type,
+            converted_value_data_type=data_type,
         )
         message = Message(message_pieces=[message_piece])
 
-        # Should not raise
-        target._validate_request(message=message)
+        if should_pass:
+            target._validate_request(message=message)
+        else:
+            with pytest.raises(
+                ValueError,
+                match=f"This target supports only the following data types: image_path, text. Received: {data_type}.",
+            ):
+                target._validate_request(message=message)
 
-    def test_validate_request_with_multiple_pieces(self, mock_authenticator):
+    def test_validate_request_with_multiple_text_pieces(self, mock_authenticator):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
         message_pieces = [
             MessagePiece(
                 role="user",
-                original_value="test1",
-                converted_value="test1",
+                original_value=f"test{i}",
+                converted_value=f"test{i}",
                 conversation_id="123",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-            ),
-            MessagePiece(
-                role="user",
-                original_value="test2",
-                converted_value="test2",
-                conversation_id="123",
-                original_value_data_type="text",
-                converted_value_data_type="text",
-            ),
+            )
+            for i in range(3)
         ]
         message = Message(message_pieces=message_pieces)
-
-        with pytest.raises(ValueError, match="This target only supports a single message piece"):
-            target._validate_request(message=message)
-
-    def test_validate_request_with_non_text_type(self, mock_authenticator):
-        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        message_piece = MessagePiece(
-            role="user",
-            original_value="image.png",
-            converted_value="image.png",
-            conversation_id="123",
-            original_value_data_type="image_path",
-            converted_value_data_type="image_path",
-        )
-        message = Message(message_pieces=[message_piece])
-
-        with pytest.raises(ValueError, match="This target only supports text prompt input"):
-            target._validate_request(message=message)
+        target._validate_request(message=message)  # should not raise
 
 
 @pytest.mark.usefixtures("patch_central_database")
