@@ -131,18 +131,20 @@ class AudioTranscriptHelper(ABC):
             Text transcription from audio file.
 
         Raises:
-            ModuleNotFoundError: If required transcription dependencies are not installed.
+            ModuleNotFoundError: If required transcription dependencies are not installed.\
+            FileNotFoundError: If the audio file does not exist.\
+            Exception: If transcription fails for any other reason.
         """
         # Convert audio to WAV if needed (Azure Speech requires WAV)
-        wav_path = await self._ensure_wav_format(audio_path)
+        wav_path = self._ensure_wav_format(audio_path)
         logger.info(f"Audio transcription: WAV file path = {wav_path}")
 
         # Check if WAV file exists and has content
-        if os.path.exists(wav_path):
-            file_size = os.path.getsize(wav_path)
-            logger.info(f"Audio transcription: WAV file size = {file_size} bytes")
-        else:
-            logger.error(f"Audio transcription: WAV file does not exist at {wav_path}")
+        if not os.path.exists(wav_path):
+            raise FileNotFoundError(f"WAV file does not exist at {wav_path}")
+
+        file_size = os.path.getsize(wav_path)
+        logger.info(f"Audio transcription: WAV file size = {file_size} bytes")
 
         try:
             converter = AzureSpeechAudioToTextConverter()
@@ -158,7 +160,7 @@ class AudioTranscriptHelper(ABC):
             if wav_path != audio_path and os.path.exists(wav_path):
                 os.unlink(wav_path)
 
-    async def _ensure_wav_format(self, audio_path: str) -> str:
+    def _ensure_wav_format(self, audio_path: str) -> str:
         """
         Ensure audio file is in correct WAV format for transcription.
 
