@@ -10,6 +10,7 @@ This module provides the main entry point for the pyrit_scan command.
 import asyncio
 import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
+from pathlib import Path
 from typing import Optional
 
 from pyrit.cli import frontend_core
@@ -34,6 +35,9 @@ Examples:
   # Run a scenario with built-in initializers
   pyrit_scan foundry --initializers openai_objective_target load_default_datasets
 
+  # Run with a configuration file (recommended for complex setups)
+  pyrit_scan foundry --config-file ./my_config.yaml
+
   # Run with custom initialization scripts
   pyrit_scan garak.encoding --initialization-scripts ./my_config.py
 
@@ -43,6 +47,12 @@ Examples:
   pyrit_scan garak.encoding --initializers openai_objective_target --memory-labels '{"run_id":"test123"}'
 """,
         formatter_class=RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--config-file",
+        type=Path,
+        help=frontend_core.ARG_HELP["config_file"],
     )
 
     parser.add_argument(
@@ -182,6 +192,7 @@ def main(args: Optional[list[str]] = None) -> int:
                 return 1
 
         context = frontend_core.FrontendCore(
+            config_file=parsed_args.config_file,
             database=parsed_args.database,
             initialization_scripts=initialization_scripts,
             env_files=env_files,
@@ -194,7 +205,10 @@ def main(args: Optional[list[str]] = None) -> int:
         # Discover from scenarios directory
         scenarios_path = frontend_core.get_default_initializer_discovery_path()
 
-        context = frontend_core.FrontendCore(log_level=parsed_args.log_level)
+        context = frontend_core.FrontendCore(
+            config_file=parsed_args.config_file,
+            log_level=parsed_args.log_level,
+        )
         return asyncio.run(frontend_core.print_initializers_list_async(context=context, discovery_path=scenarios_path))
 
     # Verify scenario was provided
@@ -218,6 +232,7 @@ def main(args: Optional[list[str]] = None) -> int:
 
         # Create context with initializers
         context = frontend_core.FrontendCore(
+            config_file=parsed_args.config_file,
             database=parsed_args.database,
             initialization_scripts=initialization_scripts,
             initializer_names=parsed_args.initializers,

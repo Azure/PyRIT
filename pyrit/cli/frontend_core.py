@@ -46,6 +46,7 @@ if TYPE_CHECKING:
         ScenarioMetadata,
         ScenarioRegistry,
     )
+    from pyrit.setup import ConfigurationLoader
 
 logger = logging.getLogger(__name__)
 
@@ -66,16 +67,23 @@ class FrontendCore:
     def __init__(
         self,
         *,
-        database: str = SQLITE,
+        config_file: Optional[Path] = None,
+        database: Optional[str] = None,
         initialization_scripts: Optional[list[Path]] = None,
         initializer_names: Optional[list[str]] = None,
         env_files: Optional[list[Path]] = None,
-        log_level: str = "WARNING",
+        log_level: Optional[str] = None,
     ):
         """
         Initialize PyRIT context.
 
+        Configuration is loaded in the following order (later values override earlier):
+        1. Default config file (~/.pyrit/.pyrit_conf) if it exists
+        2. Explicit config_file argument if provided
+        3. Individual CLI arguments (database, initializers, etc.)
+
         Args:
+            config_file: Optional path to a YAML configuration file.
             database: Database type (InMemory, SQLite, or AzureSQL).
             initialization_scripts: Optional list of initialization script paths.
             initializer_names: Optional list of built-in initializer names to run.
@@ -83,14 +91,34 @@ class FrontendCore:
             log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Defaults to WARNING.
 
         Raises:
-            ValueError: If database or log_level are invalid.
+            ValueError: If database or log_level are invalid, or if config file is invalid.
+            FileNotFoundError: If an explicitly specified config_file does not exist.
         """
-        # Validate inputs
-        self._database = validate_database(database=database)
-        self._initialization_scripts = initialization_scripts
-        self._initializer_names = initializer_names
-        self._env_files = env_files
-        self._log_level = validate_log_level(log_level=log_level)
+        from pyrit.setup import ConfigurationLoader
+
+        # Load configuration from files and merge with CLI arguments
+        config = self._load_and_merge_config(
+            config_file=config_file,
+            database=database,
+            initialization_scripts=initialization_scripts,
+            initializer_names=initializer_names,
+            env_files=env_files,
+        )
+
+        # Store the merged configuration
+        self._config = config
+
+        # Extract values from config for internal use
+        # Map snake_case db type back to PascalCase for backward compatibility
+        db_type_map = {"in_memory": IN_MEMORY, "sqlite": SQLITE, "azure_sql": AZURE_SQL}
+        self._database = db_type_map[config.memory_db_type]
+        self._initialization_scripts = config._resolve_initialization_scripts()
+        self._initializer_names = [ic.name for ic in config._initializer_configs] if config._initializer_configs else None
+        self._env_files = config._resolve_env_files()
+
+        # Log level comes from CLI arg (not in config file), default to WARNING
+        effective_log_level = log_level if log_level is not None else "WARNING"
+        self._log_level = validate_log_level(log_level=effective_log_level)
 
         # Lazy-loaded registries
         self._scenario_registry: Optional[ScenarioRegistry] = None
@@ -99,6 +127,93 @@ class FrontendCore:
 
         # Configure logging
         logging.basicConfig(level=getattr(logging, self._log_level))
+
+    def _load_and_merge_config(
+        self,
+        *,
+        config_file: Optional[Path],
+        database: Optional[str],
+        initialization_scripts: Optional[list[Path]],
+        initializer_names: Optional[list[str]],
+        env_files: Optional[list[Path]],
+    ) -> "ConfigurationLoader":
+        """
+        Load configuration from files and merge with CLI arguments.
+
+        Precedence (later overrides earlier):
+        1. Default config file (~/.pyrit/.pyrit_conf) if it exists
+        2. Explicit config_file argument if provided
+        3. Individual CLI arguments
+
+        Args:
+            config_file: Optional explicit config file path.
+            database: Optional database type from CLI.
+            initialization_scripts: Optional scripts from CLI.
+            initializer_names: Optional initializer names from CLI.
+            env_files: Optional env files from CLI.
+
+        Returns:
+            Merged ConfigurationLoader instance.
+        """
+        from pyrit.setup import ConfigurationLoader
+
+        # Start with defaults
+        config_data: dict = {
+            "memory_db_type": "sqlite",
+            "initializers": [],
+            "initialization_scripts": [],
+            "env_files": [],
+        }
+
+        # 1. Try loading default config file if it exists
+        default_config_path = ConfigurationLoader.get_default_config_path()
+        if default_config_path.exists():
+            try:
+                default_config = ConfigurationLoader.from_yaml_file(default_config_path)
+                config_data["memory_db_type"] = default_config.memory_db_type
+                config_data["initializers"] = [
+                    {"name": ic.name, "args": ic.args} if ic.args else ic.name
+                    for ic in default_config._initializer_configs
+                ]
+                config_data["initialization_scripts"] = default_config.initialization_scripts
+                config_data["env_files"] = default_config.env_files
+            except Exception as e:
+                logger.warning(f"Failed to load default config file {default_config_path}: {e}")
+
+        # 2. Load explicit config file if provided (overrides default)
+        if config_file is not None:
+            if not config_file.exists():
+                raise FileNotFoundError(f"Configuration file not found: {config_file}")
+            explicit_config = ConfigurationLoader.from_yaml_file(config_file)
+            config_data["memory_db_type"] = explicit_config.memory_db_type
+            config_data["initializers"] = [
+                {"name": ic.name, "args": ic.args} if ic.args else ic.name
+                for ic in explicit_config._initializer_configs
+            ]
+            config_data["initialization_scripts"] = explicit_config.initialization_scripts
+            config_data["env_files"] = explicit_config.env_files
+
+        # 3. Apply CLI overrides (non-None values take precedence)
+        if database is not None:
+            # Normalize to snake_case for ConfigurationLoader
+            normalized_db = database.lower().replace("-", "_")
+            # Handle PascalCase inputs
+            if normalized_db == "inmemory":
+                normalized_db = "in_memory"
+            elif normalized_db == "azuresql":
+                normalized_db = "azure_sql"
+            config_data["memory_db_type"] = normalized_db
+
+        if initialization_scripts is not None:
+            config_data["initialization_scripts"] = [str(p) for p in initialization_scripts]
+
+        if initializer_names is not None:
+            config_data["initializers"] = initializer_names
+
+        if env_files is not None:
+            config_data["env_files"] = [str(p) for p in env_files]
+
+        return ConfigurationLoader.from_dict(config_data)
 
     async def initialize_async(self) -> None:
         """Initialize PyRIT and load registries (heavy operation)."""
@@ -734,6 +849,11 @@ async def print_initializers_list_async(*, context: FrontendCore, discovery_path
 
 # Shared argument help text
 ARG_HELP = {
+    "config_file": (
+        "Path to a YAML configuration file. Allows specifying database, initializers (with args), "
+        "initialization scripts, and env files. CLI arguments override config file values. "
+        "If not specified, ~/.pyrit/.pyrit_conf is loaded if it exists."
+    ),
     "initializers": "Built-in initializer names to run before the scenario (e.g., openai_objective_target)",
     "initialization_scripts": "Paths to custom Python initialization scripts to run before the scenario",
     "env_files": "Paths to environment files to load in order (e.g., .env.production .env.local). Later files "

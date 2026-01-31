@@ -454,6 +454,12 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--config-file",
+        type=frontend_core.Path,
+        help=frontend_core.ARG_HELP["config_file"],
+    )
+
+    parser.add_argument(
         "--database",
         choices=[frontend_core.IN_MEMORY, frontend_core.SQLITE, frontend_core.AZURE_SQL],
         default=frontend_core.SQLITE,
@@ -488,6 +494,7 @@ def main() -> int:
 
     # Create context (initializers are specified per-run, not at startup)
     context = frontend_core.FrontendCore(
+        config_file=args.config_file,
         database=args.database,
         initialization_scripts=None,
         initializer_names=None,
