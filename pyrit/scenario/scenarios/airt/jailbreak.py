@@ -93,7 +93,7 @@ class Jailbreak(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = False,
         scenario_result_id: Optional[str] = None,
-        n_jailbreaks: Optional[int] = None,
+        n_jailbreaks: Optional[int] = 3,
     ) -> None:
         """
         Initialize the jailbreak scenario.
