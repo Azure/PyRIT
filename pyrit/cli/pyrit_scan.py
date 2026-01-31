@@ -186,7 +186,8 @@ def main(args: Optional[list[str]] = None) -> int:
         env_files = None
         if parsed_args.env_files:
             try:
-                env_files = frontend_core.resolve_env_files(env_file_paths=parsed_args.env_files)
+                env_files = frontend_core.resolve_env_files(
+                    env_file_paths=parsed_args.env_files)
             except ValueError as e:
                 print(f"Error: {e}")
                 return 1
@@ -228,7 +229,8 @@ def main(args: Optional[list[str]] = None) -> int:
         # Collect environment files
         env_files = None
         if parsed_args.env_files:
-            env_files = frontend_core.resolve_env_files(env_file_paths=parsed_args.env_files)
+            env_files = frontend_core.resolve_env_files(
+                env_file_paths=parsed_args.env_files)
 
         # Create context with initializers
         context = frontend_core.FrontendCore(
@@ -243,7 +245,8 @@ def main(args: Optional[list[str]] = None) -> int:
         # Parse memory labels if provided
         memory_labels = None
         if parsed_args.memory_labels:
-            memory_labels = frontend_core.parse_memory_labels(json_string=parsed_args.memory_labels)
+            memory_labels = frontend_core.parse_memory_labels(
+                json_string=parsed_args.memory_labels)
 
         # Run scenario
         asyncio.run(

@@ -105,7 +105,8 @@ class PyRITShell(cmd.Cmd):
         self._scenario_history: list[tuple[str, ScenarioResult]] = []
 
         # Initialize PyRIT in background thread for faster startup
-        self._init_thread = threading.Thread(target=self._background_init, daemon=True)
+        self._init_thread = threading.Thread(
+            target=self._background_init, daemon=True)
         self._init_complete = threading.Event()
         self._init_thread.start()
 
@@ -125,7 +126,8 @@ class PyRITShell(cmd.Cmd):
         """List all available scenarios."""
         self._ensure_initialized()
         try:
-            asyncio.run(frontend_core.print_scenarios_list_async(context=self.context))
+            asyncio.run(frontend_core.print_scenarios_list_async(
+                context=self.context))
         except Exception as e:
             print(f"Error listing scenarios: {e}")
 
@@ -136,7 +138,8 @@ class PyRITShell(cmd.Cmd):
             # Discover from scenarios directory by default (same as scan)
             discovery_path = frontend_core.get_default_initializer_discovery_path()
             asyncio.run(
-                frontend_core.print_initializers_list_async(context=self.context, discovery_path=discovery_path)
+                frontend_core.print_initializers_list_async(
+                    context=self.context, discovery_path=discovery_path)
             )
         except Exception as e:
             print(f"Error listing initializers: {e}")
@@ -179,14 +182,19 @@ class PyRITShell(cmd.Cmd):
             print("\nUsage: run <scenario_name> [options]")
             print("\nNote: Every scenario requires an initializer.")
             print("\nOptions:")
-            print(f"  --initializers <name> ...       {frontend_core.ARG_HELP['initializers']} (REQUIRED)")
+            print(
+                f"  --initializers <name> ...       {frontend_core.ARG_HELP['initializers']} (REQUIRED)")
             print(
                 f"  --initialization-scripts <...>  {frontend_core.ARG_HELP['initialization_scripts']} (alternative to --initializers)"
             )
-            print(f"  --strategies, -s <s1> <s2> ...  {frontend_core.ARG_HELP['scenario_strategies']}")
-            print(f"  --max-concurrency <N>           {frontend_core.ARG_HELP['max_concurrency']}")
-            print(f"  --max-retries <N>               {frontend_core.ARG_HELP['max_retries']}")
-            print(f"  --memory-labels <JSON>          {frontend_core.ARG_HELP['memory_labels']}")
+            print(
+                f"  --strategies, -s <s1> <s2> ...  {frontend_core.ARG_HELP['scenario_strategies']}")
+            print(
+                f"  --max-concurrency <N>           {frontend_core.ARG_HELP['max_concurrency']}")
+            print(
+                f"  --max-retries <N>               {frontend_core.ARG_HELP['max_retries']}")
+            print(
+                f"  --memory-labels <JSON>          {frontend_core.ARG_HELP['memory_labels']}")
             print(
                 f"  --database <type>               Override default database ({frontend_core.IN_MEMORY}, {frontend_core.SQLITE}, {frontend_core.AZURE_SQL})"
             )
@@ -194,7 +202,8 @@ class PyRITShell(cmd.Cmd):
                 f"  --log-level <level>             Override default log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
             )
             print("\nExample:")
-            print("  run foundry --initializers openai_objective_target load_default_datasets")
+            print(
+                "  run foundry --initializers openai_objective_target load_default_datasets")
             print("\nType 'help run' for more details and examples")
             return
 
@@ -220,7 +229,8 @@ class PyRITShell(cmd.Cmd):
         resolved_env_files = None
         if args["env_files"]:
             try:
-                resolved_env_files = frontend_core.resolve_env_files(env_file_paths=args["env_files"])
+                resolved_env_files = frontend_core.resolve_env_files(
+                    env_file_paths=args["env_files"])
             except ValueError as e:
                 print(f"Error: {e}")
                 return
@@ -283,7 +293,8 @@ class PyRITShell(cmd.Cmd):
             print(f"{idx}) {command}")
         print("=" * 80)
         print(f"\nTotal runs: {len(self._scenario_history)}")
-        print("\nUse 'print-scenario <number>' to view detailed results for a specific run.")
+        print(
+            "\nUse 'print-scenario <number>' to view detailed results for a specific run.")
         print("Use 'print-scenario' to view detailed results for all runs.")
 
     def do_print_scenario(self, arg: str) -> None:
@@ -325,7 +336,8 @@ class PyRITShell(cmd.Cmd):
             try:
                 scenario_num = int(arg)
                 if scenario_num < 1 or scenario_num > len(self._scenario_history):
-                    print(f"Error: Scenario number must be between 1 and {len(self._scenario_history)}")
+                    print(
+                        f"Error: Scenario number must be between 1 and {len(self._scenario_history)}")
                     return
 
                 command, result = self._scenario_history[scenario_num - 1]
@@ -338,7 +350,8 @@ class PyRITShell(cmd.Cmd):
                 printer = ConsoleScenarioResultPrinter()
                 asyncio.run(printer.print_summary_async(result))
             except ValueError:
-                print(f"Error: Invalid scenario number '{arg}'. Must be an integer.")
+                print(
+                    f"Error: Invalid scenario number '{arg}'. Must be an integer.")
 
     def do_help(self, arg: str) -> None:
         """Show help. Usage: help [command]."""
@@ -351,12 +364,14 @@ class PyRITShell(cmd.Cmd):
             print("  --database <type>")
             print("      Default database type: InMemory, SQLite, or AzureSQL")
             print("      Default: SQLite")
-            print("      Can be overridden per-run with 'run <scenario> --database <type>'")
+            print(
+                "      Can be overridden per-run with 'run <scenario> --database <type>'")
             print()
             print("  --log-level <level>")
             print("      Default logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL")
             print("      Default: WARNING")
-            print("      Can be overridden per-run with 'run <scenario> --log-level <level>'")
+            print(
+                "      Can be overridden per-run with 'run <scenario> --log-level <level>'")
             print()
             print("=" * 70)
             print("Run Command Options (specified when running scenarios):")
@@ -364,9 +379,11 @@ class PyRITShell(cmd.Cmd):
             print("  --initializers <name> [<name> ...]  (REQUIRED)")
             print(f"      {frontend_core.ARG_HELP['initializers']}")
             print("      Every scenario requires at least one initializer")
-            print("      Example: run foundry --initializers openai_objective_target load_default_datasets")
+            print(
+                "      Example: run foundry --initializers openai_objective_target load_default_datasets")
             print()
-            print("  --initialization-scripts <path> [<path> ...]  (Alternative to --initializers)")
+            print(
+                "  --initialization-scripts <path> [<path> ...]  (Alternative to --initializers)")
             print(f"      {frontend_core.ARG_HELP['initialization_scripts']}")
             print("      Example: run foundry --initialization-scripts ./my_init.py")
             print()
@@ -382,7 +399,8 @@ class PyRITShell(cmd.Cmd):
             print()
             print("  --memory-labels <JSON>")
             print(f"      {frontend_core.ARG_HELP['memory_labels']}")
-            print('      Example: run foundry --memory-labels \'{"env":"test"}\'')
+            print(
+                '      Example: run foundry --memory-labels \'{"env":"test"}\'')
             print()
             print("Start the shell like:")
             print("  pyrit_shell")
@@ -461,7 +479,8 @@ def main() -> int:
 
     parser.add_argument(
         "--database",
-        choices=[frontend_core.IN_MEMORY, frontend_core.SQLITE, frontend_core.AZURE_SQL],
+        choices=[frontend_core.IN_MEMORY,
+                 frontend_core.SQLITE, frontend_core.AZURE_SQL],
         default=frontend_core.SQLITE,
         help=f"Default database type to use ({frontend_core.IN_MEMORY}, {frontend_core.SQLITE}, {frontend_core.AZURE_SQL}) (default: {frontend_core.SQLITE}, can be overridden per-run)",
     )
@@ -487,7 +506,8 @@ def main() -> int:
     env_files = None
     if args.env_files:
         try:
-            env_files = frontend_core.resolve_env_files(env_file_paths=args.env_files)
+            env_files = frontend_core.resolve_env_files(
+                env_file_paths=args.env_files)
         except ValueError as e:
             print(f"Error: {e}")
             return 1
