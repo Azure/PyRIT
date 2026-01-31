@@ -16,8 +16,7 @@ from pyrit.score.scorer import Scorer
 logger = logging.getLogger(__name__)
 
 
-# TODO: AudioTranscriptHelper
-class BaseAudioTranscriptScorer(ABC):
+class AudioTranscriptHelper(ABC):
     """
     Abstract base class for audio scorers that process audio by transcribing and scoring the text.
 
@@ -198,7 +197,7 @@ class BaseAudioTranscriptScorer(ABC):
         Raises:
             ModuleNotFoundError: If pydub/ffmpeg is not installed.
         """
-        return BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
+        return AudioTranscriptHelper.extract_audio_from_video(video_path)
 
     @staticmethod
     def extract_audio_from_video(video_path: str) -> Optional[str]:

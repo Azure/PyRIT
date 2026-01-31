@@ -5,7 +5,7 @@ from typing import Optional
 
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_transcript_scorer import BaseAudioTranscriptScorer
+from pyrit.score.audio_transcript_scorer import AudioTranscriptHelper
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
@@ -38,7 +38,7 @@ class AudioTrueFalseScorer(TrueFalseScorer):
             ValueError: If text_capable_scorer does not support text data type.
         """
         super().__init__(validator=validator or self._default_validator)
-        self._audio_helper = BaseAudioTranscriptScorer(text_capable_scorer=text_capable_scorer)
+        self._audio_helper = AudioTranscriptHelper(text_capable_scorer=text_capable_scorer)
 
     def _build_identifier(self) -> ScorerIdentifier:
         """

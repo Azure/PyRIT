@@ -11,7 +11,7 @@ import pytest
 
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_transcript_scorer import _BaseAudioTranscriptScorer
+from pyrit.score.audio_transcript_scorer import AudioTranscriptHelper
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -296,7 +296,7 @@ def test_video_scorer_default_num_frames():
     assert scorer.num_sampled_frames == 5  # Default value
 
 
-class MockAudioTrueFalseScorer(TrueFalseScorer, _BaseAudioTranscriptScorer):
+class MockAudioTrueFalseScorer(TrueFalseScorer, AudioTranscriptHelper):
     """Mock AudioTrueFalseScorer for testing video+audio integration"""
 
     def __init__(self, return_value: bool = True):
@@ -334,7 +334,7 @@ async def test_video_true_false_scorer_with_audio_scorer(video_converter_sample_
     audio_scorer = MockAudioTrueFalseScorer(return_value=True)
 
     # Mock extract_audio_from_video to avoid actual audio extraction
-    with patch.object(_BaseAudioTranscriptScorer, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
+    with patch.object(AudioTranscriptHelper, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
         scorer = VideoTrueFalseScorer(
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,
@@ -356,7 +356,7 @@ async def test_video_scorer_and_aggregation_both_true(video_converter_sample_vid
     image_scorer = MockTrueFalseScorer(return_value=True)
     audio_scorer = MockAudioTrueFalseScorer(return_value=True)
 
-    with patch.object(_BaseAudioTranscriptScorer, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
+    with patch.object(AudioTranscriptHelper, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
         scorer = VideoTrueFalseScorer(
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,
@@ -377,7 +377,7 @@ async def test_video_scorer_and_aggregation_visual_false(video_converter_sample_
     image_scorer = MockTrueFalseScorer(return_value=False)
     audio_scorer = MockAudioTrueFalseScorer(return_value=True)
 
-    with patch.object(_BaseAudioTranscriptScorer, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
+    with patch.object(AudioTranscriptHelper, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
         scorer = VideoTrueFalseScorer(
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,
@@ -398,7 +398,7 @@ async def test_video_scorer_and_aggregation_audio_false(video_converter_sample_v
     image_scorer = MockTrueFalseScorer(return_value=True)
     audio_scorer = MockAudioTrueFalseScorer(return_value=False)
 
-    with patch.object(_BaseAudioTranscriptScorer, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
+    with patch.object(AudioTranscriptHelper, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
         scorer = VideoTrueFalseScorer(
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,
@@ -419,7 +419,7 @@ async def test_video_scorer_or_aggregation_one_true(video_converter_sample_video
     image_scorer = MockTrueFalseScorer(return_value=False)
     audio_scorer = MockAudioTrueFalseScorer(return_value=True)
 
-    with patch.object(_BaseAudioTranscriptScorer, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
+    with patch.object(AudioTranscriptHelper, "extract_audio_from_video", return_value="/tmp/mock_audio.wav"):
         scorer = VideoTrueFalseScorer(
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,

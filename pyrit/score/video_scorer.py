@@ -11,7 +11,7 @@ from typing import Optional
 
 from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_transcript_scorer import BaseAudioTranscriptScorer
+from pyrit.score.audio_transcript_scorer import AudioTranscriptHelper
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -217,7 +217,7 @@ class _BaseVideoScorer(ABC):
 
         # Use BaseAudioTranscriptScorer's static method to extract audio
 
-        audio_path = BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
+        audio_path = AudioTranscriptHelper.extract_audio_from_video(video_path)
         if not audio_path:
             return []
 
