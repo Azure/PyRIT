@@ -106,7 +106,7 @@ class TestAudioTrueFalseScorer:
         text_scorer = MockTextTrueFalseScorer()
         audio_scorer = AudioTrueFalseScorer(text_capable_scorer=text_scorer)
 
-        assert audio_scorer.text_scorer is text_scorer
+        assert audio_scorer._audio_helper.text_scorer is text_scorer
 
     def test_build_identifier(self):
         """Test that _build_identifier returns correct identifier"""
@@ -124,7 +124,9 @@ class TestAudioTrueFalseScorer:
         audio_scorer = AudioTrueFalseScorer(text_capable_scorer=text_scorer)
 
         # Mock the transcription to return a test transcript
-        with patch.object(audio_scorer, "_transcribe_audio_async", new_callable=AsyncMock) as mock_transcribe:
+        with patch.object(
+            audio_scorer._audio_helper, "_transcribe_audio_async", new_callable=AsyncMock
+        ) as mock_transcribe:
             mock_transcribe.return_value = "Hello, this is a test transcript."
 
             scores = await audio_scorer._score_piece_async(audio_message_piece)
@@ -136,20 +138,20 @@ class TestAudioTrueFalseScorer:
 
     @pytest.mark.asyncio
     async def test_score_piece_empty_transcript(self, audio_message_piece):
-        """Test scoring audio with empty transcript returns false"""
+        """Test scoring audio with empty transcript returns empty list"""
         text_scorer = MockTextTrueFalseScorer(return_value=True)
         audio_scorer = AudioTrueFalseScorer(text_capable_scorer=text_scorer)
 
         # Mock the transcription to return empty string
-        with patch.object(audio_scorer, "_transcribe_audio_async", new_callable=AsyncMock) as mock_transcribe:
+        with patch.object(
+            audio_scorer._audio_helper, "_transcribe_audio_async", new_callable=AsyncMock
+        ) as mock_transcribe:
             mock_transcribe.return_value = ""
 
             scores = await audio_scorer._score_piece_async(audio_message_piece)
 
-            assert len(scores) == 1
-            assert scores[0].score_type == "true_false"
-            assert scores[0].score_value == "false"
-            assert "no transcribable content" in scores[0].score_rationale
+            # Empty transcript returns empty list
+            assert len(scores) == 0
 
     @pytest.mark.asyncio
     async def test_score_piece_false_result(self, audio_message_piece):
@@ -158,7 +160,9 @@ class TestAudioTrueFalseScorer:
         audio_scorer = AudioTrueFalseScorer(text_capable_scorer=text_scorer)
 
         # Mock the transcription
-        with patch.object(audio_scorer, "_transcribe_audio_async", new_callable=AsyncMock) as mock_transcribe:
+        with patch.object(
+            audio_scorer._audio_helper, "_transcribe_audio_async", new_callable=AsyncMock
+        ) as mock_transcribe:
             mock_transcribe.return_value = "Some transcript text"
 
             scores = await audio_scorer._score_piece_async(audio_message_piece)
@@ -177,7 +181,7 @@ class TestAudioFloatScaleScorer:
         text_scorer = MockTextFloatScaleScorer()
         audio_scorer = AudioFloatScaleScorer(text_capable_scorer=text_scorer)
 
-        assert audio_scorer.text_scorer is text_scorer
+        assert audio_scorer._audio_helper.text_scorer is text_scorer
 
     def test_build_identifier(self):
         """Test that _build_identifier returns correct identifier"""
@@ -195,7 +199,9 @@ class TestAudioFloatScaleScorer:
         audio_scorer = AudioFloatScaleScorer(text_capable_scorer=text_scorer)
 
         # Mock the transcription to return a test transcript
-        with patch.object(audio_scorer, "_transcribe_audio_async", new_callable=AsyncMock) as mock_transcribe:
+        with patch.object(
+            audio_scorer._audio_helper, "_transcribe_audio_async", new_callable=AsyncMock
+        ) as mock_transcribe:
             mock_transcribe.return_value = "Hello, this is a test transcript."
 
             scores = await audio_scorer._score_piece_async(audio_message_piece)
@@ -207,17 +213,17 @@ class TestAudioFloatScaleScorer:
 
     @pytest.mark.asyncio
     async def test_score_piece_empty_transcript(self, audio_message_piece):
-        """Test scoring audio with empty transcript returns 0.0"""
+        """Test scoring audio with empty transcript returns empty list"""
         text_scorer = MockTextFloatScaleScorer(return_value=0.8)
         audio_scorer = AudioFloatScaleScorer(text_capable_scorer=text_scorer)
 
         # Mock the transcription to return empty string
-        with patch.object(audio_scorer, "_transcribe_audio_async", new_callable=AsyncMock) as mock_transcribe:
+        with patch.object(
+            audio_scorer._audio_helper, "_transcribe_audio_async", new_callable=AsyncMock
+        ) as mock_transcribe:
             mock_transcribe.return_value = ""
 
             scores = await audio_scorer._score_piece_async(audio_message_piece)
 
-            assert len(scores) == 1
-            assert scores[0].score_type == "float_scale"
-            assert float(scores[0].score_value) == 0.0
-            assert "no transcribable content" in scores[0].score_rationale
+            # Empty transcript returns empty list
+            assert len(scores) == 0
