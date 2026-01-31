@@ -11,6 +11,7 @@ from typing import Optional
 
 from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
+from pyrit.score.audio_transcript_scorer import BaseAudioTranscriptScorer
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
@@ -212,13 +213,11 @@ class _BaseVideoScorer(ABC):
         if audio_scorer is None:
             return []
 
-        from pyrit.memory import CentralMemory
-        from pyrit.score.audio_transcript_scorer import _BaseAudioTranscriptScorer
-
         video_path = message_piece.converted_value
 
-        # Use _BaseAudioTranscriptScorer's static method to extract audio
-        audio_path = _BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
+        # Use BaseAudioTranscriptScorer's static method to extract audio
+
+        audio_path = BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
         if not audio_path:
             return []
 
@@ -256,9 +255,13 @@ class _BaseVideoScorer(ABC):
                 batch_size=1,
             )
 
-            return audio_scores if audio_scores else []
-
-        finally:
-            # Clean up temporary audio file
+            # Clean up temporary audio file on success
             if os.path.exists(audio_path):
                 os.unlink(audio_path)
+
+            return audio_scores if audio_scores else []
+
+        except Exception as e:
+            # Keep the audio file for debugging on failure
+            logger.error(f"Audio scoring failed. Temporary audio file kept for debugging: {audio_path}. Error: {e}")
+            raise

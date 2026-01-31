@@ -10,12 +10,14 @@ from typing import Optional
 
 from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
+from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
 from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 
 
-class _BaseAudioTranscriptScorer(ABC):
+# TODO: AudioTranscriptHelper
+class BaseAudioTranscriptScorer(ABC):
     """
     Abstract base class for audio scorers that process audio by transcribing and scoring the text.
 
@@ -33,7 +35,7 @@ class _BaseAudioTranscriptScorer(ABC):
         Initialize the base audio scorer.
 
         Args:
-            text_capable_scorer: A scorer capable of processing text that will be used to score
+            text_capable_scorer (Scorer): A scorer capable of processing text that will be used to score
                 the transcribed audio content.
 
         Raises:
@@ -48,7 +50,7 @@ class _BaseAudioTranscriptScorer(ABC):
         Validate that a scorer supports the text data type.
 
         Args:
-            scorer: The scorer to validate.
+            scorer (Scorer): The scorer to validate.
 
         Raises:
             ValueError: If the scorer does not support text data type.
@@ -64,8 +66,8 @@ class _BaseAudioTranscriptScorer(ABC):
         Transcribe audio and score the transcript.
 
         Args:
-            message_piece: The message piece containing the audio file path.
-            objective: Optional objective description for scoring.
+            message_piece (MessagePiece): The message piece containing the audio file path.
+            objective (Optional[str]): Optional objective description for scoring.
 
         Returns:
             List of scores for the transcribed audio.
@@ -103,7 +105,6 @@ class _BaseAudioTranscriptScorer(ABC):
         text_message = text_piece.to_message()
 
         # Add to memory so score references are valid
-
         memory = CentralMemory.get_memory_instance()
         memory.add_message_to_memory(request=text_message)
 
@@ -114,23 +115,25 @@ class _BaseAudioTranscriptScorer(ABC):
             batch_size=1,
         )
 
+        # Add context to indicate this was scored from audio transcription
+        for score in transcript_scores:
+            score.score_rationale += f"\nAudio transcript scored: {score.score_rationale}"
+
         return transcript_scores
 
     async def _transcribe_audio_async(self, audio_path: str) -> str:
         """
-        Transcribe an audio file to text.
+        Transcribes an audio file to text.
 
         Args:
-            audio_path: Path to the audio file.
+            audio_path (str): Path to the audio file.
 
         Returns:
-            Transcribed text from the audio.
+            Text transcription from audio file.
 
         Raises:
             ModuleNotFoundError: If required transcription dependencies are not installed.
         """
-        from pyrit.prompt_converter import AzureSpeechAudioToTextConverter
-
         # Convert audio to WAV if needed (Azure Speech requires WAV)
         wav_path = await self._ensure_wav_format(audio_path)
         logger.info(f"Audio transcription: WAV file path = {wav_path}")
@@ -158,28 +161,25 @@ class _BaseAudioTranscriptScorer(ABC):
 
     async def _ensure_wav_format(self, audio_path: str) -> str:
         """
-        Ensure audio file is in WAV format for transcription.
+        Ensure audio file is in correct WAV format for transcription.
 
         Args:
-            audio_path: Path to the audio file.
+            audio_path (str): Path to the audio file.
 
         Returns:
-            Path to WAV file (original if already WAV, or converted temporary file).
+            str: Path to WAV file (original if already WAV, or converted temporary file).
 
         Raises:
             ModuleNotFoundError: If pydub is not installed.
         """
-        if audio_path.lower().endswith(".wav"):
-            return audio_path
-
         try:
             from pydub import AudioSegment
         except ModuleNotFoundError as e:
             logger.error("Could not import pydub. Install it via 'pip install pydub'")
             raise e
 
-        # Convert to WAV
         audio = AudioSegment.from_file(audio_path)
+        audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
             audio.export(temp_wav.name, format="wav")
             return temp_wav.name
@@ -189,15 +189,16 @@ class _BaseAudioTranscriptScorer(ABC):
         Extract audio track from a video file.
 
         Args:
-            video_path: Path to the video file.
+            video_path (str): Path to the video file.
 
         Returns:
-            Path to the extracted audio file (WAV format), or None if extraction fails.
+            str: a path to the extracted audio file (WAV format)
+                or returns None if extraction fails.
 
         Raises:
             ModuleNotFoundError: If pydub/ffmpeg is not installed.
         """
-        return _BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
+        return BaseAudioTranscriptScorer.extract_audio_from_video(video_path)
 
     @staticmethod
     def extract_audio_from_video(video_path: str) -> Optional[str]:
@@ -205,10 +206,11 @@ class _BaseAudioTranscriptScorer(ABC):
         Extract audio track from a video file (static version).
 
         Args:
-            video_path: Path to the video file.
+            video_path (str): Path to the video file.
 
         Returns:
-            Path to the extracted audio file (WAV format), or None if extraction fails.
+            str: a path to the extracted audio file (WAV format)
+                or returns None if extraction fails.
 
         Raises:
             ModuleNotFoundError: If pydub/ffmpeg is not installed.

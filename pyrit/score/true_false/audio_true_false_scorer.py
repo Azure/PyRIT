@@ -5,12 +5,12 @@ from typing import Optional
 
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
-from pyrit.score.audio_transcript_scorer import _BaseAudioTranscriptScorer
+from pyrit.score.audio_transcript_scorer import BaseAudioTranscriptScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
 
-class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioTranscriptScorer):
+class AudioTrueFalseScorer(TrueFalseScorer):
     """
     A scorer that processes audio files by transcribing them and scoring the transcript.
 
@@ -37,8 +37,8 @@ class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioTranscriptScorer):
         Raises:
             ValueError: If text_capable_scorer does not support text data type.
         """
-        _BaseAudioTranscriptScorer.__init__(self, text_capable_scorer=text_capable_scorer)
-        TrueFalseScorer.__init__(self, validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._default_validator)
+        self._audio_helper = BaseAudioTranscriptScorer(text_capable_scorer=text_capable_scorer)
 
     def _build_identifier(self) -> ScorerIdentifier:
         """
@@ -48,7 +48,7 @@ class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioTranscriptScorer):
             ScorerIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            sub_scorers=[self.text_scorer],
+            sub_scorers=[self._audio_helper.text_scorer],
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -62,25 +62,4 @@ class AudioTrueFalseScorer(TrueFalseScorer, _BaseAudioTranscriptScorer):
         Returns:
             List of scores from evaluating the transcribed audio.
         """
-        scores = await self._score_audio_async(message_piece=message_piece, objective=objective)
-
-        if not scores:
-            # No transcript or empty transcript - return a "false" score
-            piece_id = message_piece.id if message_piece.id is not None else message_piece.original_prompt_id
-            return [
-                Score(
-                    score_value="false",
-                    score_value_description="No audio content to score (empty or no transcript)",
-                    score_type="true_false",
-                    score_category=["audio"],
-                    score_rationale="Audio file had no transcribable content",
-                    scorer_class_identifier=self.get_identifier(),
-                    message_piece_id=piece_id,
-                )
-            ]
-
-        # Add context to indicate this was scored from audio transcription
-        for score in scores:
-            score.score_rationale += f"\nAudio transcript scored: {score.score_rationale}"
-
-        return scores
+        return await self._audio_helper._score_audio_async(message_piece=message_piece, objective=objective)
