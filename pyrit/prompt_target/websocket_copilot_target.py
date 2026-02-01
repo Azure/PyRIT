@@ -296,7 +296,7 @@ class WebSocketCopilotTarget(PromptTarget):
                 raise RuntimeError(f"No docId in upload response. Expected 'docId' field. Response: {response_data}")
 
             logger.info(f"Successfully uploaded image: {image_path} -> docId={doc_id}")
-            return doc_id
+            return str(doc_id)
 
     async def _process_image_piece_async(self, *, image_path: str, copilot_conversation_id: str) -> dict[str, Any]:
         """
@@ -391,7 +391,7 @@ class WebSocketCopilotTarget(PromptTarget):
         }
 
         if message_annotations:  # add images only if previously uploaded
-            message_content["messageAnnotations"] = message_annotations
+            message_content["messageAnnotations"] = [str(annotation) for annotation in message_annotations]
 
         result = {
             "arguments": [
@@ -660,7 +660,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
         try:
             response_text = await self._connect_and_send(
-                message_pieces=message.message_pieces,
+                message_pieces=list(message.message_pieces),
                 session_id=session_id,
                 copilot_conversation_id=copilot_conversation_id,
                 is_start_of_session=is_start_of_session,
