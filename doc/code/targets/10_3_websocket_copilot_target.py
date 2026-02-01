@@ -81,6 +81,43 @@ result = await multi_turn_attack.execute_async(
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)
 
 # %% [markdown]
+# ## Alternative Authentication with `ManualCopilotAuthenticator`
+#
+# If browser automation is not suitable for your environment, you can use the `ManualCopilotAuthenticator` instead. This authenticator accepts a pre-obtained access token that you can extract from your browser's DevTools.
+#
+# How to obtain the access token:
+#
+# 1. Open the Copilot webapp (e.g., https://m365.cloud.microsoft/chat) in a browser.
+# 2. Open DevTools (F12 or Ctrl+Shift+I).
+# 3. Go to the Network tab.
+# 4. Filter by "Socket" connections or search for "Chathub".
+# 5. Start typing in the chat to initiate a WebSocket connection.
+# 6. Look for the latest WebSocket connection to `substrate.office.com/m365Copilot/Chathub`.
+# 7. You may find the `access_token` in the request URL or in the request payload.
+#
+# You can either pass the token directly or set the `COPILOT_ACCESS_TOKEN` environment variable.
+
+# %%
+from pyrit.auth import ManualCopilotAuthenticator
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.prompt_target import WebSocketCopilotTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, silent=True)
+
+# Option 1: Pass the token directly
+# auth = ManualCopilotAuthenticator(access_token="eyJ0eXAi...")
+
+# Option 2: Use COPILOT_ACCESS_TOKEN environment variable
+auth = ManualCopilotAuthenticator()
+
+target = WebSocketCopilotTarget(authenticator=auth)
+attack_manual = PromptSendingAttack(objective_target=target)
+
+result_manual = await attack_manual.execute_async(objective="Hello! Who are you?")
+await ConsoleAttackResultPrinter().print_conversation_async(result=result_manual)
+
+# %% [markdown]
 # ## Multimodal Support (Text and Images)
 #
 # The `WebSocketCopilotTarget` supports multimodal input, allowing you to send both text and images in a single message. Images are automatically uploaded to Copilot's file service and referenced in the conversation using the same process as the Copilot web interface.
@@ -127,40 +164,3 @@ multimodal_message = Message(
 
 result = await attack.execute_async(objective="Answer the question from the image", next_message=multimodal_message)
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)
-
-# %% [markdown]
-# ## Alternative Authentication with `ManualCopilotAuthenticator`
-#
-# If browser automation is not suitable for your environment, you can use the `ManualCopilotAuthenticator` instead. This authenticator accepts a pre-obtained access token that you can extract from your browser's DevTools.
-#
-# How to obtain the access token:
-#
-# 1. Open the Copilot webapp (e.g., https://m365.cloud.microsoft/chat) in a browser.
-# 2. Open DevTools (F12 or Ctrl+Shift+I).
-# 3. Go to the Network tab.
-# 4. Filter by "Socket" connections or search for "Chathub".
-# 5. Start typing in the chat to initiate a WebSocket connection.
-# 6. Look for the latest WebSocket connection to `substrate.office.com/m365Copilot/Chathub`.
-# 7. You may find the `access_token` in the request URL or in the request payload.
-#
-# You can either pass the token directly or set the `COPILOT_ACCESS_TOKEN` environment variable.
-
-# %%
-from pyrit.auth import ManualCopilotAuthenticator
-from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
-from pyrit.prompt_target import WebSocketCopilotTarget
-from pyrit.setup import IN_MEMORY, initialize_pyrit_async
-
-await initialize_pyrit_async(memory_db_type=IN_MEMORY, silent=True)
-
-# Option 1: Pass the token directly
-# auth = ManualCopilotAuthenticator(access_token="eyJ0eXAi...")
-
-# Option 2: Use COPILOT_ACCESS_TOKEN environment variable
-auth = ManualCopilotAuthenticator()
-
-target = WebSocketCopilotTarget(authenticator=auth)
-attack_manual = PromptSendingAttack(objective_target=target)
-
-result_manual = await attack_manual.execute_async(objective="Hello! Who are you?")
-await ConsoleAttackResultPrinter().print_conversation_async(result=result_manual)
