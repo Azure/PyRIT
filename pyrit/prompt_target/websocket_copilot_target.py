@@ -4,6 +4,7 @@
 import asyncio
 import json
 import logging
+import pathlib
 import uuid
 from enum import IntEnum
 from typing import Any, Optional, Union
@@ -310,8 +311,8 @@ class WebSocketCopilotTarget(PromptTarget):
         """
         data_url = await convert_local_image_to_data_url(image_path)
 
-        file_name = image_path.split("/")[-1].split("\\")[-1] if "/" in image_path or "\\" in image_path else image_path
-        file_type = file_name.split(".")[-1].lower() if "." in file_name else "png"
+        file_name = pathlib.Path(image_path).name
+        file_type = pathlib.Path(image_path).suffix.lstrip(".").lower() or "png"
 
         doc_id = await self._upload_image_async(
             image_path=image_path,
