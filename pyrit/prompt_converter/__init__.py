@@ -14,7 +14,6 @@ transformation pipelines for testing AI system robustness.
 from pyrit.prompt_converter.add_image_text_converter import AddImageTextConverter
 from pyrit.prompt_converter.add_image_to_video_converter import AddImageVideoConverter
 from pyrit.prompt_converter.add_text_image_converter import AddTextImageConverter
-from pyrit.prompt_converter.agent_command_injection_converter import AgentCommandInjectionConverter
 from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackConverter
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.ask_to_decode_converter import AskToDecodeConverter
@@ -104,7 +103,6 @@ __all__ = [
     "AddImageTextConverter",
     "AddImageVideoConverter",
     "AddTextImageConverter",
-    "AgentCommandInjectionConverter",
     "AllWordsSelectionStrategy",
     "AnsiAttackConverter",
     "AsciiArtConverter",

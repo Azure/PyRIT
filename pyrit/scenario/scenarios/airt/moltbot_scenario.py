@@ -14,13 +14,11 @@ from typing import Any, List, Optional
 from pyrit.common import apply_defaults
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack.core.attack_config import (
-    AttackConverterConfig,
     AttackScoringConfig,
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedAttackGroup, SeedObjective
-from pyrit.prompt_converter import AgentCommandInjectionConverter
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
@@ -101,7 +99,8 @@ class MoltbotScenario(Scenario):
     def default_dataset_config(cls) -> DatasetConfiguration:
         """Return the default dataset configuration."""
         # Moltbot testing uses converter-generated payloads, not datasets
-        return DatasetConfiguration(dataset_names=[], max_dataset_size=0)
+        # Set max_dataset_size to 1 to satisfy validation (minimum required)
+        return DatasetConfiguration(dataset_names=[], max_dataset_size=1)
 
     @apply_defaults
     def __init__(
@@ -158,6 +157,7 @@ class MoltbotScenario(Scenario):
             name="Moltbot",
             version=self.version,
             strategy_class=MoltbotStrategy,
+            objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
             scenario_result_id=scenario_result_id,
         )
@@ -175,31 +175,6 @@ class MoltbotScenario(Scenario):
         """
         return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
 
-    def _get_converter_for_strategy(self, strategy: str) -> AgentCommandInjectionConverter:
-        """
-        Get the appropriate converter based on strategy.
-        
-        Args:
-            strategy: The MoltbotStrategy value
-            
-        Returns:
-            AgentCommandInjectionConverter: Configured converter for the strategy
-        """
-        injection_type_map = {
-            "cron_injection": "cron",
-            "credential_theft": "credential_theft",
-            "file_exfiltration": "file_read",
-            "hidden_instruction": "hidden_instruction",
-            "all": "cron",  # Default for 'all'
-        }
-        
-        injection_type = injection_type_map.get(strategy, "cron")
-        
-        return AgentCommandInjectionConverter(
-            injection_type=injection_type,
-            complexity="medium",
-        )
-
     def _get_atomic_attack_from_strategy(self, strategy: str) -> AtomicAttack:
         """
         Create an AtomicAttack for the specified strategy.
@@ -213,14 +188,10 @@ class MoltbotScenario(Scenario):
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
         
-        # Get converter for this strategy
-        converter = self._get_converter_for_strategy(strategy)
-        converter_config = AttackConverterConfig(request_converters=[converter])
-        
-        # Create single-turn attack with converter
+        # Create simple single-turn attack WITHOUT converters
+        # The objectives themselves contain the test payloads
         attack_strategy: AttackStrategy[Any, Any] = PromptSendingAttack(
             objective_target=self._objective_target,
-            attack_converter_config=converter_config,
             attack_scoring_config=self._scorer_config,
         )
 
