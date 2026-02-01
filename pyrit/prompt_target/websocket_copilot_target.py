@@ -272,11 +272,7 @@ class WebSocketCopilotTarget(PromptTarget):
             "scenario": "UploadImage",
             "conversationId": conversation_id,
             "FileBase64": data_url,
-            "optionsSets": "cwcgptvsan",
-            # TODO: network traffic analysis shows two optionsSets fields are sent
-            # TODO: investigate what these do and whether both are needed
-            # optionsSets: cwcgptvsan
-            # optionsSets: flux_v3_gptv_enable_upload_multi_image_in_turn_wo_ch
+            "optionsSets": ["cwcgptvsan", "flux_v3_gptv_enable_upload_multi_image_in_turn_wo_ch"],
         }
 
         async with httpx.AsyncClient() as client:
