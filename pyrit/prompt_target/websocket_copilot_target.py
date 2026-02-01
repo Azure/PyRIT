@@ -19,7 +19,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.identifiers import TargetIdentifier
-from pyrit.models import Message, MessagePiece, construct_response_from_request
+from pyrit.models import DataTypeSerializer, Message, MessagePiece, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -264,9 +264,6 @@ class WebSocketCopilotTarget(PromptTarget):
         """
         upload_url = "https://substrate.office.com/m365Copilot/UploadFile"
         access_token = await self._authenticator.get_token_async()
-
-        # TODO: validate file extension in _validate_request
-        # file_extension = filename.split(".")[-1].lower() if "." in filename else "png"
 
         payload = {
             "scenario": "UploadImage",
@@ -570,9 +567,8 @@ class WebSocketCopilotTarget(PromptTarget):
             message (Message): The message to validate.
 
         Raises:
-            ValueError: If message contains unsupported data types.
+            ValueError: If message contains unsupported data types or invalid image formats.
         """
-        # todo: validate image
         for piece in message.message_pieces:
             piece_type = piece.converted_value_data_type
             if piece_type not in self.SUPPORTED_DATA_TYPES:
@@ -580,6 +576,14 @@ class WebSocketCopilotTarget(PromptTarget):
                 raise ValueError(
                     f"This target supports only the following data types: {supported_types}. Received: {piece_type}."
                 )
+
+            if piece_type == "image_path":
+                mime_type = DataTypeSerializer.get_mime_type(piece.converted_value)
+                if not mime_type.startswith("image/"):
+                    raise ValueError(
+                        f"Invalid image format for image_path: {piece.converted_value}. "
+                        f"Detected MIME type: {mime_type}."
+                    )
 
     def _is_start_of_session(self, *, conversation_id: str) -> bool:
         """

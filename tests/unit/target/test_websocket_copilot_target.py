@@ -63,6 +63,7 @@ def make_message_piece():
             original_value_data_type=data_type,
             converted_value_data_type=data_type,
         )
+
     return _make
 
 
@@ -85,6 +86,7 @@ def make_annotation():
             },
             "messageAnnotationType": "ImageFile",
         }
+
     return _make
 
 
@@ -727,17 +729,17 @@ class TestConnectAndSend:
 @pytest.mark.usefixtures("patch_central_database")
 class TestValidateRequest:
     @pytest.mark.parametrize(
-        "data_type,should_pass",
+        "data_type,value,should_pass",
         [
-            ("text", True),
-            ("image_path", True),
-            ("audio_path", False),
-            ("video_path", False),
+            ("text", "Example text", True),
+            ("image_path", "/path/to/image.png", True),
+            ("audio_path", "/path/to/audio.mp3", False),
+            ("video_path", "/path/to/video.mp4", False),
         ],
     )
-    def test_validate_request_data_types(self, mock_authenticator, make_message_piece, data_type, should_pass):
+    def test_validate_request_data_types(self, mock_authenticator, make_message_piece, data_type, value, should_pass):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-        message_piece = make_message_piece("test", data_type=data_type, conversation_id="123")
+        message_piece = make_message_piece(value, data_type=data_type, conversation_id="123")
         message = Message(message_pieces=[message_piece])
 
         if should_pass:
