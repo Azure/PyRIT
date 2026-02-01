@@ -63,7 +63,28 @@ def make_message_piece():
             original_value_data_type=data_type,
             converted_value_data_type=data_type,
         )
+    return _make
 
+
+@pytest.fixture
+def make_annotation():
+    def _make(
+        doc_id: str,
+        file_name: str,
+        file_type: str = None,
+    ) -> dict:
+        if file_type is None:
+            file_type = file_name.split(".")[-1].lower() if "." in file_name else "png"
+        return {
+            "id": doc_id,
+            "messageAnnotationMetadata": {
+                "@type": "File",
+                "annotationType": "File",
+                "fileType": file_type,
+                "fileName": file_name,
+            },
+            "messageAnnotationType": "ImageFile",
+        }
     return _make
 
 
@@ -353,6 +374,64 @@ class TestUploadImageAsync:
 
 
 @pytest.mark.usefixtures("patch_central_database")
+class TestProcessImagePieceAsync:
+    @pytest.mark.asyncio
+    async def test_process_image_piece_async_successful(
+        self, mock_authenticator, mock_copilot_target, patch_convert_local_image_to_data_url
+    ):
+        target = mock_copilot_target
+        image_path = "/path/to/image.png"
+        copilot_conversation_id = "conv_123"
+        expected_doc_id = "doc_xyz789"
+
+        with patch.object(target, "_upload_image_async", new=AsyncMock(return_value=expected_doc_id)):
+            annotation = await target._process_image_piece_async(
+                image_path=image_path,
+                copilot_conversation_id=copilot_conversation_id,
+            )
+            assert annotation["id"] == expected_doc_id
+            assert annotation["messageAnnotationType"] == "ImageFile"
+            assert annotation["messageAnnotationMetadata"]["@type"] == "File"
+            assert annotation["messageAnnotationMetadata"]["annotationType"] == "File"
+            assert annotation["messageAnnotationMetadata"]["fileName"] == "image.png"
+            assert annotation["messageAnnotationMetadata"]["fileType"] == "png"
+
+    @pytest.mark.asyncio
+    async def test_process_image_piece_async_extracts_filename_correctly(
+        self, mock_authenticator, mock_copilot_target, patch_convert_local_image_to_data_url
+    ):
+        target = mock_copilot_target
+        test_cases = [
+            ("/path/to/image.png", "image.png", "png"),
+            ("C:\\Users\\test\\photo.jpg", "photo.jpg", "jpg"),
+            ("simple_image.gif", "simple_image.gif", "gif"),
+            ("/path/with.dots/image.png", "image.png", "png"),
+            ("no_extension", "no_extension", "png"),  # defaults to png
+        ]
+
+        for image_path, expected_name, expected_type in test_cases:
+            with patch.object(target, "_upload_image_async", new=AsyncMock(return_value="doc_id")):
+                annotation = await target._process_image_piece_async(
+                    image_path=image_path,
+                    copilot_conversation_id="conv_123",
+                )
+                assert annotation["messageAnnotationMetadata"]["fileName"] == expected_name
+                assert annotation["messageAnnotationMetadata"]["fileType"] == expected_type
+
+    @pytest.mark.asyncio
+    async def test_process_image_piece_async_propagates_upload_error(
+        self, mock_authenticator, mock_copilot_target, patch_convert_local_image_to_data_url
+    ):
+        target = mock_copilot_target
+        with patch.object(target, "_upload_image_async", new=AsyncMock(side_effect=RuntimeError("Upload failed"))):
+            with pytest.raises(RuntimeError, match="Upload failed"):
+                await target._process_image_piece_async(
+                    image_path="/path/to/image.png",
+                    copilot_conversation_id="conv_123",
+                )
+
+
+@pytest.mark.usefixtures("patch_central_database")
 class TestBuildPromptMessage:
     @pytest.mark.asyncio
     async def test_build_prompt_message_structure(self, mock_authenticator, sample_text_pieces, mock_copilot_target):
@@ -399,11 +478,19 @@ class TestBuildPromptMessage:
 
     @pytest.mark.asyncio
     async def test_build_prompt_message_with_image(
-        self, mock_authenticator, sample_image_pieces, mock_copilot_target, patch_convert_local_image_to_data_url
+        self,
+        mock_authenticator,
+        sample_image_pieces,
+        mock_copilot_target,
+        patch_convert_local_image_to_data_url,
+        make_annotation,
     ):
         target = mock_copilot_target
+        expected_annotation = make_annotation(doc_id="doc_id_xyz", file_name="image.png")
 
-        with patch.object(target, "_upload_image_async", new=AsyncMock(return_value="doc_id_xyz")):
+        with patch.object(
+            target, "_process_image_piece_async", new=AsyncMock(return_value=expected_annotation)
+        ) as mock_process:
             message = await target._build_prompt_message(
                 message_pieces=sample_image_pieces,
                 session_id="session_123",
@@ -422,6 +509,11 @@ class TestBuildPromptMessage:
             annotation = msg["messageAnnotations"][0]
             assert annotation["id"] == "doc_id_xyz"
             assert annotation["messageAnnotationType"] == "ImageFile"
+
+            mock_process.assert_called_once_with(
+                image_path="/path/to/image.png",
+                copilot_conversation_id="conv_456",
+            )
             assert annotation["messageAnnotationMetadata"]["@type"] == "File"
             assert annotation["messageAnnotationMetadata"]["annotationType"] == "File"
             assert annotation["messageAnnotationMetadata"]["fileType"] == "png"
@@ -429,13 +521,22 @@ class TestBuildPromptMessage:
 
     @pytest.mark.asyncio
     async def test_build_prompt_message_with_mixed_content(
-        self, mock_authenticator, sample_mixed_pieces, mock_copilot_target, patch_convert_local_image_to_data_url
+        self,
+        mock_authenticator,
+        sample_mixed_pieces,
+        mock_copilot_target,
+        patch_convert_local_image_to_data_url,
+        make_annotation,
     ):
         target = mock_copilot_target
+        mock_annotations = [
+            make_annotation(doc_id="doc_id_1", file_name="image1.png"),
+            make_annotation(doc_id="doc_id_2", file_name="image2.jpg"),
+        ]
 
         with patch.object(
-            target, "_upload_image_async", new=AsyncMock(side_effect=["doc_id_1", "doc_id_2"])
-        ) as mock_upload:
+            target, "_process_image_piece_async", new=AsyncMock(side_effect=mock_annotations)
+        ) as mock_process:
             message = await target._build_prompt_message(
                 message_pieces=sample_mixed_pieces,
                 session_id="session_123",
@@ -462,7 +563,7 @@ class TestBuildPromptMessage:
             assert annotation2["messageAnnotationMetadata"]["fileName"] == "image2.jpg"
             assert annotation2["messageAnnotationMetadata"]["fileType"] == "jpg"
 
-            assert mock_upload.call_count == 2
+            assert mock_process.call_count == 2
 
     @pytest.mark.asyncio
     async def test_build_prompt_message_with_multiple_text_pieces(
@@ -483,34 +584,6 @@ class TestBuildPromptMessage:
         # Multiple text pieces should be joined with newlines
         assert msg["text"] == "First line\nSecond line"
         assert "messageAnnotations" not in msg
-
-    @pytest.mark.asyncio
-    async def test_build_prompt_message_extracts_filename_correctly(
-        self, mock_authenticator, mock_copilot_target, make_message_piece, patch_convert_local_image_to_data_url
-    ):
-        target = mock_copilot_target
-
-        test_cases = [
-            ("/path/to/image.png", "image.png", "png"),
-            ("C:\\Users\\test\\photo.jpg", "photo.jpg", "jpg"),
-            ("simple_image.gif", "simple_image.gif", "gif"),
-            ("/path/with.dots/image.png", "image.png", "png"),
-        ]
-
-        for image_path, expected_name, expected_type in test_cases:
-            image_piece = make_message_piece(image_path, data_type="image_path")
-
-            with patch.object(target, "_upload_image_async", new=AsyncMock(return_value="doc_id")):
-                message = await target._build_prompt_message(
-                    message_pieces=[image_piece],
-                    session_id="sid",
-                    copilot_conversation_id="cid",
-                    is_start_of_session=True,
-                )
-
-                annotation = message["arguments"][0]["message"]["messageAnnotations"][0]
-                assert annotation["messageAnnotationMetadata"]["fileName"] == expected_name
-                assert annotation["messageAnnotationMetadata"]["fileType"] == expected_type
 
 
 @pytest.mark.usefixtures("patch_central_database")
