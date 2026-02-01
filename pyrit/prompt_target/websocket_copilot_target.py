@@ -304,6 +304,43 @@ class WebSocketCopilotTarget(PromptTarget):
             logger.info(f"Successfully uploaded image: {image_path} -> docId={doc_id}")
             return doc_id
 
+    async def _process_image_piece_async(self, *, image_path: str, copilot_conversation_id: str) -> dict[str, Any]:
+        """
+        Process an image piece by uploading it and creating a message annotation.
+
+        Args:
+            image_path (str): Path to the local image file.
+            copilot_conversation_id (str): The Copilot conversation identifier.
+
+        Returns:
+            dict: Message annotation structure for the uploaded image.
+        """
+        data_url = await convert_local_image_to_data_url(image_path)
+
+        file_name = image_path.split("/")[-1].split("\\")[-1] if "/" in image_path or "\\" in image_path else image_path
+        file_type = file_name.split(".")[-1].lower() if "." in file_name else "png"
+
+        doc_id = await self._upload_image_async(
+            image_path=image_path,
+            conversation_id=copilot_conversation_id,
+            data_url=data_url,
+        )
+
+        # Create message annotation with uploaded docId (no URL field)
+        # Structure matches what browser sends when a user uploads an image manually
+        annotation = {
+            "id": doc_id,  # from response to /m365Copilot/UploadFile
+            "messageAnnotationMetadata": {
+                "@type": "File",
+                "annotationType": "File",
+                "fileType": file_type,
+                "fileName": file_name,
+            },
+            "messageAnnotationType": "ImageFile",
+        }
+        logger.info(f"Created annotation for image with docId: {annotation}")
+        return annotation
+
     async def _build_prompt_message(
         self,
         *,
@@ -337,35 +374,10 @@ class WebSocketCopilotTarget(PromptTarget):
                 text_parts.append(piece.converted_value)
 
             elif piece.converted_value_data_type == "image_path":
-                # TODO: the code below should be a separate private method
-
-                data_url = await convert_local_image_to_data_url(piece.converted_value)
-                image_path = piece.converted_value
-
-                file_name = (
-                    image_path.split("/")[-1].split("\\")[-1] if "/" in image_path or "\\" in image_path else image_path
+                annotation = await self._process_image_piece_async(
+                    image_path=piece.converted_value,
+                    copilot_conversation_id=copilot_conversation_id,
                 )
-                file_type = file_name.split(".")[-1].lower() if "." in file_name else "png"
-
-                doc_id = await self._upload_image_async(
-                    image_path=image_path,
-                    conversation_id=copilot_conversation_id,
-                    data_url=data_url,
-                )
-
-                # Create message annotation with uploaded docId (no URL field)
-                # Structure matches what browser sends when a user uploads an image manually
-                annotation = {
-                    "id": doc_id,  # from response to /m365Copilot/UploadFile
-                    "messageAnnotationMetadata": {
-                        "@type": "File",
-                        "annotationType": "File",
-                        "fileType": file_type,
-                        "fileName": file_name,
-                    },
-                    "messageAnnotationType": "ImageFile",
-                }
-                logger.info(f"Created annotation for image with docId: {annotation}")
                 message_annotations.append(annotation)
 
         prompt_text = "\n".join(text_parts) if text_parts else ""  # combine text parts with newlines
@@ -386,9 +398,6 @@ class WebSocketCopilotTarget(PromptTarget):
 
         if message_annotations:  # add images only if previously uploaded
             message_content["messageAnnotations"] = message_annotations
-
-        # TODO: remove this line
-        print("message_content:", message_content)
 
         result = {
             "arguments": [
