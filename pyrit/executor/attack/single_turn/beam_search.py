@@ -21,6 +21,8 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
+    ConversationReference,
+    ConversationType,
     Message,
     Score,
 )
@@ -273,15 +275,27 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         # Sort the list of beams
         beams = sorted(beams, key=lambda b: b.score, reverse=True)
-
+        
+        # Get the overall outcome based on the best beam
         outcome, outcome_reason = self._determine_attack_outcome(beam=beams[0])
 
+        # Pack the runner-up beams into related conversations
+        related_conversations: set[ConversationReference] = set()
+        for i in range(1, len(beams)):
+            nxt = ConversationReference(
+                        conversation_id=beams[i].id,
+                        conversation_type=ConversationType.PRUNED,
+                    )
+            related_conversations.add(nxt)
+
+        # Create the final attack result
         result = AttackResult(
             conversation_id=beams[0].id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
             last_response=beams[0].message.message_pieces[0] if beams[0].message else None,
             last_score=beams[0].objective_score,
+            related_conversations=related_conversations,
             outcome=outcome,
             outcome_reason=outcome_reason,
             executed_turns=1,
