@@ -1,9 +1,9 @@
 import asyncio
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
-from pyrit.executor.attack import AttackScoringConfig
+from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.attack.single_turn.beam_search import BeamSearchAttack, TopKBeamPruner
-from pyrit.prompt_target import OpenAIResponseTarget, OpenAIChatTarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIResponseTarget
 from pyrit.score import (
     AzureContentFilterScorer,
     SelfAskRefusalScorer,
@@ -58,8 +58,9 @@ async def main():
 
     result = await beam_search_attack.execute_async(objective=objective)
 
-    print("Final best response:")
-    print(result)
+    print("\nFinal best response:\n")
+    printer = ConsoleAttackResultPrinter()
+    await printer.print_conversation_async(result=result)  # type: ignore
 
 
 if __name__ == "__main__":
