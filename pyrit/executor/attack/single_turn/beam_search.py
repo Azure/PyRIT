@@ -5,6 +5,7 @@ import asyncio
 import copy
 import logging
 import uuid
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional, Type
 
@@ -69,12 +70,25 @@ class Beam:
     id: str
     text: str
     score: float
+    objective_score: Optional[Score] = None
     message: Message | None = None
 
 
-class BeamPruner:
+class BeamPruner(ABC):
+    """Abstract base class for beam pruners in beam search attacks."""
+
+    @abstractmethod
     def prune(self, beams: list[Beam]) -> list[Beam]:
-        raise NotImplementedError("BeamPruner.prune() must be implemented in subclasses")
+        """
+        Removes less promising beams from the list, replacing them with modified copies of the better beams.
+
+        Args:
+            beams (list[Beam]): The current list of beams.
+
+        Returns:
+            list[Beam]: The updated list of beams.
+        """
+        pass
 
 
 class TopKBeamPruner(BeamPruner):
@@ -117,11 +131,15 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         Args:
             objective_target (OpenAIResponseTarget): The target system to attack.
+            beam_pruner (BeamPruner): The beam pruner to use during the search.
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
-
-        Raises:
-            ValueError: If the objective scorer is not a true/false scorer.
+            prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use.
+            params_type (Type[AttackParamsT]): The type of attack parameters to use.
+            prepended_conversation_config (Optional[PrependedConversationConfig]): Configuration for prepended conversation.
+            num_beams (int): The number of beams to use in the search.
+            max_iterations (int): The maximum number of iterations to perform.
+            num_chars_per_step (int): The number of characters to generate per step.
         """
         # Initialize base class
         super().__init__(
@@ -241,15 +259,19 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             for i, beam in enumerate(beams):
                 print(f"Beam {i} score: {beam.score}")
 
+        # Sort the list of beams
+        beams = sorted(beams, key=lambda b: b.score, reverse=True)
+
+        outcome, outcome_reason = self._determine_attack_outcome(beam=beams[0])
+
         result = AttackResult(
-            conversation_id=context.conversation_id,
+            conversation_id=beams[0].id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
-            last_response=response.get_piece() if response else None,
-            last_score=score,
-            related_conversations=context.related_conversations,
-            # outcome=outcome,
-            # outcome_reason=outcome_reason,
+            last_response=beams[0].message.message_pieces[0] if beams[0].message else None,
+            last_score=beams[0].objective_score,
+            outcome=outcome,
+            outcome_reason=outcome_reason,
             executed_turns=1,
         )
 
@@ -287,7 +309,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             # Just log the error and skip the update
             logger.warning(f"Error propagating beam: {e}")
 
-    async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]) -> Optional[Score]:
+    async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]):
         assert beam.message is not None, "Beam message must be set before scoring"
         scoring_results = await Scorer.score_response_async(
             response=beam.message,
@@ -305,9 +327,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             beam.score += s.get_value()
 
         objective_scores = scoring_results["objective_scores"]
-        if not objective_scores:
-            return None
-        return objective_scores[0]
+        if objective_scores:
+            beam.objective_score = objective_scores[0]
 
     def _get_target_for_beam(self, beam: Beam) -> OpenAIResponseTarget:
         """
@@ -315,13 +336,20 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         Args:
             beam (Beam): The beam for which to create the target.
+
+        Returns:
+            OpenAIResponseTarget: A new target configured for the beam.
+
+        Raises:
+            ValueError: If the objective target is not an OpenAIResponseTarget.
         """
         grammar_template = """
 start: PREFIX CONTINUATION
 PREFIX: "{prefix}"
 CONTINUATION: /.{{0,{n_chars}}}/
 """
-
+        if not(isinstance(self._objective_target, OpenAIResponseTarget)):
+            raise ValueError("Objective target must be an OpenAIResponseTarget")
         lark_grammar = grammar_template.format(prefix=beam.text.replace('"', '\\"'), n_chars=self._num_chars_per_step)
 
         grammar_tool = {
@@ -368,6 +396,30 @@ CONTINUATION: /.{{0,{n_chars}}}/
             return context.next_message.duplicate_message()
 
         return Message.from_prompt(prompt=context.objective, role="user")
+
+
+    def _determine_attack_outcome(
+        self, *, beam: Beam
+    ) -> tuple[AttackOutcome, Optional[str]]:
+        """
+        Determine the outcome of the attack based on the response and score.
+
+        Args:
+           beam (Beam): The beam containing the response and score.
+
+        Returns:
+            tuple[AttackOutcome, Optional[str]]: A tuple of (outcome, outcome_reason).
+        """
+        if not self._objective_scorer:
+            # No scorer means we can't determine success/failure
+            return AttackOutcome.UNDETERMINED, "No objective scorer configured"
+
+        if beam.objective_score and beam.objective_score.get_value():
+            # We have a positive score, so it's a success
+            return AttackOutcome.SUCCESS, "Objective achieved according to scorer"
+
+        # No response at all (all attempts filtered/failed)
+        return AttackOutcome.FAILURE, "All attempts were filtered or failed to get a response"
 
     async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
         """Clean up after attack execution."""
