@@ -134,6 +134,8 @@ class TopKBeamPruner(BeamPruner):
 
 
 class BeamSearchAttack(SingleTurnAttackStrategy):
+    """Beam search attack strategy for single-turn attacks."""
+
     @apply_defaults
     def __init__(
         self,
