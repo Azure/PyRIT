@@ -58,6 +58,9 @@ async def main():
 
     result = await beam_search_attack.execute_async(objective=objective)
 
+    print("Final best response:")
+    print(result)
+
 
 if __name__ == "__main__":
     asyncio.run(initialize_pyrit_async(IN_MEMORY))

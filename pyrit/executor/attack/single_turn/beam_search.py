@@ -248,15 +248,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         # Log the attack configuration
         self._logger.info(f"Starting {self.__class__.__name__} with objective: {context.objective}")
 
-        print(f"Context: {context}")
-
-        # Execute with retries
-        response = None
-        score = None
-
-        # Prepare a fresh message for each attempt to avoid duplicate ID errors in database
-        #  message = self._get_message(context)
-
         beams = [Beam(id=context.conversation_id, text="", score=0.0) for _ in range(self._num_beams)]
 
         for step in range(self._max_iterations):
