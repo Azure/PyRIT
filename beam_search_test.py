@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
@@ -11,10 +12,13 @@ from pyrit.score import (
 )
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
-ACF_ENDPOINT = "https://guidance-acf.cognitiveservices.azure.com/"
-AOAI_ENDPOINT = "https://aoai-guidance.openai.azure.com/openai/v1"
-AOAI_DEPLOYMENT = "guidance-gpt-5"
+AOAI_ENDPOINT = os.environ.get("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT")
+AOAI_DEPLOYMENT = os.environ.get("AZURE_OPENAI_GPT5_MODEL")
+ACF_ENDPOINT = os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT")
 
+print(f"Using AOAI Endpoint: {AOAI_ENDPOINT}")
+print(f"Using AOAI Deployment: {AOAI_DEPLOYMENT}")
+print(f"Using ACF Endpoint: {ACF_ENDPOINT}")
 
 async def main():
     base_response_target = OpenAIResponseTarget(
