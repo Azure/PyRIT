@@ -209,11 +209,13 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
         target_info: Optional[Dict[str, Any]] = None
         if converter_target:
             target_id = converter_target.get_identifier()
-            # Extract standard fields for converter identification
-            target_info = {}
-            for key in ["__type__", "model_name", "temperature", "top_p"]:
-                if key in target_id:
-                    target_info[key] = target_id[key]
+            # Extract standard fields for converter identification using attribute access
+            target_info = {
+                "class_name": target_id.class_name,
+                "model_name": target_id.model_name,
+                "temperature": target_id.temperature,
+                "top_p": target_id.top_p,
+            }
 
         return ConverterIdentifier(
             class_name=self.__class__.__name__,

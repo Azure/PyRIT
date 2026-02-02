@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from pyrit.executor.attack import PromptSendingAttack
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import SeedAttackGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
@@ -21,6 +21,16 @@ from pyrit.score import DecodingScorer, TrueFalseScorer
 def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
     """Helper to create ScorerIdentifier for tests."""
     return ScorerIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
         class_name=name,
         class_module="test",
         class_description="",
@@ -67,7 +77,7 @@ def mock_dataset_config(mock_seed_attack_groups):
 def mock_objective_target():
     """Create a mock objective target for testing."""
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockObjectiveTarget")
     return mock
 
 

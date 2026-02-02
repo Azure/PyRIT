@@ -15,6 +15,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.exceptions.exception_classes import ServerErrorException
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     construct_response_from_request,
@@ -117,6 +118,19 @@ class RealtimeTarget(OpenAITarget):
             ".openai.azure.com": "wss://{resource}.openai.azure.com/openai/v1",
             "api.openai.com": "wss://api.openai.com/v1",
         }
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with Realtime API-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            target_specific_params={
+                "voice": self.voice,
+            },
+        )
 
     def _validate_url_for_target(self, endpoint_url: str) -> None:
         """

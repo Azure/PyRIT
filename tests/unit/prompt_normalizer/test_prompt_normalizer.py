@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from unit.mocks import MockPromptTarget, get_image_message_piece
+from unit.mocks import MockPromptTarget, get_image_message_piece, get_mock_target_identifier
 
 from pyrit.exceptions import (
     ComponentRole,
@@ -136,6 +136,7 @@ async def test_send_prompt_async_empty_response_exception_handled(mock_memory_in
     # Use MagicMock with send_prompt_async as AsyncMock to avoid coroutine warnings on other methods
     prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(side_effect=EmptyResponseException(message="Empty response"))
+    prompt_target.get_identifier.return_value = get_mock_target_identifier("MockTarget")
 
     normalizer = PromptNormalizer()
     message = Message.from_prompt(prompt=seed_group.prompts[0].value, role="user")
@@ -215,8 +216,9 @@ async def test_send_prompt_async_exception(mock_memory_instance, seed_group):
 
 @pytest.mark.asyncio
 async def test_send_prompt_async_empty_exception(mock_memory_instance, seed_group):
-    prompt_target = AsyncMock()
+    prompt_target = MagicMock()
     prompt_target.send_prompt_async = AsyncMock(side_effect=Exception(""))
+    prompt_target.get_identifier.return_value = get_mock_target_identifier("MockTarget")
 
     normalizer = PromptNormalizer()
     message = Message.from_prompt(prompt=seed_group.prompts[0].value, role="user")
@@ -418,6 +420,7 @@ async def test_convert_response_values_type(mock_memory_instance, response: Mess
 async def test_send_prompt_async_exception_conv_id(mock_memory_instance, seed_group):
     prompt_target = MagicMock(PromptTarget)
     prompt_target.send_prompt_async = AsyncMock(side_effect=Exception("Test Exception"))
+    prompt_target.get_identifier.return_value = get_mock_target_identifier("MockTarget")
 
     normalizer = PromptNormalizer()
     message = Message.from_prompt(prompt=seed_group.prompts[0].value, role="user")
