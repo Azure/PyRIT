@@ -67,6 +67,8 @@ def _print_message(message: Message) -> None:
 
 @dataclass
 class Beam:
+    """Represents a beam in the beam search attack strategy."""
+    
     id: str
     text: str
     score: float
@@ -92,11 +94,30 @@ class BeamPruner(ABC):
 
 
 class TopKBeamPruner(BeamPruner):
+    """Beam pruner that retains the top-k beams and modifies them to create new beams."""
+
     def __init__(self, k: int, drop_chars: int):
+        """
+        Initialize the TopKBeamPruner.
+
+        Args:
+            k (int): The number of top beams to retain.
+            drop_chars (int): The number of characters to drop from the end of the retained beams
+                to create new beams.
+        """
         self.k = k
         self.drop_chars = drop_chars
 
     def prune(self, beams: list[Beam]) -> list[Beam]:
+        """
+        Prune the beams to retain the top-k and create new beams by modifying them.
+
+        Args:
+            beams (list[Beam]): The current list of beams.
+
+        Returns:
+            list[Beam]: The updated list of beams.
+        """
         # Sort beams by score in descending order and select top k
         sorted_beams = sorted(beams, key=lambda b: b.score, reverse=True)
 
