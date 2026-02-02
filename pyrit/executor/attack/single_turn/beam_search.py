@@ -68,7 +68,7 @@ def _print_message(message: Message) -> None:
 @dataclass
 class Beam:
     """Represents a beam in the beam search attack strategy."""
-    
+
     id: str
     text: str
     score: float
@@ -82,7 +82,7 @@ class BeamPruner(ABC):
     @abstractmethod
     def prune(self, beams: list[Beam]) -> list[Beam]:
         """
-        Removes less promising beams from the list, replacing them with modified copies of the better beams.
+        Remove less promising beams from the list, replacing them with modified copies of the better beams.
 
         Args:
             beams (list[Beam]): The current list of beams.
