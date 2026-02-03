@@ -78,13 +78,13 @@ class Beam:
     message: Message | None = None
 
 
-class BeamPruner(ABC):
-    """Abstract base class for beam pruners in beam search attacks."""
+class BeamReviewer(ABC):
+    """Abstract base class for beam reviewers in beam search attacks."""
 
     @abstractmethod
-    def prune(self, beams: list[Beam]) -> list[Beam]:
+    def review(self, beams: list[Beam]) -> list[Beam]:
         """
-        Remove less promising beams from the list, replacing them with modified copies of the better beams.
+        Review the beams and potentially modify them to improve the search.
 
         Args:
             beams (list[Beam]): The current list of beams.
@@ -95,12 +95,12 @@ class BeamPruner(ABC):
         pass
 
 
-class TopKBeamPruner(BeamPruner):
-    """Beam pruner that retains the top-k beams and modifies them to create new beams."""
+class TopKBeamReviewer(BeamReviewer):
+    """Beam reviewer that retains the top-k beams and modifies them to create new beams."""
 
     def __init__(self, k: int, drop_chars: int):
         """
-        Initialize the TopKBeamPruner.
+        Initialize the TopKBeamReviewer.
 
         Args:
             k (int): The number of top beams to retain.
@@ -110,9 +110,9 @@ class TopKBeamPruner(BeamPruner):
         self.k = k
         self.drop_chars = drop_chars
 
-    def prune(self, beams: list[Beam]) -> list[Beam]:
+    def review(self, beams: list[Beam]) -> list[Beam]:
         """
-        Prune the beams to retain the top-k and create new beams by modifying them.
+        Review the beams to retain the top-k and create new beams by modifying them.
 
         Args:
             beams (list[Beam]): The current list of beams.
@@ -141,7 +141,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         self,
         *,
         objective_target: OpenAIResponseTarget = REQUIRED_VALUE,  # type: ignore[assignment]
-        beam_pruner: BeamPruner = REQUIRED_VALUE,  # type: ignore[assignment]
+        beam_reviewer: BeamReviewer = REQUIRED_VALUE,  # type: ignore[assignment]
         attack_converter_config: Optional[AttackConverterConfig] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
@@ -156,7 +156,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         Args:
             objective_target (OpenAIResponseTarget): The target system to attack.
-            beam_pruner (BeamPruner): The beam pruner to use during the search.
+            beam_reviewer (BeamReviewer): The beam reviewer to use during the search.
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use.
@@ -195,7 +195,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             prompt_normalizer=self._prompt_normalizer,
         )
 
-        self._beam_pruner = beam_pruner
+        self._beam_reviewer = beam_reviewer
 
         self._num_beams = num_beams
         self._max_iterations = max_iterations
@@ -257,8 +257,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         for step in range(self._max_iterations):
             print(f"Starting iteration {step}")
 
-            # Prune beams at the top of the loop for simplicity
-            beams = self._beam_pruner.prune(beams)
+            # Review beams at the top of the loop for simplicity
+            beams = self._beam_reviewer.review(beams)
 
             async with asyncio.TaskGroup() as tg:
                 tasks = [tg.create_task(self._propagate_beam(beam=beam)) for beam in beams]
