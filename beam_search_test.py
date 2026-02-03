@@ -3,7 +3,7 @@ import os
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
-from pyrit.executor.attack.single_turn.beam_search import BeamSearchAttack, TopKBeamPruner
+from pyrit.executor.attack.single_turn.beam_search import BeamSearchAttack, TopKBeamReviewer
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIResponseTarget
 from pyrit.score import (
     AzureContentFilterScorer,
@@ -21,6 +21,10 @@ print(f"Using AOAI Deployment: {AOAI_DEPLOYMENT}")
 print(f"Using ACF Endpoint: {ACF_ENDPOINT}")
 
 async def main():
+    assert AOAI_ENDPOINT is not None
+    assert AOAI_DEPLOYMENT is not None
+    assert ACF_ENDPOINT is not None
+
     base_response_target = OpenAIResponseTarget(
         endpoint=AOAI_ENDPOINT,
         model_name=AOAI_DEPLOYMENT,
@@ -47,11 +51,11 @@ async def main():
         auxiliary_scorers=[acf_scorer],  # provide the list of aux scorers here
     )
 
-    pruner = TopKBeamPruner(k=6, drop_chars=25)
+    reviewer = TopKBeamReviewer(k=6, drop_chars=25)
 
     beam_search_attack = BeamSearchAttack(
         objective_target=base_response_target,
-        beam_pruner=pruner,
+        beam_reviewer=reviewer,
         attack_scoring_config=scoring_config,
         num_beams=10,
         max_iterations=8,

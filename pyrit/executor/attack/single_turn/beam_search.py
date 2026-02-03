@@ -28,7 +28,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import OpenAIResponseTarget
-from pyrit.score import Scorer
+from pyrit.score import FloatScaleScorer, Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +154,10 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         """
         Initialize the prompt injection attack strategy.
 
+        The auxiliary scorers (provided via attack_scoring_config) are used to
+        evaluate and rank the beams at each iteration; as such, they must be
+        instances of FloatScaleScorer.
+
         Args:
             objective_target (OpenAIResponseTarget): The target system to attack.
             beam_reviewer (BeamReviewer): The beam reviewer to use during the search.
@@ -165,6 +169,9 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             num_beams (int): The number of beams to use in the search.
             max_iterations (int): The maximum number of iterations to perform.
             num_chars_per_step (int): The number of characters to generate per step.
+
+        Raises:
+            ValueError: If required configurations are missing or invalid.
         """
         # Initialize base class
         super().__init__(
@@ -184,6 +191,12 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         # Check for unused optional parameters and warn if they are set
         warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"], log=logger)
+
+        if not attack_scoring_config.auxiliary_scorers:
+            raise ValueError("At least one auxiliary scorer must be provided in attack_scoring_config")
+        for aux_scorer in attack_scoring_config.auxiliary_scorers:
+            if not isinstance(aux_scorer, FloatScaleScorer):
+                raise ValueError("All auxiliary scorers must be instances of FloatScaleScorer")
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
@@ -255,7 +268,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         beams = [Beam(id=context.conversation_id, text="", score=0.0) for _ in range(self._num_beams)]
 
         for step in range(self._max_iterations):
-            print(f"Starting iteration {step}")
+            self._logger.info(f"Starting iteration {step}/{self._max_iterations}")
 
             # Review beams at the top of the loop for simplicity
             beams = self._beam_reviewer.review(beams)
@@ -265,15 +278,14 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
-                print(f"Beam {i} text after iteration {step}: {beam.text}")
+                self._logger.debug(f"Beam {i} text after iteration {step}: {beam.text}")
 
-            print("Scoring beams")
             async with asyncio.TaskGroup() as tg:
                 tasks = [tg.create_task(self._score_beam(beam=beam, context=context)) for beam in beams]
                 scores = await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
-                print(f"Beam {i} score: {beam.score}")
+                self._logger.debug(f"Beam {i} score: {beam.score}")
 
         # Sort the list of beams
         beams = sorted(beams, key=lambda b: b.score, reverse=True)
@@ -326,16 +338,14 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 attack_identifier=self.get_identifier(),
             )
 
-            # _print_message(model_response)
             assert len(model_response.message_pieces) == 2, "Expected exactly two message pieces in the response"
             model_response.message_pieces = model_response.message_pieces[1:]
             model_response.message_pieces[0].role = "assistant"
             beam.text = model_response.message_pieces[0].converted_value
             beam.message = model_response
-            # print(f"Updated beam text: {beam.text}")
         except Exception as e:
             # Just log the error and skip the update
-            logger.warning(f"Error propagating beam: {e}")
+            self._logger.warning(f"Error propagating beam: {e}")
 
     async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]):
         assert beam.message is not None, "Beam message must be set before scoring"
@@ -350,8 +360,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         aux_scores = scoring_results["auxiliary_scores"]
         beam.score = 0.0
         for s in aux_scores:
-            # print(f"Auxiliary score: {s}")
-            # print(f"{s.get_value()=}")
             beam.score += s.get_value()
 
         objective_scores = scoring_results["objective_scores"]
