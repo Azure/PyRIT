@@ -289,7 +289,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         # Sort the list of beams
         beams = sorted(beams, key=lambda b: b.score, reverse=True)
-        
+
         # Get the overall outcome based on the best beam
         outcome, outcome_reason = self._determine_attack_outcome(beam=beams[0])
 
@@ -297,9 +297,9 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         related_conversations: set[ConversationReference] = set()
         for i in range(1, len(beams)):
             nxt = ConversationReference(
-                        conversation_id=beams[i].id,
-                        conversation_type=ConversationType.PRUNED,
-                    )
+                conversation_id=beams[i].id,
+                conversation_type=ConversationType.PRUNED,
+            )
             related_conversations.add(nxt)
 
         # Create the final attack result
@@ -384,7 +384,7 @@ start: PREFIX CONTINUATION
 PREFIX: "{prefix}"
 CONTINUATION: /.{{0,{n_chars}}}/
 """
-        if not(isinstance(self._objective_target, OpenAIResponseTarget)):
+        if not (isinstance(self._objective_target, OpenAIResponseTarget)):
             raise ValueError("Objective target must be an OpenAIResponseTarget")
         lark_grammar = grammar_template.format(prefix=beam.text.replace('"', '\\"'), n_chars=self._num_chars_per_step)
 
@@ -433,10 +433,7 @@ CONTINUATION: /.{{0,{n_chars}}}/
 
         return Message.from_prompt(prompt=context.objective, role="user")
 
-
-    def _determine_attack_outcome(
-        self, *, beam: Beam
-    ) -> tuple[AttackOutcome, Optional[str]]:
+    def _determine_attack_outcome(self, *, beam: Beam) -> tuple[AttackOutcome, Optional[str]]:
         """
         Determine the outcome of the attack based on the response and score.
 

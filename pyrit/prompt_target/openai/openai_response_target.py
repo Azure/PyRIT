@@ -177,7 +177,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             A new instance of OpenAIResponseTarget.
         """
         return OpenAIResponseTarget(**self._init_args)
-    
+
     def _build_identifier(self) -> TargetIdentifier:
         """
         Build the identifier with OpenAI response-specific parameters.

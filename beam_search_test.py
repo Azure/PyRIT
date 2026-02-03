@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import asyncio
 import os
 
@@ -19,6 +22,7 @@ ACF_ENDPOINT = os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT")
 print(f"Using AOAI Endpoint: {AOAI_ENDPOINT}")
 print(f"Using AOAI Deployment: {AOAI_DEPLOYMENT}")
 print(f"Using ACF Endpoint: {ACF_ENDPOINT}")
+
 
 async def main():
     assert AOAI_ENDPOINT is not None
