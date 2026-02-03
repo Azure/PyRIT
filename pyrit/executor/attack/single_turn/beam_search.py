@@ -217,7 +217,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         # Store the prepended conversation configuration
         self._prepended_conversation_config = prepended_conversation_config
 
-    def _validate_context(self, *, context: SingleTurnAttackContext) -> None:
+    def _validate_context(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """
         Validate the context before executing the attack.
 
@@ -230,7 +230,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
 
-    async def _setup_async(self, *, context: SingleTurnAttackContext) -> None:
+    async def _setup_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """
         Set up the attack by preparing conversation context.
 
@@ -282,7 +282,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
             async with asyncio.TaskGroup() as tg:
                 tasks = [tg.create_task(self._score_beam(beam=beam, context=context)) for beam in beams]
-                scores = await asyncio.gather(*tasks)
+                await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
                 self._logger.debug(f"Beam {i} score: {beam.score}")
@@ -317,7 +317,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         return result
 
-    async def _propagate_beam(self, *, beam: Beam):
+    async def _propagate_beam(self, *, beam: Beam) -> None:
         # print(f"Propagating beam with text: {beam.text}")
         target = self._get_target_for_beam(beam)
 
@@ -347,7 +347,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             # Just log the error and skip the update
             self._logger.warning(f"Error propagating beam: {e}")
 
-    async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]):
+    async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]) -> None:
         assert beam.message is not None, "Beam message must be set before scoring"
         scoring_results = await Scorer.score_response_async(
             response=beam.message,
@@ -454,7 +454,7 @@ CONTINUATION: /.{{0,{n_chars}}}/
         # No response at all (all attempts filtered/failed)
         return AttackOutcome.FAILURE, "All attempts were filtered or failed to get a response"
 
-    async def _teardown_async(self, *, context: SingleTurnAttackContext) -> None:
+    async def _teardown_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
         pass
