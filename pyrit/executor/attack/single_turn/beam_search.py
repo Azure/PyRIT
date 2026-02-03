@@ -409,7 +409,7 @@ CONTINUATION: /.{{0,{n_chars}}}/
 
         target = self._objective_target.fresh_instance()
         target._extra_body_parameters = ebp
-        target._grammar_name = grammar_tool["name"]
+        target._grammar_name = grammar_tool["name"]  # type: ignore[assignment]
 
         return target
 
