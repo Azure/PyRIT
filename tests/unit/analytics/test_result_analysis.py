@@ -29,6 +29,24 @@ def make_attack(
     )
 
 
+def make_converter(
+    class_name: str,
+    class_module: str = "pyrit.prompt_converter.test_converter",
+) -> ConverterIdentifier:
+    """
+    Create a test ConverterIdentifier with minimal required fields.
+    """
+    return ConverterIdentifier(
+        class_name=class_name,
+        class_module=class_module,
+        class_description="Test converter",
+        identifier_type="instance",
+        supported_input_types=("text",),
+        supported_output_types=("text",),
+    )
+
+
+
 def test_analyze_results_empty_raises():
     with pytest.raises(ValueError):
         analyze_results([])
@@ -176,23 +194,8 @@ def test_analyze_results_no_converter_tracking():
 def test_analyze_results_with_converter_identifiers():
     """Test that attacks with converters are properly grouped by converter type."""
     # Create attacks with different converters
-    converter1 = ConverterIdentifier(
-        class_name="Base64Converter",
-        class_module="pyrit.prompt_converter.base64_converter",
-        class_description="Test converter",
-        identifier_type="instance",
-        supported_input_types=("text",),
-        supported_output_types=("text",),
-    )
-
-    converter2 = ConverterIdentifier(
-        class_name="ROT13Converter",
-        class_module="pyrit.prompt_converter.rot13_converter",
-        class_description="Test converter",
-        identifier_type="instance",
-        supported_input_types=("text",),
-        supported_output_types=("text",),
-    )
+    converter1 = make_converter("Base64Converter", "pyrit.prompt_converter.base64_converter")
+    converter2 = make_converter("ROT13Converter", "pyrit.prompt_converter.rot13_converter")
 
     message1 = MessagePiece(
         role="user",
@@ -257,23 +260,8 @@ def test_analyze_results_with_converter_identifiers():
 
 def test_analyze_results_multiple_converters_per_attack():
     """Test that attacks with multiple converters count towards each converter's stats."""
-    converter1 = ConverterIdentifier(
-        class_name="Base64Converter",
-        class_module="pyrit.prompt_converter.base64_converter",
-        class_description="Test converter",
-        identifier_type="instance",
-        supported_input_types=("text",),
-        supported_output_types=("text",),
-    )
-
-    converter2 = ConverterIdentifier(
-        class_name="ROT13Converter",
-        class_module="pyrit.prompt_converter.rot13_converter",
-        class_description="Test converter",
-        identifier_type="instance",
-        supported_input_types=("text",),
-        supported_output_types=("text",),
-    )
+    converter1 = make_converter("Base64Converter", "pyrit.prompt_converter.base64_converter")
+    converter2 = make_converter("ROT13Converter", "pyrit.prompt_converter.rot13_converter")
 
     # Attack with multiple converters (pipeline)
     message = MessagePiece(
@@ -303,14 +291,7 @@ def test_analyze_results_multiple_converters_per_attack():
 
 def test_analyze_results_converter_with_undetermined():
     """Test that undetermined outcomes are tracked correctly for converters."""
-    converter = ConverterIdentifier(
-        class_name="Base64Converter",
-        class_module="pyrit.prompt_converter.base64_converter",
-        class_description="Test converter",
-        identifier_type="instance",
-        supported_input_types=("text",),
-        supported_output_types=("text",),
-    )
+    converter = make_converter("Base64Converter", "pyrit.prompt_converter.base64_converter")
 
     message = MessagePiece(
         role="user",
