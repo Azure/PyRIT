@@ -69,7 +69,7 @@ def analyze_results(attack_results: list[AttackResult]) -> dict[str, AttackStats
 
         # Extract converter types from last_response
         converter_types = []
-        if attack.last_response and attack.last_response.converter_identifiers:
+        if attack.last_response is not None and attack.last_response.converter_identifiers:
             converter_types = [conv.class_name for conv in attack.last_response.converter_identifiers]
 
         # If no converters, track as "no_converter"
