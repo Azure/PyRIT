@@ -61,21 +61,24 @@ async def test_colloquial_non_deterministic(input_text):
             assert output_word == input_word
 
 
-# Test for custom substitutions
+# Test for nondefault substitutions.
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "input_text,custom_substitutions,expected_output",
+    "input_text,wordswap_path,expected_output",
     [
-        ("father", {"father": ["appa", "darth vader"]}, "appa"),  # Custom substitution father -> appa
+        ("father", "filipino.yaml", "papa"),
+        ("woman", "indian.yaml", "behenji"),
+        ("son", "southern_american.yaml", "junior"),
+        ("man", "multicultural_london.yaml", "mandem"),
     ],
 )
-async def test_colloquial_custom_substitutions(input_text, custom_substitutions, expected_output):
-    converter = ColloquialWordswapConverter(deterministic=True, custom_substitutions=custom_substitutions)
+async def test_colloquial_custom_substitutions(input_text, wordswap_path, expected_output):
+    converter = ColloquialWordswapConverter(deterministic=True, wordswap_path=wordswap_path)
     result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 
 
-# Test for empty custom substitutions
+# Test for empty wordswap_path
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "input_text,expected_output",
@@ -84,7 +87,7 @@ async def test_colloquial_custom_substitutions(input_text, custom_substitutions,
     ],
 )
 async def test_colloquial_empty_custom_substitutions(input_text, expected_output):
-    converter = ColloquialWordswapConverter(deterministic=True, custom_substitutions={})
+    converter = ColloquialWordswapConverter(deterministic=True, wordswap_path="")
     result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 
@@ -101,6 +104,22 @@ async def test_colloquial_empty_custom_substitutions(input_text, expected_output
 )
 async def test_multiple_words(input_text, expected_output):
     converter = ColloquialWordswapConverter(deterministic=True)
+    result = await converter.convert_async(prompt=input_text)
+    assert result.output_text == expected_output
+
+
+# Test multiple word prompts for custom colloquialism
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "input_text,wordswap_path,expected_output",
+    [
+        ("father and mother", "indian.yaml", "papa and mummy"),
+        ("brother and sister", "southern_american.yaml", "bubba and sissy"),
+        ("aunt and uncle", "multicultural_london.yaml", "aunty and unc"),
+    ],
+)
+async def test_multiple_words_custom_colloquialisms(input_text, wordswap_path, expected_output):
+    converter = ColloquialWordswapConverter(deterministic=True, wordswap_path=wordswap_path)
     result = await converter.convert_async(prompt=input_text)
     assert result.output_text == expected_output
 

@@ -3,7 +3,10 @@
 
 import random
 import re
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Optional
+
+import yaml
 
 from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
@@ -18,38 +21,44 @@ class ColloquialWordswapConverter(PromptConverter):
     SUPPORTED_INPUT_TYPES = ("text",)
     SUPPORTED_OUTPUT_TYPES = ("text",)
 
-    def __init__(
-        self, deterministic: bool = False, custom_substitutions: Optional[Dict[str, List[str]]] = None
-    ) -> None:
+    def __init__(self, deterministic: bool = False, wordswap_path: Optional[str] = None) -> None:
         """
         Initialize the converter with optional deterministic mode and custom substitutions.
 
         Args:
             deterministic (bool): If True, use the first substitution for each wordswap.
                 If False, randomly choose a substitution for each wordswap. Defaults to False.
-            custom_substitutions (Optional[Dict[str, List[str]]], Optional): A dictionary of custom substitutions to
-                override the defaults. Defaults to None.
-        """
-        default_substitutions = {
-            "father": ["papa", "lao bei", "lim pei", "bapa", "appa"],
-            "mother": ["mama", "amma", "ibu"],
-            "grandfather": ["ah gong", "thatha", "dato"],
-            "grandmother": ["ah ma", "patti", "nenek"],
-            "girl": ["ah ger", "ponnu"],
-            "boy": ["ah boy", "boi", "payyan"],
-            "son": ["ah boy", "boi", "payyan"],
-            "daughter": ["ah ger", "ponnu"],
-            "aunt": ["makcik", "maami"],
-            "aunty": ["makcik", "maami"],
-            "man": ["ah beng", "shuai ge"],
-            "woman": ["ah lian", "xiao mei"],
-            "uncle": ["encik", "unker"],
-            "sister": ["xjj", "jie jie", "zhezhe", "kaka", "akka", "thangatchi"],
-            "brother": ["bro", "boiboi", "di di", "xdd", "anneh", "thambi"],
-        }
+            wordswap_path (Optional[str]): File name of a YAML file in ../../datasets/prompt_converters/colloquial_wordswaps
+                directory containing a dictionary of substitutions. Defaults to None.
 
-        # Use custom substitutions if provided, otherwise default to the standard ones
-        self._colloquial_substitutions = custom_substitutions if custom_substitutions else default_substitutions
+        Raises:
+            FileNotFoundError: If the wordswap YAML file is not found.
+            ValueError: If the YAML file is formatted incorrectly or empty.
+        """
+        # Use custom substitutions if wordswap_path provided, otherwise default to singaporean.yaml
+        if wordswap_path:
+            file_path = (
+                Path(__file__).parent.parent / "datasets" / "prompt_converters" / "colloquial_wordswaps" / wordswap_path
+            )
+        else:
+            file_path = (
+                Path(__file__).parent.parent
+                / "datasets"
+                / "prompt_converters"
+                / "colloquial_wordswaps"
+                / "singaporean.yaml"
+            )
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"Colloquial wordswap file not found: {file_path}")
+
+        with file_path.open("r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+        # Ensure that wordswap YAML is in the correct format.
+        if not isinstance(data, dict):
+            raise ValueError("Wordswap YAML must contain a dictionary of word -> list of substitutions")
+
+        self._colloquial_substitutions = data
         self._deterministic = deterministic
 
     def _build_identifier(self) -> ConverterIdentifier:
