@@ -3,7 +3,7 @@
 
 import pytest
 
-from pyrit.prompt_converter import JsonStringConverter, ConverterResult
+from pyrit.prompt_converter import ConverterResult, JsonStringConverter
 
 
 @pytest.fixture
@@ -70,7 +70,7 @@ async def test_json_string_converter_complex_string(json_string_converter: JsonS
 
 @pytest.mark.asyncio
 async def test_json_string_converter_unicode(json_string_converter: JsonStringConverter):
-    prompt = "Hello, 世界!"
+    prompt = "Vanakkam சென்னை!"
     result = await json_string_converter.convert_async(prompt=prompt, input_type="text")
     assert isinstance(result, ConverterResult)
     assert result.output_text is not None
