@@ -4,7 +4,8 @@
 import pytest
 
 from pyrit.analytics.result_analysis import AttackStats, analyze_results
-from pyrit.models import AttackOutcome, AttackResult
+from pyrit.identifiers import ConverterIdentifier
+from pyrit.models import AttackOutcome, AttackResult, MessagePiece
 
 
 # helpers
@@ -146,8 +147,6 @@ def test_analyze_results_returns_by_converter_type():
 
 def test_analyze_results_no_converter_tracking():
     """Test that attacks without converters are tracked as 'no_converter'."""
-    from pyrit.models import AttackOutcome, AttackResult
-
     attacks = [
         AttackResult(
             conversation_id="conv-1",
@@ -176,9 +175,6 @@ def test_analyze_results_no_converter_tracking():
 
 def test_analyze_results_with_converter_identifiers():
     """Test that attacks with converters are properly grouped by converter type."""
-    from pyrit.identifiers import ConverterIdentifier
-    from pyrit.models import AttackOutcome, AttackResult, MessagePiece
-
     # Create attacks with different converters
     converter1 = ConverterIdentifier(
         class_name="Base64Converter",
@@ -261,9 +257,6 @@ def test_analyze_results_with_converter_identifiers():
 
 def test_analyze_results_multiple_converters_per_attack():
     """Test that attacks with multiple converters count towards each converter's stats."""
-    from pyrit.identifiers import ConverterIdentifier
-    from pyrit.models import AttackOutcome, AttackResult, MessagePiece
-
     converter1 = ConverterIdentifier(
         class_name="Base64Converter",
         class_module="pyrit.prompt_converter.base64_converter",
@@ -310,9 +303,6 @@ def test_analyze_results_multiple_converters_per_attack():
 
 def test_analyze_results_converter_with_undetermined():
     """Test that undetermined outcomes are tracked correctly for converters."""
-    from pyrit.identifiers import ConverterIdentifier
-    from pyrit.models import AttackOutcome, AttackResult, MessagePiece
-
     converter = ConverterIdentifier(
         class_name="Base64Converter",
         class_module="pyrit.prompt_converter.base64_converter",
