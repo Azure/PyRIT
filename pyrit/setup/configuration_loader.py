@@ -88,8 +88,7 @@ class ConfigurationLoader(YamlLoadable):
     """
 
     memory_db_type: str = "sqlite"
-    initializers: List[Union[str, Dict[str, Any]]
-                       ] = field(default_factory=list)
+    initializers: List[Union[str, Dict[str, Any]]] = field(default_factory=list)
     initialization_scripts: List[str] = field(default_factory=list)
     env_files: List[str] = field(default_factory=list)
     silent: bool = False
@@ -106,6 +105,9 @@ class ConfigurationLoader(YamlLoadable):
         Converts the input to lowercase snake_case and validates against known types.
         Stores the normalized snake_case value for config consistency, but maps
         to internal constants when initializing.
+
+        Raises:
+            ValueError: If the memory_db_type is not a valid database type.
         """
         # Normalize to lowercase
         normalized = self.memory_db_type.lower().replace("-", "_")
@@ -118,8 +120,7 @@ class ConfigurationLoader(YamlLoadable):
         if normalized not in _MEMORY_DB_TYPE_MAP:
             valid_types = list(_MEMORY_DB_TYPE_MAP.keys())
             raise ValueError(
-                f"Invalid memory_db_type '{self.memory_db_type}'. "
-                f"Must be one of: {', '.join(valid_types)}"
+                f"Invalid memory_db_type '{self.memory_db_type}'. Must be one of: {', '.join(valid_types)}"
             )
 
         # Store normalized snake_case value
@@ -130,6 +131,9 @@ class ConfigurationLoader(YamlLoadable):
         Normalize initializer entries to InitializerConfig objects.
 
         Converts initializer names to snake_case for consistent registry lookup.
+
+        Raises:
+            ValueError: If an initializer entry is missing a 'name' field or has an invalid type.
         """
         normalized: List[InitializerConfig] = []
         for entry in self.initializers:
@@ -140,9 +144,7 @@ class ConfigurationLoader(YamlLoadable):
             elif isinstance(entry, dict):
                 # Dict entry: name and optional args
                 if "name" not in entry:
-                    raise ValueError(
-                        f"Initializer configuration must have a 'name' field. Got: {entry}"
-                    )
+                    raise ValueError(f"Initializer configuration must have a 'name' field. Got: {entry}")
                 name = class_name_to_snake_case(entry["name"])
                 normalized.append(
                     InitializerConfig(
@@ -151,9 +153,7 @@ class ConfigurationLoader(YamlLoadable):
                     )
                 )
             else:
-                raise ValueError(
-                    f"Initializer entry must be a string or dict, got: {type(entry).__name__}"
-                )
+                raise ValueError(f"Initializer entry must be a string or dict, got: {type(entry).__name__}")
         self._initializer_configs = normalized
 
     @classmethod
@@ -168,10 +168,7 @@ class ConfigurationLoader(YamlLoadable):
             A new ConfigurationLoader instance.
         """
         # Filter out None values and empty lists to use defaults
-        filtered_data = {
-            k: v for k, v in data.items()
-            if v is not None and v != []
-        }
+        filtered_data = {k: v for k, v in data.items() if v is not None and v != []}
         return cls(**filtered_data)
 
     @classmethod
@@ -211,8 +208,7 @@ class ConfigurationLoader(YamlLoadable):
             if initializer_class is None:
                 available = ", ".join(sorted(registry.get_names()))
                 raise ValueError(
-                    f"Initializer '{config.name}' not found in registry.\n"
-                    f"Available initializers: {available}"
+                    f"Initializer '{config.name}' not found in registry.\nAvailable initializers: {available}"
                 )
 
             # Instantiate with args if provided

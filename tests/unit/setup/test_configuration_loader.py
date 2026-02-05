@@ -89,14 +89,10 @@ class TestConfigurationLoader:
 
     def test_initializer_as_dict_with_args(self):
         """Test initializers specified as dicts with name and args."""
-        config = ConfigurationLoader(
-            initializers=[{"name": "custom", "args": {
-                "param1": "value1", "param2": 42}}]
-        )
+        config = ConfigurationLoader(initializers=[{"name": "custom", "args": {"param1": "value1", "param2": 42}}])
         assert len(config._initializer_configs) == 1
         assert config._initializer_configs[0].name == "custom"
-        assert config._initializer_configs[0].args == {
-            "param1": "value1", "param2": 42}
+        assert config._initializer_configs[0].args == {"param1": "value1", "param2": 42}
 
     def test_mixed_initializer_formats(self):
         """Test initializers with mixed string and dict formats."""
@@ -115,22 +111,19 @@ class TestConfigurationLoader:
 
     def test_initializer_name_normalization_from_pascal_case(self):
         """Test that PascalCase initializer names are normalized to snake_case."""
-        config = ConfigurationLoader(
-            initializers=["SimpleInitializer", "AIRTInitializer"])
+        config = ConfigurationLoader(initializers=["SimpleInitializer", "AIRTInitializer"])
         assert config._initializer_configs[0].name == "simple_initializer"
         assert config._initializer_configs[1].name == "airt_initializer"
 
     def test_initializer_name_normalization_preserves_snake_case(self):
         """Test that snake_case names are preserved."""
-        config = ConfigurationLoader(
-            initializers=["simple_initializer", "airt_init"])
+        config = ConfigurationLoader(initializers=["simple_initializer", "airt_init"])
         assert config._initializer_configs[0].name == "simple_initializer"
         assert config._initializer_configs[1].name == "airt_init"
 
     def test_initializer_name_already_snake_case(self):
         """Test that snake_case names remain unchanged."""
-        config = ConfigurationLoader(
-            initializers=["load_default_datasets", "objective_list"])
+        config = ConfigurationLoader(initializers=["load_default_datasets", "objective_list"])
         assert config._initializer_configs[0].name == "load_default_datasets"
         assert config._initializer_configs[1].name == "objective_list"
 
@@ -214,8 +207,7 @@ class TestConfigurationLoaderResolvers:
 
     def test_resolve_initialization_scripts_absolute_path(self):
         """Test resolving absolute script paths."""
-        config = ConfigurationLoader(initialization_scripts=[
-                                     "/absolute/path/script.py"])
+        config = ConfigurationLoader(initialization_scripts=["/absolute/path/script.py"])
         resolved = config._resolve_initialization_scripts()
         assert resolved is not None
         assert len(resolved) == 1
@@ -223,8 +215,7 @@ class TestConfigurationLoaderResolvers:
 
     def test_resolve_initialization_scripts_relative_path(self):
         """Test resolving relative script paths (converted to absolute)."""
-        config = ConfigurationLoader(
-            initialization_scripts=["relative/script.py"])
+        config = ConfigurationLoader(initialization_scripts=["relative/script.py"])
         resolved = config._resolve_initialization_scripts()
         assert resolved is not None
         assert len(resolved) == 1
@@ -327,8 +318,7 @@ class TestInitializeFromConfigAsync:
 
         result = await initialize_from_config_async("/path/to/config.yaml")
 
-        mock_from_yaml.assert_called_once_with(
-            pathlib.Path("/path/to/config.yaml"))
+        mock_from_yaml.assert_called_once_with(pathlib.Path("/path/to/config.yaml"))
         mock_init.assert_called_once()
         assert result is mock_config
 
@@ -354,11 +344,9 @@ class TestInitializeFromConfigAsync:
         """Test initialize_from_config_async uses default path when none specified."""
         mock_config = ConfigurationLoader()
         mock_from_yaml.return_value = mock_config
-        mock_default_path.return_value = pathlib.Path(
-            "/default/path/.pyrit_conf")
+        mock_default_path.return_value = pathlib.Path("/default/path/.pyrit_conf")
 
         await initialize_from_config_async()
 
         mock_default_path.assert_called_once()
-        mock_from_yaml.assert_called_once_with(
-            pathlib.Path("/default/path/.pyrit_conf"))
+        mock_from_yaml.assert_called_once_with(pathlib.Path("/default/path/.pyrit_conf"))
