@@ -14,7 +14,8 @@ import asyncio
 import cmd
 import sys
 import threading
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from pyrit.models.scenario_result import ScenarioResult
@@ -217,16 +218,16 @@ class PyRITShell(cmd.Cmd):
                 return
 
         # Resolve env files if provided
-        resolved_env_files = None
+        resolved_env_files: Optional[list[Path]] = None
         if args["env_files"]:
             try:
-                resolved_env_files = frontend_core.resolve_env_files(env_file_paths=args["env_files"])
+                resolved_env_files = list(frontend_core.resolve_env_files(env_file_paths=args["env_files"]))
             except ValueError as e:
                 print(f"Error: {e}")
                 return
         else:
             # Use default env files from shell startup
-            resolved_env_files = self.default_env_files
+            resolved_env_files = list(self.default_env_files) if self.default_env_files else None
 
         # Create a context for this run with overrides
         run_context = frontend_core.FrontendCore(
@@ -455,7 +456,7 @@ def main() -> int:
 
     parser.add_argument(
         "--config-file",
-        type=frontend_core.Path,
+        type=Path,
         help=frontend_core.ARG_HELP["config_file"],
     )
 

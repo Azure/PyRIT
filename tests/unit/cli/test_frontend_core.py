@@ -40,7 +40,10 @@ class TestFrontendCore:
         )
 
         assert context._database == frontend_core.IN_MEMORY
-        assert context._initialization_scripts == scripts
+        # Check path ends with expected components (Windows adds drive letter to Unix-style paths)
+        assert context._initialization_scripts is not None
+        assert len(context._initialization_scripts) == 1
+        assert context._initialization_scripts[0].parts[-2:] == ("test", "script.py")
         assert context._initializer_names == initializers
         assert context._log_level == "DEBUG"
 

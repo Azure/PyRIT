@@ -211,7 +211,8 @@ class TestConfigurationLoaderResolvers:
         resolved = config._resolve_initialization_scripts()
         assert resolved is not None
         assert len(resolved) == 1
-        assert resolved[0] == pathlib.Path("/absolute/path/script.py")
+        # Check path ends with expected components (Windows adds drive letter to Unix-style paths)
+        assert resolved[0].parts[-3:] == ("absolute", "path", "script.py")
 
     def test_resolve_initialization_scripts_relative_path(self):
         """Test resolving relative script paths (converted to absolute)."""
@@ -220,7 +221,8 @@ class TestConfigurationLoaderResolvers:
         assert resolved is not None
         assert len(resolved) == 1
         assert resolved[0].is_absolute()
-        assert str(resolved[0]).endswith("relative/script.py")
+        # Check path ends with expected components (works on both Unix and Windows)
+        assert resolved[0].parts[-2:] == ("relative", "script.py")
 
     def test_resolve_env_files_empty(self):
         """Test that empty env files returns None."""
@@ -233,7 +235,8 @@ class TestConfigurationLoaderResolvers:
         resolved = config._resolve_env_files()
         assert resolved is not None
         assert len(resolved) == 1
-        assert resolved[0] == pathlib.Path("/path/to/.env")
+        # Check path ends with expected components (Windows adds drive letter to Unix-style paths)
+        assert resolved[0].parts[-3:] == ("path", "to", ".env")
 
 
 @pytest.mark.usefixtures("patch_central_database")

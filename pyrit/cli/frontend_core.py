@@ -19,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence
 
 try:
     import termcolor
@@ -162,7 +162,7 @@ class FrontendCore:
         from pyrit.setup import ConfigurationLoader
 
         # Start with defaults
-        config_data: dict = {
+        config_data: Dict[str, Any] = {
             "memory_db_type": "sqlite",
             "initializers": [],
             "initialization_scripts": [],
