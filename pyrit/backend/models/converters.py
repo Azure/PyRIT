@@ -47,11 +47,11 @@ class ConverterInstanceListResponse(BaseModel):
 class CreateConverterRequest(BaseModel):
     """Request to create a new converter instance."""
 
-    type: str = Field(..., description="Converter type (e.g., 'base64', 'translation')")
+    type: str = Field(..., description="Converter type (e.g., 'Base64Converter')")
     display_name: Optional[str] = Field(None, description="Human-readable display name")
     params: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Converter parameters",
+        description="Converter constructor parameters",
     )
 
 

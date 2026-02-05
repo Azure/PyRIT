@@ -8,9 +8,7 @@ Provides endpoints for managing target instances.
 Target types are set at app startup via initializers - you cannot add new types at runtime.
 """
 
-from typing import Literal, Optional
-
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 
 from pyrit.backend.models.common import ProblemDetail
 from pyrit.backend.models.targets import (
@@ -28,22 +26,17 @@ router = APIRouter(prefix="/targets", tags=["targets"])
     "",
     response_model=TargetListResponse,
 )
-async def list_targets(
-    source: Optional[Literal["initializer", "user"]] = Query(
-        None, description="Filter by source (initializer or user)"
-    ),
-) -> TargetListResponse:
+async def list_targets() -> TargetListResponse:
     """
     List target instances.
 
-    Returns all registered target instances. Use source filter to distinguish
-    between initializer-created (startup) and user-created (API) targets.
+    Returns all registered target instances.
 
     Returns:
         TargetListResponse: List of target instances.
     """
     service = get_target_service()
-    return await service.list_targets(source=source)
+    return await service.list_targets()
 
 
 @router.post(

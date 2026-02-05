@@ -438,22 +438,8 @@ class TestTargetRoutes:
             data = response.json()
             assert data["items"] == []
 
-    def test_list_targets_with_source_filter(self, client: TestClient) -> None:
-        """Test that list targets accepts source filter."""
-        with patch("pyrit.backend.routes.targets.get_target_service") as mock_get_service:
-            mock_service = MagicMock()
-            mock_service.list_targets = AsyncMock(return_value=TargetListResponse(items=[]))
-            mock_get_service.return_value = mock_service
-
-            response = client.get("/api/targets", params={"source": "user"})
-
-            assert response.status_code == status.HTTP_200_OK
-            mock_service.list_targets.assert_called_once_with(source="user")
-
     def test_create_target_success(self, client: TestClient) -> None:
         """Test successful target creation."""
-        now = datetime.now(timezone.utc)
-
         with patch("pyrit.backend.routes.targets.get_target_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.create_target = AsyncMock(
@@ -489,6 +475,20 @@ class TestTargetRoutes:
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_create_target_internal_error(self, client: TestClient) -> None:
+        """Test target creation with internal error returns 500."""
+        with patch("pyrit.backend.routes.targets.get_target_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.create_target = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+            mock_get_service.return_value = mock_service
+
+            response = client.post(
+                "/api/targets",
+                json={"type": "TextTarget", "params": {}},
+            )
+
+            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
     def test_get_target_success(self, client: TestClient) -> None:
         """Test getting a target by ID."""
         now = datetime.now(timezone.utc)
@@ -522,20 +522,6 @@ class TestTargetRoutes:
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_create_target_internal_error(self, client: TestClient) -> None:
-        """Test target creation with internal error returns 500."""
-        with patch("pyrit.backend.routes.targets.get_target_service") as mock_get_service:
-            mock_service = MagicMock()
-            mock_service.create_target = AsyncMock(side_effect=RuntimeError("Unexpected internal error"))
-            mock_get_service.return_value = mock_service
-
-            response = client.post(
-                "/api/targets",
-                json={"type": "TextTarget", "params": {}},
-            )
-
-            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-
 
 # ============================================================================
 # Converter Routes Tests
@@ -560,8 +546,6 @@ class TestConverterRoutes:
 
     def test_create_converter_success(self, client: TestClient) -> None:
         """Test successful converter instance creation."""
-        now = datetime.now(timezone.utc)
-
         with patch("pyrit.backend.routes.converters.get_converter_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.create_converter = AsyncMock(
@@ -596,6 +580,20 @@ class TestConverterRoutes:
             )
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_create_converter_internal_error(self, client: TestClient) -> None:
+        """Test converter creation with internal error returns 500."""
+        with patch("pyrit.backend.routes.converters.get_converter_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.create_converter = AsyncMock(side_effect=RuntimeError("Unexpected error"))
+            mock_get_service.return_value = mock_service
+
+            response = client.post(
+                "/api/converters",
+                json={"type": "Base64Converter", "params": {}},
+            )
+
+            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def test_get_converter_success(self, client: TestClient) -> None:
         """Test getting a converter instance by ID."""
@@ -667,20 +665,6 @@ class TestConverterRoutes:
             data = response.json()
             assert data["converted_value"] == "dGVzdA=="
             assert len(data["steps"]) == 1
-
-    def test_create_converter_internal_error(self, client: TestClient) -> None:
-        """Test converter creation with internal error returns 500."""
-        with patch("pyrit.backend.routes.converters.get_converter_service") as mock_get_service:
-            mock_service = MagicMock()
-            mock_service.create_converter = AsyncMock(side_effect=RuntimeError("Unexpected internal error"))
-            mock_get_service.return_value = mock_service
-
-            response = client.post(
-                "/api/converters",
-                json={"type": "Base64Converter", "params": {}},
-            )
-
-            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def test_preview_conversion_bad_request(self, client: TestClient) -> None:
         """Test preview conversion with invalid converter ID returns 400."""

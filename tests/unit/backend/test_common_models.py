@@ -7,8 +7,6 @@ Tests for backend common models.
 
 from pyrit.backend.models.common import (
     FieldError,
-    IdentifierDict,
-    PaginatedResponse,
     PaginationInfo,
     ProblemDetail,
     filter_sensitive_fields,
@@ -40,22 +38,6 @@ class TestPaginationInfo:
         assert info.has_more is False
         assert info.next_cursor == "next"
         assert info.prev_cursor == "prev"
-
-
-class TestPaginatedResponse:
-    """Tests for PaginatedResponse model."""
-
-    def test_paginated_response_with_strings(self) -> None:
-        """Test creating a paginated response with string items."""
-        pagination = PaginationInfo(limit=10, has_more=False)
-        response = PaginatedResponse[str](
-            items=["a", "b", "c"],
-            pagination=pagination,
-        )
-
-        assert len(response.items) == 3
-        assert response.items[0] == "a"
-        assert response.pagination.limit == 10
 
 
 class TestFieldError:
@@ -121,17 +103,6 @@ class TestProblemDetail:
 
         assert len(problem.errors) == 2
         assert problem.instance == "/api/v1/test"
-
-
-class TestIdentifierDict:
-    """Tests for IdentifierDict model."""
-
-    def test_identifier_dict_creation(self) -> None:
-        """Test creating an IdentifierDict."""
-        identifier = IdentifierDict(__type__="TestClass", __module__="pyrit.test")
-
-        assert identifier.type_ == "TestClass"
-        assert identifier.module_ == "pyrit.test"
 
 
 class TestFilterSensitiveFields:

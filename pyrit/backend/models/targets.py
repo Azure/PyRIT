@@ -38,7 +38,7 @@ class TargetListResponse(BaseModel):
 class CreateTargetRequest(BaseModel):
     """Request to create a new target instance."""
 
-    type: str = Field(..., description="Target type (e.g., 'azure_openai', 'text_target')")
+    type: str = Field(..., description="Target type (e.g., 'OpenAIChatTarget')")
     display_name: Optional[str] = Field(None, description="Human-readable display name")
     params: Dict[str, Any] = Field(default_factory=dict, description="Target constructor parameters")
 

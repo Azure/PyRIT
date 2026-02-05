@@ -5,15 +5,24 @@
 Tests for backend converter service.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+import pyrit.backend.services.converter_service as converter_service_module
+from pyrit import prompt_converter
 from pyrit.backend.models.converters import (
     ConverterPreviewRequest,
     CreateConverterRequest,
 )
-from pyrit.backend.services.converter_service import ConverterService
+from pyrit.backend.services.converter_service import ConverterService, get_converter_service
+from pyrit.prompt_converter import (
+    Base64Converter,
+    CaesarConverter,
+    RepeatTokenConverter,
+    SuffixAppendConverter,
+)
+from pyrit.prompt_converter.prompt_converter import get_converter_modalities
 from pyrit.registry.instance_registries import ConverterRegistry
 
 
@@ -39,11 +48,19 @@ class TestListConverters:
 
     @pytest.mark.asyncio
     async def test_list_converters_returns_converters_from_registry(self) -> None:
-        """Test that list_converters returns converters from registry."""
+        """Test that list_converters returns converters from registry with full params."""
         service = ConverterService()
 
         mock_converter = MagicMock()
         mock_converter.__class__.__name__ = "MockConverter"
+        mock_identifier = MagicMock()
+        mock_identifier.to_dict.return_value = {
+            "class_name": "MockConverter",
+            "converter_specific_params": {"param1": "value1", "param2": 42},
+            "supported_input_types": ["text"],
+            "supported_output_types": ["text"],
+        }
+        mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 
         result = await service.list_converters()
@@ -51,6 +68,11 @@ class TestListConverters:
         assert len(result.items) == 1
         assert result.items[0].converter_id == "conv-1"
         assert result.items[0].type == "MockConverter"
+        # Verify params contains the full identifier dict
+        assert result.items[0].params["class_name"] == "MockConverter"
+        assert result.items[0].params["converter_specific_params"] == {"param1": "value1", "param2": 42}
+        assert result.items[0].params["supported_input_types"] == ["text"]
+        assert result.items[0].params["supported_output_types"] == ["text"]
 
 
 class TestGetConverter:
@@ -72,6 +94,12 @@ class TestGetConverter:
 
         mock_converter = MagicMock()
         mock_converter.__class__.__name__ = "MockConverter"
+        mock_identifier = MagicMock()
+        mock_identifier.to_dict.return_value = {
+            "class_name": "MockConverter",
+            "converter_specific_params": {"param1": "value1"},
+        }
+        mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 
         result = await service.get_converter("conv-1")
@@ -101,34 +129,6 @@ class TestGetConverterObject:
         result = service.get_converter_object("conv-1")
 
         assert result is mock_converter
-
-
-class TestGetConverterClass:
-    """Tests for ConverterService._get_converter_class method."""
-
-    def test_get_converter_class_raises_for_invalid_type(self) -> None:
-        """Test that _get_converter_class raises ValueError for invalid type."""
-        service = ConverterService()
-
-        with pytest.raises(ValueError, match="not found"):
-            service._get_converter_class("NonExistentConverter")
-
-    def test_get_converter_class_finds_base64_converter(self) -> None:
-        """Test that _get_converter_class finds Base64Converter."""
-        service = ConverterService()
-
-        result = service._get_converter_class("Base64Converter")
-
-        assert result is not None
-        assert "Base64" in result.__name__
-
-    def test_get_converter_class_handles_snake_case(self) -> None:
-        """Test that _get_converter_class handles snake_case names."""
-        service = ConverterService()
-
-        result = service._get_converter_class("base64")
-
-        assert result is not None
 
 
 class TestCreateConverter:
@@ -179,6 +179,51 @@ class TestCreateConverter:
         # Object should be retrievable from registry
         converter_obj = service.get_converter_object(result.converter_id)
         assert converter_obj is not None
+
+
+class TestResolveConverterParams:
+    """Tests for ConverterService._resolve_converter_params method."""
+
+    def test_resolve_converter_params_returns_params_unchanged_when_no_converter_ref(self) -> None:
+        """Test that params without converter reference are returned unchanged."""
+        service = ConverterService()
+        params = {"key": "value", "number": 42}
+
+        result = service._resolve_converter_params(params)
+
+        assert result == params
+
+    def test_resolve_converter_params_resolves_converter_id_reference(self) -> None:
+        """Test that converter_id reference is resolved to actual object."""
+        service = ConverterService()
+
+        # Register a mock converter
+        mock_converter = MagicMock()
+        service._registry.register_instance(mock_converter, name="inner-conv")
+
+        params = {"converter": {"converter_id": "inner-conv"}}
+
+        result = service._resolve_converter_params(params)
+
+        assert result["converter"] is mock_converter
+
+    def test_resolve_converter_params_raises_for_nonexistent_reference(self) -> None:
+        """Test that referencing a non-existent converter raises ValueError."""
+        service = ConverterService()
+
+        params = {"converter": {"converter_id": "nonexistent"}}
+
+        with pytest.raises(ValueError, match="not found"):
+            service._resolve_converter_params(params)
+
+    def test_resolve_converter_params_ignores_non_dict_converter(self) -> None:
+        """Test that non-dict converter values are not modified."""
+        service = ConverterService()
+        params = {"converter": "some_string_value"}
+
+        result = service._resolve_converter_params(params)
+
+        assert result == params
 
 
 class TestPreviewConversion:
@@ -283,80 +328,151 @@ class TestGetConverterObjectsForIds:
         assert result == [mock1, mock2]
 
 
-class TestConverterWithReferencedConverter:
-    """Tests for creating converters that reference other converters by ID."""
-
-    @pytest.mark.asyncio
-    async def test_create_converter_with_referenced_converter(self) -> None:
-        """Test creating a converter that references another converter by ID."""
-        service = ConverterService()
-
-        mock_inner_class = MagicMock()
-        mock_inner_instance = MagicMock()
-        mock_inner_class.return_value = mock_inner_instance
-
-        mock_outer_class = MagicMock()
-        mock_outer_instance = MagicMock()
-        mock_outer_class.return_value = mock_outer_instance
-
-        def mock_get_class(converter_type: str) -> type:
-            if converter_type == "OuterConverter":
-                return mock_outer_class
-            elif converter_type == "InnerConverter":
-                return mock_inner_class
-            raise ValueError(f"Unknown type: {converter_type}")
-
-        with patch.object(service, "_get_converter_class", side_effect=mock_get_class):
-            inner_result = await service.create_converter(CreateConverterRequest(type="InnerConverter", params={}))
-            inner_id = inner_result.converter_id
-
-            await service.create_converter(
-                CreateConverterRequest(
-                    type="OuterConverter",
-                    params={"converter": {"converter_id": inner_id}},
-                )
-            )
-
-            mock_outer_class.assert_called()
-            call_kwargs = mock_outer_class.call_args[1]
-            assert call_kwargs.get("converter") is mock_inner_instance
-
-    @pytest.mark.asyncio
-    async def test_create_converter_with_invalid_reference_raises(self) -> None:
-        """Test that referencing a non-existent converter raises ValueError."""
-        service = ConverterService()
-
-        mock_class = MagicMock()
-        with patch.object(service, "_get_converter_class", return_value=mock_class):
-            with pytest.raises(ValueError, match="not found"):
-                await service.create_converter(
-                    CreateConverterRequest(
-                        type="OuterConverter",
-                        params={"converter": {"converter_id": "nonexistent"}},
-                    )
-                )
-
-
 class TestConverterServiceSingleton:
     """Tests for get_converter_service singleton function."""
 
     def test_get_converter_service_returns_converter_service(self) -> None:
         """Test that get_converter_service returns a ConverterService instance."""
-        import pyrit.backend.services.converter_service as module
-        from pyrit.backend.services.converter_service import get_converter_service
-
-        module._converter_service = None
+        converter_service_module._converter_service = None
 
         service = get_converter_service()
         assert isinstance(service, ConverterService)
 
     def test_get_converter_service_returns_same_instance(self) -> None:
         """Test that get_converter_service returns the same instance."""
-        import pyrit.backend.services.converter_service as module
-        from pyrit.backend.services.converter_service import get_converter_service
-
-        module._converter_service = None
+        converter_service_module._converter_service = None
 
         service1 = get_converter_service()
         service2 = get_converter_service()
         assert service1 is service2
+
+
+# ============================================================================
+# Real Converter Integration Tests
+# ============================================================================
+
+
+def _get_all_converter_names() -> list[str]:
+    """
+    Dynamically collect all converter class names from the codebase.
+
+    Uses get_converter_modalities() which reads from prompt_converter.__all__
+    and filters to only actual PromptConverter subclasses.
+    """
+    return [name for name, _, _ in get_converter_modalities()]
+
+
+def _try_instantiate_converter(converter_name: str):
+    """
+    Try to instantiate a converter with no arguments.
+
+    Returns:
+        Tuple of (converter_instance, error_message).
+        If successful, error_message is None.
+        If failed, converter_instance is None and error_message explains why.
+    """
+    converter_cls = getattr(prompt_converter, converter_name, None)
+    if converter_cls is None:
+        return None, f"Converter {converter_name} not found in prompt_converter module"
+
+    try:
+        instance = converter_cls()
+        return instance, None
+    except Exception as e:
+        return None, f"Could not instantiate {converter_name} with no args: {e}"
+
+
+# Get all converter names dynamically
+ALL_CONVERTERS = _get_all_converter_names()
+
+
+class TestBuildInstanceFromObjectWithRealConverters:
+    """
+    Integration tests that verify _build_instance_from_object works with real converters.
+
+    These tests ensure the identifier extraction works correctly across all converter types.
+    Uses dynamic discovery to test ALL converters in the codebase.
+    """
+
+    @pytest.mark.parametrize("converter_name", ALL_CONVERTERS)
+    def test_build_instance_from_converter(self, converter_name: str) -> None:
+        """
+        Test that _build_instance_from_object works with each converter.
+
+        For converters that can be instantiated with no arguments, verifies:
+        - converter_id is set correctly
+        - type matches the class name
+        - params contains class_name from the identifier
+
+        For converters requiring arguments, the test is skipped (since we can't
+        know the required parameters without external configuration).
+        """
+        # Try to instantiate the converter
+        converter_instance, error = _try_instantiate_converter(converter_name)
+
+        if error:
+            pytest.skip(error)
+
+        # Build the instance using the service method
+        service = ConverterService()
+        result = service._build_instance_from_object("test-id", converter_instance)
+
+        # Verify the result
+        assert result.converter_id == "test-id"
+        assert result.type == converter_name
+        assert isinstance(result.params, dict)
+        # The params should contain at least class_name from the identifier
+        assert "class_name" in result.params
+        assert result.params["class_name"] == converter_name
+
+
+class TestConverterParamsExtraction:
+    """
+    Tests that verify converter_specific_params are correctly extracted.
+
+    Uses converters with known parameters to verify the params are properly
+    captured from the identifier.
+    """
+
+    def test_caesar_converter_params(self) -> None:
+        """Test that CaesarConverter params are extracted correctly."""
+        converter = CaesarConverter(caesar_offset=13)
+        service = ConverterService()
+        result = service._build_instance_from_object("test-id", converter)
+
+        assert result.type == "CaesarConverter"
+        converter_specific = result.params.get("converter_specific_params", {})
+        assert converter_specific.get("caesar_offset") == 13
+
+    def test_suffix_append_converter_params(self) -> None:
+        """Test that SuffixAppendConverter params are extracted correctly."""
+        converter = SuffixAppendConverter(suffix="test suffix")
+        service = ConverterService()
+        result = service._build_instance_from_object("test-id", converter)
+
+        assert result.type == "SuffixAppendConverter"
+        converter_specific = result.params.get("converter_specific_params", {})
+        assert converter_specific.get("suffix") == "test suffix"
+
+    def test_repeat_token_converter_params(self) -> None:
+        """Test that RepeatTokenConverter params are extracted correctly."""
+        converter = RepeatTokenConverter(token_to_repeat="x", times_to_repeat=5)
+        service = ConverterService()
+        result = service._build_instance_from_object("test-id", converter)
+
+        assert result.type == "RepeatTokenConverter"
+        converter_specific = result.params.get("converter_specific_params", {})
+        assert converter_specific.get("token_to_repeat") == "x"
+        assert converter_specific.get("times_to_repeat") == 5
+
+    def test_base64_converter_default_params(self) -> None:
+        """Test that Base64Converter default params are captured."""
+        converter = Base64Converter()
+        service = ConverterService()
+        result = service._build_instance_from_object("test-id", converter)
+
+        assert result.type == "Base64Converter"
+        # Verify params dict is populated from identifier
+        assert "class_name" in result.params
+        assert "supported_input_types" in result.params
+        assert "supported_output_types" in result.params

@@ -7,12 +7,9 @@ Common response models for the PyRIT API.
 Includes pagination, error handling (RFC 7807), and shared base models.
 """
 
-from datetime import datetime
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, Field
-
-T = TypeVar("T")
 
 
 class PaginationInfo(BaseModel):
@@ -22,13 +19,6 @@ class PaginationInfo(BaseModel):
     has_more: bool = Field(..., description="Whether more items exist")
     next_cursor: Optional[str] = Field(None, description="Cursor for next page")
     prev_cursor: Optional[str] = Field(None, description="Cursor for previous page")
-
-
-class PaginatedResponse(BaseModel, Generic[T]):
-    """Generic paginated response wrapper."""
-
-    items: List[T] = Field(..., description="List of items")
-    pagination: PaginationInfo = Field(..., description="Pagination metadata")
 
 
 class FieldError(BaseModel):
@@ -55,30 +45,6 @@ class ProblemDetail(BaseModel):
     errors: Optional[List[FieldError]] = Field(None, description="Field-level errors for validation")
 
 
-class IdentifierDict(BaseModel):
-    """
-    Represents a filtered identifier dictionary.
-
-    Only contains safe fields (no API keys, tokens, etc.).
-    Uses 'type_' and 'module_' as field names but serializes to '__type__' and '__module__'.
-    """
-
-    type_: str = Field(..., alias="__type__", description="Class name")
-    module_: Optional[str] = Field(None, alias="__module__", description="Module path")
-
-    model_config = {
-        "extra": "allow",  # Allow additional fields like endpoint, model_name, etc.
-        "populate_by_name": True,
-    }
-
-
-class TimestampMixin(BaseModel):
-    """Mixin for models with timestamps."""
-
-    timestamp: datetime = Field(..., description="Creation/event timestamp")
-    created_at: Optional[datetime] = Field(None, description="Resource creation time")
-
-
 # Sensitive field patterns to filter from identifiers
 SENSITIVE_FIELD_PATTERNS = frozenset(
     [
@@ -90,22 +56,6 @@ SENSITIVE_FIELD_PATTERNS = frozenset(
         "credential",
         "auth",
         "key",
-    ]
-)
-
-# Fields allowed in identifier responses
-ALLOWED_IDENTIFIER_FIELDS = frozenset(
-    [
-        "__type__",
-        "__module__",
-        "endpoint",
-        "model_name",
-        "deployment_name",
-        "underlying_model",
-        "temperature",
-        "top_p",
-        "language",
-        "tone",
     ]
 )
 

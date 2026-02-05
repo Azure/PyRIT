@@ -4,14 +4,18 @@
 """
 Target service for managing target instances.
 
-Handles creation, retrieval, and lifecycle of runtime target instances.
-Uses TargetRegistry as the source of truth.
+Handles creation and retrieval of target instances.
+Uses TargetRegistry as the source of truth for instances.
+
+Targets can be:
+- Created via API request (instantiated from request params, then registered)
+- Retrieved from registry (pre-registered at startup or created earlier)
 """
 
-import importlib
 import uuid
-from typing import Any, List, Literal, Optional, cast
+from typing import Any, Optional
 
+from pyrit import prompt_target
 from pyrit.backend.models.common import filter_sensitive_fields
 from pyrit.backend.models.targets import (
     CreateTargetRequest,
@@ -19,7 +23,29 @@ from pyrit.backend.models.targets import (
     TargetInstance,
     TargetListResponse,
 )
+from pyrit.prompt_target import PromptTarget
 from pyrit.registry.instance_registries import TargetRegistry
+
+
+def _build_target_class_registry() -> dict[str, type]:
+    """
+    Build a registry mapping target class names to their classes.
+
+    Uses the prompt_target module's __all__ to discover all available targets.
+
+    Returns:
+        Dict mapping class name (str) to class (type).
+    """
+    registry: dict[str, type] = {}
+    for name in prompt_target.__all__:
+        cls = getattr(prompt_target, name, None)
+        if cls is not None and isinstance(cls, type) and issubclass(cls, PromptTarget):
+            registry[name] = cls
+    return registry
+
+
+# Module-level class registry (built once on import)
+_TARGET_CLASS_REGISTRY: dict[str, type] = _build_target_class_registry()
 
 
 class TargetService:
@@ -36,30 +62,25 @@ class TargetService:
 
     def _get_target_class(self, target_type: str) -> type:
         """
-        Get the target class for a given type.
+        Get the target class for a given type name.
+
+        Looks up the class in the module-level target class registry.
+
+        Args:
+            target_type: The exact class name of the target (e.g., 'TextTarget').
 
         Returns:
-            The target class matching the given type.
+            The target class.
+
+        Raises:
+            ValueError: If the target type is not found.
         """
-        module = importlib.import_module("pyrit.prompt_target")
-
-        cls = getattr(module, target_type, None)
-        if cls is not None:
-            return cast(type, cls)
-
-        class_name_patterns = [
-            target_type,
-            f"{target_type}Target",
-            "".join(word.capitalize() for word in target_type.split("_")),
-            "".join(word.capitalize() for word in target_type.split("_")) + "Target",
-        ]
-
-        for pattern in class_name_patterns:
-            cls = getattr(module, pattern, None)
-            if cls is not None:
-                return cast(type, cls)
-
-        raise ValueError(f"Target type '{target_type}' not found in pyrit.prompt_target")
+        cls = _TARGET_CLASS_REGISTRY.get(target_type)
+        if cls is None:
+            raise ValueError(
+                f"Target type '{target_type}' not found. Available types: {sorted(_TARGET_CLASS_REGISTRY.keys())}"
+            )
+        return cls
 
     def _build_instance_from_object(self, target_id: str, target_obj: Any) -> TargetInstance:
         """
@@ -79,22 +100,16 @@ class TargetService:
             params=filtered_params,
         )
 
-    async def list_targets(
-        self,
-        source: Optional[Literal["initializer", "user"]] = None,
-    ) -> TargetListResponse:
+    async def list_targets(self) -> TargetListResponse:
         """
         List all target instances.
 
         Returns:
             TargetListResponse containing all registered targets.
         """
-        # source filter is ignored for now - all come from registry
-        items: List[TargetInstance] = []
-        for name in self._registry.get_names():
-            obj = self._registry.get_instance_by_name(name)
-            if obj:
-                items.append(self._build_instance_from_object(name, obj))
+        items = [
+            self._build_instance_from_object(name, obj) for name, obj in self._registry.get_all_instances().items()
+        ]
         return TargetListResponse(items=items)
 
     async def get_target(self, target_id: str) -> Optional[TargetInstance]:
@@ -118,19 +133,25 @@ class TargetService:
         """
         return self._registry.get_instance_by_name(target_id)
 
-    async def create_target(
-        self,
-        request: CreateTargetRequest,
-    ) -> CreateTargetResponse:
+    async def create_target(self, request: CreateTargetRequest) -> CreateTargetResponse:
         """
-        Create a new target instance.
+        Create a new target instance from API request.
+
+        Instantiates the target with the given type and params,
+        then registers it in the registry.
+
+        Args:
+            request: The create target request with type and params.
 
         Returns:
             CreateTargetResponse with the new target's details.
+
+        Raises:
+            ValueError: If the target type is not found.
         """
         target_id = str(uuid.uuid4())
 
-        # Create and register the target object
+        # Instantiate from request params and register
         target_class = self._get_target_class(request.type)
         target_obj = target_class(**request.params)
         self._registry.register_instance(target_obj, name=target_id)

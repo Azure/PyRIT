@@ -5,7 +5,7 @@
 Tests for backend target service.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -101,26 +101,6 @@ class TestGetTargetObject:
         assert result is mock_target
 
 
-class TestGetTargetClass:
-    """Tests for TargetService._get_target_class method."""
-
-    def test_get_target_class_raises_for_invalid_type(self) -> None:
-        """Test that _get_target_class raises ValueError for invalid type."""
-        service = TargetService()
-
-        with pytest.raises(ValueError, match="not found"):
-            service._get_target_class("NonExistentTarget")
-
-    def test_get_target_class_finds_text_target(self) -> None:
-        """Test that _get_target_class finds TextTarget."""
-        service = TargetService()
-
-        result = service._get_target_class("TextTarget")
-
-        assert result is not None
-        assert "TextTarget" in result.__name__
-
-
 class TestCreateTarget:
     """Tests for TargetService.create_target method."""
 
@@ -169,32 +149,6 @@ class TestCreateTarget:
         # Object should be retrievable from registry
         target_obj = service.get_target_object(result.target_id)
         assert target_obj is not None
-
-    @pytest.mark.asyncio
-    async def test_create_target_filters_sensitive_params(self) -> None:
-        """Test that create_target filters sensitive parameters."""
-        service = TargetService()
-
-        mock_target_class = MagicMock()
-        mock_target_instance = MagicMock()
-        mock_target_instance.get_identifier.return_value = {
-            "type": "MockTarget",
-            "api_key": "secret-key",
-            "endpoint": "https://api.example.com",
-        }
-        mock_target_class.return_value = mock_target_instance
-
-        with patch.object(service, "_get_target_class", return_value=mock_target_class):
-            request = CreateTargetRequest(
-                type="MockTarget",
-                params={},
-            )
-
-            result = await service.create_target(request)
-
-            # api_key should be filtered out
-            assert "api_key" not in result.params
-            assert result.params.get("endpoint") == "https://api.example.com"
 
 
 class TestTargetServiceSingleton:

@@ -5,16 +5,17 @@
 Converter service for managing converter instances.
 
 Handles creation, retrieval, and preview of converters.
-Uses ConverterRegistry as the source of truth.
+Uses ConverterRegistry as the source of truth for instances.
 
-If a converter requires another converter (e.g., SelectiveTextConverter),
-the inner converter must be created first and passed by ID in params.
+Converters can be:
+- Created via API request (instantiated from request params, then registered)
+- Retrieved from registry (pre-registered at startup or created earlier)
 """
 
-import importlib
 import uuid
-from typing import Any, Dict, List, Literal, Optional, Tuple, cast
+from typing import Any, List, Optional, Tuple
 
+from pyrit import prompt_converter
 from pyrit.backend.models.converters import (
     ConverterInstance,
     ConverterInstanceListResponse,
@@ -25,7 +26,29 @@ from pyrit.backend.models.converters import (
     PreviewStep,
 )
 from pyrit.models import PromptDataType
+from pyrit.prompt_converter import PromptConverter
 from pyrit.registry.instance_registries import ConverterRegistry
+
+
+def _build_converter_class_registry() -> dict[str, type]:
+    """
+    Build a registry mapping converter class names to their classes.
+
+    Uses the prompt_converter module's __all__ to discover all available converters.
+
+    Returns:
+        Dict mapping class name (str) to class (type).
+    """
+    registry: dict[str, type] = {}
+    for name in prompt_converter.__all__:
+        cls = getattr(prompt_converter, name, None)
+        if cls is not None and isinstance(cls, type) and issubclass(cls, PromptConverter):
+            registry[name] = cls
+    return registry
+
+
+# Module-level class registry (built once on import)
+_CONVERTER_CLASS_REGISTRY: dict[str, type] = _build_converter_class_registry()
 
 
 class ConverterService:
@@ -44,36 +67,35 @@ class ConverterService:
         """
         Build a ConverterInstance from a registry object.
 
+        Uses the converter's identifier to extract all relevant metadata.
+
         Returns:
-            ConverterInstance with metadata derived from the object.
+            ConverterInstance with metadata derived from the object's identifier.
         """
-        converter_type = converter_obj.__class__.__name__
+        identifier = converter_obj.get_identifier()
+        identifier_dict = identifier.to_dict()
+
         return ConverterInstance(
             converter_id=converter_id,
-            type=converter_type,
+            type=identifier_dict.get("class_name", converter_obj.__class__.__name__),
             display_name=None,
-            params={},  # Params aren't stored on converter objects
+            params=identifier_dict,
         )
 
     # ========================================================================
     # Public API Methods
     # ========================================================================
 
-    async def list_converters(
-        self, source: Optional[Literal["initializer", "user"]] = None
-    ) -> ConverterInstanceListResponse:
+    async def list_converters(self) -> ConverterInstanceListResponse:
         """
         List all converter instances.
 
         Returns:
             ConverterInstanceListResponse containing all registered converters.
         """
-        # source filter is ignored for now - all come from registry
-        items: List[ConverterInstance] = []
-        for name in self._registry.get_names():
-            obj = self._registry.get_instance_by_name(name)
-            if obj:
-                items.append(self._build_instance_from_object(name, obj))
+        items = [
+            self._build_instance_from_object(name, obj) for name, obj in self._registry.get_all_instances().items()
+        ]
         return ConverterInstanceListResponse(items=items)
 
     async def get_converter(self, converter_id: str) -> Optional[ConverterInstance]:
@@ -99,19 +121,26 @@ class ConverterService:
 
     async def create_converter(self, request: CreateConverterRequest) -> CreateConverterResponse:
         """
-        Create a new converter instance.
+        Create a new converter instance from API request.
 
-        If params contains a 'converter' key with a converter_id,
-        the referenced converter object will be resolved and passed.
+        Instantiates the converter with the given type and params,
+        then registers it in the registry.
+
+        Args:
+            request: The create converter request with type and params.
 
         Returns:
             CreateConverterResponse with the new converter's details.
+
+        Raises:
+            ValueError: If the converter type is not found.
         """
         converter_id = str(uuid.uuid4())
 
-        # Resolve any converter references in params and create the object
+        # Resolve any converter references in params and instantiate
         params = self._resolve_converter_params(request.params)
-        converter_obj = self._get_converter_class(request.type)(**params)
+        converter_class = self._get_converter_class(request.type)
+        converter_obj = converter_class(**params)
         self._registry.register_instance(converter_obj, name=converter_id)
 
         return CreateConverterResponse(
@@ -160,9 +189,35 @@ class ConverterService:
     # Private Helper Methods
     # ========================================================================
 
-    def _resolve_converter_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_converter_class(self, converter_type: str) -> type:
+        """
+        Get the converter class for a given type name.
+
+        Looks up the class in the module-level converter class registry.
+
+        Args:
+            converter_type: The exact class name of the converter (e.g., 'Base64Converter').
+
+        Returns:
+            The converter class.
+
+        Raises:
+            ValueError: If the converter type is not found.
+        """
+        cls = _CONVERTER_CLASS_REGISTRY.get(converter_type)
+        if cls is None:
+            raise ValueError(
+                f"Converter type '{converter_type}' not found. "
+                f"Available types: {sorted(_CONVERTER_CLASS_REGISTRY.keys())}"
+            )
+        return cls
+
+    def _resolve_converter_params(self, params: dict[str, Any]) -> dict[str, Any]:
         """
         Resolve converter references in params.
+
+        If params contains a 'converter' key with a converter_id reference,
+        resolve it to the actual converter object from the registry.
 
         Returns:
             Params dict with converter_id references replaced by actual objects.
@@ -176,36 +231,6 @@ class ConverterService:
                     raise ValueError(f"Referenced converter '{ref['converter_id']}' not found")
                 resolved["converter"] = conv_obj
         return resolved
-
-    def _get_converter_class(self, converter_type: str) -> type:
-        """
-        Get the converter class for a given type.
-
-        Returns:
-            The converter class matching the given type.
-        """
-        module = importlib.import_module("pyrit.prompt_converter")
-
-        cls = getattr(module, converter_type, None)
-        if cls is not None:
-            return cast(type, cls)
-
-        for pattern in self._class_name_patterns(converter_type):
-            cls = getattr(module, pattern, None)
-            if cls is not None:
-                return cast(type, cls)
-
-        raise ValueError(f"Converter type '{converter_type}' not found in pyrit.prompt_converter")
-
-    def _class_name_patterns(self, type_name: str) -> List[str]:
-        """
-        Generate class name patterns to try.
-
-        Returns:
-            List of possible class name variations.
-        """
-        pascal = "".join(word.capitalize() for word in type_name.split("_"))
-        return [type_name, f"{type_name}Converter", pascal, f"{pascal}Converter"]
 
     def _gather_converters(self, converter_ids: List[str]) -> List[Tuple[str, str, Any]]:
         """

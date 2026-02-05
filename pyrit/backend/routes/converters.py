@@ -8,9 +8,7 @@ Provides endpoints for managing converter instances and previewing conversions.
 Converter types are set at app startup - you cannot add new types at runtime.
 """
 
-from typing import Literal, Optional
-
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status
 
 from pyrit.backend.models.common import ProblemDetail
 from pyrit.backend.models.converters import (
@@ -30,11 +28,7 @@ router = APIRouter(prefix="/converters", tags=["converters"])
     "",
     response_model=ConverterInstanceListResponse,
 )
-async def list_converters(
-    source: Optional[Literal["initializer", "user"]] = Query(
-        None, description="Filter by source (initializer or user)"
-    ),
-) -> ConverterInstanceListResponse:
+async def list_converters() -> ConverterInstanceListResponse:
     """
     List converter instances.
 
@@ -44,7 +38,7 @@ async def list_converters(
         ConverterInstanceListResponse: List of converter instances.
     """
     service = get_converter_service()
-    return await service.list_converters(source=source)
+    return await service.list_converters()
 
 
 @router.post(
@@ -59,8 +53,8 @@ async def create_converter(request: CreateConverterRequest) -> CreateConverterRe
     """
     Create a new converter instance.
 
-    Supports nested converters - if params contains a 'converter' key with
-    a type/params object, the nested converter will be created first.
+    Instantiates a converter with the given type and parameters.
+    Supports nested converters via converter_id references in params.
 
     Returns:
         CreateConverterResponse: The created converter instance details.

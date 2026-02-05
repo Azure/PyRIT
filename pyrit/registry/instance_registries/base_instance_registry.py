@@ -111,6 +111,15 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
         """
         return sorted(self._registry_items.keys())
 
+    def get_all_instances(self) -> Dict[str, T]:
+        """
+        Get all registered instances as a name -> instance mapping.
+
+        Returns:
+            Dict mapping registry names to their instances.
+        """
+        return dict(self._registry_items)
+
     def list_metadata(
         self,
         *,
