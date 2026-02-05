@@ -19,6 +19,7 @@ from tqdm.auto import tqdm
 
 from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.identifiers import TargetIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import ScenarioResultEntry
 from pyrit.models import AttackResult
@@ -94,7 +95,7 @@ class Scenario(ABC):
 
         # These will be set in initialize_async
         self._objective_target: Optional[PromptTarget] = None
-        self._objective_target_identifier: Optional[Dict[str, str]] = None
+        self._objective_target_identifier: Optional[TargetIdentifier] = None
         self._memory_labels: Dict[str, str] = {}
         self._max_concurrency: int = 1
         self._max_retries: int = 0

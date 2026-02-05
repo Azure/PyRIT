@@ -10,6 +10,7 @@ from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     construct_response_from_request,
@@ -100,6 +101,21 @@ class OpenAIImageTarget(OpenAITarget):
             ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
             "api.openai.com": "https://api.openai.com/v1",
         }
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with image generation-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            target_specific_params={
+                "image_size": self.image_size,
+                "quality": self.quality,
+                "style": self.style,
+            },
+        )
 
     @limit_requests_per_minute
     @pyrit_target_retry

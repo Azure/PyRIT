@@ -26,7 +26,7 @@ from pyrit.executor.attack.multi_turn.tree_of_attacks import (
     TAPAttackScoringConfig,
     _TreeOfAttacksNode,
 )
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     ConversationReference,
@@ -223,7 +223,12 @@ class AttackBuilder:
     def _create_mock_target() -> PromptTarget:
         target = MagicMock(spec=PromptTarget)
         target.send_prompt_async = AsyncMock(return_value=None)
-        target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test_module"}
+        target.get_identifier.return_value = TargetIdentifier(
+            class_name="MockTarget",
+            class_module="test_module",
+            class_description="",
+            identifier_type="instance",
+        )
         return cast(PromptTarget, target)
 
     @staticmethod
@@ -231,7 +236,12 @@ class AttackBuilder:
         chat = MagicMock(spec=PromptChatTarget)
         chat.send_prompt_async = AsyncMock(return_value=None)
         chat.set_system_prompt = MagicMock()
-        chat.get_identifier.return_value = {"__type__": "MockChatTarget", "__module__": "test_module"}
+        chat.get_identifier.return_value = TargetIdentifier(
+            class_name="MockChatTarget",
+            class_module="test_module",
+            class_description="",
+            identifier_type="instance",
+        )
         return cast(PromptChatTarget, chat)
 
     @staticmethod
