@@ -118,7 +118,7 @@ class TestCreateTarget:
             await service.create_target(request)
 
     @pytest.mark.asyncio
-    async def test_create_target_success(self) -> None:
+    async def test_create_target_success(self, sqlite_instance) -> None:
         """Test successful target creation."""
         service = TargetService()
 
@@ -135,7 +135,7 @@ class TestCreateTarget:
         assert result.display_name == "My Text Target"
 
     @pytest.mark.asyncio
-    async def test_create_target_registers_in_registry(self) -> None:
+    async def test_create_target_registers_in_registry(self, sqlite_instance) -> None:
         """Test that create_target registers object in registry."""
         service = TargetService()
 

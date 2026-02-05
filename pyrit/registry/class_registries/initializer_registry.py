@@ -58,7 +58,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
     """
 
     @classmethod
-    def get_registry_singleton(cls) -> "InitializerRegistry":
+    def get_registry_singleton(cls) -> InitializerRegistry:
         """
         Get the singleton instance of the InitializerRegistry.
 
@@ -164,7 +164,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         *,
         short_name: str,
         file_path: Path,
-        initializer_class: "type[PyRITInitializer]",
+        initializer_class: type[PyRITInitializer],
     ) -> None:
         """
         Register an initializer class.

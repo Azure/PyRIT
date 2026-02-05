@@ -5,18 +5,14 @@
 Target registry for managing PyRIT target instances.
 
 Targets are registered explicitly via initializers as pre-configured instances.
-
-NOTE: This is a placeholder implementation. PR #1320 will add the full implementation.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import Identifier
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.identifiers import TargetIdentifier
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
@@ -27,15 +23,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Placeholder identifier type until proper TargetIdentifier is defined
-# TODO: Replace with TargetIdentifier when available
-@dataclass(frozen=True)
-class TargetIdentifier(Identifier):
-    """Temporary identifier type for targets."""
-
-    pass
-
-
 class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
     """
     Registry for managing available target instances.
@@ -43,12 +30,10 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
     This registry stores pre-configured PromptTarget instances (not classes).
     Targets are registered explicitly via initializers after being instantiated
     with their required parameters.
-
-    NOTE: This is a placeholder. PR #1320 will add the full implementation.
     """
 
     @classmethod
-    def get_registry_singleton(cls) -> "TargetRegistry":
+    def get_registry_singleton(cls) -> TargetRegistry:
         """
         Get the singleton instance of the TargetRegistry.
 
@@ -59,7 +44,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
 
     def register_instance(
         self,
-        target: "PromptTarget",
+        target: PromptTarget,
         *,
         name: Optional[str] = None,
     ) -> None:
@@ -69,15 +54,15 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
         Args:
             target: The pre-configured target instance (not a class).
             name: Optional custom registry name. If not provided,
-                derived from class name (e.g., AzureOpenAIGPT4OChatTarget -> azure_openai_gpt4o_chat).
+                uses the target's identifier unique_name.
         """
         if name is None:
-            name = class_name_to_snake_case(target.__class__.__name__, suffix="Target")
+            name = target.get_identifier().unique_name
 
         self.register(target, name=name)
         logger.debug(f"Registered target instance: {name} ({target.__class__.__name__})")
 
-    def get_instance_by_name(self, name: str) -> Optional["PromptTarget"]:
+    def get_instance_by_name(self, name: str) -> Optional[PromptTarget]:
         """
         Get a registered target instance by name.
 
@@ -89,7 +74,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: "PromptTarget") -> TargetIdentifier:
+    def _build_metadata(self, name: str, instance: PromptTarget) -> TargetIdentifier:
         """
         Build metadata for a target instance.
 
@@ -98,11 +83,6 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
             instance: The target instance.
 
         Returns:
-            TargetIdentifier with basic info about the target.
+            TargetIdentifier from the target's get_identifier() method.
         """
-        return TargetIdentifier(
-            class_name=instance.__class__.__name__,
-            class_module=instance.__class__.__module__,
-            class_description=f"Target: {name}",
-            identifier_type="instance",
-        )
+        return instance.get_identifier()

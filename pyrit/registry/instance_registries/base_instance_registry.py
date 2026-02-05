@@ -45,7 +45,7 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
     _instances: Dict[type, "BaseInstanceRegistry[Any, Any]"] = {}
 
     @classmethod
-    def get_registry_singleton(cls) -> "BaseInstanceRegistry[T, MetadataT]":
+    def get_registry_singleton(cls) -> BaseInstanceRegistry[T, MetadataT]:
         """
         Get the singleton instance of this registry.
 

@@ -48,7 +48,7 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
     """
 
     @classmethod
-    def get_registry_singleton(cls) -> "ConverterRegistry":
+    def get_registry_singleton(cls) -> ConverterRegistry:
         """
         Get the singleton instance of the ConverterRegistry.
 
@@ -59,7 +59,7 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
 
     def register_instance(
         self,
-        converter: "PromptConverter",
+        converter: PromptConverter,
         *,
         name: Optional[str] = None,
     ) -> None:
@@ -77,7 +77,7 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
         self.register(converter, name=name)
         logger.debug(f"Registered converter instance: {name} ({converter.__class__.__name__})")
 
-    def get_instance_by_name(self, name: str) -> Optional["PromptConverter"]:
+    def get_instance_by_name(self, name: str) -> Optional[PromptConverter]:
         """
         Get a registered converter instance by name.
 
@@ -89,7 +89,7 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: "PromptConverter") -> ConverterIdentifier:
+    def _build_metadata(self, name: str, instance: PromptConverter) -> ConverterIdentifier:
         """
         Build metadata for a converter instance.
 

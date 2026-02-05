@@ -90,8 +90,9 @@ class TargetService:
             TargetInstance with metadata derived from the object.
         """
         identifier = target_obj.get_identifier() if hasattr(target_obj, "get_identifier") else {}
-        target_type = identifier.get("__type__", target_obj.__class__.__name__)
-        filtered_params = filter_sensitive_fields(identifier)
+        identifier_dict = identifier.to_dict() if hasattr(identifier, "to_dict") else identifier
+        target_type = identifier_dict.get("__type__", target_obj.__class__.__name__)
+        filtered_params = filter_sensitive_fields(identifier_dict)
 
         return TargetInstance(
             target_id=target_id,
@@ -157,8 +158,9 @@ class TargetService:
         self._registry.register_instance(target_obj, name=target_id)
 
         # Build response from the object's identifier
-        identifier = target_obj.get_identifier() if hasattr(target_obj, "get_identifier") else {}
-        filtered_params = filter_sensitive_fields(identifier)
+        identifier = target_obj.get_identifier()
+        identifier_dict = identifier.to_dict() if hasattr(identifier, "to_dict") else identifier
+        filtered_params = filter_sensitive_fields(identifier_dict)
 
         return CreateTargetResponse(
             target_id=target_id,
