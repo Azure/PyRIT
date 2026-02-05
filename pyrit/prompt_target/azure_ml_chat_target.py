@@ -13,6 +13,7 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.message_normalizer import ChatMessageNormalizer, MessageListNormalizer
 from pyrit.models import (
     Message,
@@ -102,6 +103,23 @@ class AzureMLChatTarget(PromptChatTarget):
         self._top_p = top_p
         self._repetition_penalty = repetition_penalty
         self._extra_parameters = param_kwargs
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with Azure ML-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_new_tokens": self._max_new_tokens,
+                "repetition_penalty": self._repetition_penalty,
+                "message_normalizer": self.message_normalizer.__class__.__name__,
+            },
+        )
 
     def _initialize_vars(self, endpoint: Optional[str] = None, api_key: Optional[str] = None) -> None:
         """

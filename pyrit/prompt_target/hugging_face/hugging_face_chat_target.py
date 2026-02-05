@@ -16,6 +16,7 @@ from transformers import (
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
@@ -134,6 +135,28 @@ class HuggingFaceChatTarget(PromptChatTarget):
             raise RuntimeError("CUDA requested but not available.")
 
         self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with HuggingFace chat-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_new_tokens": self.max_new_tokens,
+                "skip_special_tokens": self.skip_special_tokens,
+                "use_cuda": self.use_cuda,
+                "tensor_format": self.tensor_format,
+                "trust_remote_code": self.trust_remote_code,
+                "device_map": self.device_map,
+                "torch_dtype": str(self.torch_dtype) if self.torch_dtype else None,
+                "attn_implementation": self.attn_implementation,
+            },
+        )
 
     def _load_from_path(self, path: str, **kwargs: Any) -> None:
         """

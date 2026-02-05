@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from unit.mocks import get_mock_scorer_identifier
 
 from pyrit.executor.attack import ConversationManager, ConversationState
 from pyrit.executor.attack.component import PrependedConversationConfig
@@ -33,10 +34,21 @@ from pyrit.executor.attack.component.conversation_manager import (
 )
 from pyrit.executor.attack.core import AttackContext
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
-from tests.unit.mocks import get_mock_scorer_identifier
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
 
 # =============================================================================
 # Test Context Class
@@ -78,7 +90,7 @@ def mock_chat_target() -> MagicMock:
     """Create a mock chat target for testing."""
     target = MagicMock(spec=PromptChatTarget)
     target.set_system_prompt = MagicMock()
-    target.get_identifier.return_value = {"id": "mock_chat_target_id"}
+    target.get_identifier.return_value = _mock_target_id("MockChatTarget")
     return target
 
 
@@ -86,7 +98,7 @@ def mock_chat_target() -> MagicMock:
 def mock_prompt_target() -> MagicMock:
     """Create a mock prompt target (non-chat) for testing."""
     target = MagicMock(spec=PromptTarget)
-    target.get_identifier.return_value = {"id": "mock_target_id"}
+    target.get_identifier.return_value = _mock_target_id("MockTarget")
     return target
 
 
