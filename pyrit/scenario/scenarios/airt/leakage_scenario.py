@@ -89,7 +89,7 @@ class LeakageScenario(Scenario):
     attack variations designed to extract sensitive information from models.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -161,7 +161,7 @@ class LeakageScenario(Scenario):
 
         super().__init__(
             name="Leakage Scenario",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=LeakageStrategy,
             objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
@@ -264,7 +264,10 @@ class LeakageScenario(Scenario):
             ValueError: If an unknown LeakageStrategy is passed.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
+        if not self._objective_target:
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+            )
 
         strategy_factories = {
             "first_letter": self._create_first_letter_attack,

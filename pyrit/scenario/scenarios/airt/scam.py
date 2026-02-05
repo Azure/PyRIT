@@ -89,7 +89,7 @@ class Scam(Scenario):
     (e.g., phishing emails, fraudulent messages) with primarily persuasion-oriented techniques.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -167,7 +167,7 @@ class Scam(Scenario):
 
         super().__init__(
             name="Scam",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=ScamStrategy,
             objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
@@ -269,7 +269,10 @@ class Scam(Scenario):
             ValueError: If an unknown ScamStrategy is provided.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
+        if not self._objective_target:
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+            )
         attack_strategy: Optional[AttackStrategy[Any, Any]] = None
 
         if strategy == "persuasive_rta":

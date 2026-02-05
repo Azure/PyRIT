@@ -104,7 +104,7 @@ class ContentHarms(Scenario):
     with respect to certain harm categories.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
@@ -179,7 +179,7 @@ class ContentHarms(Scenario):
 
         super().__init__(
             name="Content Harms",
-            version=self.version,
+            version=self.VERSION,
             objective_scorer=self._objective_scorer,
             strategy_class=ContentHarmsStrategy,
             scenario_result_id=scenario_result_id,
@@ -241,7 +241,10 @@ class ContentHarms(Scenario):
             List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
+        if not self._objective_target:
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+            )
 
         prompt_sending_attack = PromptSendingAttack(
             objective_target=self._objective_target,

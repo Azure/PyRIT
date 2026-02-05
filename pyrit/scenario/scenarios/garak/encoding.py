@@ -133,7 +133,7 @@ class Encoding(Scenario):
     By default, this uses the same dataset as Garak: slur terms and web XSS payloads.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -209,7 +209,7 @@ class Encoding(Scenario):
 
         super().__init__(
             name="Encoding",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=EncodingStrategy,
             objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
@@ -351,7 +351,10 @@ class Encoding(Scenario):
         atomic_attacks = []
         for attack_converter_config in converter_configs:
             # objective_target is guaranteed to be non-None by parent class validation
-            assert self._objective_target is not None
+            if not self._objective_target:
+                raise ValueError(
+                    "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+                )
             attack = PromptSendingAttack(
                 objective_target=self._objective_target,
                 attack_converter_config=attack_converter_config,

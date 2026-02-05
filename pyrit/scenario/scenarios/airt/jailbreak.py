@@ -49,7 +49,7 @@ class Jailbreak(Scenario):
     scored to determine if the jailbreak was successful.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -114,7 +114,7 @@ class Jailbreak(Scenario):
 
         super().__init__(
             name="Jailbreak",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=JailbreakStrategy,
             objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
@@ -184,7 +184,10 @@ class Jailbreak(Scenario):
             AtomicAttack: An atomic attack using the specified jailbreak template.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
+        if not self._objective_target:
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+            )
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(

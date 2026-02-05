@@ -60,7 +60,7 @@ class Cyber(Scenario):
     techniques.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -141,7 +141,7 @@ class Cyber(Scenario):
 
         super().__init__(
             name="Cyber",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=CyberStrategy,
             objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
@@ -244,7 +244,10 @@ class Cyber(Scenario):
             ValueError: if an unknown CyberStrategy is passed.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
+        if not self._objective_target:
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+            )
         attack_strategy: Optional[AttackStrategy[Any, Any]] = None
         if strategy == "single_turn":
             attack_strategy = PromptSendingAttack(
@@ -261,7 +264,8 @@ class Cyber(Scenario):
             raise ValueError(f"Unknown CyberStrategy: {strategy}")
 
         # _seed_groups is guaranteed to be set by _get_atomic_attacks_async before this method is called
-        assert self._seed_groups is not None, "_seed_groups must be resolved before creating atomic attacks"
+        if not self._seed_groups:
+            raise ValueError("_seed_groups must be resolved before creating atomic attacks")
 
         return AtomicAttack(
             atomic_attack_name=f"cyber_{strategy}",
