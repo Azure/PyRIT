@@ -61,7 +61,7 @@ class Cyber(Scenario):
     """
 
     VERSION: int = 1
-    version: int = 1  # Alias for backward compatibility
+    version: int = VERSION  # Alias for backward compatibility
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -242,7 +242,7 @@ class Cyber(Scenario):
             AtomicAttack: configured for the specified strategy.
 
         Raises:
-            ValueError: if an unknown CyberStrategy is passed.
+            ValueError: If scenario is not properly initialized or an unknown CyberStrategy is passed.
         """
         # objective_target is guaranteed to be non-None by parent class validation
         if self._objective_target is None:

@@ -134,7 +134,7 @@ class Encoding(Scenario):
     """
 
     VERSION: int = 1
-    version: int = 1  # Alias for backward compatibility
+    version: int = VERSION  # Alias for backward compatibility
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -333,6 +333,9 @@ class Encoding(Scenario):
 
         Returns:
             list[AtomicAttack]: List of atomic attacks for this encoding scheme.
+
+        Raises:
+            ValueError: If scenario is not properly initialized.
         """
         converter_configs = [
             AttackConverterConfig(

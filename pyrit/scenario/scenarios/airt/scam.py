@@ -90,7 +90,7 @@ class Scam(Scenario):
     """
 
     VERSION: int = 1
-    version: int = 1  # Alias for backward compatibility
+    version: int = VERSION  # Alias for backward compatibility
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -267,7 +267,7 @@ class Scam(Scenario):
             AtomicAttack: Configured for the specified strategy.
 
         Raises:
-            ValueError: If an unknown ScamStrategy is provided.
+            ValueError: If scenario is not properly initialized or an unknown ScamStrategy is provided.
         """
         # objective_target is guaranteed to be non-None by parent class validation
         if self._objective_target is None:
