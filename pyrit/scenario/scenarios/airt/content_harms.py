@@ -242,7 +242,7 @@ class ContentHarms(Scenario):
             List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        if not self._objective_target:
+        if self._objective_target is None:
             raise ValueError(
                 "Scenario not properly initialized. Call await scenario.initialize_async() before running."
             )
