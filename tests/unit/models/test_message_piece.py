@@ -78,8 +78,8 @@ def test_prompt_targets_serialize(patch_central_database):
         prompt_target_identifier=target.get_identifier(),
     )
     assert patch_central_database.called
-    assert entry.prompt_target_identifier["__type__"] == "MockPromptTarget"
-    assert entry.prompt_target_identifier["__module__"] == "unit.mocks"
+    assert entry.prompt_target_identifier.class_name == "MockPromptTarget"
+    assert entry.prompt_target_identifier.class_module == "unit.mocks"
 
 
 def test_executors_serialize():
@@ -745,7 +745,7 @@ def test_message_piece_to_dict():
     assert result["targeted_harm_categories"] == entry.targeted_harm_categories
     assert result["prompt_metadata"] == entry.prompt_metadata
     assert result["converter_identifiers"] == [conv.to_dict() for conv in entry.converter_identifiers]
-    assert result["prompt_target_identifier"] == entry.prompt_target_identifier
+    assert result["prompt_target_identifier"] == entry.prompt_target_identifier.to_dict()
     assert result["attack_identifier"] == entry.attack_identifier
     assert result["scorer_identifier"] == entry.scorer_identifier.to_dict()
     assert result["original_value_data_type"] == entry.original_value_data_type
@@ -781,7 +781,7 @@ def test_message_piece_scorer_identifier_dict_backward_compatibility():
         # Check that a deprecation warning was issued
         assert len(w) == 1
         assert "deprecated" in str(w[0].message).lower()
-        assert "0.13.0" in str(w[0].message)
+        assert "0.14.0" in str(w[0].message)
 
     # Check that scorer_identifier is now a ScorerIdentifier
     assert isinstance(entry.scorer_identifier, ScorerIdentifier)
