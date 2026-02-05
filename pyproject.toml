@@ -154,6 +154,7 @@ all = [
 ]
 
 [project.scripts]
+pyrit_backend = "pyrit.cli.pyrit_backend:main"
 pyrit_scan = "pyrit.cli.pyrit_scan:main"
 pyrit_shell = "pyrit.cli.pyrit_shell:main"
 

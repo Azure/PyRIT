@@ -5,27 +5,21 @@
 Tests for backend target service.
 """
 
-from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.backend.models.targets import CreateTargetRequest, TargetInstance
+from pyrit.backend.models.targets import CreateTargetRequest
 from pyrit.backend.services.target_service import TargetService
+from pyrit.registry.instance_registries import TargetRegistry
 
 
-class TestTargetServiceInit:
-    """Tests for TargetService initialization."""
-
-    def test_init_creates_empty_instances_dict(self) -> None:
-        """Test that service initializes with empty instances dictionary."""
-        service = TargetService()
-        assert service._instances == {}
-
-    def test_init_creates_empty_target_objects_dict(self) -> None:
-        """Test that service initializes with empty target objects dictionary."""
-        service = TargetService()
-        assert service._target_objects == {}
+@pytest.fixture(autouse=True)
+def reset_registry():
+    """Reset the TargetRegistry singleton before each test."""
+    TargetRegistry.reset_instance()
+    yield
+    TargetRegistry.reset_instance()
 
 
 class TestListTargets:
@@ -41,77 +35,20 @@ class TestListTargets:
         assert result.items == []
 
     @pytest.mark.asyncio
-    async def test_list_targets_returns_targets(self) -> None:
-        """Test that list_targets returns existing targets."""
+    async def test_list_targets_returns_targets_from_registry(self) -> None:
+        """Test that list_targets returns targets from registry."""
         service = TargetService()
-        now = datetime.now(timezone.utc)
 
-        service._instances["target-1"] = TargetInstance(
-            target_id="target-1",
-            type="TextTarget",
-            display_name="My Target",
-            params={},
-            created_at=now,
-            source="user",
-        )
+        # Register a mock target
+        mock_target = MagicMock()
+        mock_target.get_identifier.return_value = {"__type__": "MockTarget", "endpoint": "http://test"}
+        service._registry.register_instance(mock_target, name="target-1")
 
         result = await service.list_targets()
 
         assert len(result.items) == 1
         assert result.items[0].target_id == "target-1"
-        assert result.items[0].display_name == "My Target"
-
-    @pytest.mark.asyncio
-    async def test_list_targets_filters_by_source_user(self) -> None:
-        """Test that list_targets filters by source='user'."""
-        service = TargetService()
-        now = datetime.now(timezone.utc)
-
-        service._instances["target-1"] = TargetInstance(
-            target_id="target-1",
-            type="TextTarget",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._instances["target-2"] = TargetInstance(
-            target_id="target-2",
-            type="TextTarget",
-            params={},
-            created_at=now,
-            source="initializer",
-        )
-
-        result = await service.list_targets(source="user")
-
-        assert len(result.items) == 1
-        assert result.items[0].source == "user"
-
-    @pytest.mark.asyncio
-    async def test_list_targets_filters_by_source_initializer(self) -> None:
-        """Test that list_targets filters by source='initializer'."""
-        service = TargetService()
-        now = datetime.now(timezone.utc)
-
-        service._instances["target-1"] = TargetInstance(
-            target_id="target-1",
-            type="TextTarget",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._instances["target-2"] = TargetInstance(
-            target_id="target-2",
-            type="TextTarget",
-            params={},
-            created_at=now,
-            source="initializer",
-        )
-
-        result = await service.list_targets(source="initializer")
-
-        assert len(result.items) == 1
-        assert result.items[0].source == "initializer"
+        assert result.items[0].type == "MockTarget"
 
 
 class TestGetTarget:
@@ -127,25 +64,19 @@ class TestGetTarget:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_target_returns_target(self) -> None:
-        """Test that get_target returns the target instance."""
+    async def test_get_target_returns_target_from_registry(self) -> None:
+        """Test that get_target returns target built from registry object."""
         service = TargetService()
-        now = datetime.now(timezone.utc)
 
-        service._instances["target-1"] = TargetInstance(
-            target_id="target-1",
-            type="TextTarget",
-            display_name="Test Target",
-            params={"key": "value"},
-            created_at=now,
-            source="user",
-        )
+        mock_target = MagicMock()
+        mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
+        service._registry.register_instance(mock_target, name="target-1")
 
         result = await service.get_target("target-1")
 
         assert result is not None
         assert result.target_id == "target-1"
-        assert result.display_name == "Test Target"
+        assert result.type == "MockTarget"
 
 
 class TestGetTargetObject:
@@ -159,11 +90,11 @@ class TestGetTargetObject:
 
         assert result is None
 
-    def test_get_target_object_returns_object(self) -> None:
+    def test_get_target_object_returns_object_from_registry(self) -> None:
         """Test that get_target_object returns the actual target object."""
         service = TargetService()
         mock_target = MagicMock()
-        service._target_objects["target-1"] = mock_target
+        service._registry.register_instance(mock_target, name="target-1")
 
         result = service.get_target_object("target-1")
 
@@ -184,7 +115,6 @@ class TestGetTargetClass:
         """Test that _get_target_class finds TextTarget."""
         service = TargetService()
 
-        # TextTarget should exist in pyrit.prompt_target
         result = service._get_target_class("TextTarget")
 
         assert result is not None
@@ -212,7 +142,6 @@ class TestCreateTarget:
         """Test successful target creation."""
         service = TargetService()
 
-        # Use a target that doesn't require external dependencies
         request = CreateTargetRequest(
             type="TextTarget",
             display_name="My Text Target",
@@ -224,11 +153,10 @@ class TestCreateTarget:
         assert result.target_id is not None
         assert result.type == "TextTarget"
         assert result.display_name == "My Text Target"
-        assert result.source == "user"
 
     @pytest.mark.asyncio
-    async def test_create_target_stores_instance(self) -> None:
-        """Test that create_target stores the instance."""
+    async def test_create_target_registers_in_registry(self) -> None:
+        """Test that create_target registers object in registry."""
         service = TargetService()
 
         request = CreateTargetRequest(
@@ -238,15 +166,15 @@ class TestCreateTarget:
 
         result = await service.create_target(request)
 
-        assert result.target_id in service._instances
-        assert result.target_id in service._target_objects
+        # Object should be retrievable from registry
+        target_obj = service.get_target_object(result.target_id)
+        assert target_obj is not None
 
     @pytest.mark.asyncio
     async def test_create_target_filters_sensitive_params(self) -> None:
         """Test that create_target filters sensitive parameters."""
         service = TargetService()
 
-        # Create a mock target class that has sensitive identifier fields
         mock_target_class = MagicMock()
         mock_target_instance = MagicMock()
         mock_target_instance.get_identifier.return_value = {
@@ -266,78 +194,7 @@ class TestCreateTarget:
 
             # api_key should be filtered out
             assert "api_key" not in result.params
-            # endpoint should remain
             assert result.params.get("endpoint") == "https://api.example.com"
-
-
-class TestDeleteTarget:
-    """Tests for TargetService.delete_target method."""
-
-    @pytest.mark.asyncio
-    async def test_delete_target_returns_false_for_nonexistent(self) -> None:
-        """Test that delete_target returns False for non-existent target."""
-        service = TargetService()
-
-        result = await service.delete_target("nonexistent")
-
-        assert result is False
-
-    @pytest.mark.asyncio
-    async def test_delete_target_deletes_target(self) -> None:
-        """Test that delete_target removes the target."""
-        service = TargetService()
-        now = datetime.now(timezone.utc)
-
-        service._instances["target-1"] = TargetInstance(
-            target_id="target-1",
-            type="TextTarget",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._target_objects["target-1"] = MagicMock()
-
-        result = await service.delete_target("target-1")
-
-        assert result is True
-        assert "target-1" not in service._instances
-        assert "target-1" not in service._target_objects
-
-
-class TestRegisterInitializerTarget:
-    """Tests for TargetService.register_initializer_target method."""
-
-    @pytest.mark.asyncio
-    async def test_register_initializer_target_creates_instance(self) -> None:
-        """Test that register_initializer_target creates an instance."""
-        service = TargetService()
-        mock_target = MagicMock()
-        mock_target.get_identifier.return_value = {"type": "MockTarget"}
-
-        result = await service.register_initializer_target(
-            target_type="MockTarget",
-            target_obj=mock_target,
-            display_name="Initializer Target",
-        )
-
-        assert result.target_id is not None
-        assert result.type == "MockTarget"
-        assert result.display_name == "Initializer Target"
-        assert result.source == "initializer"
-
-    @pytest.mark.asyncio
-    async def test_register_initializer_target_stores_object(self) -> None:
-        """Test that register_initializer_target stores the target object."""
-        service = TargetService()
-        mock_target = MagicMock()
-        mock_target.get_identifier.return_value = {}
-
-        result = await service.register_initializer_target(
-            target_type="MockTarget",
-            target_obj=mock_target,
-        )
-
-        assert service._target_objects[result.target_id] is mock_target
 
 
 class TestTargetServiceSingleton:
@@ -345,7 +202,6 @@ class TestTargetServiceSingleton:
 
     def test_get_target_service_returns_target_service(self) -> None:
         """Test that get_target_service returns a TargetService instance."""
-        # Reset singleton for clean test
         import pyrit.backend.services.target_service as module
         from pyrit.backend.services.target_service import get_target_service
 
@@ -356,7 +212,6 @@ class TestTargetServiceSingleton:
 
     def test_get_target_service_returns_same_instance(self) -> None:
         """Test that get_target_service returns the same instance."""
-        # Reset singleton for clean test
         import pyrit.backend.services.target_service as module
         from pyrit.backend.services.target_service import get_target_service
 

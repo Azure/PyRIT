@@ -8,6 +8,7 @@ Tests for backend error handler middleware.
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import BaseModel
 
 from pyrit.backend.middleware.error_handlers import register_error_handlers
 
@@ -61,7 +62,6 @@ class TestErrorHandlers:
 
     def test_validation_error_includes_field_details(self, app: FastAPI, client: TestClient) -> None:
         """Test that validation errors include field-level details."""
-        from pydantic import BaseModel
 
         class TestInput(BaseModel):
             name: str

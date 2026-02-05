@@ -11,8 +11,7 @@ Targets have two concepts:
 This module defines the Instance models for runtime target management.
 """
 
-from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -28,8 +27,6 @@ class TargetInstance(BaseModel):
     type: str = Field(..., description="Target type (e.g., 'azure_openai', 'text_target')")
     display_name: Optional[str] = Field(None, description="Human-readable display name")
     params: Dict[str, Any] = Field(default_factory=dict, description="Target configuration (sensitive fields filtered)")
-    created_at: datetime = Field(..., description="Instance creation timestamp")
-    source: Literal["initializer", "user"] = Field(..., description="How the target was created")
 
 
 class TargetListResponse(BaseModel):
@@ -53,5 +50,3 @@ class CreateTargetResponse(BaseModel):
     type: str = Field(..., description="Target type")
     display_name: Optional[str] = Field(None, description="Human-readable display name")
     params: Dict[str, Any] = Field(default_factory=dict, description="Filtered configuration (no secrets)")
-    created_at: datetime = Field(..., description="Instance creation timestamp")
-    source: Literal["user"] = Field(default="user", description="Source is always 'user' for API-created targets")

@@ -5,32 +5,24 @@
 Tests for backend converter service.
 """
 
-from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from pyrit.backend.models.converters import (
-    ConverterInstance,
     ConverterPreviewRequest,
     CreateConverterRequest,
-    InlineConverterConfig,
 )
 from pyrit.backend.services.converter_service import ConverterService
+from pyrit.registry.instance_registries import ConverterRegistry
 
 
-class TestConverterServiceInit:
-    """Tests for ConverterService initialization."""
-
-    def test_init_creates_empty_instances_dict(self) -> None:
-        """Test that service initializes with empty instances dictionary."""
-        service = ConverterService()
-        assert service._instances == {}
-
-    def test_init_creates_empty_converter_objects_dict(self) -> None:
-        """Test that service initializes with empty converter objects dictionary."""
-        service = ConverterService()
-        assert service._converter_objects == {}
+@pytest.fixture(autouse=True)
+def reset_registry():
+    """Reset the ConverterRegistry singleton before each test."""
+    ConverterRegistry.reset_instance()
+    yield
+    ConverterRegistry.reset_instance()
 
 
 class TestListConverters:
@@ -46,77 +38,19 @@ class TestListConverters:
         assert result.items == []
 
     @pytest.mark.asyncio
-    async def test_list_converters_returns_converters(self) -> None:
-        """Test that list_converters returns existing converters."""
+    async def test_list_converters_returns_converters_from_registry(self) -> None:
+        """Test that list_converters returns converters from registry."""
         service = ConverterService()
-        now = datetime.now(timezone.utc)
 
-        service._instances["conv-1"] = ConverterInstance(
-            converter_id="conv-1",
-            type="Base64Converter",
-            display_name="My Converter",
-            params={},
-            created_at=now,
-            source="user",
-        )
+        mock_converter = MagicMock()
+        mock_converter.__class__.__name__ = "MockConverter"
+        service._registry.register_instance(mock_converter, name="conv-1")
 
         result = await service.list_converters()
 
         assert len(result.items) == 1
         assert result.items[0].converter_id == "conv-1"
-        assert result.items[0].display_name == "My Converter"
-
-    @pytest.mark.asyncio
-    async def test_list_converters_filters_by_source_user(self) -> None:
-        """Test that list_converters filters by source='user'."""
-        service = ConverterService()
-        now = datetime.now(timezone.utc)
-
-        service._instances["conv-1"] = ConverterInstance(
-            converter_id="conv-1",
-            type="Base64Converter",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._instances["conv-2"] = ConverterInstance(
-            converter_id="conv-2",
-            type="Base64Converter",
-            params={},
-            created_at=now,
-            source="initializer",
-        )
-
-        result = await service.list_converters(source="user")
-
-        assert len(result.items) == 1
-        assert result.items[0].source == "user"
-
-    @pytest.mark.asyncio
-    async def test_list_converters_filters_by_source_initializer(self) -> None:
-        """Test that list_converters filters by source='initializer'."""
-        service = ConverterService()
-        now = datetime.now(timezone.utc)
-
-        service._instances["conv-1"] = ConverterInstance(
-            converter_id="conv-1",
-            type="Base64Converter",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._instances["conv-2"] = ConverterInstance(
-            converter_id="conv-2",
-            type="Base64Converter",
-            params={},
-            created_at=now,
-            source="initializer",
-        )
-
-        result = await service.list_converters(source="initializer")
-
-        assert len(result.items) == 1
-        assert result.items[0].source == "initializer"
+        assert result.items[0].type == "MockConverter"
 
 
 class TestGetConverter:
@@ -132,25 +66,19 @@ class TestGetConverter:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_converter_returns_converter(self) -> None:
-        """Test that get_converter returns the converter instance."""
+    async def test_get_converter_returns_converter_from_registry(self) -> None:
+        """Test that get_converter returns converter built from registry object."""
         service = ConverterService()
-        now = datetime.now(timezone.utc)
 
-        service._instances["conv-1"] = ConverterInstance(
-            converter_id="conv-1",
-            type="Base64Converter",
-            display_name="Test Converter",
-            params={"key": "value"},
-            created_at=now,
-            source="user",
-        )
+        mock_converter = MagicMock()
+        mock_converter.__class__.__name__ = "MockConverter"
+        service._registry.register_instance(mock_converter, name="conv-1")
 
         result = await service.get_converter("conv-1")
 
         assert result is not None
         assert result.converter_id == "conv-1"
-        assert result.display_name == "Test Converter"
+        assert result.type == "MockConverter"
 
 
 class TestGetConverterObject:
@@ -164,11 +92,11 @@ class TestGetConverterObject:
 
         assert result is None
 
-    def test_get_converter_object_returns_object(self) -> None:
+    def test_get_converter_object_returns_object_from_registry(self) -> None:
         """Test that get_converter_object returns the actual converter object."""
         service = ConverterService()
         mock_converter = MagicMock()
-        service._converter_objects["conv-1"] = mock_converter
+        service._registry.register_instance(mock_converter, name="conv-1")
 
         result = service.get_converter_object("conv-1")
 
@@ -198,7 +126,6 @@ class TestGetConverterClass:
         """Test that _get_converter_class handles snake_case names."""
         service = ConverterService()
 
-        # base64 should resolve to Base64Converter
         result = service._get_converter_class("base64")
 
         assert result is not None
@@ -236,11 +163,10 @@ class TestCreateConverter:
         assert result.converter_id is not None
         assert result.type == "Base64Converter"
         assert result.display_name == "My Base64"
-        assert result.source == "user"
 
     @pytest.mark.asyncio
-    async def test_create_converter_stores_instance(self) -> None:
-        """Test that create_converter stores the instance."""
+    async def test_create_converter_registers_in_registry(self) -> None:
+        """Test that create_converter registers object in registry."""
         service = ConverterService()
 
         request = CreateConverterRequest(
@@ -250,42 +176,9 @@ class TestCreateConverter:
 
         result = await service.create_converter(request)
 
-        assert result.converter_id in service._instances
-        assert result.converter_id in service._converter_objects
-
-
-class TestDeleteConverter:
-    """Tests for ConverterService.delete_converter method."""
-
-    @pytest.mark.asyncio
-    async def test_delete_converter_returns_false_for_nonexistent(self) -> None:
-        """Test that delete_converter returns False for non-existent converter."""
-        service = ConverterService()
-
-        result = await service.delete_converter("nonexistent")
-
-        assert result is False
-
-    @pytest.mark.asyncio
-    async def test_delete_converter_deletes_converter(self) -> None:
-        """Test that delete_converter removes the converter."""
-        service = ConverterService()
-        now = datetime.now(timezone.utc)
-
-        service._instances["conv-1"] = ConverterInstance(
-            converter_id="conv-1",
-            type="Base64Converter",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._converter_objects["conv-1"] = MagicMock()
-
-        result = await service.delete_converter("conv-1")
-
-        assert result is True
-        assert "conv-1" not in service._instances
-        assert "conv-1" not in service._converter_objects
+        # Object should be retrievable from registry
+        converter_obj = service.get_converter_object(result.converter_id)
+        assert converter_obj is not None
 
 
 class TestPreviewConversion:
@@ -309,23 +202,14 @@ class TestPreviewConversion:
     async def test_preview_conversion_with_converter_ids(self) -> None:
         """Test preview with converter IDs."""
         service = ConverterService()
-        now = datetime.now(timezone.utc)
 
-        # Create a mock converter
         mock_converter = MagicMock()
+        mock_converter.__class__.__name__ = "MockConverter"
         mock_result = MagicMock()
         mock_result.output_text = "encoded_value"
         mock_result.output_type = "text"
         mock_converter.convert_async = AsyncMock(return_value=mock_result)
-
-        service._instances["conv-1"] = ConverterInstance(
-            converter_id="conv-1",
-            type="MockConverter",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._converter_objects["conv-1"] = mock_converter
+        service._registry.register_instance(mock_converter, name="conv-1")
 
         request = ConverterPreviewRequest(
             original_value="test",
@@ -341,62 +225,26 @@ class TestPreviewConversion:
         assert result.steps[0].converter_id == "conv-1"
 
     @pytest.mark.asyncio
-    async def test_preview_conversion_with_inline_converters(self) -> None:
-        """Test preview with inline converter configs."""
-        service = ConverterService()
-
-        request = ConverterPreviewRequest(
-            original_value="test",
-            original_value_data_type="text",
-            converters=[
-                InlineConverterConfig(type="Base64Converter", params={}),
-            ],
-        )
-
-        result = await service.preview_conversion(request)
-
-        assert result.original_value == "test"
-        assert result.converted_value is not None
-        assert len(result.steps) == 1
-        # Base64 of "test" should be different from "test"
-        assert result.converted_value != "test"
-
-    @pytest.mark.asyncio
     async def test_preview_conversion_chains_multiple_converters(self) -> None:
         """Test that preview chains multiple converters."""
         service = ConverterService()
-        now = datetime.now(timezone.utc)
 
-        # Create two mock converters
         mock_converter1 = MagicMock()
+        mock_converter1.__class__.__name__ = "MockConverter1"
         mock_result1 = MagicMock()
         mock_result1.output_text = "step1_output"
         mock_result1.output_type = "text"
         mock_converter1.convert_async = AsyncMock(return_value=mock_result1)
 
         mock_converter2 = MagicMock()
+        mock_converter2.__class__.__name__ = "MockConverter2"
         mock_result2 = MagicMock()
         mock_result2.output_text = "step2_output"
         mock_result2.output_type = "text"
         mock_converter2.convert_async = AsyncMock(return_value=mock_result2)
 
-        service._instances["conv-1"] = ConverterInstance(
-            converter_id="conv-1",
-            type="MockConverter1",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._converter_objects["conv-1"] = mock_converter1
-
-        service._instances["conv-2"] = ConverterInstance(
-            converter_id="conv-2",
-            type="MockConverter2",
-            params={},
-            created_at=now,
-            source="user",
-        )
-        service._converter_objects["conv-2"] = mock_converter2
+        service._registry.register_instance(mock_converter1, name="conv-1")
+        service._registry.register_instance(mock_converter2, name="conv-2")
 
         request = ConverterPreviewRequest(
             original_value="input",
@@ -408,7 +256,6 @@ class TestPreviewConversion:
 
         assert result.converted_value == "step2_output"
         assert len(result.steps) == 2
-        # Second converter should receive output from first
         mock_converter2.convert_async.assert_called_with(prompt="step1_output")
 
 
@@ -428,85 +275,66 @@ class TestGetConverterObjectsForIds:
 
         mock1 = MagicMock()
         mock2 = MagicMock()
-        service._converter_objects["conv-1"] = mock1
-        service._converter_objects["conv-2"] = mock2
+        service._registry.register_instance(mock1, name="conv-1")
+        service._registry.register_instance(mock2, name="conv-2")
 
         result = service.get_converter_objects_for_ids(["conv-1", "conv-2"])
 
         assert result == [mock1, mock2]
 
 
-class TestInstantiateInlineConverters:
-    """Tests for ConverterService.instantiate_inline_converters method."""
-
-    def test_instantiate_inline_converters_creates_objects(self) -> None:
-        """Test that inline converters are instantiated."""
-        service = ConverterService()
-
-        configs = [
-            InlineConverterConfig(type="Base64Converter", params={}),
-        ]
-
-        result = service.instantiate_inline_converters(configs)
-
-        assert len(result) == 1
-        # Verify it's a real converter object
-        assert hasattr(result[0], "convert_async")
-
-    def test_instantiate_inline_converters_raises_for_invalid_type(self) -> None:
-        """Test that invalid type raises ValueError."""
-        service = ConverterService()
-
-        configs = [
-            InlineConverterConfig(type="NonExistentConverter", params={}),
-        ]
-
-        with pytest.raises(ValueError, match="not found"):
-            service.instantiate_inline_converters(configs)
-
-
-class TestNestedConverterCreation:
-    """Tests for nested converter creation."""
+class TestConverterWithReferencedConverter:
+    """Tests for creating converters that reference other converters by ID."""
 
     @pytest.mark.asyncio
-    async def test_create_converter_with_nested_converter(self) -> None:
-        """Test creating a converter with a nested converter config."""
+    async def test_create_converter_with_referenced_converter(self) -> None:
+        """Test creating a converter that references another converter by ID."""
         service = ConverterService()
 
-        # Mock the parent converter class that accepts a 'converter' param
-        mock_parent_class = MagicMock()
-        mock_parent_instance = MagicMock()
-        mock_parent_class.return_value = mock_parent_instance
+        mock_inner_class = MagicMock()
+        mock_inner_instance = MagicMock()
+        mock_inner_class.return_value = mock_inner_instance
 
-        mock_child_class = MagicMock()
-        mock_child_instance = MagicMock()
-        mock_child_class.return_value = mock_child_instance
+        mock_outer_class = MagicMock()
+        mock_outer_instance = MagicMock()
+        mock_outer_class.return_value = mock_outer_instance
 
         def mock_get_class(converter_type: str) -> type:
-            if converter_type == "ParentConverter":
-                return mock_parent_class
-            elif converter_type == "ChildConverter":
-                return mock_child_class
+            if converter_type == "OuterConverter":
+                return mock_outer_class
+            elif converter_type == "InnerConverter":
+                return mock_inner_class
             raise ValueError(f"Unknown type: {converter_type}")
 
         with patch.object(service, "_get_converter_class", side_effect=mock_get_class):
-            request = CreateConverterRequest(
-                type="ParentConverter",
-                params={
-                    "converter": {
-                        "type": "ChildConverter",
-                        "params": {},
-                    },
-                },
+            inner_result = await service.create_converter(CreateConverterRequest(type="InnerConverter", params={}))
+            inner_id = inner_result.converter_id
+
+            await service.create_converter(
+                CreateConverterRequest(
+                    type="OuterConverter",
+                    params={"converter": {"converter_id": inner_id}},
+                )
             )
 
-            result = await service.create_converter(request)
+            mock_outer_class.assert_called()
+            call_kwargs = mock_outer_class.call_args[1]
+            assert call_kwargs.get("converter") is mock_inner_instance
 
-            # Parent should be created with child converter object
-            mock_parent_class.assert_called()
-            # The call should have received the child instance, not the dict
-            call_kwargs = mock_parent_class.call_args[1]
-            assert call_kwargs.get("converter") is mock_child_instance
+    @pytest.mark.asyncio
+    async def test_create_converter_with_invalid_reference_raises(self) -> None:
+        """Test that referencing a non-existent converter raises ValueError."""
+        service = ConverterService()
+
+        mock_class = MagicMock()
+        with patch.object(service, "_get_converter_class", return_value=mock_class):
+            with pytest.raises(ValueError, match="not found"):
+                await service.create_converter(
+                    CreateConverterRequest(
+                        type="OuterConverter",
+                        params={"converter": {"converter_id": "nonexistent"}},
+                    )
+                )
 
 
 class TestConverterServiceSingleton:
@@ -514,7 +342,6 @@ class TestConverterServiceSingleton:
 
     def test_get_converter_service_returns_converter_service(self) -> None:
         """Test that get_converter_service returns a ConverterService instance."""
-        # Reset singleton for clean test
         import pyrit.backend.services.converter_service as module
         from pyrit.backend.services.converter_service import get_converter_service
 
@@ -525,7 +352,6 @@ class TestConverterServiceSingleton:
 
     def test_get_converter_service_returns_same_instance(self) -> None:
         """Test that get_converter_service returns the same instance."""
-        # Reset singleton for clean test
         import pyrit.backend.services.converter_service as module
         from pyrit.backend.services.converter_service import get_converter_service
 

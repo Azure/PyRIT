@@ -15,10 +15,6 @@ from pyrit.backend.services.converter_service import (
     ConverterService,
     get_converter_service,
 )
-from pyrit.backend.services.registry_service import (
-    RegistryService,
-    get_registry_service,
-)
 from pyrit.backend.services.target_service import (
     TargetService,
     get_target_service,
@@ -29,8 +25,6 @@ __all__ = [
     "get_attack_service",
     "ConverterService",
     "get_converter_service",
-    "RegistryService",
-    "get_registry_service",
     "TargetService",
     "get_target_service",
 ]

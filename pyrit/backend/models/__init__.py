@@ -10,8 +10,8 @@ Pydantic models for API requests and responses.
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
     AddMessageResponse,
-    AttackDetail,
     AttackListResponse,
+    AttackMessagesResponse,
     AttackSummary,
     CreateAttackRequest,
     CreateAttackResponse,
@@ -35,26 +35,11 @@ from pyrit.backend.models.common import (
 from pyrit.backend.models.converters import (
     ConverterInstance,
     ConverterInstanceListResponse,
-    ConverterMetadataResponse,
     ConverterPreviewRequest,
     ConverterPreviewResponse,
     CreateConverterRequest,
     CreateConverterResponse,
-    InlineConverterConfig,
-    NestedConverterConfig,
     PreviewStep,
-)
-from pyrit.backend.models.registry import (
-    InitializerListResponse,
-    InitializerMetadataResponse,
-    ScenarioListResponse,
-    ScenarioMetadataResponse,
-    ScorerListResponse,
-    ScorerMetadataResponse,
-    TargetMetadataResponse,
-)
-from pyrit.backend.models.registry import (
-    TargetListResponse as RegistryTargetListResponse,
 )
 from pyrit.backend.models.targets import (
     CreateTargetRequest,
@@ -67,8 +52,8 @@ __all__ = [
     # Attacks
     "AddMessageRequest",
     "AddMessageResponse",
-    "AttackDetail",
     "AttackListResponse",
+    "AttackMessagesResponse",
     "AttackSummary",
     "CreateAttackRequest",
     "CreateAttackResponse",
@@ -90,23 +75,11 @@ __all__ = [
     # Converters
     "ConverterInstance",
     "ConverterInstanceListResponse",
-    "ConverterMetadataResponse",
     "ConverterPreviewRequest",
     "ConverterPreviewResponse",
     "CreateConverterRequest",
     "CreateConverterResponse",
-    "InlineConverterConfig",
-    "NestedConverterConfig",
     "PreviewStep",
-    # Registry
-    "InitializerListResponse",
-    "InitializerMetadataResponse",
-    "ScenarioListResponse",
-    "ScenarioMetadataResponse",
-    "ScorerListResponse",
-    "ScorerMetadataResponse",
-    "RegistryTargetListResponse",
-    "TargetMetadataResponse",
     # Targets
     "CreateTargetRequest",
     "CreateTargetResponse",

@@ -11,19 +11,19 @@ ARCHITECTURE:
 - Each attack is represented by an AttackResult stored in the database
 - The AttackResult has a conversation_id that links to the main conversation
 - Messages are stored via PyRIT memory with that conversation_id
-- For GUI use, it's a 1-to-1 mapping: one AttackResult, one conversation
-- Future AI-generated attacks may have multiple related conversations
+- For human-led attacks, it's a 1-to-1 mapping: one AttackResult, one conversation
+- AI-generated attacks may have multiple related conversations
 """
 
 import uuid
 from datetime import datetime, timezone
-from typing import List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, cast
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
     AddMessageResponse,
-    AttackDetail,
     AttackListResponse,
+    AttackMessagesResponse,
     AttackSummary,
     CreateAttackRequest,
     CreateAttackResponse,
@@ -36,10 +36,9 @@ from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
 from pyrit.memory import CentralMemory
-from pyrit.models import AttackOutcome, AttackResult
+from pyrit.models import AttackOutcome, AttackResult, PromptDataType
 from pyrit.models import Message as PyritMessage
 from pyrit.models import MessagePiece as PyritMessagePiece
-from pyrit.models import PromptDataType
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 
 
@@ -62,7 +61,11 @@ class AttackService:
         self,
         *,
         target_id: Optional[str] = None,
-        outcome: Optional[Literal["pending", "success", "failure"]] = None,
+        outcome: Optional[Literal["undetermined", "success", "failure"]] = None,
+        name: Optional[str] = None,
+        labels: Optional[Dict[str, str]] = None,
+        min_turns: Optional[int] = None,
+        max_turns: Optional[int] = None,
         limit: int = 20,
         cursor: Optional[str] = None,
     ) -> AttackListResponse:
@@ -70,25 +73,46 @@ class AttackService:
         List attacks with optional filtering and pagination.
 
         Queries AttackResult entries from the database.
+
+        Args:
+            target_id: Filter by target instance ID (from attack_identifier).
+            outcome: Filter by attack outcome.
+            name: Filter by attack name (substring match on attack_identifier.name).
+            labels: Filter by labels (all must match).
+            min_turns: Filter by minimum executed turns.
+            max_turns: Filter by maximum executed turns.
+            limit: Maximum items to return.
+            cursor: Pagination cursor.
+
+        Returns:
+            AttackListResponse with filtered and paginated attack summaries.
         """
         # Map outcome string to AttackOutcome enum value for filtering
-        outcome_filter = None
-        if outcome:
-            outcome_map = {
-                "pending": "undetermined",
-                "success": "success",
-                "failure": "failure",
-            }
-            outcome_filter = outcome_map.get(outcome)
+        outcome_filter = outcome  # Already matches enum values
 
-        attack_results = self._memory.get_attack_results(outcome=outcome_filter)
+        # Use labels filter at the database level if supported
+        attack_results = self._memory.get_attack_results(
+            outcome=outcome_filter,
+            labels=labels,
+        )
 
-        # Convert to summaries and filter
+        # Convert to summaries and apply filters
         summaries = []
         for ar in attack_results:
-            # Get target info from attack_identifier
+            # Filter by target_id
             ar_target_id = ar.attack_identifier.get("target_id", "")
             if target_id and ar_target_id != target_id:
+                continue
+
+            # Filter by name (substring match)
+            ar_name = ar.attack_identifier.get("name", "")
+            if name and name.lower() not in ar_name.lower():
+                continue
+
+            # Filter by executed_turns
+            if min_turns is not None and ar.executed_turns < min_turns:
+                continue
+            if max_turns is not None and ar.executed_turns > max_turns:
                 continue
 
             summary = self._build_summary(ar)
@@ -103,16 +127,17 @@ class AttackService:
 
         return AttackListResponse(
             items=page,
-            pagination=PaginationInfo(
-                limit=limit, has_more=has_more, next_cursor=next_cursor, prev_cursor=cursor
-            ),
+            pagination=PaginationInfo(limit=limit, has_more=has_more, next_cursor=next_cursor, prev_cursor=cursor),
         )
 
-    async def get_attack(self, attack_id: str) -> Optional[AttackDetail]:
+    async def get_attack(self, attack_id: str) -> Optional[AttackSummary]:
         """
-        Get attack details including all messages.
+        Get attack details (high-level metadata, no messages).
 
-        Queries the AttackResult and its conversation from the database.
+        Queries the AttackResult from the database.
+
+        Returns:
+            AttackSummary if found, None otherwise.
         """
         # Get the attack result
         results = self._memory.get_attack_results(conversation_id=attack_id)
@@ -121,20 +146,47 @@ class AttackService:
 
         ar = results[0]
 
-        # Get messages for this conversation
+        # Get message count
         pyrit_messages = self._memory.get_conversation(conversation_id=attack_id)
-        backend_messages = self._convert_pyrit_messages(pyrit_messages)
+        message_count = len(list(pyrit_messages))
 
-        return AttackDetail(
+        created_str = ar.metadata.get("created_at")
+        updated_str = ar.metadata.get("updated_at")
+        created_at = datetime.fromisoformat(created_str) if created_str else datetime.now(timezone.utc)
+        updated_at = datetime.fromisoformat(updated_str) if updated_str else created_at
+
+        return AttackSummary(
             attack_id=attack_id,
             name=ar.attack_identifier.get("name"),
             target_id=ar.attack_identifier.get("target_id", ""),
             target_type=ar.attack_identifier.get("target_type", ""),
             outcome=self._map_outcome(ar.outcome),
-            prepended_conversation=[],
+            last_message_preview=self._get_last_message_preview(attack_id),
+            message_count=message_count,
+            labels=ar.metadata.get("labels", {}),
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    async def get_attack_messages(self, attack_id: str) -> Optional[AttackMessagesResponse]:
+        """
+        Get all messages for an attack.
+
+        Returns:
+            AttackMessagesResponse if attack found, None otherwise.
+        """
+        # Check attack exists
+        results = self._memory.get_attack_results(conversation_id=attack_id)
+        if not results:
+            return None
+
+        # Get messages for this conversation
+        pyrit_messages = self._memory.get_conversation(conversation_id=attack_id)
+        backend_messages = self._translate_pyrit_messages_to_backend(list(pyrit_messages))
+
+        return AttackMessagesResponse(
+            attack_id=attack_id,
             messages=backend_messages,
-            created_at=ar.metadata.get("created_at", datetime.now(timezone.utc)),
-            updated_at=ar.metadata.get("updated_at", datetime.now(timezone.utc)),
         )
 
     async def create_attack(self, request: CreateAttackRequest) -> CreateAttackResponse:
@@ -142,6 +194,9 @@ class AttackService:
         Create a new attack.
 
         Creates an AttackResult with a new conversation_id.
+
+        Returns:
+            CreateAttackResponse with the new attack's ID and creation time.
         """
         target_service = get_target_service()
         target_instance = await target_service.get_target(request.target_id)
@@ -182,13 +237,14 @@ class AttackService:
 
         return CreateAttackResponse(attack_id=conversation_id, created_at=now)
 
-    async def update_attack(
-        self, attack_id: str, request: UpdateAttackRequest
-    ) -> Optional[AttackDetail]:
+    async def update_attack(self, attack_id: str, request: UpdateAttackRequest) -> Optional[AttackSummary]:
         """
         Update an attack's outcome.
 
         Updates the AttackResult in the database.
+
+        Returns:
+            Updated AttackSummary if found, None otherwise.
         """
         results = self._memory.get_attack_results(conversation_id=attack_id)
         if not results:
@@ -196,7 +252,7 @@ class AttackService:
 
         # Map outcome
         outcome_map = {
-            "pending": AttackOutcome.UNDETERMINED,
+            "undetermined": AttackOutcome.UNDETERMINED,
             "success": AttackOutcome.SUCCESS,
             "failure": AttackOutcome.FAILURE,
         }
@@ -213,13 +269,14 @@ class AttackService:
 
         return await self.get_attack(attack_id)
 
-    async def add_message(
-        self, attack_id: str, request: AddMessageRequest
-    ) -> AddMessageResponse:
+    async def add_message(self, attack_id: str, request: AddMessageRequest) -> AddMessageResponse:
         """
         Add a message to an attack, optionally sending to target.
 
         Messages are stored in the database via PromptNormalizer.
+
+        Returns:
+            AddMessageResponse containing the updated attack detail.
         """
         # Check if attack exists
         results = self._memory.get_attack_results(conversation_id=attack_id)
@@ -247,14 +304,23 @@ class AttackService:
         if attack_detail is None:
             raise ValueError(f"Attack '{attack_id}' not found after update")
 
-        return AddMessageResponse(attack=attack_detail)
+        attack_messages = await self.get_attack_messages(attack_id)
+        if attack_messages is None:
+            raise ValueError(f"Attack '{attack_id}' messages not found after update")
+
+        return AddMessageResponse(attack=attack_detail, messages=attack_messages)
 
     # ========================================================================
     # Private Helper Methods - Summary Building
     # ========================================================================
 
     def _build_summary(self, ar: AttackResult) -> AttackSummary:
-        """Build an AttackSummary from an AttackResult."""
+        """
+        Build an AttackSummary from an AttackResult.
+
+        Returns:
+            AttackSummary with message count and preview.
+        """
         # Get message count and last preview
         pieces = self._memory.get_message_pieces(conversation_id=ar.conversation_id)
         message_count = len(set(p.sequence for p in pieces))
@@ -281,14 +347,33 @@ class AttackService:
             updated_at=updated_at,
         )
 
-    def _map_outcome(self, outcome: AttackOutcome) -> Optional[Literal["pending", "success", "failure"]]:
-        """Map AttackOutcome enum to API outcome string."""
+    def _map_outcome(self, outcome: AttackOutcome) -> Optional[Literal["undetermined", "success", "failure"]]:
+        """
+        Map AttackOutcome enum to API outcome string.
+
+        Returns:
+            Outcome string ('success', 'failure', 'undetermined') or None.
+        """
         if outcome == AttackOutcome.SUCCESS:
             return "success"
         elif outcome == AttackOutcome.FAILURE:
             return "failure"
         else:
-            return "pending"
+            return "undetermined"
+
+    def _get_last_message_preview(self, conversation_id: str) -> Optional[str]:
+        """
+        Get a preview of the last message in a conversation.
+
+        Returns:
+            Truncated last message text, or None if no messages.
+        """
+        pieces = self._memory.get_message_pieces(conversation_id=conversation_id)
+        if not pieces:
+            return None
+        last_piece = max(pieces, key=lambda p: p.sequence)
+        text = last_piece.converted_value or ""
+        return text[:100] + "..." if len(text) > 100 else text
 
     # ========================================================================
     # Private Helper Methods - Pagination
@@ -297,7 +382,12 @@ class AttackService:
     def _paginate(
         self, items: List[AttackSummary], cursor: Optional[str], limit: int
     ) -> tuple[List[AttackSummary], bool]:
-        """Apply cursor-based pagination."""
+        """
+        Apply cursor-based pagination.
+
+        Returns:
+            Tuple of (paginated items, has_more flag).
+        """
         start_idx = 0
         if cursor:
             for i, item in enumerate(items):
@@ -313,8 +403,13 @@ class AttackService:
     # Private Helper Methods - Message Conversion
     # ========================================================================
 
-    def _convert_pyrit_messages(self, pyrit_messages: list) -> List[Message]:
-        """Convert PyRIT messages to backend Message format."""
+    def _translate_pyrit_messages_to_backend(self, pyrit_messages: List[Any]) -> List[Message]:
+        """
+        Translate PyRIT messages to backend Message format.
+
+        Returns:
+            List of Message models for the API.
+        """
         messages = []
         for msg in pyrit_messages:
             pieces = [
@@ -323,25 +418,34 @@ class AttackService:
                     data_type=p.converted_value_data_type or "text",
                     original_value=p.original_value,
                     converted_value=p.converted_value or "",
-                    scores=self._convert_scores(p.scores) if hasattr(p, 'scores') and p.scores else [],
+                    scores=self._translate_pyrit_scores_to_backend(p.scores)
+                    if hasattr(p, "scores") and p.scores
+                    else [],
                     response_error=p.response_error or "none",
                 )
                 for p in msg.message_pieces
             ]
 
             first = msg.message_pieces[0] if msg.message_pieces else None
-            messages.append(Message(
-                message_id=str(first.id) if first else str(uuid.uuid4()),
-                turn_number=first.sequence if first else 0,
-                role=first.role if first else "user",
-                pieces=pieces,
-                created_at=first.timestamp if first else datetime.now(timezone.utc),
-            ))
+            messages.append(
+                Message(
+                    message_id=str(first.id) if first else str(uuid.uuid4()),
+                    turn_number=first.sequence if first else 0,
+                    role=first.role if first else "user",
+                    pieces=pieces,
+                    created_at=first.timestamp if first else datetime.now(timezone.utc),
+                )
+            )
 
         return messages
 
-    def _convert_scores(self, scores: list) -> List[Score]:
-        """Convert PyRIT scores to backend Score format."""
+    def _translate_pyrit_scores_to_backend(self, scores: List[Any]) -> List[Score]:
+        """
+        Translate PyRIT scores to backend Score format.
+
+        Returns:
+            List of Score models for the API.
+        """
         return [
             Score(
                 score_id=str(s.id),
@@ -360,20 +464,23 @@ class AttackService:
     async def _store_prepended_messages(
         self,
         conversation_id: str,
-        prepended: list,
+        prepended: List[Any],
     ) -> None:
         """Store prepended conversation messages in memory."""
-        for seq, msg in enumerate(prepended):
-            piece = PyritMessagePiece(
-                role=msg.role,
-                original_value=msg.content,
-                original_value_data_type="text",
-                converted_value=msg.content,
-                converted_value_data_type="text",
-                conversation_id=conversation_id,
-                sequence=seq,
-            )
-            self._memory.add_message_pieces_to_memory(message_pieces=[piece])
+        seq = 0
+        for msg in prepended:
+            for p in msg.pieces:
+                piece = PyritMessagePiece(
+                    role=msg.role,
+                    original_value=p.original_value,
+                    original_value_data_type=cast(PromptDataType, p.data_type),
+                    converted_value=p.converted_value or p.original_value,
+                    converted_value_data_type=cast(PromptDataType, p.data_type),
+                    conversation_id=conversation_id,
+                    sequence=seq,
+                )
+                self._memory.add_message_pieces_to_memory(message_pieces=[piece])
+            seq += 1
 
     async def _send_and_store_message(
         self,
@@ -424,7 +531,12 @@ class AttackService:
         conversation_id: str,
         sequence: int,
     ) -> PyritMessage:
-        """Build PyRIT Message from request."""
+        """
+        Build PyRIT Message from request.
+
+        Returns:
+            PyritMessage ready to send to the target.
+        """
         pieces = [
             PyritMessagePiece(
                 role=request.role,
@@ -439,10 +551,13 @@ class AttackService:
         ]
         return PyritMessage(pieces)
 
-    def _get_converter_configs(
-        self, request: AddMessageRequest
-    ) -> List[PromptConverterConfiguration]:
-        """Get converter configurations if needed."""
+    def _get_converter_configs(self, request: AddMessageRequest) -> List[PromptConverterConfiguration]:
+        """
+        Get converter configurations if needed.
+
+        Returns:
+            List of PromptConverterConfiguration for the converters.
+        """
         has_preconverted = any(p.converted_value is not None for p in request.pieces)
         if has_preconverted or not request.converter_ids:
             return []

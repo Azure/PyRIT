@@ -8,15 +8,16 @@ All interactions are modeled as "attacks" - including manual conversations.
 This is the attack-centric API design.
 """
 
-from typing import Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
     AddMessageResponse,
-    AttackDetail,
     AttackListResponse,
+    AttackMessagesResponse,
+    AttackSummary,
     CreateAttackRequest,
     CreateAttackResponse,
     UpdateAttackRequest,
@@ -27,13 +28,34 @@ from pyrit.backend.services.attack_service import get_attack_service
 router = APIRouter(prefix="/attacks", tags=["attacks"])
 
 
+def _parse_labels(label_params: Optional[List[str]]) -> Optional[Dict[str, str]]:
+    """
+    Parse label query params in 'key:value' format to a dict.
+
+    Returns:
+        Dict mapping label keys to values, or None if no valid labels.
+    """
+    if not label_params:
+        return None
+    labels = {}
+    for param in label_params:
+        if ":" in param:
+            key, value = param.split(":", 1)
+            labels[key.strip()] = value.strip()
+    return labels if labels else None
+
+
 @router.get(
     "",
     response_model=AttackListResponse,
 )
 async def list_attacks(
     target_id: Optional[str] = Query(None, description="Filter by target instance ID"),
-    outcome: Optional[Literal["pending", "success", "failure"]] = Query(None, description="Filter by outcome"),
+    outcome: Optional[Literal["undetermined", "success", "failure"]] = Query(None, description="Filter by outcome"),
+    name: Optional[str] = Query(None, description="Filter by attack name (substring match)"),
+    label: Optional[List[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
+    min_turns: Optional[int] = Query(None, ge=0, description="Filter by minimum executed turns"),
+    max_turns: Optional[int] = Query(None, ge=0, description="Filter by maximum executed turns"),
     limit: int = Query(20, ge=1, le=100, description="Maximum items per page"),
     cursor: Optional[str] = Query(None, description="Pagination cursor (attack_id)"),
 ) -> AttackListResponse:
@@ -47,9 +69,14 @@ async def list_attacks(
         AttackListResponse: Paginated list of attack summaries.
     """
     service = get_attack_service()
+    labels = _parse_labels(label)
     return await service.list_attacks(
         target_id=target_id,
         outcome=outcome,
+        name=name,
+        labels=labels,
+        min_turns=min_turns,
+        max_turns=max_turns,
         limit=limit,
         cursor=cursor,
     )
@@ -88,19 +115,19 @@ async def create_attack(request: CreateAttackRequest) -> CreateAttackResponse:
 
 @router.get(
     "/{attack_id}",
-    response_model=AttackDetail,
+    response_model=AttackSummary,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
     },
 )
-async def get_attack(attack_id: str) -> AttackDetail:
+async def get_attack(attack_id: str) -> AttackSummary:
     """
-    Get attack details including all messages.
+    Get attack details.
 
-    Returns the full attack with prepended_conversation and all messages.
+    Returns the attack metadata. Use GET /attacks/{id}/messages for messages.
 
     Returns:
-        AttackDetail: Full attack details with messages.
+        AttackSummary: Attack details.
     """
     service = get_attack_service()
 
@@ -116,7 +143,7 @@ async def get_attack(attack_id: str) -> AttackDetail:
 
 @router.patch(
     "/{attack_id}",
-    response_model=AttackDetail,
+    response_model=AttackSummary,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
     },
@@ -124,14 +151,14 @@ async def get_attack(attack_id: str) -> AttackDetail:
 async def update_attack(
     attack_id: str,
     request: UpdateAttackRequest,
-) -> AttackDetail:
+) -> AttackSummary:
     """
     Update an attack's outcome.
 
-    Used to mark attacks as success/failure/pending.
+    Used to mark attacks as success/failure/undetermined.
 
     Returns:
-        AttackDetail: Updated attack details.
+        AttackSummary: Updated attack details.
     """
     service = get_attack_service()
 
@@ -143,6 +170,34 @@ async def update_attack(
         )
 
     return attack
+
+
+@router.get(
+    "/{attack_id}/messages",
+    response_model=AttackMessagesResponse,
+    responses={
+        404: {"model": ProblemDetail, "description": "Attack not found"},
+    },
+)
+async def get_attack_messages(attack_id: str) -> AttackMessagesResponse:
+    """
+    Get all messages for an attack.
+
+    Returns prepended conversation and all messages in order.
+
+    Returns:
+        AttackMessagesResponse: All messages for the attack.
+    """
+    service = get_attack_service()
+
+    messages = await service.get_attack_messages(attack_id)
+    if not messages:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Attack '{attack_id}' not found",
+        )
+
+    return messages
 
 
 @router.post(

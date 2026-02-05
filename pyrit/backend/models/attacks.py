@@ -72,7 +72,7 @@ class AttackSummary(BaseModel):
     name: Optional[str] = Field(None, description="Attack name/label")
     target_id: str = Field(..., description="Target instance ID")
     target_type: str = Field(..., description="Target type (e.g., 'azure_openai')")
-    outcome: Optional[Literal["pending", "success", "failure"]] = Field(
+    outcome: Optional[Literal["undetermined", "success", "failure"]] = Field(
         None, description="Attack outcome (null if not yet determined)"
     )
     last_message_preview: Optional[str] = Field(
@@ -85,25 +85,15 @@ class AttackSummary(BaseModel):
 
 
 # ============================================================================
-# Attack Detail (Single Attack View)
+# Attack Messages Response
 # ============================================================================
 
 
-class AttackDetail(BaseModel):
-    """Detailed view of an attack (includes all messages)."""
+class AttackMessagesResponse(BaseModel):
+    """Response containing all messages for an attack."""
 
-    attack_id: str = Field(..., description="Unique attack identifier")
-    name: Optional[str] = Field(None, description="Attack name/label")
-    target_id: str = Field(..., description="Target instance ID")
-    target_type: str = Field(..., description="Target type (e.g., 'azure_openai')")
-    outcome: Optional[Literal["pending", "success", "failure"]] = Field(None, description="Attack outcome")
-    prepended_conversation: List[Message] = Field(
-        default_factory=list, description="Prepended messages (system prompts, branching context)"
-    )
-    messages: List[Message] = Field(default_factory=list, description="Attack messages in order")
-    labels: Dict[str, str] = Field(default_factory=dict, description="User-defined labels for filtering")
-    created_at: datetime = Field(..., description="Attack creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
+    attack_id: str = Field(..., description="Attack identifier")
+    messages: List[Message] = Field(default_factory=list, description="All messages in order")
 
 
 # ============================================================================
@@ -123,11 +113,25 @@ class AttackListResponse(BaseModel):
 # ============================================================================
 
 
+# ============================================================================
+# Message Input Models
+# ============================================================================
+
+
+class MessagePieceRequest(BaseModel):
+    """A piece of content for a message."""
+
+    data_type: str = Field(default="text", description="Data type: 'text', 'image', 'audio', etc.")
+    original_value: str = Field(..., description="Original value (text or base64 for media)")
+    converted_value: Optional[str] = Field(None, description="Converted value. If provided, bypasses converters.")
+    mime_type: Optional[str] = Field(None, description="MIME type for media content")
+
+
 class PrependedMessageRequest(BaseModel):
     """A message to prepend to the attack (for system prompt/branching)."""
 
     role: Literal["user", "assistant", "system"] = Field(..., description="Message role")
-    content: str = Field(..., description="Message content (text)")
+    pieces: List[MessagePieceRequest] = Field(..., description="Message pieces (supports multimodal)")
 
 
 class CreateAttackRequest(BaseModel):
@@ -156,23 +160,12 @@ class CreateAttackResponse(BaseModel):
 class UpdateAttackRequest(BaseModel):
     """Request to update an attack's outcome."""
 
-    outcome: Literal["pending", "success", "failure"] = Field(..., description="Updated attack outcome")
+    outcome: Literal["undetermined", "success", "failure"] = Field(..., description="Updated attack outcome")
 
 
 # ============================================================================
 # Add Message
 # ============================================================================
-
-
-class MessagePieceRequest(BaseModel):
-    """A piece of content for a message."""
-
-    data_type: str = Field(default="text", description="Data type: 'text', 'image', 'audio', etc.")
-    original_value: str = Field(..., description="Original value (text or base64 for media)")
-    converted_value: Optional[str] = Field(
-        None, description="Converted value. If provided, bypasses converters."
-    )
-    mime_type: Optional[str] = Field(None, description="MIME type for media content")
 
 
 class AddMessageRequest(BaseModel):
@@ -199,9 +192,10 @@ class AddMessageResponse(BaseModel):
     """
     Response after adding a message.
 
-    Returns the updated attack detail. If send=True was used, the new
+    Returns the attack metadata and all messages. If send=True was used, the new
     assistant response will be in the messages list. Check response_error
     on the assistant's message pieces if the target returned an error.
     """
 
-    attack: AttackDetail = Field(..., description="Updated attack with new message(s)")
+    attack: AttackSummary = Field(..., description="Updated attack metadata")
+    messages: AttackMessagesResponse = Field(..., description="All messages including new one(s)")
