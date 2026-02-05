@@ -171,6 +171,102 @@ class ConfigurationLoader(YamlLoadable):
         filtered_data = {k: v for k, v in data.items() if v is not None and v != []}
         return cls(**filtered_data)
 
+    @staticmethod
+    def load_with_overrides(
+        config_file: Optional[pathlib.Path] = None,
+        *,
+        memory_db_type: Optional[str] = None,
+        initializers: Optional[Sequence[Union[str, Dict[str, Any]]]] = None,
+        initialization_scripts: Optional[Sequence[str]] = None,
+        env_files: Optional[Sequence[str]] = None,
+    ) -> "ConfigurationLoader":
+        """
+        Load configuration with optional overrides.
+
+        This factory method implements a 3-layer configuration precedence:
+        1. Default config file (~/.pyrit/.pyrit_conf) if it exists
+        2. Explicit config_file argument if provided
+        3. Individual override arguments (non-None values take precedence)
+
+        This is a staticmethod (not classmethod) because it's a pure factory function
+        that doesn't need access to class state and can be reused by multiple interfaces
+        (CLI, shell, programmatic API).
+
+        Args:
+            config_file: Optional path to a YAML-formatted configuration file.
+            memory_db_type: Override for database type (in_memory, sqlite, azure_sql).
+            initializers: Override for initializer list.
+            initialization_scripts: Override for initialization script paths.
+            env_files: Override for environment file paths.
+
+        Returns:
+            A merged ConfigurationLoader instance.
+
+        Raises:
+            FileNotFoundError: If an explicitly specified config_file does not exist.
+            ValueError: If the configuration is invalid.
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        # Start with defaults
+        config_data: Dict[str, Any] = {
+            "memory_db_type": "sqlite",
+            "initializers": [],
+            "initialization_scripts": [],
+            "env_files": [],
+        }
+
+        # 1. Try loading default config file if it exists
+        default_config_path = DEFAULT_CONFIG_PATH
+        if default_config_path.exists():
+            try:
+                default_config = ConfigurationLoader.from_yaml_file(default_config_path)
+                config_data["memory_db_type"] = default_config.memory_db_type
+                config_data["initializers"] = [
+                    {"name": ic.name, "args": ic.args} if ic.args else ic.name
+                    for ic in default_config._initializer_configs
+                ]
+                config_data["initialization_scripts"] = default_config.initialization_scripts
+                config_data["env_files"] = default_config.env_files
+            except Exception as e:
+                logger.warning(f"Failed to load default config file {default_config_path}: {e}")
+
+        # 2. Load explicit config file if provided (overrides default)
+        if config_file is not None:
+            if not config_file.exists():
+                raise FileNotFoundError(f"Configuration file not found: {config_file}")
+            explicit_config = ConfigurationLoader.from_yaml_file(config_file)
+            config_data["memory_db_type"] = explicit_config.memory_db_type
+            config_data["initializers"] = [
+                {"name": ic.name, "args": ic.args} if ic.args else ic.name
+                for ic in explicit_config._initializer_configs
+            ]
+            config_data["initialization_scripts"] = explicit_config.initialization_scripts
+            config_data["env_files"] = explicit_config.env_files
+
+        # 3. Apply overrides (non-None values take precedence)
+        if memory_db_type is not None:
+            # Normalize to snake_case
+            normalized_db = memory_db_type.lower().replace("-", "_")
+            if normalized_db == "inmemory":
+                normalized_db = "in_memory"
+            elif normalized_db == "azuresql":
+                normalized_db = "azure_sql"
+            config_data["memory_db_type"] = normalized_db
+
+        if initializers is not None:
+            config_data["initializers"] = initializers
+
+        if initialization_scripts is not None:
+            config_data["initialization_scripts"] = initialization_scripts
+
+        if env_files is not None:
+            config_data["env_files"] = env_files
+
+        return ConfigurationLoader.from_dict(config_data)
+
     @classmethod
     def get_default_config_path(cls) -> pathlib.Path:
         """

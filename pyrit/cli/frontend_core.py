@@ -19,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
 try:
     import termcolor
@@ -46,7 +46,6 @@ if TYPE_CHECKING:
         ScenarioMetadata,
         ScenarioRegistry,
     )
-    from pyrit.setup import ConfigurationLoader
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +82,7 @@ class FrontendCore:
         3. Individual CLI arguments (database, initializers, etc.)
 
         Args:
-            config_file: Optional path to a YAML configuration file.
+            config_file: Optional path to a YAML-formatted configuration file.\n                The file uses .pyrit_conf extension but is YAML format.
             database: Database type (InMemory, SQLite, or AzureSQL).
             initialization_scripts: Optional list of initialization script paths.
             initializer_names: Optional list of built-in initializer names to run.
@@ -94,131 +93,22 @@ class FrontendCore:
             ValueError: If database or log_level are invalid, or if config file is invalid.
             FileNotFoundError: If an explicitly specified config_file does not exist.
         """
-        # Load configuration from files and merge with CLI arguments
-        config = self._load_and_merge_config(
-            config_file=config_file,
-            database=database,
-            initialization_scripts=initialization_scripts,
-            initializer_names=initializer_names,
-            env_files=env_files,
-        )
+        from pyrit.setup import ConfigurationLoader
+        from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
 
-        # Store the merged configuration
-        self._config = config
-
-        # Extract values from config for internal use
-        # Map snake_case db type back to PascalCase for backward compatibility
-        db_type_map = {"in_memory": IN_MEMORY, "sqlite": SQLITE, "azure_sql": AZURE_SQL}
-        self._database = db_type_map[config.memory_db_type]
-        self._initialization_scripts = config._resolve_initialization_scripts()
-        self._initializer_names = (
-            [ic.name for ic in config._initializer_configs] if config._initializer_configs else None
-        )
-        self._env_files = config._resolve_env_files()
-
-        # Log level comes from CLI arg (not in config file), default to WARNING
+        # Validate log level early
         effective_log_level = log_level if log_level is not None else "WARNING"
         self._log_level = validate_log_level(log_level=effective_log_level)
 
-        # Lazy-loaded registries
-        self._scenario_registry: Optional[ScenarioRegistry] = None
-        self._initializer_registry: Optional[InitializerRegistry] = None
-        self._initialized = False
-
-        # Configure logging
-        logging.basicConfig(level=getattr(logging, self._log_level))
-
-    def _load_and_merge_config(
-        self,
-        *,
-        config_file: Optional[Path],
-        database: Optional[str],
-        initialization_scripts: Optional[list[Path]],
-        initializer_names: Optional[list[str]],
-        env_files: Optional[list[Path]],
-    ) -> "ConfigurationLoader":
-        """
-        Load configuration from files and merge with CLI arguments.
-
-        Precedence (later overrides earlier):
-        1. Default config file (~/.pyrit/.pyrit_conf) if it exists
-        2. Explicit config_file argument if provided
-        3. Individual CLI arguments
-
-        Args:
-            config_file: Optional explicit config file path.
-            database: Optional database type from CLI.
-            initialization_scripts: Optional scripts from CLI.
-            initializer_names: Optional initializer names from CLI.
-            env_files: Optional env files from CLI.
-
-        Returns:
-            Merged ConfigurationLoader instance.
-
-        Raises:
-            FileNotFoundError: If an explicitly specified config_file does not exist.
-            ValueError: If the database type is invalid.
-        """
-        from pyrit.setup import ConfigurationLoader
-
-        # Start with defaults
-        config_data: Dict[str, Any] = {
-            "memory_db_type": "sqlite",
-            "initializers": [],
-            "initialization_scripts": [],
-            "env_files": [],
-        }
-
-        # 1. Try loading default config file if it exists
-        default_config_path = ConfigurationLoader.get_default_config_path()
-        if default_config_path.exists():
-            try:
-                default_config = ConfigurationLoader.from_yaml_file(default_config_path)
-                config_data["memory_db_type"] = default_config.memory_db_type
-                config_data["initializers"] = [
-                    {"name": ic.name, "args": ic.args} if ic.args else ic.name
-                    for ic in default_config._initializer_configs
-                ]
-                config_data["initialization_scripts"] = default_config.initialization_scripts
-                config_data["env_files"] = default_config.env_files
-            except Exception as e:
-                logger.warning(f"Failed to load default config file {default_config_path}: {e}")
-
-        # 2. Load explicit config file if provided (overrides default)
-        if config_file is not None:
-            if not config_file.exists():
-                raise FileNotFoundError(f"Configuration file not found: {config_file}")
-            explicit_config = ConfigurationLoader.from_yaml_file(config_file)
-            config_data["memory_db_type"] = explicit_config.memory_db_type
-            config_data["initializers"] = [
-                {"name": ic.name, "args": ic.args} if ic.args else ic.name
-                for ic in explicit_config._initializer_configs
-            ]
-            config_data["initialization_scripts"] = explicit_config.initialization_scripts
-            config_data["env_files"] = explicit_config.env_files
-
-        # 3. Apply CLI overrides (non-None values take precedence)
-        if database is not None:
-            # Normalize to snake_case for ConfigurationLoader
-            normalized_db = database.lower().replace("-", "_")
-            # Handle PascalCase inputs
-            if normalized_db == "inmemory":
-                normalized_db = "in_memory"
-            elif normalized_db == "azuresql":
-                normalized_db = "azure_sql"
-            config_data["memory_db_type"] = normalized_db
-
-        if initialization_scripts is not None:
-            config_data["initialization_scripts"] = [str(p) for p in initialization_scripts]
-
-        if initializer_names is not None:
-            config_data["initializers"] = initializer_names
-
-        if env_files is not None:
-            config_data["env_files"] = [str(p) for p in env_files]
-
+        # Load configuration using ConfigurationLoader.load_with_overrides
         try:
-            return ConfigurationLoader.from_dict(config_data)
+            config = ConfigurationLoader.load_with_overrides(
+                config_file=config_file,
+                memory_db_type=database,
+                initializers=initializer_names,
+                initialization_scripts=[str(p) for p in initialization_scripts] if initialization_scripts else None,
+                env_files=[str(p) for p in env_files] if env_files else None,
+            )
         except ValueError as e:
             # Re-raise with user-friendly message for CLI users
             error_msg = str(e)
@@ -227,6 +117,26 @@ class FrontendCore:
                     f"Invalid database type '{database}'. Must be one of: InMemory, SQLite, AzureSQL"
                 ) from e
             raise
+
+        # Store the merged configuration
+        self._config = config
+
+        # Extract values from config for internal use
+        # Use canonical mapping from configuration_loader
+        self._database = _MEMORY_DB_TYPE_MAP[config.memory_db_type]
+        self._initialization_scripts = config._resolve_initialization_scripts()
+        self._initializer_names = (
+            [ic.name for ic in config._initializer_configs] if config._initializer_configs else None
+        )
+        self._env_files = config._resolve_env_files()
+
+        # Lazy-loaded registries
+        self._scenario_registry: Optional[ScenarioRegistry] = None
+        self._initializer_registry: Optional[InitializerRegistry] = None
+        self._initialized = False
+
+        # Configure logging
+        logging.basicConfig(level=getattr(logging, self._log_level))
 
     async def initialize_async(self) -> None:
         """Initialize PyRIT and load registries (heavy operation)."""
