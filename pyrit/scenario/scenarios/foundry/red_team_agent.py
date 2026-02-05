@@ -215,6 +215,7 @@ class RedTeamAgent(Scenario):
     """
 
     VERSION: int = 1
+    version: int = 1  # Alias for backward compatibility
 
     @classmethod
     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
