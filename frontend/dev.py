@@ -82,7 +82,7 @@ def start_backend(initializers: list[str] | None = None):
 
     Args:
         initializers: Optional list of initializer names to run at startup.
-            Defaults to ["airt"] to load targets from environment variables.
+            If not specified, no initializers are run.
     """
     print("🚀 Starting backend on port 8000...")
 
@@ -93,9 +93,9 @@ def start_backend(initializers: list[str] | None = None):
     env = os.environ.copy()
     env["PYRIT_DEV_MODE"] = "true"
 
-    # Default to airt initializer if not specified
+    # Default to no initializers
     if initializers is None:
-        initializers = ["airt"]
+        initializers = []
 
     # Build command using pyrit_backend CLI
     cmd = [
