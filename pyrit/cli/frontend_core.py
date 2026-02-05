@@ -110,10 +110,12 @@ class FrontendCore:
 
         # Extract values from config for internal use
         # Map snake_case db type back to PascalCase for backward compatibility
-        db_type_map = {"in_memory": IN_MEMORY, "sqlite": SQLITE, "azure_sql": AZURE_SQL}
+        db_type_map = {"in_memory": IN_MEMORY,
+                       "sqlite": SQLITE, "azure_sql": AZURE_SQL}
         self._database = db_type_map[config.memory_db_type]
         self._initialization_scripts = config._resolve_initialization_scripts()
-        self._initializer_names = [ic.name for ic in config._initializer_configs] if config._initializer_configs else None
+        self._initializer_names = [
+            ic.name for ic in config._initializer_configs] if config._initializer_configs else None
         self._env_files = config._resolve_env_files()
 
         # Log level comes from CLI arg (not in config file), default to WARNING
@@ -169,7 +171,8 @@ class FrontendCore:
         default_config_path = ConfigurationLoader.get_default_config_path()
         if default_config_path.exists():
             try:
-                default_config = ConfigurationLoader.from_yaml_file(default_config_path)
+                default_config = ConfigurationLoader.from_yaml_file(
+                    default_config_path)
                 config_data["memory_db_type"] = default_config.memory_db_type
                 config_data["initializers"] = [
                     {"name": ic.name, "args": ic.args} if ic.args else ic.name
@@ -178,12 +181,14 @@ class FrontendCore:
                 config_data["initialization_scripts"] = default_config.initialization_scripts
                 config_data["env_files"] = default_config.env_files
             except Exception as e:
-                logger.warning(f"Failed to load default config file {default_config_path}: {e}")
+                logger.warning(
+                    f"Failed to load default config file {default_config_path}: {e}")
 
         # 2. Load explicit config file if provided (overrides default)
         if config_file is not None:
             if not config_file.exists():
-                raise FileNotFoundError(f"Configuration file not found: {config_file}")
+                raise FileNotFoundError(
+                    f"Configuration file not found: {config_file}")
             explicit_config = ConfigurationLoader.from_yaml_file(config_file)
             config_data["memory_db_type"] = explicit_config.memory_db_type
             config_data["initializers"] = [
@@ -205,7 +210,8 @@ class FrontendCore:
             config_data["memory_db_type"] = normalized_db
 
         if initialization_scripts is not None:
-            config_data["initialization_scripts"] = [str(p) for p in initialization_scripts]
+            config_data["initialization_scripts"] = [
+                str(p) for p in initialization_scripts]
 
         if initializer_names is not None:
             config_data["initializers"] = initializer_names
@@ -213,7 +219,17 @@ class FrontendCore:
         if env_files is not None:
             config_data["env_files"] = [str(p) for p in env_files]
 
-        return ConfigurationLoader.from_dict(config_data)
+        try:
+            return ConfigurationLoader.from_dict(config_data)
+        except ValueError as e:
+            # Re-raise with user-friendly message for CLI users
+            error_msg = str(e)
+            if "memory_db_type" in error_msg:
+                raise ValueError(
+                    f"Invalid database type '{database}'. "
+                    f"Must be one of: InMemory, SQLite, AzureSQL"
+                ) from e
+            raise
 
     async def initialize_async(self) -> None:
         """Initialize PyRIT and load registries (heavy operation)."""
@@ -385,7 +401,8 @@ async def run_scenario_async(
 
     if scenario_class is None:
         available = ", ".join(context.scenario_registry.get_names())
-        raise ValueError(f"Scenario '{scenario_name}' not found.\nAvailable scenarios: {available}")
+        raise ValueError(
+            f"Scenario '{scenario_name}' not found.\nAvailable scenarios: {available}")
 
     # Build initialization kwargs (these go to initialize_async, not __init__)
     init_kwargs: dict[str, Any] = {}
@@ -510,13 +527,15 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
     if scenario_metadata.aggregate_strategies:
         agg_strategies = scenario_metadata.aggregate_strategies
         print("    Aggregate Strategies:")
-        formatted = _format_wrapped_text(text=", ".join(agg_strategies), indent="      - ")
+        formatted = _format_wrapped_text(
+            text=", ".join(agg_strategies), indent="      - ")
         print(formatted)
 
     if scenario_metadata.all_strategies:
         strategies = scenario_metadata.all_strategies
         print(f"    Available Strategies ({len(strategies)}):")
-        formatted = _format_wrapped_text(text=", ".join(strategies), indent="      ")
+        formatted = _format_wrapped_text(
+            text=", ".join(strategies), indent="      ")
         print(formatted)
 
     if scenario_metadata.default_strategy:
@@ -528,7 +547,8 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
         if datasets:
             size_suffix = f", max {max_size} per dataset" if max_size else ""
             print(f"    Default Datasets ({len(datasets)}{size_suffix}):")
-            formatted = _format_wrapped_text(text=", ".join(datasets), indent="      ")
+            formatted = _format_wrapped_text(
+                text=", ".join(datasets), indent="      ")
             print(formatted)
         else:
             print("    Default Datasets: None")
@@ -555,7 +575,8 @@ def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") 
 
     if initializer_metadata.class_description:
         print("    Description:")
-        print(_format_wrapped_text(text=initializer_metadata.class_description, indent="      "))
+        print(_format_wrapped_text(
+            text=initializer_metadata.class_description, indent="      "))
 
 
 def validate_database(*, database: str) -> str:
@@ -573,7 +594,8 @@ def validate_database(*, database: str) -> str:
     """
     valid_databases = [IN_MEMORY, SQLITE, AZURE_SQL]
     if database not in valid_databases:
-        raise ValueError(f"Invalid database type: {database}. Must be one of: {', '.join(valid_databases)}")
+        raise ValueError(
+            f"Invalid database type: {database}. Must be one of: {', '.join(valid_databases)}")
     return database
 
 
@@ -593,7 +615,8 @@ def validate_log_level(*, log_level: str) -> str:
     valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     level_upper = log_level.upper()
     if level_upper not in valid_levels:
-        raise ValueError(f"Invalid log level: {log_level}. Must be one of: {', '.join(valid_levels)}")
+        raise ValueError(
+            f"Invalid log level: {log_level}. Must be one of: {', '.join(valid_levels)}")
     return level_upper
 
 
@@ -618,11 +641,13 @@ def validate_integer(value: str, *, name: str = "value", min_value: Optional[int
     """
     # Reject boolean types explicitly (int(True) == 1, int(False) == 0)
     if isinstance(value, bool):
-        raise ValueError(f"{name} must be an integer string, got boolean: {value}")
+        raise ValueError(
+            f"{name} must be an integer string, got boolean: {value}")
 
     # Ensure value is a string
     if not isinstance(value, str):
-        raise ValueError(f"{name} must be a string, got {type(value).__name__}: {value}")
+        raise ValueError(
+            f"{name} must be a string, got {type(value).__name__}: {value}")
 
     # Strip whitespace and validate it looks like an integer
     value = value.strip()
@@ -635,7 +660,8 @@ def validate_integer(value: str, *, name: str = "value", min_value: Optional[int
         raise ValueError(f"{name} must be an integer, got: {value}") from e
 
     if min_value is not None and int_value < min_value:
-        raise ValueError(f"{name} must be at least {min_value}, got: {int_value}")
+        raise ValueError(
+            f"{name} must be at least {min_value}, got: {int_value}")
 
     return int_value
 
@@ -679,7 +705,8 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
     sig = inspect.signature(validator_func)
     params = list(sig.parameters.keys())
     if not params:
-        raise ValueError(f"Validator function {validator_func.__name__} must have at least one parameter")
+        raise ValueError(
+            f"Validator function {validator_func.__name__} must have at least one parameter")
     first_param = params[0]
 
     def wrapper(value: Any) -> Any:
@@ -692,7 +719,8 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
             raise ap.ArgumentTypeError(str(e)) from e
 
     # Preserve function metadata for better debugging
-    wrapper.__name__ = getattr(validator_func, "__name__", "argparse_validator")
+    wrapper.__name__ = getattr(
+        validator_func, "__name__", "argparse_validator")
     wrapper.__doc__ = getattr(validator_func, "__doc__", None)
     return wrapper
 
@@ -752,7 +780,8 @@ def resolve_env_files(*, env_file_paths: list[str]) -> list[Path]:
 validate_database_argparse = _argparse_validator(validate_database)
 validate_log_level_argparse = _argparse_validator(validate_log_level)
 positive_int = _argparse_validator(lambda v: validate_integer(v, min_value=1))
-non_negative_int = _argparse_validator(lambda v: validate_integer(v, min_value=0))
+non_negative_int = _argparse_validator(
+    lambda v: validate_integer(v, min_value=0))
 resolve_env_files_argparse = _argparse_validator(resolve_env_files)
 
 
@@ -780,7 +809,8 @@ def parse_memory_labels(json_string: str) -> dict[str, str]:
     # Validate all keys and values are strings
     for key, value in labels.items():
         if not isinstance(key, str) or not isinstance(value, str):
-            raise ValueError(f"All label keys and values must be strings. Got: {key}={value}")
+            raise ValueError(
+                f"All label keys and values must be strings. Got: {key}={value}")
 
     return labels
 
@@ -949,13 +979,15 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             i += 1
             if i >= len(parts):
                 raise ValueError("--max-concurrency requires a value")
-            result["max_concurrency"] = validate_integer(parts[i], name="--max-concurrency", min_value=1)
+            result["max_concurrency"] = validate_integer(
+                parts[i], name="--max-concurrency", min_value=1)
             i += 1
         elif parts[i] == "--max-retries":
             i += 1
             if i >= len(parts):
                 raise ValueError("--max-retries requires a value")
-            result["max_retries"] = validate_integer(parts[i], name="--max-retries", min_value=0)
+            result["max_retries"] = validate_integer(
+                parts[i], name="--max-retries", min_value=0)
             i += 1
         elif parts[i] == "--memory-labels":
             i += 1
@@ -986,7 +1018,8 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             i += 1
             if i >= len(parts):
                 raise ValueError("--max-dataset-size requires a value")
-            result["max_dataset_size"] = validate_integer(parts[i], name="--max-dataset-size", min_value=1)
+            result["max_dataset_size"] = validate_integer(
+                parts[i], name="--max-dataset-size", min_value=1)
             i += 1
         else:
             logger.warning(f"Unknown argument: {parts[i]}")
