@@ -141,6 +141,33 @@ class TextJailBreak:
                 jailbreak_template_names, k=k)
         return jailbreak_template_names
 
+    @classmethod
+    def get_all_jailbreak_templates(cls, n: Optional[int] = None) -> List[str]:
+        """
+        Retrieve all jailbreaks from the JAILBREAK_TEMPLATES_PATH.
+
+        Args:
+            n (int, optional): Number of jailbreak templates to return. None to get all.
+
+        Returns:
+            List[str]: List of jailbreak template file names.
+
+        Raises:
+            ValueError: If no jailbreak templates are found in the jailbreak directory.
+            ValueError: If n is larger than the number of templates that exist.
+        """
+        jailbreak_template_names = [str(f.stem) + ".yaml" for f in JAILBREAK_TEMPLATES_PATH.glob("*.yaml")]
+        if not jailbreak_template_names:
+            raise ValueError("No jailbreak templates found in the jailbreak directory")
+
+        if n:
+            if n > len(jailbreak_template_names):
+                raise ValueError(
+                    f"Attempted to pull {n} jailbreaks from a dataset with only {len(jailbreak_template_names)} jailbreaks!"
+                )
+            jailbreak_template_names = random.choices(jailbreak_template_names, k=n)
+        return jailbreak_template_names
+
     def get_jailbreak_system_prompt(self) -> str:
         """
         Get the jailbreak template as a system prompt without a specific user prompt.
