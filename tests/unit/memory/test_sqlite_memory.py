@@ -376,7 +376,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
         assert converter_identifiers[0].class_name == "Base64Converter"
 
         prompt_target = retrieved_entry.prompt_target_identifier
-        assert prompt_target["__type__"] == "TextTarget"
+        assert prompt_target.class_name == "TextTarget"
 
         labels = retrieved_entry.labels
         assert labels["normalizer_id"] == "id1"

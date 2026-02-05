@@ -12,7 +12,7 @@ import pytest
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import PromptSendingAttack, RedTeamingAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import SeedAttackGroup, SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario import DatasetConfiguration
@@ -23,6 +23,16 @@ from pyrit.score import TrueFalseCompositeScorer
 def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
     """Helper to create ScorerIdentifier for tests."""
     return ScorerIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
         class_name=name,
         class_module="test",
         class_description="",
@@ -86,7 +96,7 @@ def mock_runtime_env():
 def mock_objective_target():
     """Create a mock objective target for testing."""
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockObjectiveTarget")
     return mock
 
 
@@ -102,7 +112,7 @@ def mock_objective_scorer():
 def mock_adversarial_target():
     """Create a mock adversarial target for testing."""
     mock = MagicMock(spec=PromptChatTarget)
-    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockAdversarialTarget")
     return mock
 
 
@@ -169,7 +179,7 @@ class TestCyberInitialization:
     def test_init_with_adversarial_chat(self, mock_objective_scorer, mock_memory_seed_groups):
         """Test initialization with adversarial chat (for red teaming attack variation)."""
         adversarial_chat = MagicMock(OpenAIChatTarget)
-        adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
+        adversarial_chat.get_identifier.return_value = _mock_target_id("CustomAdversary")
 
         with patch.object(Cyber, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Cyber(

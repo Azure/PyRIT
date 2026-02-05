@@ -5,11 +5,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Dict, List, Literal, Optional, Union, get_args
+from typing import Any, Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
-from pyrit.common.deprecation import print_deprecation_message
-from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier
+from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -39,7 +38,7 @@ class MessagePiece:
         labels: Optional[Dict[str, str]] = None,
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
         converter_identifiers: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = None,
-        prompt_target_identifier: Optional[Dict[str, str]] = None,
+        prompt_target_identifier: Optional[Union[TargetIdentifier, Dict[str, Any]]] = None,
         attack_identifier: Optional[Dict[str, str]] = None,
         scorer_identifier: Optional[Union[ScorerIdentifier, Dict[str, str]]] = None,
         original_value_data_type: PromptDataType = "text",
@@ -107,35 +106,24 @@ class MessagePiece:
         self.labels = labels or {}
         self.prompt_metadata = prompt_metadata or {}
 
-        # Handle converter_identifiers: convert dicts to ConverterIdentifier with deprecation warning
-        self.converter_identifiers: List[ConverterIdentifier] = []
-        if converter_identifiers:
-            for conv_id in converter_identifiers:
-                if isinstance(conv_id, dict):
-                    print_deprecation_message(
-                        old_item="dict for converter_identifiers",
-                        new_item="ConverterIdentifier",
-                        removed_in="0.14.0",
-                    )
-                    self.converter_identifiers.append(ConverterIdentifier.from_dict(conv_id))
-                else:
-                    self.converter_identifiers.append(conv_id)
+        # Handle converter_identifiers: normalize to ConverterIdentifier (handles dict with deprecation warning)
+        self.converter_identifiers: List[ConverterIdentifier] = (
+            [ConverterIdentifier.normalize(conv_id) for conv_id in converter_identifiers]
+            if converter_identifiers
+            else []
+        )
 
-        self.prompt_target_identifier = prompt_target_identifier or {}
+        # Handle prompt_target_identifier: normalize to TargetIdentifier (handles dict with deprecation warning)
+        self.prompt_target_identifier: Optional[TargetIdentifier] = (
+            TargetIdentifier.normalize(prompt_target_identifier) if prompt_target_identifier else None
+        )
+
         self.attack_identifier = attack_identifier or {}
 
-        # Handle scorer_identifier: convert dict to ScorerIdentifier with deprecation warning
-        if scorer_identifier is None:
-            self.scorer_identifier: Optional[ScorerIdentifier] = None
-        elif isinstance(scorer_identifier, dict):
-            print_deprecation_message(
-                old_item="dict for scorer_identifier",
-                new_item="ScorerIdentifier",
-                removed_in="0.13.0",
-            )
-            self.scorer_identifier = ScorerIdentifier.from_dict(scorer_identifier)
-        else:
-            self.scorer_identifier = scorer_identifier
+        # Handle scorer_identifier: normalize to ScorerIdentifier (handles dict with deprecation warning)
+        self.scorer_identifier: Optional[ScorerIdentifier] = (
+            ScorerIdentifier.normalize(scorer_identifier) if scorer_identifier else None
+        )
 
         self.original_value = original_value
 
@@ -292,7 +280,9 @@ class MessagePiece:
             "targeted_harm_categories": self.targeted_harm_categories if self.targeted_harm_categories else None,
             "prompt_metadata": self.prompt_metadata,
             "converter_identifiers": [conv.to_dict() for conv in self.converter_identifiers],
-            "prompt_target_identifier": self.prompt_target_identifier,
+            "prompt_target_identifier": (
+                self.prompt_target_identifier.to_dict() if self.prompt_target_identifier else None
+            ),
             "attack_identifier": self.attack_identifier,
             "scorer_identifier": self.scorer_identifier.to_dict() if self.scorer_identifier else None,
             "original_value_data_type": self.original_value_data_type,
@@ -308,7 +298,8 @@ class MessagePiece:
         }
 
     def __str__(self) -> str:
-        return f"{self.prompt_target_identifier}: {self._role}: {self.converted_value}"
+        target_str = self.prompt_target_identifier.class_name if self.prompt_target_identifier else "Unknown"
+        return f"{target_str}: {self._role}: {self.converted_value}"
 
     __repr__ = __str__
 

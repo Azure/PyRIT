@@ -9,7 +9,7 @@ from contextlib import AbstractAsyncContextManager
 from typing import Generator, MutableSequence, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
@@ -24,6 +24,26 @@ def get_mock_scorer_identifier() -> ScorerIdentifier:
         class_name="MockScorer",
         class_module="tests.unit.mocks",
         class_description="Mock scorer for testing",
+        identifier_type="instance",
+    )
+
+
+def get_mock_target_identifier(name: str = "MockTarget", module: str = "tests.unit.mocks") -> TargetIdentifier:
+    """
+    Returns a mock TargetIdentifier for use in tests where the specific
+    target identity doesn't matter.
+
+    Args:
+        name: The class name for the mock target. Defaults to "MockTarget".
+        module: The module path for the mock target. Defaults to "tests.unit.mocks".
+
+    Returns:
+        A TargetIdentifier configured with the provided name and module.
+    """
+    return TargetIdentifier(
+        class_name=name,
+        class_module=module,
+        class_description="Mock target for testing",
         identifier_type="instance",
     )
 
