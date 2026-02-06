@@ -5,6 +5,7 @@
 Unit tests for the frontend_core module.
 """
 
+import logging
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -24,7 +25,7 @@ class TestFrontendCore:
         assert context._database == frontend_core.SQLITE
         assert context._initialization_scripts is None
         assert context._initializer_names is None
-        assert context._log_level == "WARNING"
+        assert context._log_level == logging.WARNING
         assert context._initialized is False
 
     def test_init_with_all_parameters(self):
@@ -45,17 +46,12 @@ class TestFrontendCore:
         assert len(context._initialization_scripts) == 1
         assert context._initialization_scripts[0].parts[-2:] == ("test", "script.py")
         assert context._initializer_names == initializers
-        assert context._log_level == "DEBUG"
+        assert context._log_level == logging.DEBUG
 
     def test_init_with_invalid_database(self):
         """Test initialization with invalid database raises ValueError."""
         with pytest.raises(ValueError, match="Invalid database type"):
             frontend_core.FrontendCore(database="InvalidDB")
-
-    def test_init_with_invalid_log_level(self):
-        """Test initialization with invalid log level raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid log level"):
-            frontend_core.FrontendCore(log_level="INVALID")
 
     @patch("pyrit.registry.ScenarioRegistry")
     @patch("pyrit.registry.InitializerRegistry")

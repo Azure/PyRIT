@@ -21,6 +21,9 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
+from pyrit.setup import ConfigurationLoader
+from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
+
 try:
     import termcolor
 
@@ -94,9 +97,6 @@ class FrontendCore:
             ValueError: If database or log_level are invalid, or if config file is invalid.
             FileNotFoundError: If an explicitly specified config_file does not exist.
         """
-        from pyrit.setup import ConfigurationLoader
-        from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
-
         # Validate and convert log level to actual logging level constant
         if log_level is None:
             self._log_level = logging.WARNING
