@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import gc
 import json
 import logging
@@ -813,6 +815,12 @@ class MultiPromptAttack(object):
                 )
 
                 self.control_str = last_control
+
+                # Clean up memory after test_all() which creates temporary PromptManagers
+                del model_tests
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
         return self.control_str, loss, steps
 
@@ -1644,7 +1652,12 @@ class ModelWorker(object):
             ob, fn, args, kwargs = task
             if fn == "grad":
                 with torch.enable_grad():  # type: ignore[no-untyped-call, unused-ignore]
-                    results.put(ob.grad(*args, **kwargs))
+                    result = ob.grad(*args, **kwargs)
+                    results.put(result)
+                    del result
+                # Clear CUDA cache after gradient computation to prevent memory accumulation
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
             else:
                 with torch.no_grad():
                     if fn == "logits":
@@ -1657,6 +1670,9 @@ class ModelWorker(object):
                         results.put(ob.test_loss(*args, **kwargs))
                     else:
                         results.put(fn(*args, **kwargs))
+            # Clean up the task object to free memory
+            del ob
+            gc.collect()
             tasks.task_done()
 
     def start(self) -> "ModelWorker":
