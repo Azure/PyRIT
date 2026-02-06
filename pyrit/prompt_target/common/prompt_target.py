@@ -122,6 +122,9 @@ class PromptTarget(Identifiable[TargetIdentifier]):
         elif self._model_name:
             model_name = self._model_name
 
+        # Late import to avoid circular dependency
+        from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+
         return TargetIdentifier(
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
@@ -132,6 +135,7 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             temperature=temperature,
             top_p=top_p,
             max_requests_per_minute=self._max_requests_per_minute,
+            supports_conversation_history=isinstance(self, PromptChatTarget),
             target_specific_params=target_specific_params,
         )
 
