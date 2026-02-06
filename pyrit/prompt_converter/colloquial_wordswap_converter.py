@@ -3,11 +3,11 @@
 
 import random
 import re
-from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import yaml
 
+from pyrit.common.path import DATASETS_PATH
 from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
@@ -21,44 +21,54 @@ class ColloquialWordswapConverter(PromptConverter):
     SUPPORTED_INPUT_TYPES = ("text",)
     SUPPORTED_OUTPUT_TYPES = ("text",)
 
-    def __init__(self, deterministic: bool = False, wordswap_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        deterministic: bool = False,
+        *,
+        custom_substitutions: Optional[Dict[str, List[str]]] = None,
+        wordswap_path: Optional[str] = None,
+    ) -> None:
         """
         Initialize the converter with optional deterministic mode and custom substitutions.
 
         Args:
             deterministic (bool): If True, use the first substitution for each wordswap.
                 If False, randomly choose a substitution for each wordswap. Defaults to False.
-            wordswap_path (Optional[str]): File name of a YAML file in ../../datasets/prompt_converters/colloquial_wordswaps
-                directory containing a dictionary of substitutions. Defaults to None.
+            custom_substitutions (Optional[Dict[str, List[str]]], Optional): A dictionary of
+                custom substitutions to override the defaults. Defaults to none.
+            wordswap_path (Optional[str]): Name of a YAML file located in the
+                PyRIT datasets prompt_converters/colloquial_wordswaps directory.
 
         Raises:
             FileNotFoundError: If the wordswap YAML file is not found.
-            ValueError: If the YAML file is formatted incorrectly or empty.
+            ValueError: If both parameters are provided or YAML format is invalid.
         """
-        # Use custom substitutions if wordswap_path provided, otherwise default to singaporean.yaml
-        if wordswap_path:
-            file_path = (
-                Path(__file__).parent.parent / "datasets" / "prompt_converters" / "colloquial_wordswaps" / wordswap_path
-            )
+        if custom_substitutions is not None and wordswap_path is not None:
+            raise ValueError("Provide either custom_substitutions or wordswap_path, not both.")
+
+        wordswap_directory = DATASETS_PATH / "prompt_converters" / "colloquial_wordswaps"
+
+        # custom_substitution arg prioritization
+        if custom_substitutions is not None:
+            self._colloquial_substitutions = custom_substitutions
         else:
+            # if neither custom_sub nor wordswap_path is given then singaporean substituions are used
             file_path = (
-                Path(__file__).parent.parent
-                / "datasets"
-                / "prompt_converters"
-                / "colloquial_wordswaps"
-                / "singaporean.yaml"
+                wordswap_directory / wordswap_path
+                if wordswap_path is not None
+                else wordswap_directory / "singaporean.yaml"
             )
 
-        if not file_path.exists():
-            raise FileNotFoundError(f"Colloquial wordswap file not found: {file_path}")
+            if not file_path.exists():
+                raise FileNotFoundError(f"Colloquial wordswap file not found: {file_path}")
+            with file_path.open("r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+            # ensure that wordswap YAML is in the correct format.
+            if not isinstance(data, dict):
+                raise ValueError("Wordswap YAML must be a dict[str, list[str]] mapping words to substitutions")
 
-        with file_path.open("r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-        # Ensure that wordswap YAML is in the correct format.
-        if not isinstance(data, dict):
-            raise ValueError("Wordswap YAML must contain a dictionary of word -> list of substitutions")
+            self._colloquial_substitutions = data
 
-        self._colloquial_substitutions = data
         self._deterministic = deterministic
 
     def _build_identifier(self) -> ConverterIdentifier:
