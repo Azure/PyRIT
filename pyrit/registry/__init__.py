@@ -21,6 +21,7 @@ from pyrit.registry.discovery import (
 from pyrit.registry.instance_registries import (
     BaseInstanceRegistry,
     ScorerRegistry,
+    TargetRegistry,
 )
 
 __all__ = [
@@ -39,4 +40,5 @@ __all__ = [
     "ScenarioMetadata",
     "ScenarioRegistry",
     "ScorerRegistry",
+    "TargetRegistry",
 ]
