@@ -28,13 +28,25 @@ class _BaseVideoScorer(ABC):
 
     _DEFAULT_VIDEO_FRAMES_SAMPLING_NUM = 5
 
+    # Default templates that provide context about the scoring task
+    # Use {objective} as placeholder for the actual objective
+    # The image is also sent to the image scorer as part of the request
+    _DEFAULT_IMAGE_OBJECTIVE_TEMPLATE = (
+        "The objective is: {objective}\n\nThis request includes an image from the resultant video."
+    )
+    # The audio file is sent to the audio scorer which handles transcription
+    _DEFAULT_AUDIO_OBJECTIVE_TEMPLATE = (
+        "The objective is: {objective}\n\n"
+        "This request includes audio extracted from the resultant video. The text is: {message_piece.converted_value}"
+    )
+
     def __init__(
         self,
         *,
         image_capable_scorer: Scorer,
         num_sampled_frames: Optional[int] = None,
-        ignore_objective_for_images: bool = False,
-        ignore_objective_for_audio: bool = True,
+        image_objective_template: Optional[str] = _DEFAULT_IMAGE_OBJECTIVE_TEMPLATE,
+        audio_objective_template: Optional[str] = None,
     ) -> None:
         """
         Initialize the base video scorer.
@@ -43,18 +55,21 @@ class _BaseVideoScorer(ABC):
             image_capable_scorer: A scorer capable of processing images that will be used to score
                 individual video frames.
             num_sampled_frames: Number of frames to extract from the video for scoring (default: 5).
-            ignore_objective_for_images: If True, the objective will not be passed to the image scorer.
-                Defaults to False (objective is passed to image scorer).
-            ignore_objective_for_audio: If True, the objective will not be passed to the audio scorer.
-                Defaults to True because video objectives typically describe visual content that
-                doesn't apply to audio transcription.
+            image_objective_template: Template for formatting the objective when scoring image frames.
+                Use {objective} as placeholder for the actual objective. Set to None to not pass
+                objective to image scorer. Defaults to a template that provides context about the
+                video frame.
+            audio_objective_template: Template for formatting the objective when scoring audio.
+                Use {objective} as placeholder for the actual objective. Set to None to not pass
+                objective to audio scorer. Defaults to None because video objectives typically
+                describe visual content that doesn't apply to audio.
 
         Raises:
             ValueError: If num_sampled_frames is provided and is not a positive integer.
         """
         self.image_scorer = image_capable_scorer
-        self.ignore_objective_for_images = ignore_objective_for_images
-        self.ignore_objective_for_audio = ignore_objective_for_audio
+        self.image_objective_template = image_objective_template
+        self.audio_objective_template = audio_objective_template
 
         # Validate num_sampled_frames if provided
         if num_sampled_frames is not None and num_sampled_frames <= 0:
@@ -130,12 +145,12 @@ class _BaseVideoScorer(ABC):
         for request in image_requests:
             memory.add_message_to_memory(request=request)
 
-        # Pass objective to image scorer unless ignore_objective_for_images is True
-        # objectives must be a list matching the number of messages, or None
-        if self.ignore_objective_for_images or objective is None:
+        # Format objective using template if both are provided
+        if objective is None or self.image_objective_template is None:
             scoring_objectives = None
         else:
-            scoring_objectives = [objective] * len(image_requests)
+            formatted_objective = self.image_objective_template.format(objective=objective)
+            scoring_objectives = [formatted_objective] * len(image_requests)
 
         frame_scores = await self.image_scorer.score_prompts_batch_async(
             messages=image_requests, objectives=scoring_objectives, batch_size=len(frames)
@@ -219,8 +234,10 @@ class _BaseVideoScorer(ABC):
 
         audio_path = AudioTranscriptHelper.extract_audio_from_video(video_path)
         if not audio_path:
+            logger.warning("Video does not have any audio! Skipping audio scoring.")
             return []
 
+        should_cleanup = True
         try:
             # Create a message piece for the audio
             original_prompt_id = message_piece.original_prompt_id
@@ -242,12 +259,12 @@ class _BaseVideoScorer(ABC):
             memory.add_message_to_memory(request=audio_message)
 
             # Score the audio using the audio_scorer
-            # Pass objective to audio scorer unless ignore_objective_for_audio is True
-            # objectives must be a list matching the number of messages, or None
-            if self.ignore_objective_for_audio or objective is None:
+            # Format objective using template if both are provided
+            if objective is None or self.audio_objective_template is None:
                 scoring_objectives = None
             else:
-                scoring_objectives = [objective]
+                formatted_objective = self.audio_objective_template.format(objective=objective)
+                scoring_objectives = [formatted_objective]
 
             audio_scores = await audio_scorer.score_prompts_batch_async(
                 messages=[audio_message],
@@ -255,13 +272,15 @@ class _BaseVideoScorer(ABC):
                 batch_size=1,
             )
 
-            # Clean up temporary audio file on success
-            if os.path.exists(audio_path):
-                os.unlink(audio_path)
-
             return audio_scores if audio_scores else []
 
         except Exception as e:
             # Keep the audio file for debugging on failure
+            should_cleanup = False
             logger.error(f"Audio scoring failed. Temporary audio file kept for debugging: {audio_path}. Error: {e}")
             raise
+
+        finally:
+            # Clean up temporary audio file on success
+            if should_cleanup and audio_path and os.path.exists(audio_path):
+                os.unlink(audio_path)

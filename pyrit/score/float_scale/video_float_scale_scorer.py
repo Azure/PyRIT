@@ -46,8 +46,8 @@ class VideoFloatScaleScorer(
         num_sampled_frames: Optional[int] = None,
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: FloatScaleAggregatorFunc = FloatScaleScorerByCategory.MAX,
-        ignore_objective_for_images: bool = False,
-        ignore_objective_for_audio: bool = True,
+        image_objective_template: Optional[str] = _BaseVideoScorer._DEFAULT_IMAGE_OBJECTIVE_TEMPLATE,
+        audio_objective_template: Optional[str] = None,
     ) -> None:
         """
         Initialize the VideoFloatScaleScorer.
@@ -66,11 +66,14 @@ class VideoFloatScaleScorer(
                 (returns single score with all categories combined).
                 Use FloatScaleScoreAggregator.MAX/AVERAGE/MIN for simple aggregation preserving all categories
                 (returns single score with all categories preserved).
-            ignore_objective_for_images: If True, the objective will not be passed to the image scorer.
-                Defaults to False (objective is passed to image scorer).
-            ignore_objective_for_audio: If True, the objective will not be passed to the audio scorer.
-                Defaults to True because video objectives typically describe visual content that
-                doesn't apply to audio transcription.
+            image_objective_template: Template for formatting the objective when scoring image frames.
+                Use {objective} as placeholder for the actual objective. Set to None to not pass
+                objective to image scorer. Defaults to a template that provides context about the
+                video frame.
+            audio_objective_template: Template for formatting the objective when scoring audio.
+                Use {objective} as placeholder for the actual objective. Set to None to not pass
+                objective to audio scorer. Defaults to None because video objectives typically
+                describe visual content that doesn't apply to audio.
 
         Raises:
             ValueError: If audio_scorer is provided and does not support audio_path data type.
@@ -81,8 +84,8 @@ class VideoFloatScaleScorer(
             self,
             image_capable_scorer=image_capable_scorer,
             num_sampled_frames=num_sampled_frames,
-            ignore_objective_for_images=ignore_objective_for_images,
-            ignore_objective_for_audio=ignore_objective_for_audio,
+            image_objective_template=image_objective_template,
+            audio_objective_template=audio_objective_template,
         )
         self._score_aggregator = score_aggregator
 
@@ -107,8 +110,8 @@ class VideoFloatScaleScorer(
             scorer_specific_params={
                 "num_sampled_frames": self.num_sampled_frames,
                 "has_audio_scorer": self.audio_scorer is not None,
-                "ignore_objective_for_images": self.ignore_objective_for_images,
-                "ignore_objective_for_audio": self.ignore_objective_for_audio,
+                "image_objective_template": self.image_objective_template,
+                "audio_objective_template": self.audio_objective_template,
             },
         )
 

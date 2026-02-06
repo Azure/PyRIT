@@ -16,7 +16,6 @@ from pyrit.score.audio_transcript_scorer import AudioTranscriptHelper
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.float_scale.video_float_scale_scorer import VideoFloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 
@@ -187,7 +186,7 @@ async def test_score_video_true_false(video_converter_sample_video):
     assert len(scores) == 1, "Expected one aggregated score"
     assert scores[0].score_type == "true_false"
     assert scores[0].score_value == "true"
-    assert "Video scored by analyzing" in scores[0].score_rationale
+    assert "Frames (3):" in scores[0].score_rationale
 
 
 @pytest.mark.asyncio
@@ -202,7 +201,7 @@ async def test_score_video_true_false_with_false_frames(video_converter_sample_v
     assert len(scores) == 1, "Expected one aggregated score"
     assert scores[0].score_type == "true_false"
     assert scores[0].score_value == "false"
-    assert "Video scored by analyzing" in scores[0].score_rationale
+    assert "Frames (3):" in scores[0].score_rationale
 
 
 @pytest.mark.asyncio
@@ -361,7 +360,6 @@ async def test_video_scorer_and_aggregation_both_true(video_converter_sample_vid
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,
             num_sampled_frames=3,
-            score_aggregator=TrueFalseScoreAggregator.AND,
         )
 
         scores = await scorer._score_piece_async(video_converter_sample_video)
@@ -382,7 +380,6 @@ async def test_video_scorer_and_aggregation_visual_false(video_converter_sample_
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,
             num_sampled_frames=3,
-            score_aggregator=TrueFalseScoreAggregator.AND,
         )
 
         scores = await scorer._score_piece_async(video_converter_sample_video)
@@ -403,7 +400,6 @@ async def test_video_scorer_and_aggregation_audio_false(video_converter_sample_v
             image_capable_scorer=image_scorer,
             audio_scorer=audio_scorer,
             num_sampled_frames=3,
-            score_aggregator=TrueFalseScoreAggregator.AND,
         )
 
         scores = await scorer._score_piece_async(video_converter_sample_video)
@@ -414,8 +410,8 @@ async def test_video_scorer_and_aggregation_audio_false(video_converter_sample_v
 
 @pytest.mark.asyncio
 @pytest.mark.skipif(not is_opencv_installed(), reason="opencv is not installed")
-async def test_video_scorer_or_aggregation_one_true(video_converter_sample_video):
-    """Test default OR aggregation when visual is false and audio is true"""
+async def test_video_scorer_with_audio_uses_and_aggregation(video_converter_sample_video):
+    """Test that with audio present, AND aggregation is used (visual=False + audio=True = False)"""
     image_scorer = MockTrueFalseScorer(return_value=False)
     audio_scorer = MockAudioTrueFalseScorer(return_value=True)
 
@@ -429,7 +425,8 @@ async def test_video_scorer_or_aggregation_one_true(video_converter_sample_video
         scores = await scorer._score_piece_async(video_converter_sample_video)
 
         assert len(scores) == 1
-        assert scores[0].score_value == "true"
+        # With AND aggregation: False AND True = False
+        assert scores[0].score_value == "false"
 
 
 @pytest.mark.asyncio

@@ -25,6 +25,12 @@ class AudioTranscriptHelper(ABC):
     specific to their scoring type (true/false or float scale).
     """
 
+    # Azure Speech optimal audio settings
+    _DEFAULT_SAMPLE_RATE = 16000  # 16kHz - Azure Speech optimal rate
+    _DEFAULT_CHANNELS = 1  # Mono - Azure Speech prefers mono
+    _DEFAULT_SAMPLE_WIDTH = 2  # 16-bit audio (2 bytes per sample)
+    _DEFAULT_EXPORT_PARAMS = ["-acodec", "pcm_s16le"]  # 16-bit PCM for best compatibility
+
     def __init__(
         self,
         *,
@@ -108,11 +114,12 @@ class AudioTranscriptHelper(ABC):
         memory.add_message_to_memory(request=text_message)
 
         # Score the transcript
-        transcript_scores = await self.text_scorer.score_prompts_batch_async(
-            messages=[text_message],
-            objectives=[objective] if objective else None,
-            batch_size=1,
-        )
+        transcript_scores = await self.text_scorer.score_async(message=text_message, objective=objective)
+        # transcript_scores = await self.text_scorer.score_prompts_batch_async(
+        #     messages=[text_message],
+        #     objectives=[objective] if objective else None,
+        #     batch_size=1,
+        # )
 
         # Add context to indicate this was scored from audio transcription
         for score in transcript_scores:
@@ -180,7 +187,11 @@ class AudioTranscriptHelper(ABC):
             raise e
 
         audio = AudioSegment.from_file(audio_path)
-        audio = audio.set_frame_rate(16000).set_channels(1).set_sample_width(2)
+        audio = (
+            audio.set_frame_rate(self._DEFAULT_SAMPLE_RATE)
+            .set_channels(self._DEFAULT_CHANNELS)
+            .set_sample_width(self._DEFAULT_SAMPLE_WIDTH)
+        )
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
             audio.export(temp_wav.name, format="wav")
             return temp_wav.name
@@ -233,27 +244,30 @@ class AudioTranscriptHelper(ABC):
 
             # Optimize for Azure Speech recognition:
             # Azure Speech works best with 16kHz mono audio (same as Azure TTS output)
-            target_sample_rate = 16000  # Azure Speech optimal rate
-            if audio.frame_rate != target_sample_rate:
-                logger.info(f"Resampling audio from {audio.frame_rate}Hz to {target_sample_rate}Hz")
-                audio = audio.set_frame_rate(target_sample_rate)
+            if audio.frame_rate != AudioTranscriptHelper._DEFAULT_SAMPLE_RATE:
+                logger.info(
+                    f"Resampling audio from {audio.frame_rate}Hz to {AudioTranscriptHelper._DEFAULT_SAMPLE_RATE}Hz"
+                )
+                audio = audio.set_frame_rate(AudioTranscriptHelper._DEFAULT_SAMPLE_RATE)
 
             # Ensure 16-bit audio
-            if audio.sample_width != 2:
-                logger.info(f"Converting sample width from {audio.sample_width * 8}-bit to 16-bit")
-                audio = audio.set_sample_width(2)
+            if audio.sample_width != AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH:
+                logger.info(
+                    f"Converting sample width from {audio.sample_width * 8}-bit to {AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH * 8}-bit"
+                )
+                audio = audio.set_sample_width(AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH)
 
             # Convert to mono (Azure Speech prefers mono)
-            if audio.channels > 1:
+            if audio.channels > AudioTranscriptHelper._DEFAULT_CHANNELS:
                 logger.info(f"Converting from {audio.channels} channels to mono")
-                audio = audio.set_channels(1)
+                audio = audio.set_channels(AudioTranscriptHelper._DEFAULT_CHANNELS)
 
             # Create temporary WAV file with PCM encoding for best compatibility
             with tempfile.NamedTemporaryFile(suffix="_video_audio.wav", delete=False) as temp_audio:
                 audio.export(
                     temp_audio.name,
                     format="wav",
-                    parameters=["-acodec", "pcm_s16le"],  # 16-bit PCM for best compatibility
+                    parameters=AudioTranscriptHelper._DEFAULT_EXPORT_PARAMS,
                 )
                 logger.info(
                     f"Audio exported to: {temp_audio.name} (duration={len(audio)}ms, rate={audio.frame_rate}Hz, mono)"
