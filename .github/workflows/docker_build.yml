@@ -82,6 +82,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: Build production image (local)
         uses: docker/build-push-action@v5
@@ -94,8 +96,6 @@ jobs:
           build-args: |
             BASE_IMAGE=pyrit-devcontainer:latest
             PYRIT_SOURCE=local
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Save production image
         run: docker save pyrit:local-test | gzip > local.tar.gz
@@ -134,6 +134,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker
 
       - name: Build production image (PyPI)
         uses: docker/build-push-action@v5
@@ -147,8 +149,6 @@ jobs:
             BASE_IMAGE=pyrit-devcontainer:latest
             PYRIT_SOURCE=pypi
             PYRIT_VERSION=${{ steps.pypi-version.outputs.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Save production image
         run: docker save pyrit:pypi-test | gzip > pypi.tar.gz
