@@ -25,6 +25,107 @@ def mock_authenticator():
     return authenticator
 
 
+@pytest.fixture
+def mock_copilot_target(mock_authenticator) -> WebSocketCopilotTarget:
+    return WebSocketCopilotTarget(authenticator=mock_authenticator)
+
+
+@pytest.fixture
+def mock_websocket():
+    ws = AsyncMock()
+    ws.send = AsyncMock()
+    ws.__aenter__ = AsyncMock(return_value=ws)
+    ws.__aexit__ = AsyncMock(return_value=None)
+    return ws
+
+
+def make_mock_async_client(mock_response):
+    mock_client = AsyncMock()
+    mock_client.post = AsyncMock(return_value=mock_response)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+    return mock_client
+
+
+@pytest.fixture
+def make_message_piece():
+    def _make(
+        value: str,
+        data_type: str = "text",
+        role: str = "user",
+        conversation_id: str = "conv_456",
+    ) -> MessagePiece:
+        return MessagePiece(
+            role=role,
+            original_value=value,
+            converted_value=value,
+            conversation_id=conversation_id,
+            original_value_data_type=data_type,
+            converted_value_data_type=data_type,
+        )
+
+    return _make
+
+
+@pytest.fixture
+def make_annotation():
+    def _make(
+        doc_id: str,
+        file_name: str,
+        file_type: str = None,
+    ) -> dict:
+        if file_type is None:
+            file_type = file_name.split(".")[-1].lower() if "." in file_name else "png"
+        return {
+            "id": doc_id,
+            "messageAnnotationMetadata": {
+                "@type": "File",
+                "annotationType": "File",
+                "fileType": file_type,
+                "fileName": file_name,
+            },
+            "messageAnnotationType": "ImageFile",
+        }
+
+    return _make
+
+
+@pytest.fixture
+def sample_text_pieces(make_message_piece):
+    return [make_message_piece("Hello")]
+
+
+@pytest.fixture
+def sample_image_pieces(make_message_piece):
+    return [make_message_piece("/path/to/image.png", data_type="image_path")]
+
+
+@pytest.fixture
+def sample_mixed_pieces(make_message_piece):
+    return [
+        make_message_piece("Describe this image"),
+        make_message_piece("/path/to/image1.png", data_type="image_path"),
+        make_message_piece("/path/to/image2.jpg", data_type="image_path"),
+    ]
+
+
+@pytest.fixture
+def patch_convert_local_image_to_data_url():
+    with patch(
+        "pyrit.prompt_target.websocket_copilot_target.convert_local_image_to_data_url",
+        new=AsyncMock(return_value="data:image/png;base64,abc123"),
+    ):
+        yield
+
+
+@pytest.fixture
+def mock_memory():
+    memory = MagicMock()
+    memory.get_conversation.return_value = []
+    memory.add_message_to_memory = AsyncMock()
+    return memory
+
+
 @pytest.mark.usefixtures("patch_central_database")
 class TestWebSocketCopilotTargetInit:
     def test_init_with_default_parameters(self):
@@ -141,8 +242,8 @@ class TestParseRawMessage:
 @pytest.mark.usefixtures("patch_central_database")
 class TestBuildWebsocketUrl:
     @pytest.mark.asyncio
-    async def test_build_websocket_url_with_valid_token(self, mock_authenticator):
-        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+    async def test_build_websocket_url_with_valid_token(self, mock_authenticator, mock_copilot_target):
+        target = mock_copilot_target
 
         session_id = "test_session_id"
         copilot_conversation_id = "test_conversation_id"
@@ -161,7 +262,7 @@ class TestBuildWebsocketUrl:
         assert "scenario=OfficeWebIncludedCopilot" in url
 
     @pytest.mark.asyncio
-    async def test_build_websocket_url_with_missing_ids(self, mock_authenticator):
+    async def test_build_websocket_url_with_missing_ids(self, mock_authenticator, mock_copilot_target):
         for missing_id in ["tid", "oid"]:
             token_payload = {"tid": "test_tenant_id", "oid": "test_object_id", "exp": 9999999999}
             del token_payload[missing_id]
@@ -172,81 +273,326 @@ class TestBuildWebsocketUrl:
             mock_authenticator.get_token = AsyncMock(return_value=mock_token)
             mock_authenticator.get_claims = AsyncMock(return_value=token_payload)
 
-            target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+            target = mock_copilot_target
             with pytest.raises(ValueError, match="Failed to extract tenant_id \\(tid\\) or object_id \\(oid\\)"):
                 await target._build_websocket_url_async(session_id="test", copilot_conversation_id="test")
 
     @pytest.mark.asyncio
-    async def test_build_websocket_url_with_invalid_token(self, mock_authenticator):
+    async def test_build_websocket_url_with_invalid_token(self, mock_authenticator, mock_copilot_target):
         mock_authenticator.get_token = AsyncMock(return_value="invalid_token")
         mock_authenticator.get_claims = AsyncMock(side_effect=ValueError("Failed to decode access token"))
-        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+        target = mock_copilot_target
 
         with pytest.raises(ValueError, match="Failed to decode access token"):
             await target._build_websocket_url_async(session_id="test", copilot_conversation_id="test")
 
 
 @pytest.mark.usefixtures("patch_central_database")
+class TestUploadImageAsync:
+    @pytest.mark.asyncio
+    async def test_upload_image_async_successful(self, mock_authenticator, mock_copilot_target):
+        target = mock_copilot_target
+        image_path = "/path/to/image.png"
+        data_url = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA"
+        conversation_id = "conv_123"
+        expected_doc_id = "doc_abc123"
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"docId": expected_doc_id}
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = make_mock_async_client(mock_response)
+            mock_client_class.return_value = mock_client
+
+            doc_id = await target._upload_image_async(
+                image_path=image_path, data_url=data_url, conversation_id=conversation_id
+            )
+
+            assert doc_id == expected_doc_id
+            mock_client.post.assert_called_once()
+            call_args = mock_client.post.call_args
+            assert call_args.args[0] == "https://substrate.office.com/m365Copilot/UploadFile"
+            assert "Authorization" in call_args.kwargs["headers"]
+            assert call_args.kwargs["data"]["conversationId"] == conversation_id
+            assert call_args.kwargs["data"]["FileBase64"] == data_url
+
+    @pytest.mark.asyncio
+    async def test_upload_image_async_non_200_status(self, mock_authenticator, mock_copilot_target):
+        target = mock_copilot_target
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client_class.return_value = make_mock_async_client(mock_response)
+
+            with pytest.raises(RuntimeError, match="Failed to upload image. Status: 500"):
+                await target._upload_image_async(
+                    image_path="/path/to/image.png", data_url="data:image/png;base64,abc", conversation_id="conv_123"
+                )
+
+    @pytest.mark.asyncio
+    async def test_upload_image_async_missing_doc_id(self, mock_authenticator, mock_copilot_target):
+        target = mock_copilot_target
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"someOtherField": "value"}
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client_class.return_value = make_mock_async_client(mock_response)
+
+            with pytest.raises(RuntimeError, match="No docId in upload response"):
+                await target._upload_image_async(
+                    image_path="/path/to/image.png", data_url="data:image/png;base64,abc", conversation_id="conv_123"
+                )
+
+    @pytest.mark.asyncio
+    async def test_upload_image_async_uses_correct_headers(self, mock_authenticator, mock_copilot_target):
+        target = mock_copilot_target
+        expected_token = await mock_authenticator.get_token_async()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"docId": "test_doc_id"}
+
+        with patch("httpx.AsyncClient") as mock_client_class:
+            mock_client = make_mock_async_client(mock_response)
+            mock_client_class.return_value = mock_client
+
+            await target._upload_image_async(
+                image_path="/path/to/image.png", data_url="data:image/png;base64,abc", conversation_id="conv_123"
+            )
+
+            call_args = mock_client.post.call_args
+            headers = call_args.kwargs["headers"]
+            assert headers["Authorization"] == f"Bearer {expected_token}"
+            assert headers["X-Scenario"] == "OfficeWebIncludedCopilot"
+            assert headers["X-Variants"] == "feature.EnableImageSupportInUploadFile"
+            assert headers["Origin"] == "https://m365.cloud.microsoft"
+            assert headers["Referer"] == "https://m365.cloud.microsoft/"
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestProcessImagePieceAsync:
+    @pytest.mark.asyncio
+    async def test_process_image_piece_async_successful(
+        self, mock_authenticator, mock_copilot_target, patch_convert_local_image_to_data_url
+    ):
+        target = mock_copilot_target
+        image_path = "/path/to/image.png"
+        copilot_conversation_id = "conv_123"
+        expected_doc_id = "doc_xyz789"
+
+        with patch.object(target, "_upload_image_async", new=AsyncMock(return_value=expected_doc_id)):
+            annotation = await target._process_image_piece_async(
+                image_path=image_path,
+                copilot_conversation_id=copilot_conversation_id,
+            )
+            assert annotation["id"] == expected_doc_id
+            assert annotation["messageAnnotationType"] == "ImageFile"
+            assert annotation["messageAnnotationMetadata"]["@type"] == "File"
+            assert annotation["messageAnnotationMetadata"]["annotationType"] == "File"
+            assert annotation["messageAnnotationMetadata"]["fileName"] == "image.png"
+            assert annotation["messageAnnotationMetadata"]["fileType"] == "png"
+
+    @pytest.mark.asyncio
+    async def test_process_image_piece_async_extracts_filename_correctly(
+        self, mock_authenticator, mock_copilot_target, patch_convert_local_image_to_data_url
+    ):
+        target = mock_copilot_target
+        test_cases = [
+            ("/path/to/image.png", "image.png", "png"),
+            ("C:\\Users\\test\\photo.jpg", "photo.jpg", "jpg"),
+            ("simple_image.gif", "simple_image.gif", "gif"),
+            ("/path/with.dots/image.png", "image.png", "png"),
+            ("no_extension", "no_extension", "png"),  # defaults to png
+        ]
+
+        for image_path, expected_name, expected_type in test_cases:
+            with patch.object(target, "_upload_image_async", new=AsyncMock(return_value="doc_id")):
+                annotation = await target._process_image_piece_async(
+                    image_path=image_path,
+                    copilot_conversation_id="conv_123",
+                )
+                assert annotation["messageAnnotationMetadata"]["fileName"] == expected_name
+                assert annotation["messageAnnotationMetadata"]["fileType"] == expected_type
+
+    @pytest.mark.asyncio
+    async def test_process_image_piece_async_propagates_upload_error(
+        self, mock_authenticator, mock_copilot_target, patch_convert_local_image_to_data_url
+    ):
+        target = mock_copilot_target
+        with patch.object(target, "_upload_image_async", new=AsyncMock(side_effect=RuntimeError("Upload failed"))):
+            with pytest.raises(RuntimeError, match="Upload failed"):
+                await target._process_image_piece_async(
+                    image_path="/path/to/image.png",
+                    copilot_conversation_id="conv_123",
+                )
+
+
+@pytest.mark.usefixtures("patch_central_database")
 class TestBuildPromptMessage:
-    def test_build_prompt_message_structure(self, mock_authenticator):
-        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+    @pytest.mark.asyncio
+    async def test_build_prompt_message_structure(self, mock_authenticator, sample_text_pieces, mock_copilot_target):
+        target = mock_copilot_target
 
-        prompt = "Hello Copilot"
-        session_id = "session_123"
-        copilot_conversation_id = "conv_456"
-        is_start_of_session = True
-
-        message = target._build_prompt_message(
-            prompt=prompt,
-            session_id=session_id,
-            copilot_conversation_id=copilot_conversation_id,
-            is_start_of_session=is_start_of_session,
+        message = await target._build_prompt_message(
+            message_pieces=sample_text_pieces,
+            session_id="session_123",
+            copilot_conversation_id="conv_456",
+            is_start_of_session=True,
         )
-
-        assert "arguments" in message
-        assert "invocationId" in message
-        assert "target" in message
-        assert "type" in message
 
         assert message["target"] == "chat"
         assert message["type"] == CopilotMessageType.USER_PROMPT
         assert message["invocationId"] == "0"
 
         args = message["arguments"][0]
-        assert args["sessionId"] == session_id
-        assert args["conversationId"] == copilot_conversation_id
+        assert args["sessionId"] == "session_123"
+        assert args["conversationId"] == "conv_456"
         assert args["isStartOfSession"] is True
         assert args["source"] == "officeweb"
         assert args["productThreadType"] == "Office"
 
         msg = args["message"]
-        assert msg["text"] == prompt
+        assert msg["text"] == "Hello"
         assert msg["author"] == "user"
         assert msg["messageType"] == "Chat"
-        assert msg["locale"] == "en-US"
+        assert msg["locale"] == "en-us"
 
-    def test_build_prompt_message_with_different_session_states(self, mock_authenticator):
-        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+    @pytest.mark.asyncio
+    async def test_build_prompt_message_with_different_session_states(
+        self, mock_authenticator, sample_text_pieces, mock_copilot_target
+    ):
+        target = mock_copilot_target
 
-        message = target._build_prompt_message(
-            prompt="Follow-up question",
+        message = await target._build_prompt_message(
+            message_pieces=sample_text_pieces,
             session_id="session_123",
             copilot_conversation_id="conv_456",
             is_start_of_session=False,
         )
 
-        args = message["arguments"][0]
-        assert args["isStartOfSession"] is False
+        assert message["arguments"][0]["isStartOfSession"] is False
+
+    @pytest.mark.asyncio
+    async def test_build_prompt_message_with_image(
+        self,
+        mock_authenticator,
+        sample_image_pieces,
+        mock_copilot_target,
+        patch_convert_local_image_to_data_url,
+        make_annotation,
+    ):
+        target = mock_copilot_target
+        expected_annotation = make_annotation(doc_id="doc_id_xyz", file_name="image.png")
+
+        with patch.object(
+            target, "_process_image_piece_async", new=AsyncMock(return_value=expected_annotation)
+        ) as mock_process:
+            message = await target._build_prompt_message(
+                message_pieces=sample_image_pieces,
+                session_id="session_123",
+                copilot_conversation_id="conv_456",
+                is_start_of_session=True,
+            )
+
+            args = message["arguments"][0]
+            msg = args["message"]
+
+            # Text should be empty when only images are sent
+            assert msg["text"] == ""
+            assert "messageAnnotations" in msg
+            assert len(msg["messageAnnotations"]) == 1
+
+            annotation = msg["messageAnnotations"][0]
+            assert annotation["id"] == "doc_id_xyz"
+            assert annotation["messageAnnotationType"] == "ImageFile"
+
+            mock_process.assert_called_once_with(
+                image_path="/path/to/image.png",
+                copilot_conversation_id="conv_456",
+            )
+            assert annotation["messageAnnotationMetadata"]["@type"] == "File"
+            assert annotation["messageAnnotationMetadata"]["annotationType"] == "File"
+            assert annotation["messageAnnotationMetadata"]["fileType"] == "png"
+            assert annotation["messageAnnotationMetadata"]["fileName"] == "image.png"
+
+    @pytest.mark.asyncio
+    async def test_build_prompt_message_with_mixed_content(
+        self,
+        mock_authenticator,
+        sample_mixed_pieces,
+        mock_copilot_target,
+        patch_convert_local_image_to_data_url,
+        make_annotation,
+    ):
+        target = mock_copilot_target
+        mock_annotations = [
+            make_annotation(doc_id="doc_id_1", file_name="image1.png"),
+            make_annotation(doc_id="doc_id_2", file_name="image2.jpg"),
+        ]
+
+        with patch.object(
+            target, "_process_image_piece_async", new=AsyncMock(side_effect=mock_annotations)
+        ) as mock_process:
+            message = await target._build_prompt_message(
+                message_pieces=sample_mixed_pieces,
+                session_id="session_123",
+                copilot_conversation_id="conv_456",
+                is_start_of_session=True,
+            )
+
+            args = message["arguments"][0]
+            msg = args["message"]
+
+            assert msg["text"] == "Describe this image"
+
+            # Should have message annotations for both images
+            assert "messageAnnotations" in msg
+            assert len(msg["messageAnnotations"]) == 2
+
+            annotation1 = msg["messageAnnotations"][0]
+            assert annotation1["id"] == "doc_id_1"
+            assert annotation1["messageAnnotationMetadata"]["fileName"] == "image1.png"
+            assert annotation1["messageAnnotationMetadata"]["fileType"] == "png"
+
+            annotation2 = msg["messageAnnotations"][1]
+            assert annotation2["id"] == "doc_id_2"
+            assert annotation2["messageAnnotationMetadata"]["fileName"] == "image2.jpg"
+            assert annotation2["messageAnnotationMetadata"]["fileType"] == "jpg"
+
+            assert mock_process.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_build_prompt_message_with_multiple_text_pieces(
+        self, mock_authenticator, mock_copilot_target, make_message_piece
+    ):
+        target = mock_copilot_target
+        text_pieces = [make_message_piece("First line"), make_message_piece("Second line")]
+
+        message = await target._build_prompt_message(
+            message_pieces=text_pieces,
+            session_id="session_123",
+            copilot_conversation_id="conv_456",
+            is_start_of_session=True,
+        )
+
+        msg = message["arguments"][0]["message"]
+
+        # Multiple text pieces should be joined with newlines
+        assert msg["text"] == "First line\nSecond line"
+        assert "messageAnnotations" not in msg
 
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestConnectAndSend:
     @pytest.mark.asyncio
-    async def test_connect_and_send_successful_response(self, mock_authenticator):
+    async def test_connect_and_send_successful_response(self, mock_authenticator, sample_text_pieces, mock_websocket):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(
             side_effect=[
                 '{"type":6}\x1e',  # PING response to handshake
@@ -254,12 +600,10 @@ class TestConnectAndSend:
                 '{"type":2,"item":{"result":{"message":"Hello from Copilot"}}}\x1e',  # final content
             ]
         )
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             response = await target._connect_and_send(
-                prompt="Hello",
+                message_pieces=sample_text_pieces,
                 session_id="session_123",
                 copilot_conversation_id="conv_456",
                 is_start_of_session=True,
@@ -269,61 +613,43 @@ class TestConnectAndSend:
         assert mock_websocket.send.call_count == 2  # handshake + user prompt
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_timeout(self, mock_authenticator):
+    async def test_connect_and_send_timeout(self, mock_authenticator, sample_text_pieces, mock_websocket):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator, response_timeout_seconds=1)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(side_effect=asyncio.TimeoutError())
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             with pytest.raises(TimeoutError, match="Timed out waiting for Copilot response"):
                 await target._connect_and_send(
-                    prompt="Hello",
+                    message_pieces=sample_text_pieces,
                     session_id="session_123",
                     copilot_conversation_id="conv_456",
                     is_start_of_session=True,
                 )
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_none_response(self, mock_authenticator):
+    async def test_connect_and_send_none_response(self, mock_authenticator, sample_text_pieces, mock_websocket):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(return_value=None)
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             with pytest.raises(RuntimeError, match="WebSocket connection closed unexpectedly"):
                 await target._connect_and_send(
-                    prompt="Hello",
+                    message_pieces=sample_text_pieces,
                     session_id="session_123",
                     copilot_conversation_id="conv_456",
                     is_start_of_session=True,
                 )
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_stream_end_without_final_content(self, mock_authenticator):
+    async def test_connect_and_send_stream_end_without_final_content(
+        self, mock_authenticator, sample_text_pieces, mock_websocket
+    ):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
-        mock_websocket.recv = AsyncMock(
-            side_effect=[
-                '{"type":6}\x1e',
-                '{"type":3}\x1e',
-            ]
-        )
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
+        mock_websocket.recv = AsyncMock(side_effect=['{"type":6}\x1e', '{"type":3}\x1e'])
 
         with patch("websockets.connect", return_value=mock_websocket):
             response = await target._connect_and_send(
-                prompt="Hello",
+                message_pieces=sample_text_pieces,
                 session_id="sid",
                 copilot_conversation_id="cid",
                 is_start_of_session=True,
@@ -332,84 +658,113 @@ class TestConnectAndSend:
         assert response == ""
 
     @pytest.mark.asyncio
-    async def test_connect_and_send_exceeds_max_iterations(self, mock_authenticator):
+    async def test_connect_and_send_exceeds_max_iterations(
+        self, mock_authenticator, sample_text_pieces, mock_websocket
+    ):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        mock_websocket = AsyncMock()
-        mock_websocket.send = AsyncMock()
         mock_websocket.recv = AsyncMock(return_value='{"type":1}\x1e')
-        mock_websocket.__aenter__ = AsyncMock(return_value=mock_websocket)
-        mock_websocket.__aexit__ = AsyncMock(return_value=None)
 
         with patch("websockets.connect", return_value=mock_websocket):
             with pytest.raises(RuntimeError, match="Exceeded maximum message iterations"):
                 await target._connect_and_send(
-                    prompt="Hello",
+                    message_pieces=sample_text_pieces,
                     session_id="sid",
                     copilot_conversation_id="cid",
                     is_start_of_session=True,
                 )
 
+    @pytest.mark.asyncio
+    async def test_connect_and_send_with_image_pieces(self, mock_authenticator, sample_image_pieces, mock_websocket):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+
+        mock_websocket.recv = AsyncMock(
+            side_effect=[
+                '{"type":6}\x1e',  # PING
+                '{"type":2,"item":{"result":{"message":"Image analyzed"}}}\x1e',
+            ]
+        )
+
+        with patch("websockets.connect", return_value=mock_websocket):
+            with patch.object(target, "_upload_image_async", new=AsyncMock(return_value="doc_id_123")):
+                with patch(
+                    "pyrit.prompt_target.websocket_copilot_target.convert_local_image_to_data_url",
+                    new=AsyncMock(return_value="data:image/png;base64,abc123"),
+                ):
+                    response = await target._connect_and_send(
+                        message_pieces=sample_image_pieces,
+                        session_id="sid",
+                        copilot_conversation_id="cid",
+                        is_start_of_session=True,
+                    )
+
+                assert response == "Image analyzed"
+                assert mock_websocket.send.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_connect_and_send_with_mixed_content(self, mock_authenticator, sample_mixed_pieces, mock_websocket):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+        mock_websocket.recv = AsyncMock(
+            side_effect=[
+                '{"type":6}\x1e',
+                '{"type":2,"item":{"result":{"message":"Mixed content processed"}}}\x1e',
+            ]
+        )
+
+        with patch("websockets.connect", return_value=mock_websocket):
+            with patch.object(target, "_upload_image_async", new=AsyncMock(side_effect=["doc_id_1", "doc_id_2"])):
+                with patch(
+                    "pyrit.prompt_target.websocket_copilot_target.convert_local_image_to_data_url",
+                    new=AsyncMock(return_value="data:image/png;base64,abc123"),
+                ):
+                    response = await target._connect_and_send(
+                        message_pieces=sample_mixed_pieces,
+                        session_id="sid",
+                        copilot_conversation_id="cid",
+                        is_start_of_session=True,
+                    )
+
+                assert response == "Mixed content processed"
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestValidateRequest:
-    def test_validate_request_with_single_text_piece(self, mock_authenticator):
+    @pytest.mark.parametrize(
+        "data_type,value,should_pass",
+        [
+            ("text", "Example text", True),
+            ("image_path", "/path/to/image.png", True),
+            ("audio_path", "/path/to/audio.mp3", False),
+            ("video_path", "/path/to/video.mp4", False),
+        ],
+    )
+    def test_validate_request_data_types(self, mock_authenticator, make_message_piece, data_type, value, should_pass):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        message_piece = MessagePiece(
-            role="user",
-            original_value="test",
-            converted_value="test",
-            conversation_id="123",
-            original_value_data_type="text",
-            converted_value_data_type="text",
-        )
+        message_piece = make_message_piece(value, data_type=data_type, conversation_id="123")
         message = Message(message_pieces=[message_piece])
 
-        # Should not raise
-        target._validate_request(message=message)
+        if should_pass:
+            target._validate_request(message=message)
+        else:
+            with pytest.raises(
+                ValueError,
+                match=f"This target supports only the following data types: image_path, text. Received: {data_type}.",
+            ):
+                target._validate_request(message=message)
 
-    def test_validate_request_with_multiple_pieces(self, mock_authenticator):
+    def test_validate_request_with_multiple_text_pieces(self, mock_authenticator, make_message_piece):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+        message_pieces = [make_message_piece(f"test{i}", conversation_id="123") for i in range(3)]
+        message = Message(message_pieces=message_pieces)
+        target._validate_request(message=message)  # should not raise
 
+    def test_validate_request_with_mixed_valid_content(self, mock_authenticator, make_message_piece):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
         message_pieces = [
-            MessagePiece(
-                role="user",
-                original_value="test1",
-                converted_value="test1",
-                conversation_id="123",
-                original_value_data_type="text",
-                converted_value_data_type="text",
-            ),
-            MessagePiece(
-                role="user",
-                original_value="test2",
-                converted_value="test2",
-                conversation_id="123",
-                original_value_data_type="text",
-                converted_value_data_type="text",
-            ),
+            make_message_piece("text content", conversation_id="123"),
+            make_message_piece("/path/to/image.png", data_type="image_path", conversation_id="123"),
         ]
         message = Message(message_pieces=message_pieces)
-
-        with pytest.raises(ValueError, match="This target only supports a single message piece"):
-            target._validate_request(message=message)
-
-    def test_validate_request_with_non_text_type(self, mock_authenticator):
-        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        message_piece = MessagePiece(
-            role="user",
-            original_value="image.png",
-            converted_value="image.png",
-            conversation_id="123",
-            original_value_data_type="image_path",
-            converted_value_data_type="image_path",
-        )
-        message = Message(message_pieces=[message_piece])
-
-        with pytest.raises(ValueError, match="This target only supports text prompt input"):
-            target._validate_request(message=message)
+        target._validate_request(message=message)  # should not raise
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -483,23 +838,10 @@ class TestGenerateConsistentCopilotIds:
 @pytest.mark.usefixtures("patch_central_database")
 class TestSendPromptAsync:
     @pytest.mark.asyncio
-    async def test_send_prompt_async_successful(self, mock_authenticator):
+    async def test_send_prompt_async_successful(self, mock_authenticator, make_message_piece, mock_memory):
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        message_piece = MessagePiece(
-            role="user",
-            original_value="Hello",
-            converted_value="Hello",
-            conversation_id="conv_123",
-            original_value_data_type="text",
-            converted_value_data_type="text",
-        )
-        message = Message(message_pieces=[message_piece])
-
-        mock_memory = MagicMock()
-        mock_memory.get_conversation.return_value = []
-        mock_memory.add_message_to_memory = AsyncMock()
         target._memory = mock_memory
+        message = Message(message_pieces=[make_message_piece("Hello", conversation_id="conv_123")])
 
         with patch.object(target, "_connect_and_send", new=AsyncMock(return_value="Response from Copilot")):
             responses = await target.send_prompt_async(message=message)
@@ -509,24 +851,12 @@ class TestSendPromptAsync:
         assert responses[0].message_pieces[0].role == "assistant"
 
     @pytest.mark.asyncio
-    async def test_send_prompt_async_with_exceptions(self, mock_authenticator):
+    async def test_send_prompt_async_with_exceptions(self, mock_authenticator, make_message_piece, mock_memory):
         from pyrit.exceptions import EmptyResponseException
 
         target = WebSocketCopilotTarget(authenticator=mock_authenticator)
-
-        message_piece = MessagePiece(
-            role="user",
-            original_value="Hello",
-            converted_value="Hello",
-            conversation_id="conv_123",
-            original_value_data_type="text",
-            converted_value_data_type="text",
-        )
-        message = Message(message_pieces=[message_piece])
-
-        mock_memory = MagicMock()
-        mock_memory.get_conversation.return_value = []
         target._memory = mock_memory
+        message = Message(message_pieces=[make_message_piece("Hello", conversation_id="conv_123")])
 
         # Test for various empty responses
         for response in [None, "", "   \n\t  "]:
@@ -538,3 +868,51 @@ class TestSendPromptAsync:
         with patch.object(target, "_connect_and_send", new=AsyncMock(side_effect=Exception("Test error"))):
             with pytest.raises(RuntimeError, match="An error occurred during WebSocket communication"):
                 await target.send_prompt_async(message=message)
+
+    @pytest.mark.asyncio
+    async def test_send_prompt_async_with_image(self, mock_authenticator, make_message_piece, mock_memory):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+        target._memory = mock_memory
+        message = Message(
+            message_pieces=[
+                make_message_piece("/path/to/image.png", data_type="image_path", conversation_id="conv_123")
+            ]
+        )
+
+        with patch.object(target, "_connect_and_send", new=AsyncMock(return_value="Image description response")):
+            responses = await target.send_prompt_async(message=message)
+
+            assert len(responses) == 1
+            assert responses[0].message_pieces[0].converted_value == "Image description response"
+            assert responses[0].message_pieces[0].role == "assistant"
+
+    @pytest.mark.asyncio
+    async def test_send_prompt_async_with_mixed_content(self, mock_authenticator, make_message_piece, mock_memory):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+        target._memory = mock_memory
+        message_pieces = [
+            make_message_piece("What's in this image?", conversation_id="conv_123"),
+            make_message_piece("/path/to/image.png", data_type="image_path", conversation_id="conv_123"),
+        ]
+        message = Message(message_pieces=message_pieces)
+
+        with patch.object(
+            target, "_connect_and_send", new=AsyncMock(return_value="This image shows a beautiful landscape")
+        ):
+            responses = await target.send_prompt_async(message=message)
+
+            assert len(responses) == 1
+            assert responses[0].message_pieces[0].converted_value == "This image shows a beautiful landscape"
+
+    @pytest.mark.asyncio
+    async def test_send_prompt_async_calls_validation(self, mock_authenticator, make_message_piece, mock_memory):
+        target = WebSocketCopilotTarget(authenticator=mock_authenticator)
+        target._memory = mock_memory
+        message = Message(
+            message_pieces=[
+                make_message_piece("/path/to/audio.mp3", data_type="audio_path", conversation_id="conv_123")
+            ]
+        )
+
+        with pytest.raises(ValueError, match="This target supports only the following data types"):
+            await target.send_prompt_async(message=message)
