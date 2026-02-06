@@ -397,7 +397,7 @@ class AIRTTargetInitializer(PyRITInitializer):
             if not api_key:
                 return
         else:
-            api_key = ""
+            api_key = "not-needed"
 
         model_name = os.getenv(config.model_var) if config.model_var else None
         underlying_model = os.getenv(config.underlying_model_var) if config.underlying_model_var else None
