@@ -433,6 +433,7 @@ API Reference
     ImageCompressionConverter
     IndexSelectionStrategy
     InsertPunctuationConverter
+    JsonStringConverter
     KeywordSelectionStrategy
     LeetspeakConverter
     LLMGenericTextConverter
