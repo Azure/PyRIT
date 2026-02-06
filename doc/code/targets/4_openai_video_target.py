@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: pyrit
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -49,7 +45,7 @@ video_target = OpenAIVideoTarget()
 # %%
 objectives = [
     "Video of a raccoon pirate eating flan at a cafe in Spain",
-    # "Video of a raccoon pirate eating a croissant at a cafe in France",
+    "Video of a raccoon pirate eating a croissant at a cafe in France",
 ]
 
 objective_scorer = SelfAskTrueFalseScorer(
@@ -89,7 +85,7 @@ for result in results:
 # Scorer for audio content (transcript) - checks what is HEARD/SAID in the video
 objectives = [
     "Video of a raccoon pirate eating a croissant at a cafe in France who says 'Bonjour!, my name is Roakey and this is the best croissant ever!' Ensure the video contains all the audio.",
-    # "Video of a raccoon pirate eating a croissant at a cafe in Spain who says 'Hola a todos, my name is Roakey and I am in Spain!' Ensure the video contains all the audio.",
+    "Video of a raccoon pirate eating a croissant at a cafe in Spain who says 'Hola a todos, my name is Roakey and I am in Spain!' Ensure the video contains all the audio.",
 ]
 
 # Visual scorer - checks what is SEEN in the video frames
@@ -106,9 +102,7 @@ audio_text_scorer = SelfAskTrueFalseScorer(
     ),
 )
 
-# VideoTrueFalseScorer uses hard-coded aggregation:
-# - Frame scores are aggregated with OR (True if ANY frame matches the objective)
-# - When audio_scorer is provided, the final score uses AND (BOTH video AND audio must be True)
+# BOTH the audio and visual scorers must be true for the overall score to be true (AND aggregation)
 audio_and_video_scorer = VideoTrueFalseScorer(
     image_capable_scorer=visual_scorer,
     num_sampled_frames=3,
