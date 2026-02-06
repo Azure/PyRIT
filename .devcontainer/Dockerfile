@@ -7,6 +7,9 @@ SHELL ["/bin/bash", "-c"]
 
 USER root
 
+# Remove the Yarn repository (has expired GPG key and we don't use Yarn)
+RUN rm -f /etc/apt/sources.list.d/yarn.list 2>/dev/null || true
+
 # Install required system packages + ODBC prerequisites
 RUN apt-get update && apt-get install -y \
     sudo \

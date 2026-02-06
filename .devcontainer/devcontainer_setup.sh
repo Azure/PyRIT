@@ -71,6 +71,13 @@ if [ -f "package.json" ]; then
 
     # Install Playwright browsers and system dependencies for E2E testing
     echo "📦 Installing Playwright browsers..."
+    
+    # Remove third-party repos with SHA1 signature issues (rejected since 2026-02-01)
+    # Playwright deps come from Debian main repos, these aren't needed
+    sudo rm -f /etc/apt/sources.list.d/yarn.list \
+               /etc/apt/sources.list.d/nodesource.list \
+               /etc/apt/sources.list.d/microsoft.list 2>/dev/null || true
+    
     npx playwright install --with-deps chromium
 
     echo "✅ Frontend dependencies installed."
