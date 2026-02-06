@@ -65,7 +65,9 @@ class ConfigurationLoader(YamlLoadable):
         memory_db_type: The type of memory database (in_memory, sqlite, azure_sql).
         initializers: List of initializer configurations (name + optional args).
         initialization_scripts: List of paths to custom initialization scripts.
+            None means "use defaults", [] means "load nothing".
         env_files: List of environment file paths to load.
+            None means "use defaults (.env, .env.local)", [] means "load nothing".
         silent: Whether to suppress initialization messages.
 
     Example YAML configuration:
@@ -89,8 +91,8 @@ class ConfigurationLoader(YamlLoadable):
 
     memory_db_type: str = "sqlite"
     initializers: List[Union[str, Dict[str, Any]]] = field(default_factory=list)
-    initialization_scripts: List[str] = field(default_factory=list)
-    env_files: List[str] = field(default_factory=list)
+    initialization_scripts: Optional[List[str]] = None
+    env_files: Optional[List[str]] = None
     silent: bool = False
 
     def __post_init__(self) -> None:
@@ -167,8 +169,8 @@ class ConfigurationLoader(YamlLoadable):
         Returns:
             A new ConfigurationLoader instance.
         """
-        # Filter out None values and empty lists to use defaults
-        filtered_data = {k: v for k, v in data.items() if v is not None and v != []}
+        # Filter out None values only - empty lists are meaningful ("load nothing")
+        filtered_data = {k: v for k, v in data.items() if v is not None}
         return cls(**filtered_data)
 
     @staticmethod
@@ -210,12 +212,12 @@ class ConfigurationLoader(YamlLoadable):
 
         logger = logging.getLogger(__name__)
 
-        # Start with defaults
+        # Start with defaults - None means "use defaults", [] means "load nothing"
         config_data: Dict[str, Any] = {
             "memory_db_type": "sqlite",
             "initializers": [],
-            "initialization_scripts": [],
-            "env_files": [],
+            "initialization_scripts": None,  # None = use defaults
+            "env_files": None,  # None = use defaults
         }
 
         # 1. Try loading default config file if it exists
@@ -228,6 +230,7 @@ class ConfigurationLoader(YamlLoadable):
                     {"name": ic.name, "args": ic.args} if ic.args else ic.name
                     for ic in default_config._initializer_configs
                 ]
+                # Preserve None vs [] distinction from config file
                 config_data["initialization_scripts"] = default_config.initialization_scripts
                 config_data["env_files"] = default_config.env_files
             except Exception as e:
@@ -243,6 +246,7 @@ class ConfigurationLoader(YamlLoadable):
                 {"name": ic.name, "args": ic.args} if ic.args else ic.name
                 for ic in explicit_config._initializer_configs
             ]
+            # Preserve None vs [] distinction from config file
             config_data["initialization_scripts"] = explicit_config.initialization_scripts
             config_data["env_files"] = explicit_config.env_files
 
@@ -322,10 +326,16 @@ class ConfigurationLoader(YamlLoadable):
         Resolve initialization script paths.
 
         Returns:
-            Sequence of Path objects, or None if no scripts configured.
+            None if field is None (use defaults), empty list if field is [],
+            or Sequence of resolved Path objects if paths are specified.
         """
-        if not self.initialization_scripts:
+        # None means "use defaults" - return None to signal this
+        if self.initialization_scripts is None:
             return None
+
+        # Empty list means "load nothing" - return empty list
+        if len(self.initialization_scripts) == 0:
+            return []
 
         resolved: List[pathlib.Path] = []
         for script_str in self.initialization_scripts:
@@ -341,10 +351,16 @@ class ConfigurationLoader(YamlLoadable):
         Resolve environment file paths.
 
         Returns:
-            Sequence of Path objects, or None if no env files configured.
+            None if field is None (use defaults), empty list if field is [],
+            or Sequence of resolved Path objects if paths are specified.
         """
-        if not self.env_files:
+        # None means "use defaults" - return None to signal this
+        if self.env_files is None:
             return None
+
+        # Empty list means "load nothing" - return empty list
+        if len(self.env_files) == 0:
+            return []
 
         resolved: List[pathlib.Path] = []
         for env_str in self.env_files:

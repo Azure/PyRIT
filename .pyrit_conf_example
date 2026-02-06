@@ -45,26 +45,31 @@ initializers:
 # ----------------------
 # List of paths to custom Python scripts containing PyRITInitializer subclasses.
 # Paths can be absolute or relative to the current working directory.
-# Set to [] to explicitly load no scripts. Comment out to use defaults.
+#
+# Behavior:
+# - Omit this field (or set to null): No custom scripts loaded (default)
+# - Set to []: Explicitly load no scripts (same as omitting)
+# - Set to list of paths: Load the specified scripts
 #
 # Example:
 # initialization_scripts:
 #   - /path/to/my_custom_initializer.py
 #   - ./local_initializer.py
-initialization_scripts: []
 
 # Environment Files
 # -----------------
 # List of .env file paths to load during initialization.
 # Later files override values from earlier files.
-# Set to [] to explicitly load no environment files.
-# Comment out this field to use default behavior.
+#
+# Behavior:
+# - Omit this field (or set to null): Load default .env and .env.local from ~/.pyrit/ if they exist
+# - Set to []: Explicitly load NO environment files
+# - Set to list of paths: Load only the specified files
 #
 # Example:
 # env_files:
 #   - /path/to/.env
 #   - /path/to/.env.local
-env_files: []
 
 # Silent Mode
 # -----------

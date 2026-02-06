@@ -38,8 +38,8 @@ class TestConfigurationLoader:
         config = ConfigurationLoader()
         assert config.memory_db_type == "sqlite"
         assert config.initializers == []
-        assert config.initialization_scripts == []
-        assert config.env_files == []
+        assert config.initialization_scripts is None  # None means "use defaults"
+        assert config.env_files is None  # None means "use defaults"
         assert config.silent is False
 
     def test_valid_memory_db_types_snake_case(self):
@@ -200,10 +200,17 @@ silent: true
 class TestConfigurationLoaderResolvers:
     """Tests for ConfigurationLoader path resolution methods."""
 
-    def test_resolve_initialization_scripts_empty(self):
-        """Test that empty scripts returns None."""
+    def test_resolve_initialization_scripts_none_returns_none(self):
+        """Test that None (default) returns None to signal 'use defaults'."""
         config = ConfigurationLoader()
         assert config._resolve_initialization_scripts() is None
+
+    def test_resolve_initialization_scripts_empty_list_returns_empty_list(self):
+        """Test that explicit empty list [] returns empty list to signal 'load nothing'."""
+        config = ConfigurationLoader(initialization_scripts=[])
+        resolved = config._resolve_initialization_scripts()
+        assert resolved is not None
+        assert resolved == []
 
     def test_resolve_initialization_scripts_absolute_path(self):
         """Test resolving absolute script paths."""
@@ -224,10 +231,17 @@ class TestConfigurationLoaderResolvers:
         # Check path ends with expected components (works on both Unix and Windows)
         assert resolved[0].parts[-2:] == ("relative", "script.py")
 
-    def test_resolve_env_files_empty(self):
-        """Test that empty env files returns None."""
+    def test_resolve_env_files_none_returns_none(self):
+        """Test that None (default) returns None to signal 'use defaults'."""
         config = ConfigurationLoader()
         assert config._resolve_env_files() is None
+
+    def test_resolve_env_files_empty_list_returns_empty_list(self):
+        """Test that explicit empty list [] returns empty list to signal 'load nothing'."""
+        config = ConfigurationLoader(env_files=[])
+        resolved = config._resolve_env_files()
+        assert resolved is not None
+        assert resolved == []
 
     def test_resolve_env_files_absolute_path(self):
         """Test resolving absolute env file paths."""
