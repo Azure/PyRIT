@@ -168,6 +168,7 @@ print("CodeChameleon:", await code_chameleon.convert_async(prompt=prompt))  # ty
 # %%
 from pyrit.datasets import TextJailBreak
 from pyrit.prompt_converter import (
+    JsonStringConverter,
     SearchReplaceConverter,
     SuffixAppendConverter,
     TemplateSegmentConverter,
@@ -188,6 +189,10 @@ print("Suffix Append:", await suffix_append.convert_async(prompt=prompt))  # typ
 # URL encoding
 url_converter = UrlConverter()
 print("URL Encoded:", await url_converter.convert_async(prompt=prompt))  # type: ignore
+
+# JSON string escaping (useful for embedding prompts in JSON payloads)
+json_string_converter = JsonStringConverter()
+print("JSON String:", await json_string_converter.convert_async(prompt='He said "hello\nworld"'))  # type: ignore
 
 # Text jailbreak with template
 text_jailbreak = TextJailbreakConverter(jailbreak_template=TextJailBreak(template_file_name="aim.yaml"))
