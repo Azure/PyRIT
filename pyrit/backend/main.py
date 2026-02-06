@@ -6,7 +6,6 @@ FastAPI application entry point for PyRIT backend.
 """
 
 import os
-import sys
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -52,7 +51,7 @@ app.include_router(version.router, tags=["version"])
 
 
 def setup_frontend() -> None:
-    """Set up frontend static file serving (only called when running as main script)."""
+    """Set up frontend static file serving."""
     frontend_path = Path(__file__).parent / "frontend"
 
     if DEV_MODE:
@@ -63,12 +62,17 @@ def setup_frontend() -> None:
         print(f"✅ Serving frontend from {frontend_path}")
         app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="frontend")
     else:
-        # Production mode but no frontend found - this is an error
-        print("❌ ERROR: Frontend not found!")
+        # Production mode but no frontend found - warn but don't exit
+        # This allows API-only usage
+        print("⚠️ WARNING: Frontend not found!")
         print(f"   Expected location: {frontend_path}")
         print("   The frontend must be built and included in the package.")
         print("   Run: python build_scripts/prepare_package.py")
-        sys.exit(1)
+        print("   API endpoints will still work but the UI won't be available.")
+
+
+# Set up frontend at module load time (needed when running via uvicorn)
+setup_frontend()
 
 
 @app.exception_handler(Exception)
@@ -88,5 +92,4 @@ async def global_exception_handler_async(request: object, exc: Exception) -> JSO
 if __name__ == "__main__":
     import uvicorn
 
-    setup_frontend()
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
