@@ -34,6 +34,9 @@ class TargetIdentifier(Identifier):
     max_requests_per_minute: Optional[int] = None
     """Maximum number of requests per minute."""
 
+    supports_conversation_history: bool = False
+    """Whether the target supports explicit setting of conversation history (is a PromptChatTarget)."""
+
     target_specific_params: Optional[Dict[str, Any]] = None
     """Additional target-specific parameters."""
 
