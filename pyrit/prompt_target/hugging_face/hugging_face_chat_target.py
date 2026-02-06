@@ -168,7 +168,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
             **kwargs: Additional keyword arguments to pass to the model loader.
         """
         logger.info(f"Loading model and tokenizer from path: {path}...")
-        self.tokenizer = AutoTokenizer.from_pretrained(path, trust_remote_code=self.trust_remote_code)
+        self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call, unused-ignore]
+            path, trust_remote_code=self.trust_remote_code
+        )
         self.model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=self.trust_remote_code, **kwargs)
 
     def is_model_id_valid(self) -> bool:
@@ -244,7 +246,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
                 # Load the tokenizer and model from the specified directory
                 logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
-                self.tokenizer = AutoTokenizer.from_pretrained(
+                self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call, unused-ignore]
                     self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
                 )
                 self.model = AutoModelForCausalLM.from_pretrained(
