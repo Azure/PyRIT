@@ -97,7 +97,7 @@ class ManualCopilotAuthenticator(Authenticator):
         Returns:
             dict[str, Any]: The JWT claims decoded from the access token.
         """
-        return self._claims  # type: ignore
+        return self._claims
 
     async def refresh_token_async(self) -> str:
         """
