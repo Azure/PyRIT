@@ -97,9 +97,11 @@ class FrontendCore:
         from pyrit.setup import ConfigurationLoader
         from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
 
-        # Validate log level early
-        effective_log_level = log_level if log_level is not None else "WARNING"
-        self._log_level = validate_log_level(log_level=effective_log_level)
+        # Validate and convert log level to actual logging level constant
+        if log_level is None:
+            self._log_level = logging.WARNING
+        else:
+            self._log_level = getattr(logging, validate_log_level(log_level=log_level))
 
         # Load configuration using ConfigurationLoader.load_with_overrides
         try:
@@ -137,7 +139,7 @@ class FrontendCore:
         self._initialized = False
 
         # Configure logging
-        logging.basicConfig(level=getattr(logging, self._log_level))
+        logging.basicConfig(level=self._log_level)
 
     async def initialize_async(self) -> None:
         """Initialize PyRIT and load registries (heavy operation)."""
