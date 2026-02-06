@@ -59,7 +59,7 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
     """
 
     @classmethod
-    def get_registry_singleton(cls) -> "ScenarioRegistry":
+    def get_registry_singleton(cls) -> ScenarioRegistry:
         """
         Get the singleton instance of the ScenarioRegistry.
 

@@ -15,7 +15,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 import pyrit
-from pyrit.backend.routes import health, version
+from pyrit.backend.middleware import register_error_handlers
+from pyrit.backend.routes import attacks, converters, health, labels, targets, version
 from pyrit.setup.initialization import initialize_pyrit_async
 
 # Check for development mode from environment variable
@@ -26,6 +27,9 @@ app = FastAPI(
     description="Python Risk Identification Tool for LLMs - REST API",
     version=pyrit.__version__,
 )
+
+# Register RFC 7807 error handlers
+register_error_handlers(app)
 
 
 # Initialize PyRIT on startup to load .env and .env.local files
@@ -46,7 +50,11 @@ app.add_middleware(
 )
 
 
-# Include routers
+# Include API routes
+app.include_router(attacks.router, prefix="/api", tags=["attacks"])
+app.include_router(targets.router, prefix="/api", tags=["targets"])
+app.include_router(converters.router, prefix="/api", tags=["converters"])
+app.include_router(labels.router, prefix="/api", tags=["labels"])
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(version.router, tags=["version"])
 
@@ -75,6 +83,9 @@ def setup_frontend() -> None:
 async def global_exception_handler_async(request: object, exc: Exception) -> JSONResponse:
     """
     Handle all unhandled exceptions globally.
+
+    Note: This is a fallback handler. Most exceptions are handled by
+    the RFC 7807 error handlers in middleware/error_handlers.py.
 
     Returns:
         JSONResponse: Error response with 500 status code.

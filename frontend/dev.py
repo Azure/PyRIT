@@ -77,8 +77,13 @@ def stop_servers():
     print("✅ Servers stopped")
 
 
-def start_backend():
-    """Start the FastAPI backend"""
+def start_backend(initializers: list[str] | None = None):
+    """Start the FastAPI backend using pyrit_backend CLI.
+
+    Args:
+        initializers: Optional list of initializer names to run at startup.
+            If not specified, no initializers are run.
+    """
     print("🚀 Starting backend on port 8000...")
 
     # Change to workspace root
@@ -88,40 +93,36 @@ def start_backend():
     env = os.environ.copy()
     env["PYRIT_DEV_MODE"] = "true"
 
-    # Start backend with uvicorn
+    # Default to no initializers
+    if initializers is None:
+        initializers = []
+
+    # Build command using pyrit_backend CLI
+    cmd = [
+        sys.executable,
+        "-m",
+        "pyrit.cli.pyrit_backend",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--log-level",
+        "info",
+    ]
+
+    # Add initializers if specified
+    if initializers:
+        cmd.extend(["--initializers"] + initializers)
+
+    # Start backend
     if is_windows():
         backend = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "uvicorn",
-                "pyrit.backend.main:app",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8000",
-                "--log-level",
-                "info",
-            ],
+            cmd,
             env=env,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0,
         )
     else:
-        backend = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "uvicorn",
-                "pyrit.backend.main:app",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8000",
-                "--log-level",
-                "info",
-            ],
-            env=env,
-        )
+        backend = subprocess.Popen(cmd, env=env)
 
     return backend
 
