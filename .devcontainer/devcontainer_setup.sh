@@ -3,6 +3,21 @@ set -e
 
 MYPY_CACHE="/workspace/.mypy_cache"
 VIRTUAL_ENV="/opt/venv"
+PYRIT_CONFIG_DIR="/home/vscode/.pyrit"
+PYRIT_CONFIG_FILE="$PYRIT_CONFIG_DIR/.pyrit_conf"
+
+# Create the .pyrit config directory and copy example config if not exists
+if [ ! -d "$PYRIT_CONFIG_DIR" ]; then
+    echo "Creating PyRIT config directory..."
+    mkdir -p "$PYRIT_CONFIG_DIR"
+fi
+
+if [ ! -f "$PYRIT_CONFIG_FILE" ] && [ -f "/workspace/.pyrit_conf_example" ]; then
+    echo "Copying example PyRIT config file..."
+    cp /workspace/.pyrit_conf_example "$PYRIT_CONFIG_FILE"
+    echo "✅ Created $PYRIT_CONFIG_FILE from example. Edit as needed."
+fi
+
 # Create the mypy cache directory if it doesn't exist
 if [ ! -d "$MYPY_CACHE" ]; then
     echo "Creating mypy cache directory..."

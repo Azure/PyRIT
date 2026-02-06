@@ -1,6 +1,7 @@
 # PyRIT Configuration File Example
 # ================================
-# Copy this file to ~/.pyrit/.pyrit_conf or specify a custom path when loading.
+# This is a YAML-formatted configuration file. Copy to ~/.pyrit/.pyrit_conf
+# or specify a custom path when loading via --config-file.
 #
 # For documentation on configuration options, see:
 # https://github.com/Azure/PyRIT/blob/main/doc/setup/configuration.md
@@ -38,12 +39,13 @@ memory_db_type: sqlite
 #     args:
 #       some_param: value
 initializers:
-    - simple
+  - simple
 
 # Initialization Scripts
 # ----------------------
 # List of paths to custom Python scripts containing PyRITInitializer subclasses.
 # Paths can be absolute or relative to the current working directory.
+# Set to [] to explicitly load no scripts. Comment out to use defaults.
 #
 # Example:
 # initialization_scripts:
@@ -55,7 +57,8 @@ initialization_scripts: []
 # -----------------
 # List of .env file paths to load during initialization.
 # Later files override values from earlier files.
-# If not specified, PyRIT loads ~/.pyrit/.env and ~/.pyrit/.env.local by default.
+# Set to [] to explicitly load no environment files.
+# Comment out this field to use default behavior.
 #
 # Example:
 # env_files:
