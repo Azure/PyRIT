@@ -500,6 +500,63 @@ class TestTargetIdentifierFrozen:
         assert d[identifier] == "value"
 
 
+class TestTargetIdentifierSupportsConversationHistory:
+    """Test the supports_conversation_history field in TargetIdentifier."""
+
+    def test_supports_conversation_history_defaults_to_false(self):
+        """Test that supports_conversation_history defaults to False."""
+        identifier = TargetIdentifier(
+            class_name="TestTarget",
+            class_module="pyrit.prompt_target.test_target",
+            class_description="A test target",
+            identifier_type="instance",
+        )
+
+        assert identifier.supports_conversation_history is False
+
+    def test_supports_conversation_history_included_in_hash(self):
+        """Test that supports_conversation_history affects the hash."""
+        base_args = {
+            "class_name": "TestTarget",
+            "class_module": "pyrit.prompt_target.test_target",
+            "class_description": "A test target",
+            "identifier_type": "instance",
+        }
+
+        identifier1 = TargetIdentifier(supports_conversation_history=False, **base_args)
+        identifier2 = TargetIdentifier(supports_conversation_history=True, **base_args)
+
+        assert identifier1.hash != identifier2.hash
+
+    def test_supports_conversation_history_in_to_dict(self):
+        """Test that supports_conversation_history is included in to_dict."""
+        identifier = TargetIdentifier(
+            class_name="TestChatTarget",
+            class_module="pyrit.prompt_target.test_chat_target",
+            class_description="A test chat target",
+            identifier_type="instance",
+            supports_conversation_history=True,
+        )
+
+        result = identifier.to_dict()
+
+        assert result["supports_conversation_history"] is True
+
+    def test_supports_conversation_history_from_dict(self):
+        """Test that supports_conversation_history is restored from dict."""
+        data = {
+            "class_name": "TestChatTarget",
+            "class_module": "pyrit.prompt_target.test_chat_target",
+            "class_description": "A test chat target",
+            "identifier_type": "instance",
+            "supports_conversation_history": True,
+        }
+
+        identifier = TargetIdentifier.from_dict(data)
+
+        assert identifier.supports_conversation_history is True
+
+
 class TestTargetIdentifierNormalize:
     """Test the normalize class method for TargetIdentifier."""
 
