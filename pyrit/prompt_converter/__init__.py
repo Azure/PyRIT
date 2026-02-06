@@ -40,6 +40,7 @@ from pyrit.prompt_converter.flip_converter import FlipConverter
 from pyrit.prompt_converter.human_in_the_loop_converter import HumanInTheLoopConverter
 from pyrit.prompt_converter.image_compression_converter import ImageCompressionConverter
 from pyrit.prompt_converter.insert_punctuation_converter import InsertPunctuationConverter
+from pyrit.prompt_converter.json_string_converter import JsonStringConverter
 from pyrit.prompt_converter.leetspeak_converter import LeetspeakConverter
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_converter.malicious_question_generator_converter import MaliciousQuestionGeneratorConverter
@@ -133,6 +134,7 @@ __all__ = [
     "ImageCompressionConverter",
     "IndexSelectionStrategy",
     "InsertPunctuationConverter",
+    "JsonStringConverter",
     "KeywordSelectionStrategy",
     "LeetspeakConverter",
     "LLMGenericTextConverter",
