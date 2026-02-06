@@ -61,16 +61,16 @@ class TestAIRTTargetInitializerInitialize:
     @pytest.mark.asyncio
     async def test_registers_target_when_env_vars_set(self):
         """Test that a target is registered when its env vars are set."""
-        os.environ["OPENAI_CHAT_ENDPOINT"] = "https://api.openai.com/v1"
-        os.environ["OPENAI_CHAT_KEY"] = "test_key"
-        os.environ["OPENAI_CHAT_MODEL"] = "gpt-4o"
+        os.environ["PLATFORM_OPENAI_CHAT_ENDPOINT"] = "https://api.openai.com/v1"
+        os.environ["PLATFORM_OPENAI_CHAT_API_KEY"] = "test_key"
+        os.environ["PLATFORM_OPENAI_CHAT_GPT4O_MODEL"] = "gpt-4o"
 
         init = AIRTTargetInitializer()
         await init.initialize_async()
 
         registry = TargetRegistry.get_registry_singleton()
-        assert "openai_chat" in registry
-        target = registry.get_instance_by_name("openai_chat")
+        assert "platform_openai_chat" in registry
+        target = registry.get_instance_by_name("platform_openai_chat")
         assert target is not None
         assert target._model_name == "gpt-4o"
 
@@ -78,48 +78,48 @@ class TestAIRTTargetInitializerInitialize:
     async def test_does_not_register_target_without_endpoint(self):
         """Test that target is not registered if endpoint is missing."""
         # Only set key, not endpoint
-        os.environ["OPENAI_CHAT_KEY"] = "test_key"
-        os.environ["OPENAI_CHAT_MODEL"] = "gpt-4o"
+        os.environ["PLATFORM_OPENAI_CHAT_API_KEY"] = "test_key"
+        os.environ["PLATFORM_OPENAI_CHAT_GPT4O_MODEL"] = "gpt-4o"
 
         init = AIRTTargetInitializer()
         await init.initialize_async()
 
         registry = TargetRegistry.get_registry_singleton()
-        assert "openai_chat" not in registry
+        assert "platform_openai_chat" not in registry
 
     @pytest.mark.asyncio
     async def test_does_not_register_target_without_api_key(self):
-        """Test that target is not registered if api_key is missing."""
+        """Test that target is not registered if api_key env var is missing."""
         # Only set endpoint, not key
-        os.environ["OPENAI_CHAT_ENDPOINT"] = "https://api.openai.com/v1"
-        os.environ["OPENAI_CHAT_MODEL"] = "gpt-4o"
+        os.environ["PLATFORM_OPENAI_CHAT_ENDPOINT"] = "https://api.openai.com/v1"
+        os.environ["PLATFORM_OPENAI_CHAT_GPT4O_MODEL"] = "gpt-4o"
 
         init = AIRTTargetInitializer()
         await init.initialize_async()
 
         registry = TargetRegistry.get_registry_singleton()
-        assert "openai_chat" not in registry
+        assert "platform_openai_chat" not in registry
 
     @pytest.mark.asyncio
     async def test_registers_multiple_targets(self):
         """Test that multiple targets are registered when their env vars are set."""
-        # Set up openai_chat
-        os.environ["OPENAI_CHAT_ENDPOINT"] = "https://api.openai.com/v1"
-        os.environ["OPENAI_CHAT_KEY"] = "test_key"
-        os.environ["OPENAI_CHAT_MODEL"] = "gpt-4o"
+        # Set up platform_openai_chat
+        os.environ["PLATFORM_OPENAI_CHAT_ENDPOINT"] = "https://api.openai.com/v1"
+        os.environ["PLATFORM_OPENAI_CHAT_API_KEY"] = "test_key"
+        os.environ["PLATFORM_OPENAI_CHAT_GPT4O_MODEL"] = "gpt-4o"
 
-        # Set up openai_image
-        os.environ["OPENAI_IMAGE_ENDPOINT"] = "https://api.openai.com/v1"
-        os.environ["OPENAI_IMAGE_API_KEY"] = "test_image_key"
-        os.environ["OPENAI_IMAGE_MODEL"] = "dall-e-3"
+        # Set up openai_image_platform (uses ENDPOINT2/KEY2/MODEL2)
+        os.environ["OPENAI_IMAGE_ENDPOINT2"] = "https://api.openai.com/v1"
+        os.environ["OPENAI_IMAGE_API_KEY2"] = "test_image_key"
+        os.environ["OPENAI_IMAGE_MODEL2"] = "dall-e-3"
 
         init = AIRTTargetInitializer()
         await init.initialize_async()
 
         registry = TargetRegistry.get_registry_singleton()
         assert len(registry) == 2
-        assert "openai_chat" in registry
-        assert "openai_image" in registry
+        assert "platform_openai_chat" in registry
+        assert "openai_image_platform" in registry
 
     @pytest.mark.asyncio
     async def test_registers_azure_content_safety_without_model(self):
@@ -136,19 +136,34 @@ class TestAIRTTargetInitializerInitialize:
     @pytest.mark.asyncio
     async def test_underlying_model_passed_when_set(self):
         """Test that underlying_model is passed to target when env var is set."""
-        os.environ["OPENAI_CHAT_ENDPOINT"] = "https://my-deployment.openai.azure.com"
-        os.environ["OPENAI_CHAT_KEY"] = "test_key"
-        os.environ["OPENAI_CHAT_MODEL"] = "my-deployment-name"
-        os.environ["OPENAI_CHAT_UNDERLYING_MODEL"] = "gpt-4o"
+        os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"] = "https://my-deployment.openai.azure.com"
+        os.environ["AZURE_OPENAI_GPT4O_KEY"] = "test_key"
+        os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "my-deployment-name"
+        os.environ["AZURE_OPENAI_GPT4O_UNDERLYING_MODEL"] = "gpt-4o"
 
         init = AIRTTargetInitializer()
         await init.initialize_async()
 
         registry = TargetRegistry.get_registry_singleton()
-        target = registry.get_instance_by_name("openai_chat")
+        target = registry.get_instance_by_name("azure_openai_gpt4o")
         assert target is not None
         assert target._model_name == "my-deployment-name"
         assert target._underlying_model == "gpt-4o"
+
+    @pytest.mark.asyncio
+    async def test_registers_ollama_without_api_key(self):
+        """Test that Ollama target is registered without requiring an API key."""
+        os.environ["OLLAMA_CHAT_ENDPOINT"] = "http://127.0.0.1:11434/v1"
+        os.environ["OLLAMA_MODEL"] = "llama2"
+
+        init = AIRTTargetInitializer()
+        await init.initialize_async()
+
+        registry = TargetRegistry.get_registry_singleton()
+        assert "ollama" in registry
+        target = registry.get_instance_by_name("ollama")
+        assert target is not None
+        assert target._model_name == "llama2"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -160,22 +175,26 @@ class TestAIRTTargetInitializerTargetConfigs:
         assert len(TARGET_CONFIGS) > 0
 
     def test_all_configs_have_required_fields(self):
-        """Test that all TARGET_CONFIGS have required fields."""
+        """Test that all TARGET_CONFIGS have required fields (key_var is optional for some)."""
         for config in TARGET_CONFIGS:
             assert config.registry_name, f"Config missing registry_name"
             assert config.target_class, f"Config {config.registry_name} missing target_class"
             assert config.endpoint_var, f"Config {config.registry_name} missing endpoint_var"
-            assert config.key_var, f"Config {config.registry_name} missing key_var"
+            # key_var is optional for targets like Ollama that don't require auth
 
     def test_expected_targets_in_configs(self):
         """Test that expected target names are in TARGET_CONFIGS."""
         registry_names = [config.registry_name for config in TARGET_CONFIGS]
 
-        # Verify key targets are configured
-        assert "openai_chat" in registry_names
-        assert "openai_image" in registry_names
-        assert "openai_tts" in registry_names
+        # Verify key targets are configured (using new primary config names)
+        assert "platform_openai_chat" in registry_names
+        assert "azure_openai_gpt4o" in registry_names
+        assert "openai_image_platform" in registry_names
+        assert "openai_tts_platform" in registry_names
         assert "azure_content_safety" in registry_names
+        assert "ollama" in registry_names
+        assert "groq" in registry_names
+        assert "google_gemini" in registry_names
 
 
 class TestAIRTTargetInitializerGetInfo:
