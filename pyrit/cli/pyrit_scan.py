@@ -8,6 +8,7 @@ This module provides the main entry point for the pyrit_scan command.
 """
 
 import asyncio
+import logging
 import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from pathlib import Path
@@ -58,7 +59,7 @@ Examples:
     parser.add_argument(
         "--log-level",
         type=frontend_core.validate_log_level_argparse,
-        default="WARNING",
+        default=logging.WARNING,
         help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) (default: WARNING)",
     )
 
