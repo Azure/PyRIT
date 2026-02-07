@@ -57,31 +57,6 @@ _SQLITE_MAX_BIND_VARS = 500
 Model = TypeVar("Model")
 
 
-def _batched_in_condition(column: InstrumentedAttribute, values: Sequence[Any]) -> ColumnElement[bool]:
-    """
-    Create a batched IN condition to avoid SQLite bind variable limits.
-
-    When the number of values exceeds _SQLITE_MAX_BIND_VARS, this function
-    creates an OR of multiple IN conditions, each with at most _SQLITE_MAX_BIND_VARS values.
-
-    Args:
-        column: The SQLAlchemy column to filter on.
-        values: The list of values to filter by.
-
-    Returns:
-        A SQLAlchemy condition (either a single IN or OR of multiple INs).
-    """
-    if len(values) <= _SQLITE_MAX_BIND_VARS:
-        return column.in_(values)
-
-    # Batch the values and create OR of IN conditions
-    conditions = []
-    for i in range(0, len(values), _SQLITE_MAX_BIND_VARS):
-        batch = values[i : i + _SQLITE_MAX_BIND_VARS]
-        conditions.append(column.in_(batch))
-    return or_(*conditions)
-
-
 class MemoryInterface(abc.ABC):
     """
     Abstract interface for conversation memory storage systems.
@@ -229,6 +204,73 @@ class MemoryInterface(abc.ABC):
         Returns:
             List of model instances representing the rows fetched from the table.
         """
+
+    def _execute_batched_query(
+        self,
+        model_class: type[Model],
+        *,
+        batch_column: InstrumentedAttribute[Any],
+        batch_values: Sequence[Any],
+        other_conditions: Optional[list[Any]] = None,
+        distinct: bool = False,
+        join_scores: bool = False,
+    ) -> MutableSequence[Model]:
+        """
+        Execute queries in batches to avoid exceeding database bind variable limits.
+
+        SQLite and other databases have per-statement parameter limits. This method
+        executes separate queries for each batch of values and merges the results.
+
+        Args:
+            model_class: The SQLAlchemy model class to query.
+            batch_column: The column to batch the IN condition on.
+            batch_values: The values to filter by (will be batched).
+            other_conditions: Additional SQLAlchemy conditions to include in each query.
+            distinct: Whether to return distinct rows only.
+            join_scores: Whether to join the scores table.
+
+        Returns:
+            MutableSequence[Model]: Merged and deduplicated results from all batched queries.
+        """
+        if other_conditions is None:
+            other_conditions = []
+
+        # If values fit in one batch, execute a single query
+        if len(batch_values) <= _SQLITE_MAX_BIND_VARS:
+            conditions = other_conditions + [batch_column.in_(batch_values)]
+            return self._query_entries(
+                model_class,
+                conditions=and_(*conditions) if conditions else None,
+                distinct=distinct,
+                join_scores=join_scores,
+            )
+
+        # Execute multiple separate queries and merge results
+        all_results: MutableSequence[Model] = []
+        seen_ids: set[str] = set()
+
+        for i in range(0, len(batch_values), _SQLITE_MAX_BIND_VARS):
+            batch = batch_values[i : i + _SQLITE_MAX_BIND_VARS]
+            conditions = other_conditions + [batch_column.in_(batch)]
+
+            results = self._query_entries(
+                model_class,
+                conditions=and_(*conditions) if conditions else None,
+                distinct=distinct,
+                join_scores=join_scores,
+            )
+
+            # Deduplicate by primary key (id)
+            for result in results:
+                result_id = str(getattr(result, "id", None))
+                if result_id and result_id not in seen_ids:
+                    seen_ids.add(result_id)
+                    all_results.append(result)
+                elif not result_id:
+                    # If no id attribute, just append
+                    all_results.append(result)
+
+        return all_results
 
     @abc.abstractmethod
     def _insert_entry(self, entry: Base) -> None:
@@ -391,8 +433,6 @@ class MemoryInterface(abc.ABC):
         """
         conditions: list[Any] = []
 
-        if score_ids:
-            conditions.append(_batched_in_condition(ScoreEntry.id, list(score_ids)))
         if score_type:
             conditions.append(ScoreEntry.score_type == score_type)
         if score_category:
@@ -402,11 +442,22 @@ class MemoryInterface(abc.ABC):
         if sent_before:
             conditions.append(ScoreEntry.timestamp <= sent_before)
 
+        # Handle score_ids with batched queries if needed
+        if score_ids:
+            entries = self._execute_batched_query(
+                ScoreEntry,
+                batch_column=ScoreEntry.id,
+                batch_values=list(score_ids),
+                other_conditions=conditions,
+            )
+            return [entry.get_score() for entry in entries]
+
+        # No score_ids specified - use regular query
         if not conditions:
             return []
 
-        entries: Sequence[ScoreEntry] = self._query_entries(ScoreEntry, conditions=and_(*conditions))
-        return [entry.get_score() for entry in entries]
+        score_entries: Sequence[ScoreEntry] = self._query_entries(ScoreEntry, conditions=and_(*conditions))
+        return [entry.get_score() for entry in score_entries]
 
     def get_prompt_scores(
         self,
@@ -560,38 +611,86 @@ class MemoryInterface(abc.ABC):
             Exception: If there is an error retrieving the prompts,
                 an exception is logged and an empty list is returned.
         """
-        conditions = []
-        if attack_id:
-            conditions.append(self._get_message_pieces_attack_conditions(attack_id=str(attack_id)))
-        if role:
-            conditions.append(PromptMemoryEntry.role == role)
-        if conversation_id:
-            conditions.append(PromptMemoryEntry.conversation_id == str(conversation_id))
-        if prompt_ids:
-            conditions.append(_batched_in_condition(PromptMemoryEntry.id, [str(pi) for pi in prompt_ids]))
-        if labels:
-            conditions.extend(self._get_message_pieces_memory_label_conditions(memory_labels=labels))
-        if prompt_metadata:
-            conditions.extend(self._get_message_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
-        if sent_after:
-            conditions.append(PromptMemoryEntry.timestamp >= sent_after)
-        if sent_before:
-            conditions.append(PromptMemoryEntry.timestamp <= sent_before)
-        if original_values:
-            conditions.append(_batched_in_condition(PromptMemoryEntry.original_value, list(original_values)))
-        if converted_values:
-            conditions.append(_batched_in_condition(PromptMemoryEntry.converted_value, list(converted_values)))
-        if data_type:
-            conditions.append(PromptMemoryEntry.converted_value_data_type == data_type)
-        if not_data_type:
-            conditions.append(PromptMemoryEntry.converted_value_data_type != not_data_type)
-        if converted_value_sha256:
-            conditions.append(_batched_in_condition(PromptMemoryEntry.converted_value_sha256, list(converted_value_sha256)))
-
         try:
-            memory_entries: Sequence[PromptMemoryEntry] = self._query_entries(
-                PromptMemoryEntry, conditions=and_(*conditions) if conditions else None, join_scores=True
+            conditions: list[Any] = []
+            if attack_id:
+                conditions.append(self._get_message_pieces_attack_conditions(attack_id=str(attack_id)))
+            if role:
+                conditions.append(PromptMemoryEntry.role == role)
+            if conversation_id:
+                conditions.append(PromptMemoryEntry.conversation_id == str(conversation_id))
+            if labels:
+                conditions.extend(self._get_message_pieces_memory_label_conditions(memory_labels=labels))
+            if prompt_metadata:
+                conditions.extend(self._get_message_pieces_prompt_metadata_conditions(prompt_metadata=prompt_metadata))
+            if sent_after:
+                conditions.append(PromptMemoryEntry.timestamp >= sent_after)
+            if sent_before:
+                conditions.append(PromptMemoryEntry.timestamp <= sent_before)
+            if data_type:
+                conditions.append(PromptMemoryEntry.converted_value_data_type == data_type)
+            if not_data_type:
+                conditions.append(PromptMemoryEntry.converted_value_data_type != not_data_type)
+
+            # Identify list parameters and whether they need batching
+            list_params: list[tuple[InstrumentedAttribute[Any], Sequence[Any], str]] = []
+            if prompt_ids:
+                list_params.append((PromptMemoryEntry.id, [str(pi) for pi in prompt_ids], "id"))
+            if original_values:
+                list_params.append((PromptMemoryEntry.original_value, list(original_values), "original_value"))
+            if converted_values:
+                list_params.append((PromptMemoryEntry.converted_value, list(converted_values), "converted_value"))
+            if converted_value_sha256:
+                list_params.append(
+                    (PromptMemoryEntry.converted_value_sha256, list(converted_value_sha256), "converted_value_sha256")
+                )
+
+            # If no list params, execute simple query
+            if not list_params:
+                memory_entries: Sequence[PromptMemoryEntry] = self._query_entries(
+                    PromptMemoryEntry,
+                    conditions=and_(*conditions) if conditions else None,
+                    join_scores=True,
+                )
+                message_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
+                return sort_message_pieces(message_pieces=message_pieces)
+
+            # Find which list params need batching (exceed limit)
+            large_params = [(col, vals, name) for col, vals, name in list_params if len(vals) > _SQLITE_MAX_BIND_VARS]
+            small_params = [(col, vals, name) for col, vals, name in list_params if len(vals) <= _SQLITE_MAX_BIND_VARS]
+
+            # Add small list params to base conditions
+            for col, vals, _ in small_params:
+                conditions.append(col.in_(vals))
+
+            # If no large params, execute simple query
+            if not large_params:
+                memory_entries = self._query_entries(
+                    PromptMemoryEntry,
+                    conditions=and_(*conditions) if conditions else None,
+                    join_scores=True,
+                )
+                message_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
+                return sort_message_pieces(message_pieces=message_pieces)
+
+            # Batch on the first large parameter
+            batch_col, batch_vals, _ = large_params[0]
+            other_large_params = large_params[1:]
+
+            # Execute batched query
+            memory_entries = self._execute_batched_query(
+                PromptMemoryEntry,
+                batch_column=batch_col,
+                batch_values=batch_vals,
+                other_conditions=conditions,
+                join_scores=True,
             )
+
+            # If there are additional large params, filter results in Python
+            for col, vals, attr_name in other_large_params:
+                vals_set = set(vals)
+                memory_entries = [e for e in memory_entries if getattr(e, attr_name, None) in vals_set]
+
             message_pieces = [memory_entry.get_message_piece() for memory_entry in memory_entries]
             return sort_message_pieces(message_pieces=message_pieces)
         except Exception as e:
@@ -1265,20 +1364,18 @@ class MemoryInterface(abc.ABC):
         Returns:
             Sequence[AttackResult]: A list of AttackResult objects that match the specified filters.
         """
-        conditions: list[ColumnElement[bool]] = []
+        # Handle empty list cases
+        if attack_result_ids is not None and len(attack_result_ids) == 0:
+            return []
+        if objective_sha256 is not None and len(objective_sha256) == 0:
+            return []
 
-        if attack_result_ids is not None:
-            if len(attack_result_ids) == 0:
-                return []
-            conditions.append(_batched_in_condition(AttackResultEntry.id, list(attack_result_ids)))
+        # Build non-list conditions
+        conditions: list[ColumnElement[bool]] = []
         if conversation_id:
             conditions.append(AttackResultEntry.conversation_id == conversation_id)
         if objective:
             conditions.append(AttackResultEntry.objective.contains(objective))
-        if objective_sha256:
-            if len(objective_sha256) == 0:
-                return []
-            conditions.append(_batched_in_condition(AttackResultEntry.objective_sha256, list(objective_sha256)))
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
 
@@ -1290,9 +1387,50 @@ class MemoryInterface(abc.ABC):
             conditions.append(self._get_attack_result_label_condition(labels=labels))
 
         try:
-            entries: Sequence[AttackResultEntry] = self._query_entries(
-                AttackResultEntry, conditions=and_(*conditions) if conditions else None
+            # Identify list parameters and whether they need batching
+            list_params: list[tuple[InstrumentedAttribute[Any], Sequence[Any], str]] = []
+            if attack_result_ids:
+                list_params.append((AttackResultEntry.id, list(attack_result_ids), "id"))
+            if objective_sha256:
+                list_params.append((AttackResultEntry.objective_sha256, list(objective_sha256), "objective_sha256"))
+
+            # If no list params, execute simple query
+            if not list_params:
+                entries: Sequence[AttackResultEntry] = self._query_entries(
+                    AttackResultEntry, conditions=and_(*conditions) if conditions else None
+                )
+                return [entry.get_attack_result() for entry in entries]
+
+            # Find which list params need batching
+            large_params = [(col, vals, name) for col, vals, name in list_params if len(vals) > _SQLITE_MAX_BIND_VARS]
+            small_params = [(col, vals, name) for col, vals, name in list_params if len(vals) <= _SQLITE_MAX_BIND_VARS]
+
+            # Add small list params to conditions
+            for col, vals, _ in small_params:
+                conditions.append(col.in_(vals))
+
+            # If no large params, execute simple query
+            if not large_params:
+                entries = self._query_entries(AttackResultEntry, conditions=and_(*conditions) if conditions else None)
+                return [entry.get_attack_result() for entry in entries]
+
+            # Batch on the first large parameter
+            batch_col, batch_vals, _ = large_params[0]
+            other_large_params = large_params[1:]
+
+            # Execute batched query
+            entries = self._execute_batched_query(
+                AttackResultEntry,
+                batch_column=batch_col,
+                batch_values=batch_vals,
+                other_conditions=conditions,
             )
+
+            # If there are additional large params, filter results in Python
+            for col, vals, attr_name in other_large_params:
+                vals_set = set(vals)
+                entries = [e for e in entries if getattr(e, attr_name, None) in vals_set]
+
             return [entry.get_attack_result() for entry in entries]
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
@@ -1455,9 +1593,6 @@ class MemoryInterface(abc.ABC):
 
         conditions: list[ColumnElement[bool]] = []
 
-        if scenario_result_ids:
-            conditions.append(_batched_in_condition(ScenarioResultEntry.id, list(scenario_result_ids)))
-
         if scenario_name:
             normalized_name = ScenarioResult.normalize_scenario_name(scenario_name)
             conditions.append(ScenarioResultEntry.scenario_name.contains(normalized_name))
@@ -1484,9 +1619,19 @@ class MemoryInterface(abc.ABC):
             conditions.append(self._get_scenario_result_target_model_condition(model_name=objective_target_model_name))
 
         try:
-            entries: Sequence[ScenarioResultEntry] = self._query_entries(
-                ScenarioResultEntry, conditions=and_(*conditions) if conditions else None
-            )
+            # Handle scenario_result_ids with batched queries if needed
+            if scenario_result_ids and len(scenario_result_ids) > _SQLITE_MAX_BIND_VARS:
+                entries = self._execute_batched_query(
+                    ScenarioResultEntry,
+                    batch_column=ScenarioResultEntry.id,
+                    batch_values=list(scenario_result_ids),
+                    other_conditions=conditions,
+                )
+            elif scenario_result_ids:
+                conditions = conditions + [ScenarioResultEntry.id.in_(list(scenario_result_ids))]
+                entries = self._query_entries(ScenarioResultEntry, conditions=and_(*conditions) if conditions else None)
+            else:
+                entries = self._query_entries(ScenarioResultEntry, conditions=and_(*conditions) if conditions else None)
 
             # Convert entries to ScenarioResults and populate attack_results efficiently
             scenario_results = []
@@ -1501,13 +1646,19 @@ class MemoryInterface(abc.ABC):
                 for conv_ids in conversation_ids_by_attack.values():
                     all_conversation_ids.extend(conv_ids)
 
-                # Query all AttackResults in a single batch if there are any
+                # Query all AttackResults using batched queries if needed
                 if all_conversation_ids:
-                    # Build condition to query multiple conversation IDs at once
-                    attack_conditions = [_batched_in_condition(AttackResultEntry.conversation_id, all_conversation_ids)]
-                    attack_entries: Sequence[AttackResultEntry] = self._query_entries(
-                        AttackResultEntry, conditions=and_(*attack_conditions)
-                    )
+                    if len(all_conversation_ids) > _SQLITE_MAX_BIND_VARS:
+                        attack_entries = self._execute_batched_query(
+                            AttackResultEntry,
+                            batch_column=AttackResultEntry.conversation_id,
+                            batch_values=all_conversation_ids,
+                        )
+                    else:
+                        attack_entries = self._query_entries(
+                            AttackResultEntry,
+                            conditions=AttackResultEntry.conversation_id.in_(all_conversation_ids),
+                        )
 
                     # Build a dict for quick lookup
                     attack_results_dict = {entry.conversation_id: entry.get_attack_result() for entry in attack_entries}
