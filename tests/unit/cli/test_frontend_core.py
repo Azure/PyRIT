@@ -5,6 +5,7 @@
 Unit tests for the frontend_core module.
 """
 
+import logging
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -24,7 +25,7 @@ class TestFrontendCore:
         assert context._database == frontend_core.SQLITE
         assert context._initialization_scripts is None
         assert context._initializer_names is None
-        assert context._log_level == "WARNING"
+        assert context._log_level == logging.WARNING
         assert context._initialized is False
 
     def test_init_with_all_parameters(self):
@@ -36,23 +37,21 @@ class TestFrontendCore:
             database=frontend_core.IN_MEMORY,
             initialization_scripts=scripts,
             initializer_names=initializers,
-            log_level="DEBUG",
+            log_level=logging.DEBUG,
         )
 
         assert context._database == frontend_core.IN_MEMORY
-        assert context._initialization_scripts == scripts
+        # Check path ends with expected components (Windows adds drive letter to Unix-style paths)
+        assert context._initialization_scripts is not None
+        assert len(context._initialization_scripts) == 1
+        assert context._initialization_scripts[0].parts[-2:] == ("test", "script.py")
         assert context._initializer_names == initializers
-        assert context._log_level == "DEBUG"
+        assert context._log_level == logging.DEBUG
 
     def test_init_with_invalid_database(self):
         """Test initialization with invalid database raises ValueError."""
         with pytest.raises(ValueError, match="Invalid database type"):
             frontend_core.FrontendCore(database="InvalidDB")
-
-    def test_init_with_invalid_log_level(self):
-        """Test initialization with invalid log level raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid log level"):
-            frontend_core.FrontendCore(log_level="INVALID")
 
     @patch("pyrit.registry.ScenarioRegistry")
     @patch("pyrit.registry.InitializerRegistry")
@@ -129,11 +128,11 @@ class TestValidationFunctions:
 
     def test_validate_log_level_valid_values(self):
         """Test validate_log_level with valid values."""
-        assert frontend_core.validate_log_level(log_level="DEBUG") == "DEBUG"
-        assert frontend_core.validate_log_level(log_level="INFO") == "INFO"
-        assert frontend_core.validate_log_level(log_level="warning") == "WARNING"  # Case-insensitive
-        assert frontend_core.validate_log_level(log_level="error") == "ERROR"
-        assert frontend_core.validate_log_level(log_level="CRITICAL") == "CRITICAL"
+        assert frontend_core.validate_log_level(log_level="DEBUG") == logging.DEBUG
+        assert frontend_core.validate_log_level(log_level="INFO") == logging.INFO
+        assert frontend_core.validate_log_level(log_level="warning") == logging.WARNING  # Case-insensitive
+        assert frontend_core.validate_log_level(log_level="error") == logging.ERROR
+        assert frontend_core.validate_log_level(log_level="CRITICAL") == logging.CRITICAL
 
     def test_validate_log_level_invalid_value(self):
         """Test validate_log_level with invalid value."""
@@ -208,7 +207,7 @@ class TestValidationFunctions:
 
     def test_validate_log_level_argparse(self):
         """Test validate_log_level_argparse wrapper."""
-        assert frontend_core.validate_log_level_argparse("DEBUG") == "DEBUG"
+        assert frontend_core.validate_log_level_argparse("DEBUG") == logging.DEBUG
 
         import argparse
 
@@ -583,7 +582,7 @@ class TestParseRunArguments:
         """Test parsing with log-level override."""
         result = frontend_core.parse_run_arguments(args_string="test_scenario --log-level DEBUG")
 
-        assert result["log_level"] == "DEBUG"
+        assert result["log_level"] == logging.DEBUG
 
     def test_parse_run_arguments_with_initialization_scripts(self):
         """Test parsing with initialization-scripts."""
