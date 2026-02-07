@@ -37,7 +37,7 @@ class TestFrontendCore:
             database=frontend_core.IN_MEMORY,
             initialization_scripts=scripts,
             initializer_names=initializers,
-            log_level="DEBUG",
+            log_level=logging.DEBUG,
         )
 
         assert context._database == frontend_core.IN_MEMORY
@@ -128,11 +128,11 @@ class TestValidationFunctions:
 
     def test_validate_log_level_valid_values(self):
         """Test validate_log_level with valid values."""
-        assert frontend_core.validate_log_level(log_level="DEBUG") == "DEBUG"
-        assert frontend_core.validate_log_level(log_level="INFO") == "INFO"
-        assert frontend_core.validate_log_level(log_level="warning") == "WARNING"  # Case-insensitive
-        assert frontend_core.validate_log_level(log_level="error") == "ERROR"
-        assert frontend_core.validate_log_level(log_level="CRITICAL") == "CRITICAL"
+        assert frontend_core.validate_log_level(log_level="DEBUG") == logging.DEBUG
+        assert frontend_core.validate_log_level(log_level="INFO") == logging.INFO
+        assert frontend_core.validate_log_level(log_level="warning") == logging.WARNING  # Case-insensitive
+        assert frontend_core.validate_log_level(log_level="error") == logging.ERROR
+        assert frontend_core.validate_log_level(log_level="CRITICAL") == logging.CRITICAL
 
     def test_validate_log_level_invalid_value(self):
         """Test validate_log_level with invalid value."""
@@ -207,7 +207,7 @@ class TestValidationFunctions:
 
     def test_validate_log_level_argparse(self):
         """Test validate_log_level_argparse wrapper."""
-        assert frontend_core.validate_log_level_argparse("DEBUG") == "DEBUG"
+        assert frontend_core.validate_log_level_argparse("DEBUG") == logging.DEBUG
 
         import argparse
 
@@ -582,7 +582,7 @@ class TestParseRunArguments:
         """Test parsing with log-level override."""
         result = frontend_core.parse_run_arguments(args_string="test_scenario --log-level DEBUG")
 
-        assert result["log_level"] == "DEBUG"
+        assert result["log_level"] == logging.DEBUG
 
     def test_parse_run_arguments_with_initialization_scripts(self):
         """Test parsing with initialization-scripts."""

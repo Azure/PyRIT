@@ -74,7 +74,7 @@ class FrontendCore:
         initialization_scripts: Optional[list[Path]] = None,
         initializer_names: Optional[list[str]] = None,
         env_files: Optional[list[Path]] = None,
-        log_level: Optional[str] = None,
+        log_level: Optional[int] = None,
     ):
         """
         Initialize PyRIT context.
@@ -91,17 +91,14 @@ class FrontendCore:
             initialization_scripts: Optional list of initialization script paths.
             initializer_names: Optional list of built-in initializer names to run.
             env_files: Optional list of environment file paths to load in order.
-            log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Defaults to WARNING.
+            log_level: Logging level constant (e.g., logging.WARNING). Defaults to logging.WARNING.
 
         Raises:
-            ValueError: If database or log_level are invalid, or if config file is invalid.
+            ValueError: If database is invalid, or if config file is invalid.
             FileNotFoundError: If an explicitly specified config_file does not exist.
         """
-        # Validate and convert log level to actual logging level constant
-        if log_level is None:
-            self._log_level = logging.WARNING
-        else:
-            self._log_level = getattr(logging, validate_log_level(log_level=log_level))
+        # Use provided log level or default to WARNING
+        self._log_level = log_level if log_level is not None else logging.WARNING
 
         # Load configuration using ConfigurationLoader.load_with_overrides
         try:
@@ -503,15 +500,15 @@ def validate_database(*, database: str) -> str:
     return database
 
 
-def validate_log_level(*, log_level: str) -> str:
+def validate_log_level(*, log_level: str) -> int:
     """
-    Validate log level.
+    Validate log level and convert to logging constant.
 
     Args:
         log_level: Log level string (case-insensitive).
 
     Returns:
-        Validated log level in uppercase.
+        Validated log level as logging constant (e.g., logging.WARNING).
 
     Raises:
         ValueError: If log level is invalid.
@@ -520,7 +517,8 @@ def validate_log_level(*, log_level: str) -> str:
     level_upper = log_level.upper()
     if level_upper not in valid_levels:
         raise ValueError(f"Invalid log level: {log_level}. Must be one of: {', '.join(valid_levels)}")
-    return level_upper
+    level_value: int = getattr(logging, level_upper)
+    return level_value
 
 
 def validate_integer(value: str, *, name: str = "value", min_value: Optional[int] = None) -> int:
@@ -814,7 +812,7 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             - max_retries: Optional[int]
             - memory_labels: Optional[dict[str, str]]
             - database: Optional[str]
-            - log_level: Optional[str]
+            - log_level: Optional[int]
             - dataset_names: Optional[list[str]]
             - max_dataset_size: Optional[int]
 

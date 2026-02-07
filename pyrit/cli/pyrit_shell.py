@@ -99,7 +99,7 @@ class PyRITShell(cmd.Cmd):
         super().__init__()
         self.context = context
         self.default_database = context._database
-        self.default_log_level: Optional[str] = str(context._log_level) if context._log_level is not None else None
+        self.default_log_level: Optional[int] = context._log_level
         self.default_env_files = context._env_files
 
         # Track scenario execution history: list of (command_string, ScenarioResult) tuples
@@ -235,7 +235,7 @@ class PyRITShell(cmd.Cmd):
             initialization_scripts=resolved_scripts,
             initializer_names=args["initializers"],
             env_files=resolved_env_files,
-            log_level=str(args["log_level"]) if args["log_level"] else self.default_log_level,
+            log_level=args["log_level"] if args["log_level"] else self.default_log_level,
         )
         # Use the existing registries (don't reinitialize)
         run_context._scenario_registry = self.context._scenario_registry

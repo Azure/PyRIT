@@ -5,6 +5,7 @@
 Unit tests for the pyrit_scan CLI module.
 """
 
+import logging
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -36,7 +37,7 @@ class TestParseArgs:
 
         assert args.scenario_name == "test_scenario"
         assert args.database == "SQLite"
-        assert args.log_level == "WARNING"
+        assert args.log_level == logging.WARNING
 
     def test_parse_args_with_database(self):
         """Test parsing with database option."""
@@ -48,7 +49,7 @@ class TestParseArgs:
         """Test parsing with log-level option."""
         args = pyrit_scan.parse_args(["test_scenario", "--log-level", "DEBUG"])
 
-        assert args.log_level == "DEBUG"
+        assert args.log_level == logging.DEBUG
 
     def test_parse_args_with_initializers(self):
         """Test parsing with initializers."""
@@ -117,7 +118,7 @@ class TestParseArgs:
 
         assert args.scenario_name == "encoding_scenario"
         assert args.database == "InMemory"
-        assert args.log_level == "INFO"
+        assert args.log_level == logging.INFO
         assert args.initializers == ["openai_target"]
         assert args.scenario_strategies == ["base64", "rot13"]
         assert args.max_concurrency == 10
@@ -304,7 +305,7 @@ class TestMain:
         # Verify FrontendCore was called with correct args
         call_kwargs = mock_frontend_core.call_args[1]
         assert call_kwargs["database"] == "InMemory"
-        assert call_kwargs["log_level"] == "DEBUG"
+        assert call_kwargs["log_level"] == logging.DEBUG
         assert call_kwargs["initializer_names"] == ["init1", "init2"]
 
     @patch("pyrit.cli.pyrit_scan.asyncio.run")
@@ -354,7 +355,7 @@ class TestMain:
         pyrit_scan.main(["--list-scenarios"])
 
         call_kwargs = mock_frontend_core.call_args[1]
-        assert call_kwargs["log_level"] == "WARNING"
+        assert call_kwargs["log_level"] == logging.WARNING
 
     def test_main_with_invalid_args(self):
         """Test main with invalid arguments."""
