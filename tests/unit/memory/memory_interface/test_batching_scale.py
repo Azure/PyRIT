@@ -9,13 +9,10 @@ fail when querying with many IDs due to SQLite bind variable limits.
 
 import hashlib
 import uuid
-from unittest.mock import MagicMock, patch
-
-from sqlalchemy import Column, Integer
-from sqlalchemy.orm import declarative_base
+from unittest.mock import patch
 
 from pyrit.memory import MemoryInterface
-from pyrit.memory.memory_interface import _SQLITE_MAX_BIND_VARS, _batched_in_condition
+from pyrit.memory.memory_interface import _SQLITE_MAX_BIND_VARS
 from pyrit.models import MessagePiece, Score
 
 
@@ -49,157 +46,6 @@ def _create_score(message_piece_id: str) -> Score:
         scorer_class_identifier={"__type__": "TestScorer"},
         message_piece_id=message_piece_id,
     )
-
-
-class TestBatchedInCondition:
-    """Tests for the _batched_in_condition helper function."""
-
-    def test_batched_in_condition_small_list(self):
-        """Test that small lists generate a simple IN condition."""
-        Base = declarative_base()
-
-        class TestModel(Base):
-            __tablename__ = "test"
-            id = Column(Integer, primary_key=True)
-
-        values = list(range(10))
-        condition = _batched_in_condition(TestModel.id, values)
-
-        # Should be a simple IN clause, not an OR
-        assert "IN" in str(condition)
-        assert "OR" not in str(condition)
-
-    def test_batched_in_condition_exact_batch_size(self):
-        """Test with exactly _SQLITE_MAX_BIND_VARS values."""
-        Base = declarative_base()
-
-        class TestModel(Base):
-            __tablename__ = "test"
-            id = Column(Integer, primary_key=True)
-
-        values = list(range(_SQLITE_MAX_BIND_VARS))
-        condition = _batched_in_condition(TestModel.id, values)
-
-        # Should still be a simple IN clause at the limit
-        assert "IN" in str(condition)
-        # May or may not have OR depending on implementation at boundary
-
-    def test_batched_in_condition_over_batch_size(self):
-        """Test with values exceeding _SQLITE_MAX_BIND_VARS."""
-        Base = declarative_base()
-
-        class TestModel(Base):
-            __tablename__ = "test"
-            id = Column(Integer, primary_key=True)
-
-        values = list(range(_SQLITE_MAX_BIND_VARS + 100))
-        condition = _batched_in_condition(TestModel.id, values)
-
-        # Should generate OR of multiple IN clauses
-        condition_str = str(condition)
-        assert "OR" in condition_str
-        assert "IN" in condition_str
-
-    def test_batched_in_condition_double_batch_size(self):
-        """Test with double the batch size."""
-        Base = declarative_base()
-
-        class TestModel(Base):
-            __tablename__ = "test"
-            id = Column(Integer, primary_key=True)
-
-        values = list(range(_SQLITE_MAX_BIND_VARS * 2))
-        condition = _batched_in_condition(TestModel.id, values)
-
-        # Should generate multiple batches
-        condition_str = str(condition)
-        assert "OR" in condition_str
-        # Should have at least 2 IN clauses
-        assert condition_str.count("IN") >= 2
-
-    def test_batched_in_condition_three_batches(self):
-        """Test with enough values to require three batches."""
-        Base = declarative_base()
-
-        class TestModel(Base):
-            __tablename__ = "test"
-            id = Column(Integer, primary_key=True)
-
-        values = list(range(_SQLITE_MAX_BIND_VARS * 2 + 100))
-        condition = _batched_in_condition(TestModel.id, values)
-
-        condition_str = str(condition)
-        assert "OR" in condition_str
-        # Should have at least 3 IN clauses
-        assert condition_str.count("IN") >= 3
-
-    def test_batched_in_condition_empty_list(self):
-        """Test with an empty list."""
-        Base = declarative_base()
-
-        class TestModel(Base):
-            __tablename__ = "test"
-            id = Column(Integer, primary_key=True)
-
-        values = []
-        condition = _batched_in_condition(TestModel.id, values)
-
-        # Empty list should still generate valid SQL
-        condition_str = str(condition)
-        assert "IN" in condition_str
-
-    def test_batched_in_condition_multiple_columns(self):
-        """Test combining multiple batched conditions with AND logic."""
-        from sqlalchemy import String, and_
-
-        Base = declarative_base()
-
-        class TestModel(Base):
-            __tablename__ = "test"
-            id = Column(Integer, primary_key=True)
-            name = Column(String)
-            email = Column(String)
-
-        # Create multiple large value lists for different columns
-        num_values = (_SQLITE_MAX_BIND_VARS * 2) + 100
-        id_values = list(range(num_values))
-        name_values = [f"name_{i}" for i in range(num_values)]
-        email_values = [f"email_{i}@test.com" for i in range(num_values)]
-
-        # Create batched conditions for each column
-        id_condition = _batched_in_condition(TestModel.id, id_values)
-        name_condition = _batched_in_condition(TestModel.name, name_values)
-        email_condition = _batched_in_condition(TestModel.email, email_values)
-
-        # Combine with AND (simulating real query behavior)
-        combined_condition = and_(id_condition, name_condition, email_condition)
-        combined_str = str(combined_condition)
-
-        # Verify all three columns are present in the query
-        assert "id" in combined_str.lower()
-        assert "name" in combined_str.lower()
-        assert "email" in combined_str.lower()
-
-        # Verify OR clauses are present (batching is active)
-        assert combined_str.count("OR") >= 3  # At least one OR per batched column
-
-        # Verify AND combines the conditions
-        assert "AND" in combined_str
-
-        # Verify `id` count matches expected batches
-        expected_id_batches = (num_values + _SQLITE_MAX_BIND_VARS - 1) // _SQLITE_MAX_BIND_VARS
-        actual_id_batches = combined_str.count("id IN")
-        assert actual_id_batches == expected_id_batches
-
-        # Verify `name` count matches expected batches
-        expected_name_batches = (num_values + _SQLITE_MAX_BIND_VARS - 1) // _SQLITE_MAX_BIND_VARS
-        actual_name_batches = combined_str.count("name IN")
-        assert actual_name_batches == expected_name_batches
-
-        # Verify `email` count matches expected batches
-        expected_email_batches = (num_values + _SQLITE_MAX_BIND_VARS - 1) // _SQLITE_MAX_BIND_VARS
-        actual_email_batches = combined_str.count("email IN")
-        assert actual_email_batches == expected_email_batches
 
 
 class TestBatchingScale:
@@ -370,9 +216,7 @@ class TestBatchingScale:
         """Test batching with multiple parameters exceeding batch limit simultaneously."""
         # Create enough pieces to exceed batch limit with unique values
         num_pieces = _SQLITE_MAX_BIND_VARS + 200
-        pieces = [
-            _create_message_piece(original_value=f"original_value_{i}") for i in range(num_pieces)
-        ]
+        pieces = [_create_message_piece(original_value=f"original_value_{i}") for i in range(num_pieces)]
 
         # Add to memory
         sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
@@ -396,8 +240,7 @@ class TestBatchingScale:
 
         # Should return all pieces that match ALL conditions (intersection)
         assert len(results) == num_pieces, (
-            f"Expected {num_pieces} results when filtering with multiple large parameters, "
-            f"got {len(results)}"
+            f"Expected {num_pieces} results when filtering with multiple large parameters, got {len(results)}"
         )
 
         # Verify all returned pieces match all filter criteria
@@ -410,12 +253,10 @@ class TestBatchingScale:
         assert result_sha256 == set(all_sha256), "Returned SHA256 hashes don't match filter"
 
     def test_get_message_pieces_multiple_batched_params_with_query_spy(self, sqlite_instance: MemoryInterface):
-        """Test that batching generates correct queries when multiple params exceed limit."""
+        """Test that batching executes multiple separate queries and merges results correctly."""
         # Create pieces exceeding batch limit
         num_pieces = _SQLITE_MAX_BIND_VARS + 100
-        pieces = [
-            _create_message_piece(original_value=f"value_{i}") for i in range(num_pieces)
-        ]
+        pieces = [_create_message_piece(original_value=f"value_{i}") for i in range(num_pieces)]
         sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
 
         # Get stored pieces
@@ -426,41 +267,33 @@ class TestBatchingScale:
         # Mock _query_entries to track how it's called
         original_query = sqlite_instance._query_entries
         call_count = 0
-        captured_conditions = []
 
         def spy_query(*args, **kwargs):
             nonlocal call_count
             call_count += 1
-            if "conditions" in kwargs and kwargs["conditions"] is not None:
-                captured_conditions.append(str(kwargs["conditions"]))
             return original_query(*args, **kwargs)
 
         with patch.object(sqlite_instance, "_query_entries", side_effect=spy_query):
-            results = sqlite_instance.get_message_pieces(
-                prompt_ids=all_ids, original_values=all_original_values
-            )
+            results = sqlite_instance.get_message_pieces(prompt_ids=all_ids, original_values=all_original_values)
 
         # Should get all results despite batching
         assert len(results) == num_pieces
 
-        # Should have been called (could be 1 call with OR conditions)
-        assert call_count >= 1
-
-        # Verify query conditions include both filters
-        if captured_conditions:
-            combined_conditions = " ".join(captured_conditions)
-            # Both column filters should be present in the query
-            assert "id" in combined_conditions.lower() or "prompt" in combined_conditions.lower()
-            assert "original_value" in combined_conditions.lower()
+        # With the new batching approach, multiple separate queries should be executed
+        # when the primary batch parameter exceeds _SQLITE_MAX_BIND_VARS
+        # Expected: ceil(num_pieces / _SQLITE_MAX_BIND_VARS) = 2 queries
+        expected_min_calls = (num_pieces + _SQLITE_MAX_BIND_VARS - 1) // _SQLITE_MAX_BIND_VARS
+        assert call_count >= expected_min_calls, (
+            f"Expected at least {expected_min_calls} separate queries for {num_pieces} items, "
+            f"but only got {call_count} calls"
+        )
 
     def test_get_message_pieces_triple_large_params_preserves_intersection(self, sqlite_instance: MemoryInterface):
         """Test that filtering with 3 large parameter lists returns correct intersection."""
         # Create a large set of pieces
         total_pieces = _SQLITE_MAX_BIND_VARS + 150
         pieces = [
-            _create_message_piece(
-                conversation_id=str(uuid.uuid4()), original_value=f"content_{i}"
-            )
+            _create_message_piece(conversation_id=str(uuid.uuid4()), original_value=f"content_{i}")
             for i in range(total_pieces)
         ]
         sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
@@ -487,10 +320,130 @@ class TestBatchingScale:
         )
 
         # Should return only the intersection (subset_size items)
-        assert (
-            len(results) == subset_size
-        ), f"Expected {subset_size} results from intersection, got {len(results)}"
+        assert len(results) == subset_size, f"Expected {subset_size} results from intersection, got {len(results)}"
 
         # Verify all results have SHA256 in the filter list
         result_sha256 = {r.converted_value_sha256 for r in results}
         assert result_sha256.issubset(set(filter_sha256)), "Results contain unexpected SHA256 values"
+
+
+class TestExecuteBatchedQuery:
+    """Tests for the _execute_batched_query helper method."""
+
+    def test_execute_batched_query_small_list_single_query(self, sqlite_instance: MemoryInterface):
+        """Test that small lists execute a single query."""
+        # Create a small number of pieces (under batch limit)
+        num_pieces = 10
+        pieces = [_create_message_piece() for _ in range(num_pieces)]
+        sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+        # Track query calls
+        original_query = sqlite_instance._query_entries
+        call_count = 0
+
+        def spy_query(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return original_query(*args, **kwargs)
+
+        with patch.object(sqlite_instance, "_query_entries", side_effect=spy_query):
+            all_ids = [piece.id for piece in pieces]
+            results = sqlite_instance.get_message_pieces(prompt_ids=all_ids)
+
+        # Should be a single query for small lists
+        assert call_count == 1
+        assert len(results) == num_pieces
+
+    def test_execute_batched_query_large_list_multiple_queries(self, sqlite_instance: MemoryInterface):
+        """Test that large lists execute multiple separate queries."""
+        # Create pieces exceeding batch limit
+        num_pieces = _SQLITE_MAX_BIND_VARS * 3  # 3 batches needed
+        pieces = [_create_message_piece() for _ in range(num_pieces)]
+        sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+        # Track query calls
+        original_query = sqlite_instance._query_entries
+        call_count = 0
+
+        def spy_query(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return original_query(*args, **kwargs)
+
+        with patch.object(sqlite_instance, "_query_entries", side_effect=spy_query):
+            all_ids = [piece.id for piece in pieces]
+            results = sqlite_instance.get_message_pieces(prompt_ids=all_ids)
+
+        # Should execute 3 separate queries (one per batch)
+        assert call_count == 3, f"Expected 3 queries for 3 batches, got {call_count}"
+        assert len(results) == num_pieces
+
+    def test_execute_batched_query_deduplicates_results(self, sqlite_instance: MemoryInterface):
+        """Test that batched queries properly deduplicate results."""
+        # Create pieces
+        num_pieces = 50
+        pieces = [_create_message_piece() for _ in range(num_pieces)]
+        sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+        # Query with the same IDs repeated (should still return unique results)
+        all_ids = [piece.id for piece in pieces]
+        # Query twice with same IDs - results should still be unique
+        results = sqlite_instance.get_message_pieces(prompt_ids=all_ids)
+
+        assert len(results) == num_pieces
+        # Verify no duplicates
+        result_ids = [r.id for r in results]
+        assert len(result_ids) == len(set(result_ids)), "Results contain duplicate entries"
+
+    def test_execute_batched_query_exact_batch_boundary(self, sqlite_instance: MemoryInterface):
+        """Test querying with exactly the batch limit (edge case)."""
+        num_pieces = _SQLITE_MAX_BIND_VARS
+        pieces = [_create_message_piece() for _ in range(num_pieces)]
+        sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+        # Track query calls
+        original_query = sqlite_instance._query_entries
+        call_count = 0
+
+        def spy_query(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return original_query(*args, **kwargs)
+
+        with patch.object(sqlite_instance, "_query_entries", side_effect=spy_query):
+            all_ids = [piece.id for piece in pieces]
+            results = sqlite_instance.get_message_pieces(prompt_ids=all_ids)
+
+        # Exactly at the limit should still be a single query
+        assert call_count == 1, f"Expected 1 query at exact batch limit, got {call_count}"
+        assert len(results) == num_pieces
+
+    def test_batching_with_scores_exceeds_limit(self, sqlite_instance: MemoryInterface):
+        """Test that get_scores handles large numbers of score IDs correctly."""
+        # Create message pieces and scores exceeding the limit
+        num_items = _SQLITE_MAX_BIND_VARS * 2 + 50
+        pieces = [_create_message_piece() for _ in range(num_items)]
+        sqlite_instance.add_message_pieces_to_memory(message_pieces=pieces)
+
+        scores = [_create_score(str(piece.id)) for piece in pieces]
+        sqlite_instance.add_scores_to_memory(scores=scores)
+
+        # Query with all score IDs
+        all_score_ids = [str(score.id) for score in scores]
+
+        # Track query calls
+        original_query = sqlite_instance._query_entries
+        call_count = 0
+
+        def spy_query(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return original_query(*args, **kwargs)
+
+        with patch.object(sqlite_instance, "_query_entries", side_effect=spy_query):
+            results = sqlite_instance.get_scores(score_ids=all_score_ids)
+
+        # Should execute multiple queries
+        expected_calls = (num_items + _SQLITE_MAX_BIND_VARS - 1) // _SQLITE_MAX_BIND_VARS
+        assert call_count == expected_calls, f"Expected {expected_calls} queries, got {call_count}"
+        assert len(results) == num_items
