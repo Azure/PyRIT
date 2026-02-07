@@ -72,7 +72,7 @@ dev = [
     "jupyter>=1.1.1",
     "jupyter-book==1.0.4",
     "jupytext>=1.17.1",
-    "mypy>=1.16.0",
+    "ty>=0.0.12",
     "mock-alchemy>=0.2.6",
     "pre-commit>=4.2.0",
     "pytest>=8.3.5",
@@ -165,13 +165,14 @@ pythonpath = ["."]
 asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 
-[tool.mypy]
-plugins = []
-ignore_missing_imports = true
-strict = false
-follow_imports = "silent"
-strict_optional = false
-disable_error_code = ["empty-body"]
+[tool.ty]
+[tool.ty.rules]
+unresolved-import = "ignore"
+possibly-missing-attribute = "ignore"
+unused-ignore-comment = "ignore"
+[tool.ty.analysis]
+respect-type-ignore-comments = true
+[tool.ty.src]
 exclude = ["doc/code/"]
 
 [build-system]
