@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, Union
 
-from pyrit.identifiers import Identifier
+from pyrit.identifiers import AttackIdentifier, Identifier
 
 
 class ComponentRole(Enum):
@@ -61,8 +61,8 @@ class ExecutionContext:
     # The attack strategy class name (e.g., "PromptSendingAttack")
     attack_strategy_name: Optional[str] = None
 
-    # The identifier from the attack strategy's get_identifier()
-    attack_identifier: Optional[Dict[str, Any]] = None
+    # The identifier for the attack strategy
+    attack_identifier: Optional[Union["AttackIdentifier", Dict[str, Any]]] = None
 
     # The identifier from the component's get_identifier() (target, scorer, etc.)
     component_identifier: Optional[Dict[str, Any]] = None
@@ -192,7 +192,7 @@ def execution_context(
     *,
     component_role: ComponentRole,
     attack_strategy_name: Optional[str] = None,
-    attack_identifier: Optional[Dict[str, Any]] = None,
+    attack_identifier: Optional[Union[AttackIdentifier, Dict[str, Any]]] = None,
     component_identifier: Optional[Union[Identifier, Dict[str, Any]]] = None,
     objective_target_conversation_id: Optional[str] = None,
     objective: Optional[str] = None,
@@ -203,7 +203,7 @@ def execution_context(
     Args:
         component_role: The role of the component being executed.
         attack_strategy_name: The name of the attack strategy class.
-        attack_identifier: The identifier from attack.get_identifier().
+        attack_identifier: The attack identifier. Can be an AttackIdentifier or a dict.
         component_identifier: The identifier from component.get_identifier().
             Can be an Identifier object or a dict (legacy format).
         objective_target_conversation_id: The objective target conversation ID if available.

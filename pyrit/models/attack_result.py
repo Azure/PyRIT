@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
 
+from pyrit.identifiers import AttackIdentifier
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.message_piece import MessagePiece
 from pyrit.models.score import Score
@@ -41,8 +42,8 @@ class AttackResult(StrategyResult):
     # Natural-language description of the attacker's objective
     objective: str
 
-    # Identifier of the attack (e.g., name, module)
-    attack_identifier: dict[str, str]
+    # Identifier of the attack strategy that produced this result
+    attack_identifier: Optional[AttackIdentifier] = None
 
     # Evidence
     # Model response generated in the final turn of the attack

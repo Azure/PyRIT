@@ -259,7 +259,7 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
         # Extract attack type name from attack_identifier
         attack_type = "Unknown"
         if isinstance(result.attack_identifier, dict) and "__type__" in result.attack_identifier:
-            attack_type = result.attack_identifier["__type__"]
+            attack_type = result.attack_identifier.class_name
         elif isinstance(result.attack_identifier, str):
             attack_type = result.attack_identifier
 

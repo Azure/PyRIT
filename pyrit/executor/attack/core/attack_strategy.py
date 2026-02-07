@@ -20,6 +20,7 @@ from pyrit.executor.core import (
     StrategyEventData,
     StrategyEventHandler,
 )
+from pyrit.identifiers import AttackIdentifier, Identifiable
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -224,7 +225,7 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         self._logger.info(message)
 
 
-class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], ABC):
+class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Identifiable[AttackIdentifier], ABC):
     """
     Abstract base class for attack strategies.
     Defines the interface for executing attacks and handling results.
@@ -258,6 +259,45 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         )
         self._objective_target = objective_target
         self._params_type = params_type
+        self._request_converters: list = []
+        self._response_converters: list = []
+
+    def _build_identifier(self) -> AttackIdentifier:
+        """
+        Build the typed identifier for this attack strategy.
+
+        Captures the objective target, optional scorer, and converter pipeline.
+        This is the *stable* strategy-level identifier that does not change
+        between calls to ``execute_async``.
+
+        Returns:
+            AttackIdentifier: The constructed identifier.
+        """
+        # Get target identifier
+        objective_target_identifier = self.get_objective_target().get_identifier()
+
+        # Get scorer identifier if present
+        scorer_identifier = None
+        scoring_config = self.get_attack_scoring_config()
+        if scoring_config and scoring_config.objective_scorer:
+            scorer_identifier = scoring_config.objective_scorer.get_identifier()
+
+        # Get request converter identifiers if present
+        converter_identifiers = None
+        if self._request_converters:
+            converter_identifiers = [
+                converter.get_identifier()
+                for config in self._request_converters
+                for converter in config.converters
+            ]
+
+        return AttackIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            objective_target_identifier=objective_target_identifier,
+            objective_scorer_identifier=scorer_identifier,
+            request_converter_identifiers=converter_identifiers or None,
+        )
 
     @property
     def params_type(self) -> Type[AttackParameters]:
@@ -290,6 +330,15 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
             scoring configuration. The default implementation returns None.
         """
         return None
+
+    def get_request_converters(self) -> list:
+        """
+        Get request converter configurations used by this strategy.
+
+        Returns:
+            list: The list of request PromptConverterConfiguration objects.
+        """
+        return self._request_converters
 
     @overload
     async def execute_async(

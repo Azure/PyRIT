@@ -14,6 +14,7 @@ from pyrit.exceptions import (
     execution_context,
     get_execution_context,
 )
+from pyrit.identifiers import AttackIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
@@ -53,7 +54,7 @@ class PromptNormalizer:
         request_converter_configurations: list[PromptConverterConfiguration] = [],
         response_converter_configurations: list[PromptConverterConfiguration] = [],
         labels: Optional[dict[str, str]] = None,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
     ) -> Message:
         """
         Send a single request to a target.
@@ -67,7 +68,7 @@ class PromptNormalizer:
             response_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
                 converting the response. Defaults to an empty list.
             labels (Optional[dict[str, str]], optional): Labels associated with the request. Defaults to None.
-            attack_identifier (Optional[dict[str, str]], optional): Identifier for the attack. Defaults to
+            attack_identifier (Optional[AttackIdentifier], optional): Identifier for the attack. Defaults to
                 None.
 
         Raises:
@@ -155,7 +156,7 @@ class PromptNormalizer:
         requests: list[NormalizerRequest],
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
         batch_size: int = 10,
     ) -> list[Message]:
         """
@@ -166,7 +167,7 @@ class PromptNormalizer:
             target (PromptTarget): The target to which the prompts are sent.
             labels (Optional[dict[str, str]], optional): A dictionary of labels to be included with the request.
                 Defaults to None.
-            attack_identifier (Optional[dict[str, str]], optional): A dictionary identifying the attack.
+            attack_identifier (Optional[AttackIdentifier], optional): The attack identifier.
                 Defaults to None.
             batch_size (int, optional): The number of prompts to include in each batch. Defaults to 10.
 
@@ -274,7 +275,7 @@ class PromptNormalizer:
         conversation_id: str,
         should_convert: bool = True,
         converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
         prepended_conversation: Optional[list[Message]] = None,
     ) -> Optional[list[Message]]:
         """
@@ -285,7 +286,7 @@ class PromptNormalizer:
             should_convert (bool): Whether to convert the prepended conversation
             converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
                 request
-            attack_identifier (Optional[dict[str, str]]): Identifier for the attack
+            attack_identifier (Optional[AttackIdentifier]): Identifier for the attack
             prepended_conversation (Optional[list[Message]]): The conversation to prepend
 
         Returns:

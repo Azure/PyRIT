@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import abc
-from typing import Optional
+from typing import Optional, Union
 
+from pyrit.identifiers import AttackIdentifier
 from pyrit.models import MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -51,7 +52,7 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """

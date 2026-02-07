@@ -9,7 +9,7 @@ from contextlib import AbstractAsyncContextManager
 from typing import Generator, MutableSequence, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import AttackIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
@@ -100,7 +100,7 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt

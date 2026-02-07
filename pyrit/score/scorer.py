@@ -26,7 +26,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.identifiers import Identifiable, ScorerIdentifier
+from pyrit.identifiers import AttackIdentifier, Identifiable, ScorerIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     ChatMessageRole,
@@ -145,7 +145,6 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
             class_description=" ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else "",
-            identifier_type="instance",
             scorer_type=self.scorer_type,
             system_prompt_template=system_prompt_template,
             user_prompt_template=user_prompt_template,
@@ -521,7 +520,7 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        attack_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[Union[AttackIdentifier, Dict[str, str]]] = None,
     ) -> UnvalidatedScore:
         """
         Send a request to a target, and take care of retries.
@@ -555,7 +554,7 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
                 Defaults to "metadata".
             category_output_key (str): The key in the JSON response that contains the category.
                 Defaults to "category".
-            attack_identifier (Optional[Dict[str, str]]): A dictionary containing attack-specific identifiers.
+            attack_identifier (Optional[Union[AttackIdentifier, Dict[str, str]]]): The attack identifier.
                 Defaults to None.
 
         Returns:
@@ -568,9 +567,6 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
             Exception: For other unexpected errors during scoring.
         """
         conversation_id = str(uuid.uuid4())
-
-        if attack_identifier:
-            attack_identifier["scored_prompt_id"] = str(scored_prompt_id)
 
         prompt_target.set_system_prompt(
             system_prompt=system_prompt,

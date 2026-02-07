@@ -32,7 +32,7 @@ from sqlalchemy.types import Uuid
 
 import pyrit
 from pyrit.common.utils import to_sha256
-from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -220,7 +220,7 @@ class PromptMemoryEntry(Base):
         self.prompt_target_identifier = (
             entry.prompt_target_identifier.to_dict() if entry.prompt_target_identifier else {}
         )
-        self.attack_identifier = entry.attack_identifier
+        self.attack_identifier = entry.attack_identifier.to_dict() if entry.attack_identifier else {}
 
         self.original_value = entry.original_value
         self.original_value_data_type = entry.original_value_data_type  # type: ignore
@@ -732,7 +732,7 @@ class AttackResultEntry(Base):
         self.id = uuid.uuid4()
         self.conversation_id = entry.conversation_id
         self.objective = entry.objective
-        self.attack_identifier = entry.attack_identifier
+        self.attack_identifier = entry.attack_identifier.to_dict() if entry.attack_identifier else {}
         self.objective_sha256 = to_sha256(entry.objective)
 
         # Use helper method for UUID conversions
@@ -833,7 +833,7 @@ class AttackResultEntry(Base):
         return AttackResult(
             conversation_id=self.conversation_id,
             objective=self.objective,
-            attack_identifier=self.attack_identifier,
+            attack_identifier=AttackIdentifier.from_dict(self.attack_identifier) if self.attack_identifier else None,
             last_response=self.last_response.get_message_piece() if self.last_response else None,
             last_score=self.last_score.get_score() if self.last_score else None,
             executed_turns=self.executed_turns,

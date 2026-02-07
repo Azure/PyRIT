@@ -37,6 +37,7 @@ from pyrit.executor.attack.core.attack_config import (
 )
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn import MultiTurnAttackContext
+from pyrit.identifiers import AttackIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -267,7 +268,7 @@ class _TreeOfAttacksNode:
         request_converters: List[PromptConverterConfiguration],
         response_converters: List[PromptConverterConfiguration],
         auxiliary_scorers: Optional[List[Scorer]],
-        attack_id: dict[str, str],
+        attack_id: AttackIdentifier,
         attack_strategy_name: str,
         memory_labels: Optional[dict[str, str]] = None,
         parent_id: Optional[str] = None,
@@ -289,7 +290,7 @@ class _TreeOfAttacksNode:
             request_converters (List[PromptConverterConfiguration]): Converters for request normalization
             response_converters (List[PromptConverterConfiguration]): Converters for response normalization
             auxiliary_scorers (Optional[List[Scorer]]): Additional scorers for the response
-            attack_id (dict[str, str]): Unique identifier for the attack.
+            attack_id (AttackIdentifier): Unique identifier for the attack.
             attack_strategy_name (str): Name of the attack strategy for execution context.
             memory_labels (Optional[dict[str, str]]): Labels for memory storage.
             parent_id (Optional[str]): ID of the parent node, if this is a child node

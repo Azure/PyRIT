@@ -95,6 +95,38 @@ class Seed(YamlLoadable):
     prompt_group_alias: Optional[str] = None
 
     @property
+    def is_general_attack_strategy(self) -> bool:
+        """
+        Whether this seed represents a general attack strategy dataset.
+
+        When True, the seed data (prepended conversation, next message) is
+        considered part of the attack strategy identity and will be included
+        in the attack identifier hash. When False (default), the data is
+        considered objective-specific and is not included.
+
+        This value is stored in the ``metadata`` dict under the key
+        ``"is_general_attack_strategy"``.
+
+        Returns:
+            bool: True if the seed is a general attack strategy dataset.
+        """
+        if self.metadata and "is_general_attack_strategy" in self.metadata:
+            return bool(self.metadata["is_general_attack_strategy"])
+        return False
+
+    @is_general_attack_strategy.setter
+    def is_general_attack_strategy(self, value: bool) -> None:
+        """
+        Set whether this seed represents a general attack strategy dataset.
+
+        Args:
+            value: True to mark as a general attack strategy dataset.
+        """
+        if self.metadata is None:
+            self.metadata = {}
+        self.metadata["is_general_attack_strategy"] = int(value)
+
+    @property
     def data_type(self) -> PromptDataType:
         """
         Return the data type for this seed.

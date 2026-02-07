@@ -24,6 +24,7 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
     PromptGeneratorStrategyResult,
 )
 from pyrit.executor.promptgen.fuzzer.fuzzer_converter_base import FuzzerConverter
+from pyrit.identifiers import AttackIdentifier, Identifiable
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -492,7 +493,10 @@ class FuzzerResultPrinter:
             print("No successful templates found.")
 
 
-class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
+class FuzzerGenerator(
+    PromptGeneratorStrategy[FuzzerContext, FuzzerResult],
+    Identifiable[AttackIdentifier],
+):
     """
     Implementation of the Fuzzer prompt generation strategy using Monte Carlo Tree Search (MCTS).
 
@@ -674,6 +678,21 @@ class FuzzerGenerator(PromptGeneratorStrategy[FuzzerContext, FuzzerResult]):
 
         # Initialize utilities
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
+
+    def _build_identifier(self) -> AttackIdentifier:
+        """
+        Build the typed identifier for this prompt generator.
+
+        Returns:
+            AttackIdentifier: The constructed identifier.
+        """
+        objective_target_identifier = self._objective_target.get_identifier()
+
+        return AttackIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            objective_target_identifier=objective_target_identifier,
+        )
 
     def _validate_inputs(
         self,

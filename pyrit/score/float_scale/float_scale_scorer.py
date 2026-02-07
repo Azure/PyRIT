@@ -1,10 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional, Union
 from uuid import UUID
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
+from pyrit.identifiers import AttackIdentifier
 from pyrit.models import PromptDataType, Score, UnvalidatedScore
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score.scorer import Scorer
@@ -75,7 +76,7 @@ class FloatScaleScorer(Scorer):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        attack_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[Union[AttackIdentifier, Dict[str, str]]] = None,
     ) -> UnvalidatedScore:
         score: UnvalidatedScore | None = None
         try:

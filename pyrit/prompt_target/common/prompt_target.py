@@ -129,7 +129,6 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
             class_description=" ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else "",
-            identifier_type="instance",
             endpoint=self._endpoint,
             model_name=model_name,
             temperature=temperature,
