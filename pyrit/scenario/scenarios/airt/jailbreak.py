@@ -28,14 +28,6 @@ from pyrit.score import (
     TrueFalseScorer,
 )
 
-"""
-TODO REMOVE
-Featurelist
-- [ ] Enhanced JailbreakStrategy
-- [X] n tries per jailbreak
-- [ ] Choose subset of jailbreaks explicitly
-"""
-
 
 class JailbreakStrategy(ScenarioStrategy):
     """
@@ -265,9 +257,6 @@ class Jailbreak(Scenario):
         if self._which_jailbreaks:
             jailbreak_template_names = list(
                 set(jailbreak_template_names) & set(self._which_jailbreaks))
-            if not jailbreak_template_names:
-                raise ValueError(
-                    f"Error: could not find templates `{jailbreak_template_names}`!")
 
         for template_name in jailbreak_template_names:
             for _ in range(0, self._n):
@@ -278,12 +267,20 @@ class Jailbreak(Scenario):
 
         return atomic_attacks
 
-    def _validate_jailbreak_subset(self, jailbreaks: List[str]):
+    def _validate_jailbreaks_subset(self, jailbreaks: List[str]):
         """
-        Docstring for _validate_jailbreak_subset
+        Validate that the provided jailbreaks exist before moving on with initialization.
 
-        :param self: Description
-        :param jailbreaks: Description
-        :type jailbreaks: List[str]
+        Args:
+            jailbreaks (List[str]): List of jailbreak names.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If jailbreaks not discovered.
         """
-        raise NotImplementedError
+        all_templates = TextJailBreak.get_all_jailbreak_templates()
+        diff = set(all_templates) - set(jailbreaks)
+        if len(diff) > 0:
+            raise ValueError(f"Error: could not find templates `{diff}`!")
