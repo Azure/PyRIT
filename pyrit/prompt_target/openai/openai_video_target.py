@@ -5,6 +5,8 @@ import logging
 import os
 from typing import Any, Optional
 
+from openai.types import VideoSeconds, VideoSize
+
 from pyrit.exceptions import (
     pyrit_target_retry,
 )
@@ -44,14 +46,14 @@ class OpenAIVideoTarget(OpenAITarget):
     Supported image formats for image-to-video: JPEG, PNG, WEBP
     """
 
-    SUPPORTED_RESOLUTIONS = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
-    SUPPORTED_DURATIONS = [4, 8, 12]
+    SUPPORTED_RESOLUTIONS: list[VideoSize] = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
+    SUPPORTED_DURATIONS: list[VideoSeconds] = ["4", "8", "12"]
 
     def __init__(
         self,
         *,
-        resolution_dimensions: str = "1280x720",
-        n_seconds: int = 4,
+        resolution_dimensions: VideoSize = "1280x720",
+        n_seconds: int | VideoSeconds = 4,
         **kwargs: Any,
     ) -> None:
         """
@@ -69,22 +71,28 @@ class OpenAIVideoTarget(OpenAITarget):
             headers (str, Optional): Extra headers of the endpoint (JSON).
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit.
-            resolution_dimensions (str, Optional): Resolution dimensions for the video in WIDTHxHEIGHT format.
+            resolution_dimensions (VideoSize, Optional): Resolution dimensions for the video.
                 Defaults to "1280x720".
                 Supported resolutions:
                 - Sora-2: "720x1280", "1280x720"
                 - Sora-2-Pro: "720x1280", "1280x720", "1024x1792", "1792x1024"
-            n_seconds (int, Optional): The duration of the generated video (in seconds).
-                Defaults to 4. Supported values: 4, 8, or 12 seconds.
+            n_seconds (int | VideoSeconds, Optional): The duration of the generated video.
+                Accepts an int (4, 8, 12) or a VideoSeconds string ("4", "8", "12").
+                Defaults to 4.
             **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
             httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the ``httpx.AsyncClient()``
                 constructor. For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
+
+        Remix workflow:
+            To remix an existing video, set ``prompt_metadata={"video_id": "<id>"}`` on the text
+            MessagePiece. The video_id is returned in the response metadata after any successful
+            generation (``response.message_pieces[0].prompt_metadata["video_id"]``).
         """
         super().__init__(**kwargs)
 
-        self._n_seconds = n_seconds
+        self._n_seconds: VideoSeconds = str(n_seconds) if isinstance(n_seconds, int) else n_seconds
         self._validate_duration()
-        self._size = self._validate_resolution(resolution_dimensions=resolution_dimensions)
+        self._size: VideoSize = self._validate_resolution(resolution_dimensions=resolution_dimensions)
 
     def _set_openai_env_configuration_vars(self) -> None:
         """Set environment variable names."""
@@ -104,7 +112,7 @@ class OpenAIVideoTarget(OpenAITarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
-    def _validate_resolution(self, *, resolution_dimensions: str) -> str:
+    def _validate_resolution(self, *, resolution_dimensions: VideoSize) -> VideoSize:
         """
         Validate resolution dimensions.
 
@@ -133,8 +141,8 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         if self._n_seconds not in self.SUPPORTED_DURATIONS:
             raise ValueError(
-                f"Invalid duration {self._n_seconds}s. "
-                f"Supported durations: {', '.join(map(str, self.SUPPORTED_DURATIONS))} seconds"
+                f"Invalid duration '{self._n_seconds}'. "
+                f"Supported durations: {', '.join(self.SUPPORTED_DURATIONS)} seconds"
             )
 
     @limit_requests_per_minute
@@ -149,10 +157,10 @@ class OpenAIVideoTarget(OpenAITarget):
         - Remix: Text piece with prompt_metadata["video_id"] set to an existing video ID
 
         Args:
-            message (Message): The message object containing the prompt.
+            message: The message object containing the prompt.
 
         Returns:
-            list[Message]: A list containing the response with the generated video path.
+            A list containing the response with the generated video path.
 
         Raises:
             RateLimitException: If the rate limit is exceeded.
@@ -160,10 +168,8 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         self._validate_request(message=message)
 
-        # Extract pieces by type
-        pieces = message.message_pieces
-        text_piece = next(p for p in pieces if p.converted_value_data_type == "text")
-        image_piece = next((p for p in pieces if p.converted_value_data_type == "image_path"), None)
+        text_piece = message.get_piece_by_type(data_type="text")
+        image_piece = message.get_piece_by_type(data_type="image_path")
         prompt = text_piece.converted_value
 
         # Check for remix mode via prompt_metadata
@@ -172,55 +178,102 @@ class OpenAIVideoTarget(OpenAITarget):
         logger.info(f"Sending video generation prompt: {prompt}")
 
         if remix_video_id:
-            # REMIX MODE: Create variation of existing video
-            logger.info(f"Remix mode: Creating variation of video {remix_video_id}")
-            response = await self._handle_openai_request(
-                api_call=lambda: self._remix_and_poll_async(video_id=remix_video_id, prompt=prompt),
-                request=message,
-            )
+            response = await self._send_remix_async(video_id=remix_video_id, prompt=prompt, request=message)
         elif image_piece:
-            # IMAGE-TO-VIDEO MODE: Use image as first frame
-            logger.info("Image-to-video mode: Using image as first frame")
-            image_path = image_piece.converted_value
-            image_serializer = data_serializer_factory(
-                value=image_path, data_type="image_path", category="prompt-memory-entries"
-            )
-            image_bytes = await image_serializer.read_data()
-
-            # Get MIME type for proper file upload (API requires content-type)
-            mime_type = DataTypeSerializer.get_mime_type(image_path)
-            if not mime_type:
-                # Default to PNG if MIME type cannot be determined
-                mime_type = "image/png"
-
-            # Create file tuple with filename and MIME type for OpenAI SDK
-            # Format: (filename, content, content_type)
-            filename = os.path.basename(image_path)
-            input_file = (filename, image_bytes, mime_type)
-
-            response = await self._handle_openai_request(
-                api_call=lambda: self._async_client.videos.create_and_poll(
-                    model=self._model_name,
-                    prompt=prompt,
-                    size=self._size,  # type: ignore[arg-type]
-                    seconds=str(self._n_seconds),  # type: ignore[arg-type]
-                    input_reference=input_file,
-                ),
-                request=message,
-            )
+            response = await self._send_image_to_video_async(image_piece=image_piece, prompt=prompt, request=message)
         else:
-            # TEXT-TO-VIDEO MODE: Standard generation
-            response = await self._handle_openai_request(
-                api_call=lambda: self._async_client.videos.create_and_poll(
-                    model=self._model_name,
-                    prompt=prompt,
-                    size=self._size,  # type: ignore[arg-type]
-                    seconds=str(self._n_seconds),  # type: ignore[arg-type]
-                ),
-                request=message,
-            )
+            response = await self._send_text_to_video_async(prompt=prompt, request=message)
 
         return [response]
+
+    async def _send_remix_async(self, *, video_id: str, prompt: str, request: Message) -> Message:
+        """
+        Send a remix request for an existing video.
+
+        Args:
+            video_id: The ID of the completed video to remix.
+            prompt: The text prompt directing the remix.
+            request: The original request message.
+
+        Returns:
+            The response Message with the generated video path.
+        """
+        logger.info(f"Remix mode: Creating variation of video {video_id}")
+        return await self._handle_openai_request(
+            api_call=lambda: self._remix_and_poll_async(video_id=video_id, prompt=prompt),
+            request=request,
+        )
+
+    async def _send_image_to_video_async(self, *, image_piece: MessagePiece, prompt: str, request: Message) -> Message:
+        """
+        Send an image-to-video request using an image as the first frame.
+
+        Args:
+            image_piece: The MessagePiece containing the image path.
+            prompt: The text prompt describing the desired video.
+            request: The original request message.
+
+        Returns:
+            The response Message with the generated video path.
+        """
+        logger.info("Image-to-video mode: Using image as first frame")
+        input_file = await self._prepare_image_input_async(image_piece=image_piece)
+        return await self._handle_openai_request(
+            api_call=lambda: self._async_client.videos.create_and_poll(
+                model=self._model_name,
+                prompt=prompt,
+                size=self._size,
+                seconds=self._n_seconds,
+                input_reference=input_file,
+            ),
+            request=request,
+        )
+
+    async def _send_text_to_video_async(self, *, prompt: str, request: Message) -> Message:
+        """
+        Send a text-to-video generation request.
+
+        Args:
+            prompt: The text prompt describing the desired video.
+            request: The original request message.
+
+        Returns:
+            The response Message with the generated video path.
+        """
+        return await self._handle_openai_request(
+            api_call=lambda: self._async_client.videos.create_and_poll(
+                model=self._model_name,
+                prompt=prompt,
+                size=self._size,
+                seconds=self._n_seconds,
+            ),
+            request=request,
+        )
+
+    async def _prepare_image_input_async(self, *, image_piece: MessagePiece) -> tuple[str, bytes, str]:
+        """
+        Prepare image data for the OpenAI video API input_reference parameter.
+
+        Reads the image bytes from storage and determines the MIME type.
+
+        Args:
+            image_piece: The MessagePiece containing the image path.
+
+        Returns:
+            A tuple of (filename, image_bytes, mime_type) for the SDK.
+        """
+        image_path = image_piece.converted_value
+        image_serializer = data_serializer_factory(
+            value=image_path, data_type="image_path", category="prompt-memory-entries"
+        )
+        image_bytes = await image_serializer.read_data()
+
+        mime_type = DataTypeSerializer.get_mime_type(image_path)
+        if not mime_type:
+            mime_type = "image/png"
+
+        filename = os.path.basename(image_path)
+        return (filename, image_bytes, mime_type)
 
     async def _remix_and_poll_async(self, *, video_id: str, prompt: str) -> Any:
         """
@@ -368,16 +421,18 @@ class OpenAIVideoTarget(OpenAITarget):
         Raises:
             ValueError: If the request is invalid.
         """
-        pieces = message.message_pieces
-        n_pieces = len(pieces)
+        text_pieces = message.get_pieces_by_type(data_type="text")
+        image_pieces = message.get_pieces_by_type(data_type="image_path")
 
-        if n_pieces == 0:
-            raise ValueError("Message must contain at least one piece.")
-
-        # Categorize pieces
-        text_pieces = [p for p in pieces if p.converted_value_data_type == "text"]
-        image_pieces = [p for p in pieces if p.converted_value_data_type == "image_path"]
-        other_pieces = [p for p in pieces if p.converted_value_data_type not in ("text", "image_path")]
+        # Check for unsupported types
+        supported_count = len(text_pieces) + len(image_pieces)
+        if supported_count != len(message.message_pieces):
+            other_types = [
+                p.converted_value_data_type
+                for p in message.message_pieces
+                if p.converted_value_data_type not in ("text", "image_path")
+            ]
+            raise ValueError(f"Unsupported piece types: {other_types}. Only 'text' and 'image_path' are supported.")
 
         # Must have exactly one text piece
         if len(text_pieces) != 1:
@@ -386,11 +441,6 @@ class OpenAIVideoTarget(OpenAITarget):
         # At most one image piece
         if len(image_pieces) > 1:
             raise ValueError(f"Expected at most 1 image piece, got {len(image_pieces)}.")
-
-        # No other data types allowed
-        if other_pieces:
-            types = [p.converted_value_data_type for p in other_pieces]
-            raise ValueError(f"Unsupported piece types: {types}. Only 'text' and 'image_path' are supported.")
 
         # Check for conflicting modes: remix + image
         text_piece = text_pieces[0]

@@ -551,6 +551,107 @@ async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
     )
 
 
+@pytest.mark.asyncio
+async def test_video_remix_chain(sqlite_instance):
+    """Test text-to-video followed by remix using the returned video_id."""
+    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
+    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
+
+    target = OpenAIVideoTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+        resolution_dimensions="1280x720",
+        n_seconds=4,
+    )
+
+    # Step 1: Generate initial video
+    text_piece = MessagePiece(
+        role="user",
+        original_value="A cat sitting on a windowsill",
+        converted_value="A cat sitting on a windowsill",
+    )
+    result = await target.send_prompt_async(message=Message([text_piece]))
+    assert len(result) == 1
+    response_piece = result[0].message_pieces[0]
+    assert response_piece.response_error == "none"
+    assert response_piece.prompt_metadata is not None
+    video_id = response_piece.prompt_metadata.get("video_id")
+    assert video_id, "Response must include video_id in prompt_metadata for chaining"
+
+    # Step 2: Remix using the returned video_id
+    remix_piece = MessagePiece(
+        role="user",
+        original_value="Make it a watercolor painting style",
+        converted_value="Make it a watercolor painting style",
+        prompt_metadata={"video_id": video_id},
+    )
+    remix_result = await target.send_prompt_async(message=Message([remix_piece]))
+    assert len(remix_result) == 1
+    remix_response = remix_result[0].message_pieces[0]
+    assert remix_response.response_error == "none"
+
+    remix_path = Path(remix_response.converted_value)
+    assert remix_path.exists(), f"Remixed video file not found: {remix_path}"
+    assert remix_path.is_file()
+
+
+@pytest.mark.asyncio
+async def test_video_image_to_video(sqlite_instance):
+    """Test image-to-video mode using an image as the first frame."""
+    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
+    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
+
+    target = OpenAIVideoTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+        resolution_dimensions="1280x720",
+        n_seconds=4,
+    )
+
+    # First generate an image to use as input
+    image_target = OpenAIImageTarget(
+        endpoint=_get_required_env_var("OPENAI_DALL_E_3_ENDPOINT"),
+        api_key=_get_required_env_var("OPENAI_DALL_E_3_KEY"),
+        model_name=os.getenv("OPENAI_DALL_E_3_MODEL", "dall-e-3"),
+    )
+    img_piece = MessagePiece(
+        role="user",
+        original_value="A simple landscape with mountains",
+        converted_value="A simple landscape with mountains",
+    )
+    img_result = await image_target.send_prompt_async(message=Message([img_piece]))
+    image_path = img_result[0].message_pieces[0].converted_value
+    assert Path(image_path).exists(), f"Generated image not found: {image_path}"
+
+    # Now use the image for image-to-video
+    conversation_id = str(uuid.uuid4())
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Animate this landscape with clouds moving",
+        converted_value="Animate this landscape with clouds moving",
+        conversation_id=conversation_id,
+    )
+    image_piece = MessagePiece(
+        role="user",
+        original_value=image_path,
+        converted_value=image_path,
+        converted_value_data_type="image_path",
+        conversation_id=conversation_id,
+    )
+    result = await target.send_prompt_async(message=Message([text_piece, image_piece]))
+    assert len(result) == 1
+    response_piece = result[0].message_pieces[0]
+    assert response_piece.response_error == "none", f"Image-to-video failed: {response_piece.converted_value}"
+
+    video_path = Path(response_piece.converted_value)
+    assert video_path.exists(), f"Video file not found: {video_path}"
+    assert video_path.is_file()
+
+
 ##################################################
 # Optional tests - not run in pipeline, only locally
 # Need RUN_ALL_TESTS=true environment variable to run

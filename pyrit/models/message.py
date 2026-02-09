@@ -51,6 +51,30 @@ class Message:
 
         return self.message_pieces[n]
 
+    def get_pieces_by_type(self, *, data_type: PromptDataType) -> list[MessagePiece]:
+        """
+        Return all message pieces matching the given data type.
+
+        Args:
+            data_type: The converted_value_data_type to filter by.
+
+        Returns:
+            A list of matching MessagePiece objects (may be empty).
+        """
+        return [p for p in self.message_pieces if p.converted_value_data_type == data_type]
+
+    def get_piece_by_type(self, *, data_type: PromptDataType) -> Optional[MessagePiece]:
+        """
+        Return the first message piece matching the given data type, or None.
+
+        Args:
+            data_type: The converted_value_data_type to filter by.
+
+        Returns:
+            The first matching MessagePiece, or None if no match is found.
+        """
+        return next((p for p in self.message_pieces if p.converted_value_data_type == data_type), None)
+
     @property
     def api_role(self) -> ChatMessageRole:
         """
