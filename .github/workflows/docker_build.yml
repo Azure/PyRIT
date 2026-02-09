@@ -208,7 +208,9 @@ jobs:
           curl -sf http://localhost:8000/api/health || (echo "Health endpoint failed" && docker logs pyrit-gui-test && exit 1)
 
           echo "Testing frontend is served..."
-          curl -sf http://localhost:8000/ | grep -q "<!DOCTYPE html>" || (echo "Frontend not served" && exit 1)
+          RESPONSE=$(curl -s http://localhost:8000/)
+          echo "$RESPONSE" | head -5
+          echo "$RESPONSE" | grep -iq '<!doctype html>' || (echo "Frontend not served" && docker logs pyrit-gui-test && exit 1)
 
           echo "✅ GUI mode tests passed"
           docker stop pyrit-gui-test && docker rm pyrit-gui-test
@@ -289,7 +291,10 @@ jobs:
           fi
 
           curl -sf http://localhost:8000/api/health || (echo "Health endpoint failed" && docker logs pyrit-gui-pypi && exit 1)
-          curl -sf http://localhost:8000/ | grep -q "<!DOCTYPE html>" || (echo "Frontend not served" && exit 1)
+
+          RESPONSE=$(curl -s http://localhost:8000/)
+          echo "$RESPONSE" | head -5
+          echo "$RESPONSE" | grep -iq '<!doctype html>' || (echo "Frontend not served" && docker logs pyrit-gui-pypi && exit 1)
 
           echo "✅ GUI mode tests passed (PyPI)"
           docker stop pyrit-gui-pypi && docker rm pyrit-gui-pypi
