@@ -18,7 +18,7 @@ class AudioTrueFalseScorer(TrueFalseScorer):
     then scores the transcript using a TrueFalseScorer.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["audio_path"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["audio_path"])
 
     def __init__(
         self,
@@ -37,7 +37,7 @@ class AudioTrueFalseScorer(TrueFalseScorer):
         Raises:
             ValueError: If text_capable_scorer does not support text data type.
         """
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
         self._audio_helper = AudioTranscriptHelper(text_capable_scorer=text_capable_scorer)
 
     def _build_identifier(self) -> ScorerIdentifier:
