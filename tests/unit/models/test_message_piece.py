@@ -11,7 +11,7 @@ from typing import MutableSequence
 from unittest.mock import MagicMock
 
 import pytest
-from unit.mocks import MockPromptTarget, get_sample_conversations
+from unit.mocks import MockPromptTarget, get_mock_target, get_sample_conversations
 
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.identifiers import ScorerIdentifier
@@ -83,7 +83,7 @@ def test_prompt_targets_serialize(patch_central_database):
 
 
 def test_executors_serialize():
-    attack = PromptSendingAttack(objective_target=MagicMock())
+    attack = PromptSendingAttack(objective_target=get_mock_target())
 
     entry = MessagePiece(
         role="user",
@@ -92,9 +92,9 @@ def test_executors_serialize():
         attack_identifier=attack.get_identifier(),
     )
 
-    assert entry.attack_identifier["id"] is not None
-    assert entry.attack_identifier["__type__"] == "PromptSendingAttack"
-    assert entry.attack_identifier["__module__"] == "pyrit.executor.attack.single_turn.prompt_sending"
+    assert entry.attack_identifier.hash is not None
+    assert entry.attack_identifier.class_name == "PromptSendingAttack"
+    assert entry.attack_identifier.class_module == "pyrit.executor.attack.single_turn.prompt_sending"
 
 
 @pytest.mark.asyncio
@@ -746,7 +746,7 @@ def test_message_piece_to_dict():
     assert result["prompt_metadata"] == entry.prompt_metadata
     assert result["converter_identifiers"] == [conv.to_dict() for conv in entry.converter_identifiers]
     assert result["prompt_target_identifier"] == entry.prompt_target_identifier.to_dict()
-    assert result["attack_identifier"] == entry.attack_identifier
+    assert result["attack_identifier"] == entry.attack_identifier.to_dict()
     assert result["scorer_identifier"] == entry.scorer_identifier.to_dict()
     assert result["original_value_data_type"] == entry.original_value_data_type
     assert result["original_value"] == entry.original_value

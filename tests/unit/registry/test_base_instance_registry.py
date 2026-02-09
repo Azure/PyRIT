@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pyrit.identifiers import Identifier
 from pyrit.registry.instance_registries.base_instance_registry import BaseInstanceRegistry
@@ -11,7 +11,7 @@ from pyrit.registry.instance_registries.base_instance_registry import BaseInstan
 class SampleItemMetadata(Identifier):
     """Sample metadata with an extra field."""
 
-    category: str
+    category: str = field(kw_only=True)
 
 
 class ConcreteTestRegistry(BaseInstanceRegistry[str, SampleItemMetadata]):

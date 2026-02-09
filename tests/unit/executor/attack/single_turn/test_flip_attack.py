@@ -13,7 +13,7 @@ from pyrit.executor.attack import (
     FlipAttack,
     SingleTurnAttackContext,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -27,6 +27,17 @@ from pyrit.score import TrueFalseScorer
 def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
     """Helper to create TargetIdentifier for tests."""
     return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+
+def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
         class_name=name,
         class_module="test_module",
         class_description="",
@@ -54,6 +65,7 @@ def mock_scorer():
     """Create a mock true/false scorer"""
     scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
+    scorer.get_identifier.return_value = _mock_scorer_id()
     return scorer
 
 

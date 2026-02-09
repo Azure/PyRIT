@@ -71,8 +71,7 @@ class MessagePiece:
             converter_identifiers: The converter identifiers for the prompt. Can be ConverterIdentifier
                 objects or dicts (deprecated, will be removed in 0.14.0). Defaults to None.
             prompt_target_identifier: The target identifier for the prompt. Defaults to None.
-            attack_identifier: The attack identifier for the prompt. Can be an AttackIdentifier
-                object or a dict (deprecated, will be removed in 0.14.0). Defaults to None.
+            attack_identifier: The attack identifier for the prompt. Defaults to None.
             scorer_identifier: The scorer identifier for the prompt. Can be a ScorerIdentifier or a
                 dict (deprecated, will be removed in 0.13.0). Defaults to None.
             original_value_data_type: The data type of the original prompt (text, image). Defaults to "text".

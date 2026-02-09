@@ -30,7 +30,6 @@ def create_attack_result(conversation_id: str, objective: str, outcome: AttackOu
     return AttackResult(
         conversation_id=conversation_id,
         objective=objective,
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=outcome,

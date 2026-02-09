@@ -1230,7 +1230,9 @@ class TestAttackExecution:
     ):
         """Test that providing a message parameter bypasses adversarial chat generation on first turn."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(objective_scorer=MagicMock(spec=TrueFalseScorer))
+        inline_scorer = MagicMock(spec=TrueFalseScorer)
+        inline_scorer.get_identifier.return_value = _mock_scorer_id()
+        scoring_config = AttackScoringConfig(objective_scorer=inline_scorer)
 
         attack = RedTeamingAttack(
             objective_target=mock_objective_target,
@@ -1272,7 +1274,9 @@ class TestAttackExecution:
     ):
         """Test that multi-piece messages use only the first piece's converted_value."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
-        scoring_config = AttackScoringConfig(objective_scorer=MagicMock(spec=TrueFalseScorer))
+        inline_scorer = MagicMock(spec=TrueFalseScorer)
+        inline_scorer.get_identifier.return_value = _mock_scorer_id()
+        scoring_config = AttackScoringConfig(objective_scorer=inline_scorer)
 
         attack = RedTeamingAttack(
             objective_target=mock_objective_target,

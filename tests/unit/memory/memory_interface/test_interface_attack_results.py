@@ -6,7 +6,7 @@ import uuid
 from typing import Sequence
 
 from pyrit.common.utils import to_sha256
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import AttackIdentifier, ScorerIdentifier
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import (
@@ -36,7 +36,6 @@ def create_attack_result(conversation_id: str, objective_num: int, outcome: Atta
     return AttackResult(
         conversation_id=conversation_id,
         objective=f"Objective {objective_num}",
-        attack_identifier={"name": "test_attack"},
         outcome=outcome,
     )
 
@@ -47,7 +46,6 @@ def test_add_attack_results_to_memory(sqlite_instance: MemoryInterface):
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test objective 1",
-        attack_identifier={"name": "test_attack_1", "module": "test_module"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -58,7 +56,6 @@ def test_add_attack_results_to_memory(sqlite_instance: MemoryInterface):
     attack_result2 = AttackResult(
         conversation_id="conv_2",
         objective="Test objective 2",
-        attack_identifier={"name": "test_attack_2", "module": "test_module"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
@@ -85,7 +82,6 @@ def test_get_attack_results_by_ids(sqlite_instance: MemoryInterface):
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test objective 1",
-        attack_identifier={"name": "test_attack_1"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -94,7 +90,6 @@ def test_get_attack_results_by_ids(sqlite_instance: MemoryInterface):
     attack_result2 = AttackResult(
         conversation_id="conv_2",
         objective="Test objective 2",
-        attack_identifier={"name": "test_attack_2"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
@@ -103,7 +98,6 @@ def test_get_attack_results_by_ids(sqlite_instance: MemoryInterface):
     attack_result3 = AttackResult(
         conversation_id="conv_3",
         objective="Test objective 3",
-        attack_identifier={"name": "test_attack_3"},
         executed_turns=7,
         execution_time_ms=1500,
         outcome=AttackOutcome.UNDETERMINED,
@@ -134,7 +128,6 @@ def test_get_attack_results_by_conversation_id(sqlite_instance: MemoryInterface)
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test objective 1",
-        attack_identifier={"name": "test_attack_1"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -143,7 +136,6 @@ def test_get_attack_results_by_conversation_id(sqlite_instance: MemoryInterface)
     attack_result2 = AttackResult(
         conversation_id="conv_1",  # Same conversation ID
         objective="Test objective 2",
-        attack_identifier={"name": "test_attack_2"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
@@ -152,7 +144,6 @@ def test_get_attack_results_by_conversation_id(sqlite_instance: MemoryInterface)
     attack_result3 = AttackResult(
         conversation_id="conv_2",  # Different conversation ID
         objective="Test objective 3",
-        attack_identifier={"name": "test_attack_3"},
         executed_turns=7,
         execution_time_ms=1500,
         outcome=AttackOutcome.UNDETERMINED,
@@ -176,7 +167,6 @@ def test_get_attack_results_by_objective(sqlite_instance: MemoryInterface):
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test objective for success",
-        attack_identifier={"name": "test_attack_1"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -185,7 +175,6 @@ def test_get_attack_results_by_objective(sqlite_instance: MemoryInterface):
     attack_result2 = AttackResult(
         conversation_id="conv_2",
         objective="Another objective for failure",
-        attack_identifier={"name": "test_attack_2"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
@@ -194,7 +183,6 @@ def test_get_attack_results_by_objective(sqlite_instance: MemoryInterface):
     attack_result3 = AttackResult(
         conversation_id="conv_3",
         objective="Different objective entirely",
-        attack_identifier={"name": "test_attack_3"},
         executed_turns=7,
         execution_time_ms=1500,
         outcome=AttackOutcome.UNDETERMINED,
@@ -219,7 +207,6 @@ def test_get_attack_results_by_outcome(sqlite_instance: MemoryInterface):
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test objective 1",
-        attack_identifier={"name": "test_attack_1"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -228,7 +215,6 @@ def test_get_attack_results_by_outcome(sqlite_instance: MemoryInterface):
     attack_result2 = AttackResult(
         conversation_id="conv_2",
         objective="Test objective 2",
-        attack_identifier={"name": "test_attack_2"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.SUCCESS,  # Same outcome
@@ -237,7 +223,6 @@ def test_get_attack_results_by_outcome(sqlite_instance: MemoryInterface):
     attack_result3 = AttackResult(
         conversation_id="conv_3",
         objective="Test objective 3",
-        attack_identifier={"name": "test_attack_3"},
         executed_turns=7,
         execution_time_ms=1500,
         outcome=AttackOutcome.FAILURE,  # Different outcome
@@ -267,7 +252,6 @@ def test_get_attack_results_by_objective_sha256(sqlite_instance: MemoryInterface
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective=objective1,
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -277,7 +261,6 @@ def test_get_attack_results_by_objective_sha256(sqlite_instance: MemoryInterface
     attack_result2 = AttackResult(
         conversation_id="conv_2",
         objective=objective2,
-        attack_identifier={"name": "test_attack"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
@@ -287,7 +270,6 @@ def test_get_attack_results_by_objective_sha256(sqlite_instance: MemoryInterface
     attack_result3 = AttackResult(
         conversation_id="conv_3",
         objective=objective3,
-        attack_identifier={"name": "test_attack"},
         executed_turns=7,
         execution_time_ms=1500,
         outcome=AttackOutcome.UNDETERMINED,
@@ -312,7 +294,6 @@ def test_get_attack_results_multiple_filters(sqlite_instance: MemoryInterface):
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test objective for success",
-        attack_identifier={"name": "test_attack_1"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -321,7 +302,6 @@ def test_get_attack_results_multiple_filters(sqlite_instance: MemoryInterface):
     attack_result2 = AttackResult(
         conversation_id="conv_1",  # Same conversation ID
         objective="Another objective for failure",
-        attack_identifier={"name": "test_attack_2"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,  # Different outcome
@@ -330,7 +310,6 @@ def test_get_attack_results_multiple_filters(sqlite_instance: MemoryInterface):
     attack_result3 = AttackResult(
         conversation_id="conv_2",  # Different conversation ID
         objective="Test objective for success",
-        attack_identifier={"name": "test_attack_3"},
         executed_turns=7,
         execution_time_ms=1500,
         outcome=AttackOutcome.SUCCESS,
@@ -357,7 +336,6 @@ def test_get_attack_results_no_filters(sqlite_instance: MemoryInterface):
     attack_result1 = AttackResult(
         conversation_id="conv_1",
         objective="Test objective 1",
-        attack_identifier={"name": "test_attack_1"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -366,7 +344,6 @@ def test_get_attack_results_no_filters(sqlite_instance: MemoryInterface):
     attack_result2 = AttackResult(
         conversation_id="conv_2",
         objective="Test objective 2",
-        attack_identifier={"name": "test_attack_2"},
         executed_turns=3,
         execution_time_ms=500,
         outcome=AttackOutcome.FAILURE,
@@ -388,7 +365,6 @@ def test_get_attack_results_empty_list(sqlite_instance: MemoryInterface):
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective",
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -407,7 +383,6 @@ def test_get_attack_results_nonexistent_ids(sqlite_instance: MemoryInterface):
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective",
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -457,7 +432,6 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective with relationships",
-        attack_identifier={"name": "test_attack"},
         last_response=message_piece,
         last_score=score,
         executed_turns=5,
@@ -487,7 +461,9 @@ def test_attack_result_all_outcomes(sqlite_instance: MemoryInterface):
         attack_result = AttackResult(
             conversation_id=f"conv_{i}",
             objective=f"Test objective {i}",
-            attack_identifier={"name": f"test_attack_{i}"},
+            attack_identifier=AttackIdentifier(
+                class_name=f"TestAttack{i}", class_module="test.module"
+            ),
             executed_turns=i + 1,
             execution_time_ms=(i + 1) * 100,
             outcome=outcome,
@@ -523,7 +499,6 @@ def test_attack_result_metadata_handling(sqlite_instance: MemoryInterface):
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective with metadata",
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -547,7 +522,6 @@ def test_attack_result_objective_sha256_auto_generation(sqlite_instance: MemoryI
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective=objective,
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -577,7 +551,6 @@ def test_attack_result_with_attack_generation_conversation_ids(sqlite_instance: 
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective with conversation IDs",
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -605,7 +578,6 @@ def test_attack_result_without_attack_generation_conversation_ids(sqlite_instanc
     attack_result = AttackResult(
         conversation_id="conv_1",
         objective="Test objective without conversation IDs",
-        attack_identifier={"name": "test_attack"},
         executed_turns=5,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,

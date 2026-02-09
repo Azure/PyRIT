@@ -9,6 +9,8 @@ from uuid import uuid4
 
 import pytest
 
+from unit.mocks import get_mock_target
+
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
@@ -54,7 +56,7 @@ def test_get_scores_by_attack_id_and_label(
     sqlite_instance.add_scores_to_memory(scores=[score])
 
     # Fetch the score we just added
-    db_score = sqlite_instance.get_prompt_scores(attack_id=sample_conversations[0].attack_identifier["id"])
+    db_score = sqlite_instance.get_prompt_scores(attack_id=sample_conversations[0].attack_identifier.hash)
 
     assert len(db_score) == 1
     assert db_score[0].score_value == score.score_value
@@ -75,7 +77,7 @@ def test_get_scores_by_attack_id_and_label(
     assert db_score[0].score_value == score.score_value
 
     db_score = sqlite_instance.get_prompt_scores(
-        attack_id=sample_conversations[0].attack_identifier["id"],
+        attack_id=sample_conversations[0].attack_identifier.hash,
         labels={"x": "y"},
     )
     assert len(db_score) == 0
@@ -133,7 +135,7 @@ def test_add_score_get_score(
 def test_add_score_duplicate_prompt(sqlite_instance: MemoryInterface):
     # Ensure that scores of duplicate prompts are linked back to the original
     original_id = uuid4()
-    attack = PromptSendingAttack(objective_target=MagicMock())
+    attack = PromptSendingAttack(objective_target=get_mock_target())
     conversation_id = str(uuid4())
     pieces = [
         MessagePiece(

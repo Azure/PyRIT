@@ -19,13 +19,26 @@ from pyrit.models import (
     QuestionChoice,
 )
 from pyrit.prompt_target import PromptTarget
+from pyrit.identifiers import TargetIdentifier
 
 
 # Fixtures at the top of the file
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
 @pytest.fixture
 def mock_prompt_target() -> MagicMock:
     """Mock prompt target for testing."""
     target = MagicMock(spec=PromptTarget)
+    target.get_identifier.return_value = _mock_target_id("mock_prompt_target")
     return target
 
 

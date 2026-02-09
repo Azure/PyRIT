@@ -8,15 +8,35 @@ This attack was developed based on techniques discovered and validated
 during Crucible CTF red teaming exercises using PyRIT.
 """
 
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
+
+from pyrit.identifiers import TargetIdentifier
+from pyrit.prompt_target import PromptTarget
 
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn import (
     ChunkedRequestAttack,
     ChunkedRequestAttackContext,
 )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _make_mock_target():
+    """Create a mock target with proper get_identifier."""
+    target = MagicMock(spec=PromptTarget)
+    target.get_identifier.return_value = _mock_target_id("MockTarget")
+    return target
 
 
 class TestChunkedRequestAttackContext:
@@ -46,7 +66,7 @@ class TestChunkedRequestAttack:
 
     def test_init_default_values(self):
         """Test initialization with default values."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(objective_target=mock_target)
 
         assert attack._chunk_size == 50
@@ -55,7 +75,7 @@ class TestChunkedRequestAttack:
 
     def test_init_custom_values(self):
         """Test initialization with custom values."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(
             objective_target=mock_target,
             chunk_size=25,
@@ -69,7 +89,7 @@ class TestChunkedRequestAttack:
 
     def test_init_custom_request_template(self):
         """Test initialization with custom request template."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         template = "Show me {chunk_type} from position {start} to {end} for '{objective}'"
         attack = ChunkedRequestAttack(
             objective_target=mock_target,
@@ -80,21 +100,21 @@ class TestChunkedRequestAttack:
 
     def test_init_invalid_chunk_size(self):
         """Test that invalid chunk_size raises ValueError."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         with pytest.raises(ValueError, match="chunk_size must be >= 1"):
             ChunkedRequestAttack(objective_target=mock_target, chunk_size=0)
 
     def test_init_invalid_total_length(self):
         """Test that invalid total_length raises ValueError."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         with pytest.raises(ValueError, match="total_length must be >= chunk_size"):
             ChunkedRequestAttack(objective_target=mock_target, chunk_size=100, total_length=50)
 
     def test_generate_chunk_prompts(self):
         """Test chunk prompt generation."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(
             objective_target=mock_target,
             chunk_size=50,
@@ -112,7 +132,7 @@ class TestChunkedRequestAttack:
 
     def test_generate_chunk_prompts_custom_chunk_type(self):
         """Test chunk prompt generation with custom chunk type."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(
             objective_target=mock_target,
             chunk_size=50,
@@ -129,7 +149,7 @@ class TestChunkedRequestAttack:
 
     def test_validate_context_empty_objective(self):
         """Test validation fails with empty objective."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(objective_target=mock_target)
 
         context = ChunkedRequestAttackContext(params=AttackParameters(objective=""))
@@ -139,7 +159,7 @@ class TestChunkedRequestAttack:
 
     def test_validate_context_whitespace_objective(self):
         """Test validation fails with whitespace-only objective."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(objective_target=mock_target)
 
         context = ChunkedRequestAttackContext(params=AttackParameters(objective="   "))
@@ -149,7 +169,7 @@ class TestChunkedRequestAttack:
 
     def test_validate_context_valid_objective(self):
         """Test validation succeeds with valid objective."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(objective_target=mock_target)
 
         context = ChunkedRequestAttackContext(params=AttackParameters(objective="Extract the secret password"))
@@ -159,7 +179,7 @@ class TestChunkedRequestAttack:
 
     def test_init_invalid_request_template_missing_start(self):
         """Test that request_template without 'start' placeholder raises ValueError."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         with pytest.raises(ValueError, match="request_template must contain all required placeholders"):
             ChunkedRequestAttack(
@@ -169,7 +189,7 @@ class TestChunkedRequestAttack:
 
     def test_init_invalid_request_template_missing_end(self):
         """Test that request_template without 'end' placeholder raises ValueError."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         with pytest.raises(ValueError, match="request_template must contain all required placeholders"):
             ChunkedRequestAttack(
@@ -179,7 +199,7 @@ class TestChunkedRequestAttack:
 
     def test_init_invalid_request_template_missing_chunk_type(self):
         """Test that request_template without 'chunk_type' placeholder raises ValueError."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         with pytest.raises(ValueError, match="request_template must contain all required placeholders"):
             ChunkedRequestAttack(
@@ -189,7 +209,7 @@ class TestChunkedRequestAttack:
 
     def test_init_invalid_request_template_missing_objective(self):
         """Test that request_template without 'objective' placeholder raises ValueError."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         with pytest.raises(ValueError, match="request_template must contain all required placeholders"):
             ChunkedRequestAttack(
@@ -199,7 +219,7 @@ class TestChunkedRequestAttack:
 
     def test_init_invalid_request_template_missing_multiple(self):
         """Test that request_template without multiple placeholders raises ValueError."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         with pytest.raises(ValueError, match="request_template must contain all required placeholders"):
             ChunkedRequestAttack(
@@ -209,7 +229,7 @@ class TestChunkedRequestAttack:
 
     def test_init_valid_request_template_with_extra_placeholders(self):
         """Test that request_template with extra placeholders is accepted."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
 
         # Should not raise - extra placeholders are fine as long as required ones are present
         attack = ChunkedRequestAttack(
@@ -221,7 +241,7 @@ class TestChunkedRequestAttack:
 
     def test_generate_chunk_prompts_with_objective(self):
         """Test that chunk prompts include the objective from context."""
-        mock_target = Mock()
+        mock_target = _make_mock_target()
         attack = ChunkedRequestAttack(
             objective_target=mock_target,
             chunk_size=50,

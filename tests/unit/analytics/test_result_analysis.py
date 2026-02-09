@@ -4,6 +4,7 @@
 import pytest
 
 from pyrit.analytics.result_analysis import AttackStats, analyze_results
+from pyrit.identifiers import AttackIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 
 
@@ -16,9 +17,9 @@ def make_attack(
     """
     Minimal valid AttackResult for analytics tests.
     """
-    attack_identifier: dict[str, str] = {}
+    attack_identifier: AttackIdentifier | None = None
     if attack_type is not None:
-        attack_identifier["type"] = attack_type
+        attack_identifier = AttackIdentifier(class_name=attack_type, class_module="tests.unit.analytics")
 
     return AttackResult(
         conversation_id=conversation_id,

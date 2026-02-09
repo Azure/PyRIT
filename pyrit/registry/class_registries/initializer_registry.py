@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
@@ -41,9 +41,9 @@ class InitializerMetadata(Identifier):
     Use get_class() to get the actual class.
     """
 
-    display_name: str
-    required_env_vars: tuple[str, ...]
-    execution_order: int
+    display_name: str = field(kw_only=True)
+    required_env_vars: tuple[str, ...] = field(kw_only=True)
+    execution_order: int = field(kw_only=True)
 
 
 class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetadata]):

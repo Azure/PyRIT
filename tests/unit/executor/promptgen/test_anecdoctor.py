@@ -16,6 +16,18 @@ from pyrit.executor.promptgen.anecdoctor import (
 from pyrit.models import Message
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
+from pyrit.identifiers import TargetIdentifier
+
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 @pytest.fixture
@@ -23,6 +35,7 @@ def mock_objective_target() -> PromptChatTarget:
     """Create a mock objective target for testing."""
     mock_target = MagicMock(spec=PromptChatTarget)
     mock_target.set_system_prompt = MagicMock()
+    mock_target.get_identifier.return_value = _mock_target_id("mock_objective_target")
     return mock_target
 
 
@@ -31,6 +44,7 @@ def mock_processing_model() -> PromptChatTarget:
     """Create a mock processing model for testing."""
     mock_model = MagicMock(spec=PromptChatTarget)
     mock_model.set_system_prompt = MagicMock()
+    mock_model.get_identifier.return_value = _mock_target_id("MockProcessingModel")
     return mock_model
 
 

@@ -11,7 +11,7 @@ from the pyrit.scenario.scenarios module and from user-defined initialization sc
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
@@ -40,11 +40,11 @@ class ScenarioMetadata(Identifier):
     Use get_class() to get the actual class.
     """
 
-    default_strategy: str
-    all_strategies: tuple[str, ...]
-    aggregate_strategies: tuple[str, ...]
-    default_datasets: tuple[str, ...]
-    max_dataset_size: Optional[int]
+    default_strategy: str = field(kw_only=True)
+    all_strategies: tuple[str, ...] = field(kw_only=True)
+    aggregate_strategies: tuple[str, ...] = field(kw_only=True)
+    default_datasets: tuple[str, ...] = field(kw_only=True)
+    max_dataset_size: Optional[int] = field(kw_only=True)
 
 
 class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):

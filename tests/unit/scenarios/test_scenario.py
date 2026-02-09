@@ -87,11 +87,6 @@ def sample_attack_results():
         AttackResult(
             conversation_id=f"conv-{i}",
             objective=f"objective{i}",
-            attack_identifier={
-                "__type__": "TestAttack",
-                "__module__": "test",
-                "id": str(i),
-            },
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
         )
@@ -574,22 +569,12 @@ class TestScenarioResult:
             AttackResult(
                 conversation_id="conv-fail",
                 objective="objective",
-                attack_identifier={
-                    "__type__": "TestAttack",
-                    "__module__": "test",
-                    "id": "1",
-                },
                 outcome=AttackOutcome.FAILURE,
                 executed_turns=1,
             ),
             AttackResult(
                 conversation_id="conv-fail2",
                 objective="objective",
-                attack_identifier={
-                    "__type__": "TestAttack",
-                    "__module__": "test",
-                    "id": "2",
-                },
                 outcome=AttackOutcome.FAILURE,
                 executed_turns=1,
             ),

@@ -10,7 +10,7 @@ import pytest
 from unit.mocks import get_mock_target_identifier
 
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import AttackIdentifier, ScorerIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
@@ -206,7 +206,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     chat_target.set_system_prompt = MagicMock()
 
     expected_system_prompt = "system_prompt"
-    expected_attack_id = "attack_id"
+    expected_attack_identifier = AttackIdentifier(class_name="TestAttack", class_module="test.module")
     expected_scored_prompt_id = "123"
 
     await scorer._score_value_with_llm(
@@ -217,7 +217,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
         scored_prompt_id=expected_scored_prompt_id,
         category="category",
         objective="task",
-        attack_identifier={"id": expected_attack_id},
+        attack_identifier=expected_attack_identifier,
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -225,8 +225,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     _, set_sys_prompt_args = chat_target.set_system_prompt.call_args
     assert set_sys_prompt_args["system_prompt"] == expected_system_prompt
     assert isinstance(set_sys_prompt_args["conversation_id"], str)
-    assert set_sys_prompt_args["attack_identifier"]["id"] == expected_attack_id
-    assert set_sys_prompt_args["attack_identifier"]["scored_prompt_id"] == expected_scored_prompt_id
+    assert set_sys_prompt_args["attack_identifier"] is expected_attack_identifier
 
 
 @pytest.mark.asyncio

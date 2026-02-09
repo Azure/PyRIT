@@ -16,13 +16,36 @@ from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 
 
 # Shared fixtures for all test classes
+
+def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test_module",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
 @pytest.fixture
 def mock_attack_setup_target() -> MagicMock:
     """Create a mock attack setup target."""
     target = MagicMock(spec=PromptTarget)
+    target.get_identifier.return_value = _mock_target_id("mock_attack_setup_target")
     return target
 
 
@@ -31,6 +54,7 @@ def mock_scorer() -> MagicMock:
     """Create a mock scorer."""
     scorer = MagicMock(spec=Scorer)
     scorer.score_text_async = AsyncMock()
+    scorer.get_identifier.return_value = _mock_scorer_id()
     return scorer
 
 
