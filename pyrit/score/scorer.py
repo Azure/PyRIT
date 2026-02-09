@@ -520,7 +520,7 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        attack_identifier: Optional[Union[AttackIdentifier, Dict[str, str]]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
     ) -> UnvalidatedScore:
         """
         Send a request to a target, and take care of retries.
@@ -554,7 +554,7 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
                 Defaults to "metadata".
             category_output_key (str): The key in the JSON response that contains the category.
                 Defaults to "category".
-            attack_identifier (Optional[Union[AttackIdentifier, Dict[str, str]]]): The attack identifier.
+            attack_identifier (Optional[AttackIdentifier]): The attack identifier.
                 Defaults to None.
 
         Returns:

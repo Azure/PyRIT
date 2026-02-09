@@ -10,6 +10,7 @@ from pyrit.executor.benchmark.question_answering import (
     QuestionAnsweringBenchmark,
     QuestionAnsweringBenchmarkContext,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -19,10 +20,9 @@ from pyrit.models import (
     QuestionChoice,
 )
 from pyrit.prompt_target import PromptTarget
-from pyrit.identifiers import TargetIdentifier
-
 
 # Fixtures at the top of the file
+
 
 def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
     """Helper to create TargetIdentifier for tests."""

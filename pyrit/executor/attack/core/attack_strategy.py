@@ -259,8 +259,8 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
         )
         self._objective_target = objective_target
         self._params_type = params_type
-        self._request_converters: list = []
-        self._response_converters: list = []
+        self._request_converters: list[Any] = []
+        self._response_converters: list[Any] = []
 
     def _build_identifier(self) -> AttackIdentifier:
         """
@@ -286,9 +286,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
         converter_identifiers = None
         if self._request_converters:
             converter_identifiers = [
-                converter.get_identifier()
-                for config in self._request_converters
-                for converter in config.converters
+                converter.get_identifier() for config in self._request_converters for converter in config.converters
             ]
 
         return AttackIdentifier(
@@ -331,12 +329,12 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
         """
         return None
 
-    def get_request_converters(self) -> list:
+    def get_request_converters(self) -> list[Any]:
         """
         Get request converter configurations used by this strategy.
 
         Returns:
-            list: The list of request PromptConverterConfiguration objects.
+            list[Any]: The list of request PromptConverterConfiguration objects.
         """
         return self._request_converters
 

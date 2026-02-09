@@ -48,9 +48,7 @@ def get_mock_target_identifier(name: str = "MockTarget", module: str = "tests.un
     )
 
 
-def get_mock_attack_identifier(
-    name: str = "MockAttack", module: str = "tests.unit.mocks"
-) -> AttackIdentifier:
+def get_mock_attack_identifier(name: str = "MockAttack", module: str = "tests.unit.mocks") -> AttackIdentifier:
     """
     Returns a mock AttackIdentifier for use in tests where the specific
     attack identity doesn't matter.

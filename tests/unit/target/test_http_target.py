@@ -115,9 +115,7 @@ async def test_send_prompt_async_client_kwargs():
         # Use **httpx_client_kwargs to pass them as keyword arguments
         http_target = HTTPTarget(http_request=sample_request, **httpx_client_kwargs)
         message = MagicMock()
-        message.message_pieces = [
-            MagicMock(converted_value="", prompt_target_identifier=None, attack_identifier=None)
-        ]
+        message.message_pieces = [MagicMock(converted_value="", prompt_target_identifier=None, attack_identifier=None)]
         mock_response = MagicMock()
         mock_response.content = b"Response content"
         mock_request.return_value = mock_response

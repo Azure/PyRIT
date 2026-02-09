@@ -8,18 +8,17 @@ This attack was developed based on techniques discovered and validated
 during Crucible CTF red teaming exercises using PyRIT.
 """
 
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock
 
 import pytest
-
-from pyrit.identifiers import TargetIdentifier
-from pyrit.prompt_target import PromptTarget
 
 from pyrit.executor.attack.core.attack_parameters import AttackParameters
 from pyrit.executor.attack.multi_turn import (
     ChunkedRequestAttack,
     ChunkedRequestAttackContext,
 )
+from pyrit.identifiers import TargetIdentifier
+from pyrit.prompt_target import PromptTarget
 
 
 def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:

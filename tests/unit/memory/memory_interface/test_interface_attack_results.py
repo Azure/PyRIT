@@ -461,9 +461,7 @@ def test_attack_result_all_outcomes(sqlite_instance: MemoryInterface):
         attack_result = AttackResult(
             conversation_id=f"conv_{i}",
             objective=f"Test objective {i}",
-            attack_identifier=AttackIdentifier(
-                class_name=f"TestAttack{i}", class_module="test.module"
-            ),
+            attack_identifier=AttackIdentifier(class_name=f"TestAttack{i}", class_module="test.module"),
             executed_turns=i + 1,
             execution_time_ms=(i + 1) * 100,
             outcome=outcome,

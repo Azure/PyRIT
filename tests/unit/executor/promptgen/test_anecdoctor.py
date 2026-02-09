@@ -13,11 +13,10 @@ from pyrit.executor.promptgen.anecdoctor import (
     AnecdoctorGenerator,
     AnecdoctorResult,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
-from pyrit.identifiers import TargetIdentifier
-
 
 
 def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:

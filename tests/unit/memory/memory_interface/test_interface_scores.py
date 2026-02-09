@@ -4,11 +4,9 @@
 
 import uuid
 from typing import Literal, Sequence
-from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
-
 from unit.mocks import get_mock_target
 
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack

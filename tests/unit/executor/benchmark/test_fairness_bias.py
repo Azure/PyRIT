@@ -10,6 +10,7 @@ from pyrit.executor.benchmark.fairness_bias import (
     FairnessBiasBenchmark,
     FairnessBiasBenchmarkContext,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -17,7 +18,6 @@ from pyrit.models import (
     MessagePiece,
 )
 from pyrit.prompt_target import PromptTarget
-from pyrit.identifiers import TargetIdentifier
 
 
 def is_spacy_installed():
@@ -30,6 +30,7 @@ def is_spacy_installed():
 
 
 # Fixtures at the top of the file
+
 
 def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
     """Helper to create TargetIdentifier for tests."""

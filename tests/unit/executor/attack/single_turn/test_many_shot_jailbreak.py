@@ -35,7 +35,6 @@ def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
     )
 
 
-
 def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
     """Helper to create ScorerIdentifier for tests."""
     return ScorerIdentifier(

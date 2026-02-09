@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import abc
-from typing import Optional, Union
+from typing import Optional
 
 from pyrit.identifiers import AttackIdentifier
 from pyrit.models import MessagePiece

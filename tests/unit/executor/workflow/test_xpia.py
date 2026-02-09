@@ -12,14 +12,14 @@ from pyrit.executor.workflow.xpia import (
     XPIAStatus,
     XPIAWorkflow,
 )
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
 from pyrit.score import Scorer
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
-
 
 # Shared fixtures for all test classes
+
 
 def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
     """Helper to create ScorerIdentifier for tests."""

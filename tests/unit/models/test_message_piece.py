@@ -8,7 +8,6 @@ import uuid
 import warnings
 from datetime import datetime, timedelta
 from typing import MutableSequence
-from unittest.mock import MagicMock
 
 import pytest
 from unit.mocks import MockPromptTarget, get_mock_target, get_sample_conversations
