@@ -6,22 +6,10 @@ on:
   push:
     branches:
       - "main"
-    paths:
-      - '.devcontainer/**'
-      - 'docker/**'
-      - 'pyproject.toml'
-      - 'frontend/**'
-      - '.github/workflows/docker_build.yml'
   pull_request:
     branches:
       - "main"
       - "release/**"
-    paths:
-      - '.devcontainer/**'
-      - 'docker/**'
-      - 'pyproject.toml'
-      - 'frontend/**'
-      - '.github/workflows/docker_build.yml'
   workflow_dispatch:
 
 concurrency:
