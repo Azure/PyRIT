@@ -31,13 +31,30 @@ from pyrit.score import (
 
 class JailbreakStrategy(ScenarioStrategy):
     """
-    Strategy for single-turn jailbreak attacks.
-
-    There is currently only one, running all jailbreaks.
+    Strategy for jailbreak attacks.
     """
 
+    # Aggregate members (special markers that expand to strategies with matching tags)
     ALL = ("all", {"all"})
-    PYRIT = ("pyrit", {"pyrit"})
+    SINGLE_TURN = ("single_turn", {"single_turn"})
+    MULTI_TURN = ("multi_turn", {"multi_turn"})
+
+    # Strategies for tweaking jailbreak efficacy through attack patterns
+    ManyShot = ("many_shot", {"single_turn"})
+    PromptSending = ("prompt_sending", {"single_turn"})
+    Crescendo = ("crescendo", {"multi_turn"})
+    RedTeaming = ("red_teaming", {"multi_turn"})
+
+    @classmethod
+    def get_aggregate_tags(cls) -> set[str]:
+        """
+        Get the set of tags that represent aggregate categories.
+
+        Returns:
+            set[str]: Set of tags that are aggregate markers.
+        """
+        # Include base class aggregates ("all") and add scenario-specific ones
+        return super().get_aggregate_tags() | {"single_turn", "multi_turn"}
 
 
 class Jailbreak(Scenario):
@@ -93,9 +110,9 @@ class Jailbreak(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = False,
         scenario_result_id: Optional[str] = None,
-        k_jailbreaks: Optional[int] = None,
-        which_jailbreaks: Optional[List[str]] = None,
-        num_tries: int = 1,
+        k: Optional[int] = None,
+        n: int = 1,
+        jailbreaks: Optional[List[str]] = None,
     ) -> None:
         """
         Initialize the jailbreak scenario.
@@ -106,30 +123,30 @@ class Jailbreak(Scenario):
             include_baseline (bool): Whether to include a baseline atomic attack that sends all
                 objectives without modifications. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
-            k_jailbreaks (Optional[int]): Choose k random jailbreaks rather than using all of them.
-            num_tries (Optional[int]): Number of times to try each jailbreak.
-            which_jailbreaks (Optional[int]): Dedicated list of jailbreaks to run.
+            k (Optional[int]): Choose k random jailbreaks rather than using all of them.
+            n (Optional[int]): Number of times to try each jailbreak.
+            jailbreaks (Optional[int]): Dedicated list of jailbreaks to run.
 
         Raises:
-            ValueError: If both which_jailbreaks and k_jailbreaks are provided, as random selection
-            is incompatible with a predetermined list.
+            ValueError: If both jailbreaks and k are provided, as random selection
+                is incompatible with a predetermined list.
 
         """
-        if which_jailbreaks and k_jailbreaks:
-            raise ValueError(
-                "Please provide only one of `k_jailbreaks` (random selection) or `which_jailbreaks` (specific selection)."
-            )
+        if jailbreaks and k:
+            raise ValueError("Please provide only one of `k` (random selection) or `jailbreaks` (specific selection).")
 
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(
-            objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
-        self._k = k_jailbreaks
-        self._n = num_tries
+        self._k = k
+        self._n = n
 
-        self._validate_jailbreaks_subset(which_jailbreaks)
-        self._which_jailbreaks = which_jailbreaks
+        if jailbreaks:
+            self._validate_jailbreaks_subset(jailbreaks)
+            self._jailbreaks = jailbreaks
+        else:
+            self._jailbreaks = TextJailBreak.get_all_jailbreak_templates()
 
         super().__init__(
             name="Jailbreak",
@@ -142,6 +159,21 @@ class Jailbreak(Scenario):
 
         # Will be resolved in _get_atomic_attacks_async
         self._seed_groups: Optional[List[SeedAttackGroup]] = None
+
+    def _validate_jailbreaks_subset(self, jailbreaks: List[str]) -> None:
+        """
+        Validate that the provided jailbreaks exist before moving on with initialization.
+
+        Args:
+            jailbreaks (List[str]): List of jailbreak names.
+
+        Raises:
+            ValueError: If jailbreaks not discovered.
+        """
+        all_templates = TextJailBreak.get_all_jailbreak_templates()
+        diff = set(jailbreaks) - set(all_templates)
+        if len(diff) > 0:
+            raise ValueError(f"Error: could not find templates `{diff}`!")
 
     def _get_default_objective_scorer(self) -> TrueFalseScorer:
         """
@@ -157,12 +189,9 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -210,14 +239,12 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(
-                template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(
-                converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
         # Create the attack
@@ -244,21 +271,14 @@ class Jailbreak(Scenario):
             List[AtomicAttack]: List of atomic attacks to execute, one per jailbreak template.
 
         Raises:
-            ValueError: If self._which_jailbreaks is not a subset of all jailbreak templates.
+            ValueError: If self._jailbreaks is not a subset of all jailbreak templates.
         """
         atomic_attacks: List[AtomicAttack] = []
 
         # Retrieve seed prompts based on selected strategies
         self._seed_groups = self._resolve_seed_groups()
 
-        # Get all jailbreak template names
-        jailbreak_template_names = self._get_all_jailbreak_templates()
-
-        if self._which_jailbreaks:
-            jailbreak_template_names = list(
-                set(jailbreak_template_names) & set(self._which_jailbreaks))
-
-        for template_name in jailbreak_template_names:
+        for template_name in self._jailbreaks:
             for _ in range(0, self._n):
                 atomic_attack = await self._get_atomic_attack_from_jailbreak_async(
                     jailbreak_template_name=template_name
@@ -266,21 +286,3 @@ class Jailbreak(Scenario):
                 atomic_attacks.append(atomic_attack)
 
         return atomic_attacks
-
-    def _validate_jailbreaks_subset(self, jailbreaks: List[str]):
-        """
-        Validate that the provided jailbreaks exist before moving on with initialization.
-
-        Args:
-            jailbreaks (List[str]): List of jailbreak names.
-
-        Returns:
-            None
-
-        Raises:
-            ValueError: If jailbreaks not discovered.
-        """
-        all_templates = TextJailBreak.get_all_jailbreak_templates()
-        diff = set(all_templates) - set(jailbreaks)
-        if len(diff) > 0:
-            raise ValueError(f"Error: could not find templates `{diff}`!")
