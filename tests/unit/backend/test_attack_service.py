@@ -54,6 +54,7 @@ def make_attack_result(
     outcome: AttackOutcome = AttackOutcome.UNDETERMINED,
     created_at: datetime = None,
     updated_at: datetime = None,
+    labels: dict = None,
 ) -> AttackResult:
     """Create a mock AttackResult for testing."""
     now = datetime.now(timezone.utc)
@@ -72,6 +73,7 @@ def make_attack_result(
         metadata={
             "created_at": created.isoformat(),
             "updated_at": updated.isoformat(),
+            "labels": labels or {},
         },
     )
 
@@ -216,6 +218,21 @@ class TestListAttacks:
         assert len(result.items) == 1
         assert result.items[0].attack_id == "attack-2"
 
+    @pytest.mark.asyncio
+    async def test_list_attacks_includes_labels_in_summary(self, attack_service, mock_memory) -> None:
+        """Test that list_attacks includes labels from metadata in summaries."""
+        ar = make_attack_result(
+            conversation_id="attack-1",
+            labels={"env": "prod", "team": "red"},
+        )
+        mock_memory.get_attack_results.return_value = [ar]
+        mock_memory.get_message_pieces.return_value = []
+
+        result = await attack_service.list_attacks()
+
+        assert len(result.items) == 1
+        assert result.items[0].labels == {"env": "prod", "team": "red"}
+
 
 # ============================================================================
 # Get Attack Tests
@@ -347,6 +364,31 @@ class TestCreateAttack:
             # Both attack result and prepended message pieces should be stored
             mock_memory.add_attack_results_to_memory.assert_called_once()
             mock_memory.add_message_pieces_to_memory.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_create_attack_stores_labels_under_metadata_key(self, attack_service, mock_memory) -> None:
+        """Test that create_attack stores labels under metadata['labels'], not spread."""
+        with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
+            mock_target_service = MagicMock()
+            mock_target_service.get_target = AsyncMock(return_value=MagicMock(type="TextTarget"))
+            mock_get_target_service.return_value = mock_target_service
+
+            await attack_service.create_attack(
+                CreateAttackRequest(
+                    target_id="target-1",
+                    name="Labeled Attack",
+                    labels={"env": "prod", "team": "red"},
+                )
+            )
+
+            # Verify the AttackResult stored in memory has labels nested under metadata["labels"]
+            call_args = mock_memory.add_attack_results_to_memory.call_args
+            stored_ar = call_args[1]["attack_results"][0]
+            assert "labels" in stored_ar.metadata
+            assert stored_ar.metadata["labels"] == {"env": "prod", "team": "red"}
+            # Labels should NOT be spread as top-level metadata keys
+            assert "env" not in stored_ar.metadata
+            assert "team" not in stored_ar.metadata
 
 
 # ============================================================================
