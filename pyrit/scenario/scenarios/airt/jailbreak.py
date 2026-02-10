@@ -11,7 +11,6 @@ from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
-from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
@@ -255,25 +254,26 @@ class Jailbreak(Scenario):
             request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
-        attack = AttackStrategy
+        attack = None
+        args = {
+            "objective_target": self._objective_target,
+            "attack_scoring_config": self._scorer_config,
+            "attack_converter_config": converter_config,
+        }
         match strategy:
             case "many_shot":
-                attack = ManyShotJailbreakAttack
+                attack = ManyShotJailbreakAttack(**args)
             case "prompt_sending":
-                attack = PromptSendingAttack
+                attack = PromptSendingAttack(**args)
             case "crescendo":
-                attack = CrescendoAttack
+                attack = CrescendoAttack(**args)
             case "red_teaming":
-                attack = RedTeamingAttack
+                attack = RedTeamingAttack(**args)
             case _:
                 raise ValueError(f"Unknown JailbreakStrategy `{strategy}`.")
 
-        # Create the attack
-        attack = attack(
-            objective_target=self._objective_target,
-            attack_scoring_config=self._scorer_config,
-            attack_converter_config=converter_config,
-        )
+        if not attack:
+            raise ValueError(f"Attack cannot be None!")
 
         # Extract template name without extension for the atomic attack name
         template_name = Path(jailbreak_template_name).stem
