@@ -343,6 +343,7 @@ class AttackService:
             outcome=self._map_outcome(ar.outcome),
             last_message_preview=last_preview,
             message_count=message_count,
+            labels=ar.metadata.get("labels", {}),
             created_at=created_at,
             updated_at=updated_at,
         )
