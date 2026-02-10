@@ -655,10 +655,7 @@ class TestAttackServiceSingleton:
 
     def test_get_attack_service_returns_attack_service(self) -> None:
         """Test that get_attack_service returns an AttackService instance."""
-        # Reset singleton for clean test
-        import pyrit.backend.services.attack_service as module
-
-        module._attack_service = None
+        get_attack_service.cache_clear()
 
         with patch("pyrit.backend.services.attack_service.CentralMemory"):
             service = get_attack_service()
@@ -666,10 +663,7 @@ class TestAttackServiceSingleton:
 
     def test_get_attack_service_returns_same_instance(self) -> None:
         """Test that get_attack_service returns the same instance."""
-        # Reset singleton for clean test
-        import pyrit.backend.services.attack_service as module
-
-        module._attack_service = None
+        get_attack_service.cache_clear()
 
         with patch("pyrit.backend.services.attack_service.CentralMemory"):
             service1 = get_attack_service()

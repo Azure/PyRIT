@@ -13,6 +13,7 @@ Converters can be:
 """
 
 import uuid
+from functools import lru_cache
 from typing import Any, List, Optional, Tuple
 
 from pyrit import prompt_converter
@@ -287,9 +288,8 @@ class ConverterService:
 # Singleton
 # ============================================================================
 
-_converter_service: Optional[ConverterService] = None
 
-
+@lru_cache(maxsize=1)
 def get_converter_service() -> ConverterService:
     """
     Get the global converter service instance.
@@ -297,7 +297,4 @@ def get_converter_service() -> ConverterService:
     Returns:
         The singleton ConverterService instance.
     """
-    global _converter_service
-    if _converter_service is None:
-        _converter_service = ConverterService()
-    return _converter_service
+    return ConverterService()

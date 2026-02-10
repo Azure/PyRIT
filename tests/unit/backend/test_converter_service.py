@@ -333,14 +333,14 @@ class TestConverterServiceSingleton:
 
     def test_get_converter_service_returns_converter_service(self) -> None:
         """Test that get_converter_service returns a ConverterService instance."""
-        converter_service_module._converter_service = None
+        get_converter_service.cache_clear()
 
         service = get_converter_service()
         assert isinstance(service, ConverterService)
 
     def test_get_converter_service_returns_same_instance(self) -> None:
         """Test that get_converter_service returns the same instance."""
-        converter_service_module._converter_service = None
+        get_converter_service.cache_clear()
 
         service1 = get_converter_service()
         service2 = get_converter_service()

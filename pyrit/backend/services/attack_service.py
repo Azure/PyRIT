@@ -17,6 +17,7 @@ ARCHITECTURE:
 
 import uuid
 from datetime import datetime, timezone
+from functools import lru_cache
 from typing import Any, Dict, List, Literal, Optional, cast
 
 from pyrit.backend.models.attacks import (
@@ -571,9 +572,8 @@ class AttackService:
 # Singleton
 # ============================================================================
 
-_attack_service: Optional[AttackService] = None
 
-
+@lru_cache(maxsize=1)
 def get_attack_service() -> AttackService:
     """
     Get the global attack service instance.
@@ -581,7 +581,4 @@ def get_attack_service() -> AttackService:
     Returns:
         The singleton AttackService instance.
     """
-    global _attack_service
-    if _attack_service is None:
-        _attack_service = AttackService()
-    return _attack_service
+    return AttackService()

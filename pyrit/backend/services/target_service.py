@@ -13,6 +13,7 @@ Targets can be:
 """
 
 import uuid
+from functools import lru_cache
 from typing import Any, Optional
 
 from pyrit import prompt_target
@@ -170,10 +171,7 @@ class TargetService:
         )
 
 
-# Global service instance
-_target_service: Optional[TargetService] = None
-
-
+@lru_cache(maxsize=1)
 def get_target_service() -> TargetService:
     """
     Get the global target service instance.
@@ -181,7 +179,4 @@ def get_target_service() -> TargetService:
     Returns:
         The singleton TargetService instance.
     """
-    global _target_service
-    if _target_service is None:
-        _target_service = TargetService()
-    return _target_service
+    return TargetService()

@@ -156,20 +156,18 @@ class TestTargetServiceSingleton:
 
     def test_get_target_service_returns_target_service(self) -> None:
         """Test that get_target_service returns a TargetService instance."""
-        import pyrit.backend.services.target_service as module
         from pyrit.backend.services.target_service import get_target_service
 
-        module._target_service = None
+        get_target_service.cache_clear()
 
         service = get_target_service()
         assert isinstance(service, TargetService)
 
     def test_get_target_service_returns_same_instance(self) -> None:
         """Test that get_target_service returns the same instance."""
-        import pyrit.backend.services.target_service as module
         from pyrit.backend.services.target_service import get_target_service
 
-        module._target_service = None
+        get_target_service.cache_clear()
 
         service1 = get_target_service()
         service2 = get_target_service()
