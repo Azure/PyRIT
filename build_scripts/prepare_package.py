@@ -33,7 +33,7 @@ def build_frontend(frontend_dir: Path) -> bool:
         print(f"Found npm version: {result.stdout.strip()}")
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("ERROR: npm is not installed or not in PATH")
-        print("Please install Node.js and npm from https://nodejs.org/")
+        print("Please install Node.js 20.x and npm from https://nodejs.org/")
         return False
 
     # Check if package.json exists
