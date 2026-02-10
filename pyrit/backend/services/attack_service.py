@@ -221,7 +221,7 @@ class AttackService:
             metadata={
                 "created_at": now.isoformat(),
                 "updated_at": now.isoformat(),
-                **(request.labels or {}),
+                "labels": request.labels or {},
             },
         )
 
