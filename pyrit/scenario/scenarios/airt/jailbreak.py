@@ -8,6 +8,7 @@ from typing import List, Optional
 from pyrit.common import apply_defaults
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
+    AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
 )
@@ -198,6 +199,20 @@ class Jailbreak(Scenario):
         )
         return refusal_scorer
 
+    def _get_default_adversarial_target(self) -> OpenAIChatTarget:
+        """
+        Create and retrieve the default adversarial target.
+
+        Returns:
+            OpenAIChatTarget: Default adversarial target using an unfiltered endpoint.
+        """
+        return OpenAIChatTarget(
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+            temperature=1.2,
+        )
+
     def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
         """
         Resolve seed groups from dataset configuration.
@@ -260,14 +275,17 @@ class Jailbreak(Scenario):
             "attack_scoring_config": self._scorer_config,
             "attack_converter_config": converter_config,
         }
+        adversarial_config = AttackAdversarialConfig(target=self._get_default_adversarial_target())
         match strategy:
             case "many_shot":
                 attack = ManyShotJailbreakAttack(**args)
             case "prompt_sending":
                 attack = PromptSendingAttack(**args)
             case "crescendo":
+                args["attack_adversarial_config"] = adversarial_config
                 attack = CrescendoAttack(**args)
             case "red_teaming":
+                args["attack_adversarial_config"] = adversarial_config
                 attack = RedTeamingAttack(**args)
             case _:
                 raise ValueError(f"Unknown JailbreakStrategy `{strategy}`.")
