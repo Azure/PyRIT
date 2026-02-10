@@ -7,6 +7,8 @@ FastAPI application entry point for PyRIT backend.
 
 import os
 import sys
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -22,22 +24,25 @@ from pyrit.setup.initialization import initialize_pyrit_async
 # Check for development mode from environment variable
 DEV_MODE = os.getenv("PYRIT_DEV_MODE", "false").lower() == "true"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage application startup and shutdown lifecycle."""
+    # Startup: initialize PyRIT to load .env and .env.local files
+    await initialize_pyrit_async(memory_db_type="SQLite")
+    yield
+    # Shutdown: nothing to clean up currently
+
+
 app = FastAPI(
     title="PyRIT API",
     description="Python Risk Identification Tool for LLMs - REST API",
     version=pyrit.__version__,
+    lifespan=lifespan,
 )
 
 # Register RFC 7807 error handlers
 register_error_handlers(app)
-
-
-# Initialize PyRIT on startup to load .env and .env.local files
-@app.on_event("startup")
-async def startup_event_async() -> None:
-    """Initialize PyRIT on application startup."""
-    # Use in-memory to avoid database initialization delays
-    await initialize_pyrit_async(memory_db_type="SQLite")
 
 
 # Configure CORS
