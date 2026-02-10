@@ -79,23 +79,6 @@ def setup_frontend() -> None:
         sys.exit(1)
 
 
-@app.exception_handler(Exception)
-async def global_exception_handler_async(request: object, exc: Exception) -> JSONResponse:
-    """
-    Handle all unhandled exceptions globally.
-
-    Note: This is a fallback handler. Most exceptions are handled by
-    the RFC 7807 error handlers in middleware/error_handlers.py.
-
-    Returns:
-        JSONResponse: Error response with 500 status code.
-    """
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error", "error": str(exc)},
-    )
-
-
 if __name__ == "__main__":
     import uvicorn
 
