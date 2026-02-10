@@ -309,7 +309,7 @@ class OpenAITarget(PromptChatTarget):
         """
         parsed = urlparse(endpoint_url)
 
-        if ".openai.azure.com" in endpoint_url:
+        if parsed.netloc.endswith(".openai.azure.com"):
             # Check for various issues with Azure OpenAI URLs
             path = parsed.path.rstrip("/")
 

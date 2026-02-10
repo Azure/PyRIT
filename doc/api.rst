@@ -704,6 +704,7 @@ API Reference
 
     PyRITInitializer
     AIRTInitializer
+    AIRTTargetInitializer
     SimpleInitializer
     LoadDefaultDatasets
     ScenarioObjectiveListInitializer

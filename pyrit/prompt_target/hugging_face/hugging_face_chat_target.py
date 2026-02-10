@@ -5,11 +5,12 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    BatchEncoding,
     PretrainedConfig,
 )
 
@@ -167,7 +168,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             **kwargs: Additional keyword arguments to pass to the model loader.
         """
         logger.info(f"Loading model and tokenizer from path: {path}...")
-        self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+        self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call, unused-ignore]
             path, trust_remote_code=self.trust_remote_code
         )
         self.model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=self.trust_remote_code, **kwargs)
@@ -245,7 +246,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
                 # Load the tokenizer and model from the specified directory
                 logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
-                self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+                self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call, unused-ignore]
                     self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
                 )
                 self.model = AutoModelForCausalLM.from_pretrained(
@@ -329,8 +330,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
             generated_tokens = generated_ids[0][input_length:]
 
             # Decode the assistant's response from the generated token IDs
-            assistant_response = self.tokenizer.decode(
-                generated_tokens, skip_special_tokens=self.skip_special_tokens
+            assistant_response = cast(
+                str,
+                self.tokenizer.decode(generated_tokens, skip_special_tokens=self.skip_special_tokens),
             ).strip()
 
             if not assistant_response:
@@ -369,12 +371,15 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.info("Tokenizer has a chat template. Applying it to the input messages.")
 
             # Apply the chat template to format and tokenize the messages
-            tokenized_chat = self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=True,
-                add_generation_prompt=True,
-                return_tensors=self.tensor_format,
-                return_dict=True,
+            tokenized_chat = cast(
+                BatchEncoding,
+                self.tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=True,
+                    add_generation_prompt=True,
+                    return_tensors=self.tensor_format,
+                    return_dict=True,
+                ),
             ).to(self.device)
             return tokenized_chat
         else:
