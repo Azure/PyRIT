@@ -112,7 +112,8 @@ def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
         pieces = [
             MessagePiece(
                 piece_id=str(p.id),
-                data_type=p.converted_value_data_type or "text",
+                original_value_data_type=p.original_value_data_type or "text",
+                converted_value_data_type=p.converted_value_data_type or "text",
                 original_value=p.original_value,
                 converted_value=p.converted_value or "",
                 scores=pyrit_scores_to_dto(p.scores) if hasattr(p, "scores") and p.scores else [],

@@ -72,6 +72,7 @@ def _make_mock_piece(
     p.converted_value = converted_value
     p.original_value = original_value
     p.converted_value_data_type = "text"
+    p.original_value_data_type = "text"
     p.response_error = "none"
     p.role = "user"
     p.timestamp = datetime.now(timezone.utc)
@@ -200,6 +201,19 @@ class TestPyritMessagesToDto:
         assert len(result[0].pieces) == 1
         assert result[0].pieces[0].original_value == "hi"
         assert result[0].pieces[0].converted_value == "hi"
+
+    def test_maps_data_types_separately(self) -> None:
+        """Test that original and converted data types are mapped independently."""
+        piece = _make_mock_piece(original_value="describe this", converted_value="base64data")
+        piece.original_value_data_type = "text"
+        piece.converted_value_data_type = "image"
+        msg = MagicMock()
+        msg.message_pieces = [piece]
+
+        result = pyrit_messages_to_dto([msg])
+
+        assert result[0].pieces[0].original_value_data_type == "text"
+        assert result[0].pieces[0].converted_value_data_type == "image"
 
     def test_maps_empty_list(self) -> None:
         """Test mapping an empty messages list."""

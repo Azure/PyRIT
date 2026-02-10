@@ -96,6 +96,7 @@ def make_mock_piece(
     piece.original_value = original_value
     piece.converted_value = converted_value
     piece.converted_value_data_type = "text"
+    piece.original_value_data_type = "text"
     piece.response_error = "none"
     piece.timestamp = timestamp or datetime.now(timezone.utc)
     piece.scores = []
@@ -622,6 +623,7 @@ class TestMessageBuilding:
         mock_piece = MagicMock()
         mock_piece.id = "piece-1"
         mock_piece.converted_value_data_type = "text"
+        mock_piece.original_value_data_type = "text"
         mock_piece.original_value = "Hello"
         mock_piece.converted_value = "Hello"
         mock_piece.response_error = None

@@ -36,7 +36,8 @@ class MessagePiece(BaseModel):
     """
 
     piece_id: str = Field(..., description="Unique piece identifier")
-    data_type: str = Field(default="text", description="Data type: 'text', 'image', 'audio', 'video', etc.")
+    original_value_data_type: str = Field(default="text", description="Data type of the original value: 'text', 'image', 'audio', etc.")
+    converted_value_data_type: str = Field(default="text", description="Data type of the converted value: 'text', 'image', 'audio', etc.")
     original_value: Optional[str] = Field(default=None, description="Original value before conversion")
     original_value_mime_type: Optional[str] = Field(default=None, description="MIME type of original value")
     converted_value: str = Field(..., description="Converted value (text or base64 for media)")
