@@ -11,6 +11,10 @@ from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
+from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
+from pyrit.executor.attack.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedAttackGroup
 from pyrit.prompt_converter import TextJailbreakConverter
@@ -19,9 +23,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
-from pyrit.scenario.core.scenario_strategy import (
-    ScenarioStrategy,
-)
+from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
 from pyrit.score import (
     SelfAskRefusalScorer,
     TrueFalseInverterScorer,
@@ -224,15 +226,21 @@ class Jailbreak(Scenario):
         else:
             return TextJailBreak.get_all_jailbreak_templates(k=self._k)
 
-    async def _get_atomic_attack_from_jailbreak_async(self, *, jailbreak_template_name: str) -> AtomicAttack:
+    async def _get_atomic_attack_from_strategy_async(
+        self, *, strategy: str, jailbreak_template_name: str
+    ) -> AtomicAttack:
         """
         Create an atomic attack for a specific jailbreak template.
 
         Args:
+            strategy (str): JailbreakStrategy to use.
             jailbreak_template_name (str): Name of the jailbreak template file.
 
         Returns:
             AtomicAttack: An atomic attack using the specified jailbreak template.
+
+        Raises:
+            ValueError: If an invalid strategy is provided.
         """
         # objective_target is guaranteed to be non-None by parent class validation
         assert self._objective_target is not None
@@ -247,8 +255,21 @@ class Jailbreak(Scenario):
             request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
+        attack = AttackStrategy
+        match strategy:
+            case "many_shot":
+                attack = ManyShotJailbreakAttack
+            case "prompt_sending":
+                attack = PromptSendingAttack
+            case "crescendo":
+                attack = CrescendoAttack
+            case "red_teaming":
+                attack = RedTeamingAttack
+            case _:
+                raise ValueError(f"Unknown JailbreakStrategy `{strategy}`.")
+
         # Create the attack
-        attack = PromptSendingAttack(
+        attack = attack(
             objective_target=self._objective_target,
             attack_scoring_config=self._scorer_config,
             attack_converter_config=converter_config,
@@ -278,11 +299,15 @@ class Jailbreak(Scenario):
         # Retrieve seed prompts based on selected strategies
         self._seed_groups = self._resolve_seed_groups()
 
-        for template_name in self._jailbreaks:
-            for _ in range(0, self._n):
-                atomic_attack = await self._get_atomic_attack_from_jailbreak_async(
-                    jailbreak_template_name=template_name
+        strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
+            composites=self._scenario_composites, strategy_type=JailbreakStrategy
+        )
+
+        for strategy in strategies:
+            for template_name in self._jailbreaks:
+                atomic_attack = await self._get_atomic_attack_from_strategy_async(
+                    strategy=strategy, jailbreak_template_name=template_name
                 )
-                atomic_attacks.append(atomic_attack)
+                atomic_attacks.extend([atomic_attack] * self._n)
 
         return atomic_attacks
