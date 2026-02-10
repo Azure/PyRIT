@@ -26,6 +26,7 @@ from pyrit.backend.models.converters import (
     CreateConverterResponse,
     PreviewStep,
 )
+from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.registry.instance_registries import ConverterRegistry
@@ -73,15 +74,7 @@ class ConverterService:
         Returns:
             ConverterInstance with metadata derived from the object's identifier.
         """
-        identifier = converter_obj.get_identifier()
-        identifier_dict = identifier.to_dict()
-
-        return ConverterInstance(
-            converter_id=converter_id,
-            type=identifier_dict.get("class_name", converter_obj.__class__.__name__),
-            display_name=None,
-            params=identifier_dict,
-        )
+        return converter_object_to_instance(converter_id, converter_obj)
 
     # ========================================================================
     # Public API Methods

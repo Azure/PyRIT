@@ -1,0 +1,218 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+"""
+Attack mappers – domain ↔ DTO translation for attack-related models.
+
+All functions are pure (no database or service calls) so they are easy to test.
+The one exception is `attack_result_to_summary` which receives pre-fetched pieces.
+"""
+
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Literal, Optional, cast
+
+from pyrit.backend.models.attacks import (
+    AddMessageRequest,
+    AttackSummary,
+    Message,
+    MessagePiece,
+    Score,
+)
+from pyrit.models import AttackOutcome, AttackResult, PromptDataType
+from pyrit.models import Message as PyritMessage
+from pyrit.models import MessagePiece as PyritMessagePiece
+
+
+# ============================================================================
+# Domain → DTO  (for API responses)
+# ============================================================================
+
+
+def map_outcome(outcome: AttackOutcome) -> Optional[Literal["undetermined", "success", "failure"]]:
+    """
+    Map AttackOutcome enum to API outcome string.
+
+    Returns:
+        Outcome string ('success', 'failure', 'undetermined') or None.
+    """
+    if outcome == AttackOutcome.SUCCESS:
+        return "success"
+    elif outcome == AttackOutcome.FAILURE:
+        return "failure"
+    else:
+        return "undetermined"
+
+
+def attack_result_to_summary(
+    ar: AttackResult,
+    *,
+    pieces: List[Any],
+) -> AttackSummary:
+    """
+    Build an AttackSummary DTO from an AttackResult and its message pieces.
+
+    Args:
+        ar: The domain AttackResult.
+        pieces: Pre-fetched message pieces for this conversation.
+
+    Returns:
+        AttackSummary DTO ready for the API response.
+    """
+    message_count = len(set(p.sequence for p in pieces))
+    last_preview = _get_preview_from_pieces(pieces)
+
+    created_str = ar.metadata.get("created_at")
+    updated_str = ar.metadata.get("updated_at")
+    created_at = datetime.fromisoformat(created_str) if created_str else datetime.now(timezone.utc)
+    updated_at = datetime.fromisoformat(updated_str) if updated_str else created_at
+
+    return AttackSummary(
+        attack_id=ar.conversation_id,
+        name=ar.attack_identifier.get("name"),
+        target_id=ar.attack_identifier.get("target_id", ""),
+        target_type=ar.attack_identifier.get("target_type", ""),
+        outcome=map_outcome(ar.outcome),
+        last_message_preview=last_preview,
+        message_count=message_count,
+        labels=ar.metadata.get("labels", {}),
+        created_at=created_at,
+        updated_at=updated_at,
+    )
+
+
+def pyrit_scores_to_dto(scores: List[Any]) -> List[Score]:
+    """
+    Translate PyRIT score objects to backend Score DTOs.
+
+    Returns:
+        List of Score DTOs for the API.
+    """
+    return [
+        Score(
+            score_id=str(s.id),
+            scorer_type=s.scorer_class_identifier.get("__type__", "unknown"),
+            score_value=s.score_value,
+            score_rationale=s.score_rationale,
+            scored_at=s.timestamp,
+        )
+        for s in scores
+    ]
+
+
+def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
+    """
+    Translate PyRIT messages to backend Message DTOs.
+
+    Returns:
+        List of Message DTOs for the API.
+    """
+    messages = []
+    for msg in pyrit_messages:
+        pieces = [
+            MessagePiece(
+                piece_id=str(p.id),
+                data_type=p.converted_value_data_type or "text",
+                original_value=p.original_value,
+                converted_value=p.converted_value or "",
+                scores=pyrit_scores_to_dto(p.scores) if hasattr(p, "scores") and p.scores else [],
+                response_error=p.response_error or "none",
+            )
+            for p in msg.message_pieces
+        ]
+
+        first = msg.message_pieces[0] if msg.message_pieces else None
+        messages.append(
+            Message(
+                message_id=str(first.id) if first else str(uuid.uuid4()),
+                turn_number=first.sequence if first else 0,
+                role=first.role if first else "user",
+                pieces=pieces,
+                created_at=first.timestamp if first else datetime.now(timezone.utc),
+            )
+        )
+
+    return messages
+
+
+# ============================================================================
+# DTO → Domain  (for inbound requests)
+# ============================================================================
+
+
+def request_piece_to_pyrit_message_piece(
+    *,
+    piece: Any,
+    role: str,
+    conversation_id: str,
+    sequence: int,
+) -> PyritMessagePiece:
+    """
+    Convert a single request piece DTO to a PyRIT MessagePiece domain object.
+
+    Args:
+        piece: The request piece (with data_type, original_value, converted_value).
+        role: The message role.
+        conversation_id: The conversation/attack ID.
+        sequence: The message sequence number.
+
+    Returns:
+        PyritMessagePiece domain object.
+    """
+    return PyritMessagePiece(
+        role=role,
+        original_value=piece.original_value,
+        original_value_data_type=cast(PromptDataType, piece.data_type),
+        converted_value=piece.converted_value or piece.original_value,
+        converted_value_data_type=cast(PromptDataType, piece.data_type),
+        conversation_id=conversation_id,
+        sequence=sequence,
+    )
+
+
+def request_to_pyrit_message(
+    *,
+    request: AddMessageRequest,
+    conversation_id: str,
+    sequence: int,
+) -> PyritMessage:
+    """
+    Build a PyRIT Message from an AddMessageRequest DTO.
+
+    Args:
+        request: The inbound API request.
+        conversation_id: The conversation/attack ID.
+        sequence: The message sequence number.
+
+    Returns:
+        PyritMessage ready to send to the target.
+    """
+    pieces = [
+        request_piece_to_pyrit_message_piece(
+            piece=p,
+            role=request.role,
+            conversation_id=conversation_id,
+            sequence=sequence,
+        )
+        for p in request.pieces
+    ]
+    return PyritMessage(pieces)
+
+
+# ============================================================================
+# Private Helpers
+# ============================================================================
+
+
+def _get_preview_from_pieces(pieces: List[Any]) -> Optional[str]:
+    """
+    Get a preview of the last message from a list of pieces.
+
+    Returns:
+        Truncated last message text, or None if no pieces.
+    """
+    if not pieces:
+        return None
+    last_piece = max(pieces, key=lambda p: p.sequence)
+    text = last_piece.converted_value or ""
+    return text[:100] + "..." if len(text) > 100 else text

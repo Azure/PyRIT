@@ -24,6 +24,7 @@ from pyrit.backend.models.targets import (
     TargetInstance,
     TargetListResponse,
 )
+from pyrit.backend.mappers.target_mappers import target_object_to_instance
 from pyrit.prompt_target import PromptTarget
 from pyrit.registry.instance_registries import TargetRegistry
 
@@ -90,17 +91,7 @@ class TargetService:
         Returns:
             TargetInstance with metadata derived from the object.
         """
-        identifier = target_obj.get_identifier() if hasattr(target_obj, "get_identifier") else {}
-        identifier_dict = identifier.to_dict() if hasattr(identifier, "to_dict") else identifier
-        target_type = identifier_dict.get("__type__", target_obj.__class__.__name__)
-        filtered_params = filter_sensitive_fields(identifier_dict)
-
-        return TargetInstance(
-            target_id=target_id,
-            type=target_type,
-            display_name=None,  # Could be added to identifier if needed
-            params=filtered_params,
-        )
+        return target_object_to_instance(target_id, target_obj)
 
     async def list_targets(
         self,
