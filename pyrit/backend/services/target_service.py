@@ -14,10 +14,10 @@ Targets can be:
 
 import uuid
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from pyrit import prompt_target
-from pyrit.backend.models.common import filter_sensitive_fields
+from pyrit.backend.models.common import PaginationInfo, filter_sensitive_fields
 from pyrit.backend.models.targets import (
     CreateTargetRequest,
     CreateTargetResponse,
@@ -102,17 +102,52 @@ class TargetService:
             params=filtered_params,
         )
 
-    async def list_targets(self) -> TargetListResponse:
+    async def list_targets(
+        self,
+        *,
+        limit: int = 50,
+        cursor: Optional[str] = None,
+    ) -> TargetListResponse:
         """
-        List all target instances.
+        List all target instances with pagination.
+
+        Args:
+            limit: Maximum items to return.
+            cursor: Pagination cursor (target_id to start after).
 
         Returns:
-            TargetListResponse containing all registered targets.
+            TargetListResponse containing paginated targets.
         """
         items = [
             self._build_instance_from_object(name, obj) for name, obj in self._registry.get_all_instances().items()
         ]
-        return TargetListResponse(items=items)
+        page, has_more = self._paginate(items, cursor, limit)
+        next_cursor = page[-1].target_id if has_more and page else None
+        return TargetListResponse(
+            items=page,
+            pagination=PaginationInfo(limit=limit, has_more=has_more, next_cursor=next_cursor, prev_cursor=cursor),
+        )
+
+    @staticmethod
+    def _paginate(
+        items: List[TargetInstance], cursor: Optional[str], limit: int
+    ) -> tuple[List[TargetInstance], bool]:
+        """
+        Apply cursor-based pagination.
+
+        Returns:
+            Tuple of (paginated items, has_more flag).
+        """
+        start_idx = 0
+        if cursor:
+            for i, item in enumerate(items):
+                if item.target_id == cursor:
+                    start_idx = i + 1
+                    break
+
+        page = items[start_idx : start_idx + limit]
+        has_more = len(items) > start_idx + limit
+        return page, has_more
 
     async def get_target(self, target_id: str) -> Optional[TargetInstance]:
         """

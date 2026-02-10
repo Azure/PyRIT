@@ -15,6 +15,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from pyrit.backend.models.common import PaginationInfo
+
 
 class TargetInstance(BaseModel):
     """
@@ -33,6 +35,7 @@ class TargetListResponse(BaseModel):
     """Response for listing target instances."""
 
     items: List[TargetInstance] = Field(..., description="List of target instances")
+    pagination: PaginationInfo = Field(..., description="Pagination metadata")
 
 
 class CreateTargetRequest(BaseModel):

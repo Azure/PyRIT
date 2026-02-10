@@ -33,6 +33,7 @@ class TestListTargets:
         result = await service.list_targets()
 
         assert result.items == []
+        assert result.pagination.has_more is False
 
     @pytest.mark.asyncio
     async def test_list_targets_returns_targets_from_registry(self) -> None:
@@ -49,6 +50,58 @@ class TestListTargets:
         assert len(result.items) == 1
         assert result.items[0].target_id == "target-1"
         assert result.items[0].type == "MockTarget"
+        assert result.pagination.has_more is False
+
+    @pytest.mark.asyncio
+    async def test_list_targets_paginates_with_limit(self) -> None:
+        """Test that list_targets respects the limit parameter."""
+        service = TargetService()
+
+        for i in range(5):
+            mock_target = MagicMock()
+            mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
+            service._registry.register_instance(mock_target, name=f"target-{i}")
+
+        result = await service.list_targets(limit=3)
+
+        assert len(result.items) == 3
+        assert result.pagination.limit == 3
+        assert result.pagination.has_more is True
+        assert result.pagination.next_cursor == result.items[-1].target_id
+
+    @pytest.mark.asyncio
+    async def test_list_targets_cursor_returns_next_page(self) -> None:
+        """Test that list_targets cursor skips to the correct position."""
+        service = TargetService()
+
+        for i in range(5):
+            mock_target = MagicMock()
+            mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
+            service._registry.register_instance(mock_target, name=f"target-{i}")
+
+        first_page = await service.list_targets(limit=2)
+        second_page = await service.list_targets(limit=2, cursor=first_page.pagination.next_cursor)
+
+        assert len(second_page.items) == 2
+        assert second_page.items[0].target_id != first_page.items[0].target_id
+        assert second_page.pagination.has_more is True
+
+    @pytest.mark.asyncio
+    async def test_list_targets_last_page_has_no_more(self) -> None:
+        """Test that the last page has has_more=False and no next_cursor."""
+        service = TargetService()
+
+        for i in range(3):
+            mock_target = MagicMock()
+            mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
+            service._registry.register_instance(mock_target, name=f"target-{i}")
+
+        first_page = await service.list_targets(limit=2)
+        last_page = await service.list_targets(limit=2, cursor=first_page.pagination.next_cursor)
+
+        assert len(last_page.items) == 1
+        assert last_page.pagination.has_more is False
+        assert last_page.pagination.next_cursor is None
 
 
 class TestGetTarget:

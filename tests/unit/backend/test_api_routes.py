@@ -429,7 +429,12 @@ class TestTargetRoutes:
         """Test that list targets returns empty list initially."""
         with patch("pyrit.backend.routes.targets.get_target_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.list_targets = AsyncMock(return_value=TargetListResponse(items=[]))
+            mock_service.list_targets = AsyncMock(
+                return_value=TargetListResponse(
+                    items=[],
+                    pagination=PaginationInfo(limit=50, has_more=False, next_cursor=None, prev_cursor=None),
+                )
+            )
             mock_get_service.return_value = mock_service
 
             response = client.get("/api/targets")
@@ -437,6 +442,7 @@ class TestTargetRoutes:
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
             assert data["items"] == []
+            assert data["pagination"]["has_more"] is False
 
     def test_create_target_success(self, client: TestClient) -> None:
         """Test successful target creation."""
