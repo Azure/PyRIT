@@ -25,6 +25,9 @@ router = APIRouter(prefix="/targets", tags=["targets"])
 @router.get(
     "",
     response_model=TargetListResponse,
+    responses={
+        500: {"model": ProblemDetail, "description": "Internal server error"},
+    },
 )
 async def list_targets() -> TargetListResponse:
     """
