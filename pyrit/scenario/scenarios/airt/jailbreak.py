@@ -3,7 +3,7 @@
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pyrit.common import apply_defaults
 from pyrit.datasets import TextJailBreak
@@ -272,7 +272,7 @@ class Jailbreak(Scenario):
             request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
-        attack = None
+        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, CrescendoAttack, RedTeamingAttack]] = None
         args = {
             "objective_target": self._objective_target,
             "attack_scoring_config": self._scorer_config,
