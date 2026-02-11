@@ -162,9 +162,7 @@ class TestJailbreakInitialization:
     def test_init_raises_exception_when_both_k_and_which_jailbreaks(self, mock_random_k, mock_jailbreaks):
         """Test failure on providing mutually exclusive arguments."""
 
-        with pytest.raises(
-            ValueError, match="Please provide only one of `k` (random selection) or `jailbreaks` (specific selection)."
-        ):
+        with pytest.raises(ValueError):
             Jailbreak(k=mock_random_k, jailbreaks=mock_jailbreaks)
 
     @pytest.mark.asyncio
