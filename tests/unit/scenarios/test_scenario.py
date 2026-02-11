@@ -521,7 +521,7 @@ class TestScenarioResult:
         identifier = ScenarioIdentifier(name="Test", scenario_version=1)
         result = ScenarioResult(
             scenario_identifier=identifier,
-            objective_target_identifier={"__type__": "TestTarget", "__module__": "test"},
+            objective_target_identifier=TargetIdentifier(class_name="TestTarget", class_module="test"),
             attack_results={"base64": sample_attack_results[:3], "rot13": sample_attack_results[3:]},
             objective_scorer_identifier=_TEST_SCORER_ID,
         )
@@ -537,10 +537,10 @@ class TestScenarioResult:
         identifier = ScenarioIdentifier(name="TestScenario", scenario_version=1)
         result = ScenarioResult(
             scenario_identifier=identifier,
-            objective_target_identifier={
-                "__type__": "TestTarget",
-                "__module__": "test",
-            },
+            objective_target_identifier=TargetIdentifier(
+                class_name="TestTarget",
+                class_module="test",
+            ),
             attack_results={"base64": []},
             objective_scorer_identifier=_TEST_SCORER_ID,
         )
@@ -555,10 +555,10 @@ class TestScenarioResult:
         # All successful
         result = ScenarioResult(
             scenario_identifier=identifier,
-            objective_target_identifier={
-                "__type__": "TestTarget",
-                "__module__": "test",
-            },
+            objective_target_identifier=TargetIdentifier(
+                class_name="TestTarget",
+                class_module="test",
+            ),
             attack_results={"base64": sample_attack_results},
             objective_scorer_identifier=_TEST_SCORER_ID,
         )
@@ -581,10 +581,10 @@ class TestScenarioResult:
         ]
         result2 = ScenarioResult(
             scenario_identifier=identifier,
-            objective_target_identifier={
-                "__type__": "TestTarget",
-                "__module__": "test",
-            },
+            objective_target_identifier=TargetIdentifier(
+                class_name="TestTarget",
+                class_module="test",
+            ),
             attack_results={"base64": mixed_results},
             objective_scorer_identifier=_TEST_SCORER_ID,
         )
@@ -623,10 +623,10 @@ def create_mock_truefalse_scorer():
     from pyrit.score import TrueFalseScorer
 
     mock_scorer = MagicMock(spec=TrueFalseScorer)
-    mock_scorer.get_identifier.return_value = {
-        "__type__": "MockTrueFalseScorer",
-        "__module__": "test",
-    }
+    mock_scorer.get_identifier.return_value = ScorerIdentifier(
+        class_name="MockTrueFalseScorer",
+        class_module="test",
+    )
     mock_scorer.get_scorer_metrics.return_value = None
     # Make isinstance check work
     mock_scorer.__class__ = TrueFalseScorer

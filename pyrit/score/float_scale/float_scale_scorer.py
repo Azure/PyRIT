@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
@@ -76,7 +76,7 @@ class FloatScaleScorer(Scorer):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        attack_identifier: Optional[Union[AttackIdentifier, Dict[str, str]]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
     ) -> UnvalidatedScore:
         score: UnvalidatedScore | None = None
         try:

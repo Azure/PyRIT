@@ -4,7 +4,7 @@
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.component.prepended_conversation_config import (
@@ -55,7 +55,7 @@ def get_adversarial_chat_messages(
     *,
     adversarial_chat_conversation_id: str,
     attack_identifier: AttackIdentifier,
-    adversarial_chat_target_identifier: Union[TargetIdentifier, Dict[str, Any]],
+    adversarial_chat_target_identifier: TargetIdentifier,
     labels: Optional[Dict[str, str]] = None,
 ) -> List[Message]:
     """

@@ -259,8 +259,11 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
         )
         self._objective_target = objective_target
         self._params_type = params_type
-        self._request_converters: list[Any] = []
-        self._response_converters: list[Any] = []
+        # Guard so subclasses that set converters before calling super() aren't clobbered
+        if not hasattr(self, "_request_converters"):
+            self._request_converters: list[Any] = []
+        if not hasattr(self, "_response_converters"):
+            self._response_converters: list[Any] = []
 
     def _build_identifier(self) -> AttackIdentifier:
         """

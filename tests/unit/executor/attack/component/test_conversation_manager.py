@@ -246,7 +246,7 @@ class TestGetAdversarialChatMessages:
             messages,
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
         )
 
         assert len(result) == 1
@@ -262,7 +262,7 @@ class TestGetAdversarialChatMessages:
             messages,
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
         )
 
         assert len(result) == 1
@@ -281,7 +281,7 @@ class TestGetAdversarialChatMessages:
             messages,
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
         )
 
         assert len(result) == 1
@@ -300,7 +300,7 @@ class TestGetAdversarialChatMessages:
             messages,
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
         )
 
         # Only user message should be present, system skipped
@@ -317,7 +317,7 @@ class TestGetAdversarialChatMessages:
             messages,
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
         )
 
         # New ID should be different from original
@@ -339,7 +339,7 @@ class TestGetAdversarialChatMessages:
             messages,
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
         )
 
         assert result[0].get_piece().original_value == "Original content"
@@ -351,7 +351,7 @@ class TestGetAdversarialChatMessages:
             [],
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
         )
 
         assert result == []
@@ -366,7 +366,7 @@ class TestGetAdversarialChatMessages:
             messages,
             adversarial_chat_conversation_id="adversarial_conv",
             attack_identifier=AttackIdentifier(class_name="TestAttack", class_module="test_module"),
-            adversarial_chat_target_identifier={"id": "adversarial_target"},
+            adversarial_chat_target_identifier=_mock_target_id("adversarial_target"),
             labels=labels,
         )
 

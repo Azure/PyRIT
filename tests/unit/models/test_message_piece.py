@@ -13,7 +13,7 @@ import pytest
 from unit.mocks import MockPromptTarget, get_mock_target, get_sample_conversations
 
 from pyrit.executor.attack import PromptSendingAttack
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -663,14 +663,21 @@ def test_message_piece_to_dict():
         targeted_harm_categories=["violence", "illegal"],
         prompt_metadata={"key": "metadata"},
         converter_identifiers=[
-            {"__type__": "Base64Converter", "__module__": "pyrit.prompt_converter.base64_converter"}
+            ConverterIdentifier(
+                class_name="Base64Converter",
+                class_module="pyrit.prompt_converter.base64_converter",
+                supported_input_types=["text"],
+                supported_output_types=["text"],
+            )
         ],
-        prompt_target_identifier={"__type__": "MockPromptTarget", "__module__": "unit.mocks"},
-        attack_identifier={
-            "id": str(uuid.uuid4()),
-            "__type__": "PromptSendingAttack",
-            "__module__": "pyrit.executor.attack.single_turn.prompt_sending_attack",
-        },
+        prompt_target_identifier=TargetIdentifier(
+            class_name="MockPromptTarget",
+            class_module="unit.mocks",
+        ),
+        attack_identifier=AttackIdentifier(
+            class_name="PromptSendingAttack",
+            class_module="pyrit.executor.attack.single_turn.prompt_sending_attack",
+        ),
         scorer_identifier=ScorerIdentifier(
             class_name="TestScorer",
             class_module="pyrit.score.test_scorer",
