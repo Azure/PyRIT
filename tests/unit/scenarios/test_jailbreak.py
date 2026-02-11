@@ -259,7 +259,7 @@ class TestJailbreakProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_scenario_default_dataset(self) -> None:
         """Test that scenario default dataset is correct."""

@@ -134,7 +134,6 @@ class Encoding(Scenario):
     """
 
     VERSION: int = 1
-    version: int = VERSION  # Alias for backward compatibility
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
