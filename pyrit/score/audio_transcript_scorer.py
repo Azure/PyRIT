@@ -115,11 +115,6 @@ class AudioTranscriptHelper(ABC):
 
         # Score the transcript
         transcript_scores = await self.text_scorer.score_async(message=text_message, objective=objective)
-        # transcript_scores = await self.text_scorer.score_prompts_batch_async(
-        #     messages=[text_message],
-        #     objectives=[objective] if objective else None,
-        #     batch_size=1,
-        # )
 
         # Add context to indicate this was scored from audio transcription
         for score in transcript_scores:
