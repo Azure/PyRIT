@@ -25,7 +25,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         - Video + Audio scoring: True only if both video frames AND audio transcript match their objectives
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
 
     def __init__(
         self,
@@ -67,7 +67,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             audio_objective_template=audio_objective_template,
         )
 
-        TrueFalseScorer.__init__(self, validator=validator or self._default_validator)
+        TrueFalseScorer.__init__(self, validator=validator or self._DEFAULT_VALIDATOR)
 
         if audio_scorer is not None:
             self._validate_audio_scorer(audio_scorer)
