@@ -17,10 +17,14 @@ from pyrit.registry.instance_registries.base_instance_registry import (
 from pyrit.registry.instance_registries.scorer_registry import (
     ScorerRegistry,
 )
+from pyrit.registry.instance_registries.target_registry import (
+    TargetRegistry,
+)
 
 __all__ = [
     # Base class
     "BaseInstanceRegistry",
     # Concrete registries
     "ScorerRegistry",
+    "TargetRegistry",
 ]
