@@ -24,7 +24,7 @@ class DecodingScorer(TrueFalseScorer):
     text matching strategy.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"], supported_roles=["assistant"]
     )
 
@@ -50,7 +50,7 @@ class DecodingScorer(TrueFalseScorer):
         self._text_matcher = text_matcher if text_matcher else ExactTextMatching(case_sensitive=False)
         self._score_categories = categories if categories else []
 
-        super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)
+        super().__init__(score_aggregator=aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
     def _build_identifier(self) -> ScorerIdentifier:
         """
