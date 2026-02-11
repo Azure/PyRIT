@@ -15,7 +15,7 @@ from typing import Optional
 from pyrit.cli import frontend_core
 
 
-def parse_args(args: Optional[list[str]] = None) -> Namespace:
+def parse_args(*, args: Optional[list[str]] = None) -> Namespace:
     """
     Parse command-line arguments for the PyRIT backend server.
 
@@ -112,7 +112,7 @@ Examples:
     return parser.parse_args(args)
 
 
-async def initialize_and_run(parsed_args: Namespace) -> int:
+async def initialize_and_run(*, parsed_args: Namespace) -> int:
     """
     Initialize PyRIT and start the backend server.
 
@@ -184,7 +184,7 @@ async def initialize_and_run(parsed_args: Namespace) -> int:
     return 0
 
 
-def main(args: Optional[list[str]] = None) -> int:
+def main(*, args: Optional[list[str]] = None) -> int:
     """
     Start the PyRIT backend server CLI.
 
@@ -192,7 +192,7 @@ def main(args: Optional[list[str]] = None) -> int:
         int: Exit code (0 for success, 1 for error).
     """
     try:
-        parsed_args = parse_args(args)
+        parsed_args = parse_args(args=args)
     except SystemExit as e:
         return e.code if isinstance(e.code, int) else 1
 
@@ -204,7 +204,7 @@ def main(args: Optional[list[str]] = None) -> int:
 
     # Run the server
     try:
-        return asyncio.run(initialize_and_run(parsed_args))
+        return asyncio.run(initialize_and_run(parsed_args=parsed_args))
     except KeyboardInterrupt:
         print("\n🛑 Backend stopped")
         return 0

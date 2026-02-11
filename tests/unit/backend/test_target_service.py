@@ -30,7 +30,7 @@ class TestListTargets:
         """Test that list_targets returns empty list when no targets exist."""
         service = TargetService()
 
-        result = await service.list_targets()
+        result = await service.list_targets_async()
 
         assert result.items == []
         assert result.pagination.has_more is False
@@ -45,7 +45,7 @@ class TestListTargets:
         mock_target.get_identifier.return_value = {"__type__": "MockTarget", "endpoint": "http://test"}
         service._registry.register_instance(mock_target, name="target-1")
 
-        result = await service.list_targets()
+        result = await service.list_targets_async()
 
         assert len(result.items) == 1
         assert result.items[0].target_id == "target-1"
@@ -62,7 +62,7 @@ class TestListTargets:
             mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
             service._registry.register_instance(mock_target, name=f"target-{i}")
 
-        result = await service.list_targets(limit=3)
+        result = await service.list_targets_async(limit=3)
 
         assert len(result.items) == 3
         assert result.pagination.limit == 3
@@ -79,8 +79,8 @@ class TestListTargets:
             mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
             service._registry.register_instance(mock_target, name=f"target-{i}")
 
-        first_page = await service.list_targets(limit=2)
-        second_page = await service.list_targets(limit=2, cursor=first_page.pagination.next_cursor)
+        first_page = await service.list_targets_async(limit=2)
+        second_page = await service.list_targets_async(limit=2, cursor=first_page.pagination.next_cursor)
 
         assert len(second_page.items) == 2
         assert second_page.items[0].target_id != first_page.items[0].target_id
@@ -96,8 +96,8 @@ class TestListTargets:
             mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
             service._registry.register_instance(mock_target, name=f"target-{i}")
 
-        first_page = await service.list_targets(limit=2)
-        last_page = await service.list_targets(limit=2, cursor=first_page.pagination.next_cursor)
+        first_page = await service.list_targets_async(limit=2)
+        last_page = await service.list_targets_async(limit=2, cursor=first_page.pagination.next_cursor)
 
         assert len(last_page.items) == 1
         assert last_page.pagination.has_more is False
@@ -112,7 +112,7 @@ class TestGetTarget:
         """Test that get_target returns None for non-existent target."""
         service = TargetService()
 
-        result = await service.get_target("nonexistent-id")
+        result = await service.get_target_async(target_id="nonexistent-id")
 
         assert result is None
 
@@ -125,7 +125,7 @@ class TestGetTarget:
         mock_target.get_identifier.return_value = {"__type__": "MockTarget"}
         service._registry.register_instance(mock_target, name="target-1")
 
-        result = await service.get_target("target-1")
+        result = await service.get_target_async(target_id="target-1")
 
         assert result is not None
         assert result.target_id == "target-1"
@@ -139,7 +139,7 @@ class TestGetTargetObject:
         """Test that get_target_object returns None for non-existent target."""
         service = TargetService()
 
-        result = service.get_target_object("nonexistent-id")
+        result = service.get_target_object(target_id="nonexistent-id")
 
         assert result is None
 
@@ -149,7 +149,7 @@ class TestGetTargetObject:
         mock_target = MagicMock()
         service._registry.register_instance(mock_target, name="target-1")
 
-        result = service.get_target_object("target-1")
+        result = service.get_target_object(target_id="target-1")
 
         assert result is mock_target
 
@@ -168,7 +168,7 @@ class TestCreateTarget:
         )
 
         with pytest.raises(ValueError, match="not found"):
-            await service.create_target(request)
+            await service.create_target_async(request=request)
 
     @pytest.mark.asyncio
     async def test_create_target_success(self, sqlite_instance) -> None:
@@ -181,7 +181,7 @@ class TestCreateTarget:
             params={},
         )
 
-        result = await service.create_target(request)
+        result = await service.create_target_async(request=request)
 
         assert result.target_id is not None
         assert result.type == "TextTarget"
@@ -197,10 +197,10 @@ class TestCreateTarget:
             params={},
         )
 
-        result = await service.create_target(request)
+        result = await service.create_target_async(request=request)
 
         # Object should be retrievable from registry
-        target_obj = service.get_target_object(result.target_id)
+        target_obj = service.get_target_object(target_id=result.target_id)
         assert target_obj is not None
 
 

@@ -38,7 +38,7 @@ async def list_converters() -> ConverterInstanceListResponse:
         ConverterInstanceListResponse: List of converter instances.
     """
     service = get_converter_service()
-    return await service.list_converters()
+    return await service.list_converters_async()
 
 
 @router.post(
@@ -62,7 +62,7 @@ async def create_converter(request: CreateConverterRequest) -> CreateConverterRe
     service = get_converter_service()
 
     try:
-        return await service.create_converter(request)
+        return await service.create_converter_async(request=request)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -91,7 +91,7 @@ async def get_converter(converter_id: str) -> ConverterInstance:
     """
     service = get_converter_service()
 
-    converter = await service.get_converter(converter_id)
+    converter = await service.get_converter_async(converter_id=converter_id)
     if not converter:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -121,7 +121,7 @@ async def preview_conversion(request: ConverterPreviewRequest) -> ConverterPrevi
     service = get_converter_service()
 
     try:
-        return await service.preview_conversion(request)
+        return await service.preview_conversion_async(request=request)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

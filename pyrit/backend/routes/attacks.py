@@ -70,7 +70,7 @@ async def list_attacks(
     """
     service = get_attack_service()
     labels = _parse_labels(label)
-    return await service.list_attacks(
+    return await service.list_attacks_async(
         target_id=target_id,
         outcome=outcome,
         name=name,
@@ -105,7 +105,7 @@ async def create_attack(request: CreateAttackRequest) -> CreateAttackResponse:
     service = get_attack_service()
 
     try:
-        return await service.create_attack(request)
+        return await service.create_attack_async(request=request)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -131,7 +131,7 @@ async def get_attack(attack_id: str) -> AttackSummary:
     """
     service = get_attack_service()
 
-    attack = await service.get_attack(attack_id)
+    attack = await service.get_attack_async(attack_id=attack_id)
     if not attack:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -162,7 +162,7 @@ async def update_attack(
     """
     service = get_attack_service()
 
-    attack = await service.update_attack(attack_id, request)
+    attack = await service.update_attack_async(attack_id=attack_id, request=request)
     if not attack:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -190,7 +190,7 @@ async def get_attack_messages(attack_id: str) -> AttackMessagesResponse:
     """
     service = get_attack_service()
 
-    messages = await service.get_attack_messages(attack_id)
+    messages = await service.get_attack_messages_async(attack_id=attack_id)
     if not messages:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -230,7 +230,7 @@ async def add_message(
     service = get_attack_service()
 
     try:
-        return await service.add_message(attack_id, request)
+        return await service.add_message_async(attack_id=attack_id, request=request)
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():

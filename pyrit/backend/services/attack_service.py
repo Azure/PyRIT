@@ -59,7 +59,7 @@ class AttackService:
     # Public API Methods
     # ========================================================================
 
-    async def list_attacks(
+    async def list_attacks_async(
         self,
         *,
         target_id: Optional[str] = None,
@@ -133,7 +133,7 @@ class AttackService:
             pagination=PaginationInfo(limit=limit, has_more=has_more, next_cursor=next_cursor, prev_cursor=cursor),
         )
 
-    async def get_attack(self, attack_id: str) -> Optional[AttackSummary]:
+    async def get_attack_async(self, *, attack_id: str) -> Optional[AttackSummary]:
         """
         Get attack details (high-level metadata, no messages).
 
@@ -150,7 +150,7 @@ class AttackService:
         pieces = self._memory.get_message_pieces(conversation_id=ar.conversation_id)
         return attack_result_to_summary(ar, pieces=pieces)
 
-    async def get_attack_messages(self, attack_id: str) -> Optional[AttackMessagesResponse]:
+    async def get_attack_messages_async(self, *, attack_id: str) -> Optional[AttackMessagesResponse]:
         """
         Get all messages for an attack.
 
@@ -171,7 +171,7 @@ class AttackService:
             messages=backend_messages,
         )
 
-    async def create_attack(self, request: CreateAttackRequest) -> CreateAttackResponse:
+    async def create_attack_async(self, *, request: CreateAttackRequest) -> CreateAttackResponse:
         """
         Create a new attack.
 
@@ -181,7 +181,7 @@ class AttackService:
             CreateAttackResponse with the new attack's ID and creation time.
         """
         target_service = get_target_service()
-        target_instance = await target_service.get_target(request.target_id)
+        target_instance = await target_service.get_target_async(target_id=request.target_id)
         if not target_instance:
             raise ValueError(f"Target instance '{request.target_id}' not found")
 
@@ -219,7 +219,7 @@ class AttackService:
 
         return CreateAttackResponse(attack_id=conversation_id, created_at=now)
 
-    async def update_attack(self, attack_id: str, request: UpdateAttackRequest) -> Optional[AttackSummary]:
+    async def update_attack_async(self, *, attack_id: str, request: UpdateAttackRequest) -> Optional[AttackSummary]:
         """
         Update an attack's outcome.
 
@@ -249,9 +249,9 @@ class AttackService:
         # Re-add to memory (this should update)
         self._memory.add_attack_results_to_memory(attack_results=[ar])
 
-        return await self.get_attack(attack_id)
+        return await self.get_attack_async(attack_id=attack_id)
 
-    async def add_message(self, attack_id: str, request: AddMessageRequest) -> AddMessageResponse:
+    async def add_message_async(self, *, attack_id: str, request: AddMessageRequest) -> AddMessageResponse:
         """
         Add a message to an attack, optionally sending to target.
 
@@ -282,11 +282,11 @@ class AttackService:
         # Update attack timestamp
         ar.metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-        attack_detail = await self.get_attack(attack_id)
+        attack_detail = await self.get_attack_async(attack_id=attack_id)
         if attack_detail is None:
             raise ValueError(f"Attack '{attack_id}' not found after update")
 
-        attack_messages = await self.get_attack_messages(attack_id)
+        attack_messages = await self.get_attack_messages_async(attack_id=attack_id)
         if attack_messages is None:
             raise ValueError(f"Attack '{attack_id}' messages not found after update")
 
@@ -346,7 +346,7 @@ class AttackService:
         sequence: int,
     ) -> None:
         """Send message to target via normalizer and store response."""
-        target_obj = get_target_service().get_target_object(target_id)
+        target_obj = get_target_service().get_target_object(target_id=target_id)
         if not target_obj:
             raise ValueError(f"Target object for '{target_id}' not found")
 
@@ -393,7 +393,7 @@ class AttackService:
         if has_preconverted or not request.converter_ids:
             return []
 
-        converters = get_converter_service().get_converter_objects_for_ids(request.converter_ids)
+        converters = get_converter_service().get_converter_objects_for_ids(converter_ids=request.converter_ids)
         return PromptConverterConfiguration.from_converters(converters=converters)
 
 

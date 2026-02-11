@@ -44,7 +44,7 @@ async def list_targets(
         TargetListResponse: Paginated list of target instances.
     """
     service = get_target_service()
-    return await service.list_targets(limit=limit, cursor=cursor)
+    return await service.list_targets_async(limit=limit, cursor=cursor)
 
 
 @router.post(
@@ -70,7 +70,7 @@ async def create_target(request: CreateTargetRequest) -> CreateTargetResponse:
     service = get_target_service()
 
     try:
-        return await service.create_target(request)
+        return await service.create_target_async(request=request)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -99,7 +99,7 @@ async def get_target(target_id: str) -> TargetInstance:
     """
     service = get_target_service()
 
-    target = await service.get_target(target_id)
+    target = await service.get_target_async(target_id=target_id)
     if not target:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

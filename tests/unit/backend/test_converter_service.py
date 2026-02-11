@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-import pyrit.backend.services.converter_service as converter_service_module
 from pyrit import prompt_converter
 from pyrit.backend.models.converters import (
     ConverterPreviewRequest,
@@ -42,7 +41,7 @@ class TestListConverters:
         """Test that list_converters returns empty list when no converters exist."""
         service = ConverterService()
 
-        result = await service.list_converters()
+        result = await service.list_converters_async()
 
         assert result.items == []
 
@@ -63,7 +62,7 @@ class TestListConverters:
         mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 
-        result = await service.list_converters()
+        result = await service.list_converters_async()
 
         assert len(result.items) == 1
         assert result.items[0].converter_id == "conv-1"
@@ -83,7 +82,7 @@ class TestGetConverter:
         """Test that get_converter returns None for non-existent converter."""
         service = ConverterService()
 
-        result = await service.get_converter("nonexistent-id")
+        result = await service.get_converter_async(converter_id="nonexistent-id")
 
         assert result is None
 
@@ -102,7 +101,7 @@ class TestGetConverter:
         mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 
-        result = await service.get_converter("conv-1")
+        result = await service.get_converter_async(converter_id="conv-1")
 
         assert result is not None
         assert result.converter_id == "conv-1"
@@ -116,7 +115,7 @@ class TestGetConverterObject:
         """Test that get_converter_object returns None for non-existent converter."""
         service = ConverterService()
 
-        result = service.get_converter_object("nonexistent-id")
+        result = service.get_converter_object(converter_id="nonexistent-id")
 
         assert result is None
 
@@ -126,7 +125,7 @@ class TestGetConverterObject:
         mock_converter = MagicMock()
         service._registry.register_instance(mock_converter, name="conv-1")
 
-        result = service.get_converter_object("conv-1")
+        result = service.get_converter_object(converter_id="conv-1")
 
         assert result is mock_converter
 
@@ -145,7 +144,7 @@ class TestCreateConverter:
         )
 
         with pytest.raises(ValueError, match="not found"):
-            await service.create_converter(request)
+            await service.create_converter_async(request=request)
 
     @pytest.mark.asyncio
     async def test_create_converter_success(self) -> None:
@@ -158,7 +157,7 @@ class TestCreateConverter:
             params={},
         )
 
-        result = await service.create_converter(request)
+        result = await service.create_converter_async(request=request)
 
         assert result.converter_id is not None
         assert result.type == "Base64Converter"
@@ -174,10 +173,10 @@ class TestCreateConverter:
             params={},
         )
 
-        result = await service.create_converter(request)
+        result = await service.create_converter_async(request=request)
 
         # Object should be retrievable from registry
-        converter_obj = service.get_converter_object(result.converter_id)
+        converter_obj = service.get_converter_object(converter_id=result.converter_id)
         assert converter_obj is not None
 
 
@@ -189,7 +188,7 @@ class TestResolveConverterParams:
         service = ConverterService()
         params = {"key": "value", "number": 42}
 
-        result = service._resolve_converter_params(params)
+        result = service._resolve_converter_params(params=params)
 
         assert result == params
 
@@ -203,7 +202,7 @@ class TestResolveConverterParams:
 
         params = {"converter": {"converter_id": "inner-conv"}}
 
-        result = service._resolve_converter_params(params)
+        result = service._resolve_converter_params(params=params)
 
         assert result["converter"] is mock_converter
 
@@ -214,14 +213,14 @@ class TestResolveConverterParams:
         params = {"converter": {"converter_id": "nonexistent"}}
 
         with pytest.raises(ValueError, match="not found"):
-            service._resolve_converter_params(params)
+            service._resolve_converter_params(params=params)
 
     def test_resolve_converter_params_ignores_non_dict_converter(self) -> None:
         """Test that non-dict converter values are not modified."""
         service = ConverterService()
         params = {"converter": "some_string_value"}
 
-        result = service._resolve_converter_params(params)
+        result = service._resolve_converter_params(params=params)
 
         assert result == params
 
@@ -241,7 +240,7 @@ class TestPreviewConversion:
         )
 
         with pytest.raises(ValueError, match="not found"):
-            await service.preview_conversion(request)
+            await service.preview_conversion_async(request=request)
 
     @pytest.mark.asyncio
     async def test_preview_conversion_with_converter_ids(self) -> None:
@@ -262,7 +261,7 @@ class TestPreviewConversion:
             converter_ids=["conv-1"],
         )
 
-        result = await service.preview_conversion(request)
+        result = await service.preview_conversion_async(request=request)
 
         assert result.original_value == "test"
         assert result.converted_value == "encoded_value"
@@ -297,7 +296,7 @@ class TestPreviewConversion:
             converter_ids=["conv-1", "conv-2"],
         )
 
-        result = await service.preview_conversion(request)
+        result = await service.preview_conversion_async(request=request)
 
         assert result.converted_value == "step2_output"
         assert len(result.steps) == 2
@@ -312,7 +311,7 @@ class TestGetConverterObjectsForIds:
         service = ConverterService()
 
         with pytest.raises(ValueError, match="not found"):
-            service.get_converter_objects_for_ids(["nonexistent"])
+            service.get_converter_objects_for_ids(converter_ids=["nonexistent"])
 
     def test_get_converter_objects_for_ids_returns_objects(self) -> None:
         """Test that method returns converter objects in order."""
@@ -323,7 +322,7 @@ class TestGetConverterObjectsForIds:
         service._registry.register_instance(mock1, name="conv-1")
         service._registry.register_instance(mock2, name="conv-2")
 
-        result = service.get_converter_objects_for_ids(["conv-1", "conv-2"])
+        result = service.get_converter_objects_for_ids(converter_ids=["conv-1", "conv-2"])
 
         assert result == [mock1, mock2]
 
@@ -415,7 +414,7 @@ class TestBuildInstanceFromObjectWithRealConverters:
 
         # Build the instance using the service method
         service = ConverterService()
-        result = service._build_instance_from_object("test-id", converter_instance)
+        result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter_instance)
 
         # Verify the result
         assert result.converter_id == "test-id"
@@ -438,7 +437,7 @@ class TestConverterParamsExtraction:
         """Test that CaesarConverter params are extracted correctly."""
         converter = CaesarConverter(caesar_offset=13)
         service = ConverterService()
-        result = service._build_instance_from_object("test-id", converter)
+        result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
         assert result.type == "CaesarConverter"
         converter_specific = result.params.get("converter_specific_params", {})
@@ -448,7 +447,7 @@ class TestConverterParamsExtraction:
         """Test that SuffixAppendConverter params are extracted correctly."""
         converter = SuffixAppendConverter(suffix="test suffix")
         service = ConverterService()
-        result = service._build_instance_from_object("test-id", converter)
+        result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
         assert result.type == "SuffixAppendConverter"
         converter_specific = result.params.get("converter_specific_params", {})
@@ -458,7 +457,7 @@ class TestConverterParamsExtraction:
         """Test that RepeatTokenConverter params are extracted correctly."""
         converter = RepeatTokenConverter(token_to_repeat="x", times_to_repeat=5)
         service = ConverterService()
-        result = service._build_instance_from_object("test-id", converter)
+        result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
         assert result.type == "RepeatTokenConverter"
         converter_specific = result.params.get("converter_specific_params", {})
@@ -469,7 +468,7 @@ class TestConverterParamsExtraction:
         """Test that Base64Converter default params are captured."""
         converter = Base64Converter()
         service = ConverterService()
-        result = service._build_instance_from_object("test-id", converter)
+        result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
         assert result.type == "Base64Converter"
         # Verify params dict is populated from identifier

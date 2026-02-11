@@ -62,7 +62,7 @@ class TargetService:
         """Initialize the target service."""
         self._registry = TargetRegistry.get_registry_singleton()
 
-    def _get_target_class(self, target_type: str) -> type:
+    def _get_target_class(self, *, target_type: str) -> type:
         """
         Get the target class for a given type name.
 
@@ -84,7 +84,7 @@ class TargetService:
             )
         return cls
 
-    def _build_instance_from_object(self, target_id: str, target_obj: Any) -> TargetInstance:
+    def _build_instance_from_object(self, *, target_id: str, target_obj: Any) -> TargetInstance:
         """
         Build a TargetInstance from a registry object.
 
@@ -93,7 +93,7 @@ class TargetService:
         """
         return target_object_to_instance(target_id, target_obj)
 
-    async def list_targets(
+    async def list_targets_async(
         self,
         *,
         limit: int = 50,
@@ -110,7 +110,7 @@ class TargetService:
             TargetListResponse containing paginated targets.
         """
         items = [
-            self._build_instance_from_object(name, obj) for name, obj in self._registry.get_all_instances().items()
+            self._build_instance_from_object(target_id=name, target_obj=obj) for name, obj in self._registry.get_all_instances().items()
         ]
         page, has_more = self._paginate(items, cursor, limit)
         next_cursor = page[-1].target_id if has_more and page else None
@@ -140,7 +140,7 @@ class TargetService:
         has_more = len(items) > start_idx + limit
         return page, has_more
 
-    async def get_target(self, target_id: str) -> Optional[TargetInstance]:
+    async def get_target_async(self, *, target_id: str) -> Optional[TargetInstance]:
         """
         Get a target instance by ID.
 
@@ -150,9 +150,9 @@ class TargetService:
         obj = self._registry.get_instance_by_name(target_id)
         if obj is None:
             return None
-        return self._build_instance_from_object(target_id, obj)
+        return self._build_instance_from_object(target_id=target_id, target_obj=obj)
 
-    def get_target_object(self, target_id: str) -> Optional[Any]:
+    def get_target_object(self, *, target_id: str) -> Optional[Any]:
         """
         Get the actual target object for use in attacks.
 
@@ -161,7 +161,7 @@ class TargetService:
         """
         return self._registry.get_instance_by_name(target_id)
 
-    async def create_target(self, request: CreateTargetRequest) -> CreateTargetResponse:
+    async def create_target_async(self, *, request: CreateTargetRequest) -> CreateTargetResponse:
         """
         Create a new target instance from API request.
 
@@ -180,7 +180,7 @@ class TargetService:
         target_id = str(uuid.uuid4())
 
         # Instantiate from request params and register
-        target_class = self._get_target_class(request.type)
+        target_class = self._get_target_class(target_type=request.type)
         target_obj = target_class(**request.params)
         self._registry.register_instance(target_obj, name=target_id)
 

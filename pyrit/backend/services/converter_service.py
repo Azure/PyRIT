@@ -65,7 +65,7 @@ class ConverterService:
         """Initialize the converter service."""
         self._registry = ConverterRegistry.get_registry_singleton()
 
-    def _build_instance_from_object(self, converter_id: str, converter_obj: Any) -> ConverterInstance:
+    def _build_instance_from_object(self, *, converter_id: str, converter_obj: Any) -> ConverterInstance:
         """
         Build a ConverterInstance from a registry object.
 
@@ -80,7 +80,7 @@ class ConverterService:
     # Public API Methods
     # ========================================================================
 
-    async def list_converters(self) -> ConverterInstanceListResponse:
+    async def list_converters_async(self) -> ConverterInstanceListResponse:
         """
         List all converter instances.
 
@@ -88,11 +88,11 @@ class ConverterService:
             ConverterInstanceListResponse containing all registered converters.
         """
         items = [
-            self._build_instance_from_object(name, obj) for name, obj in self._registry.get_all_instances().items()
+            self._build_instance_from_object(converter_id=name, converter_obj=obj) for name, obj in self._registry.get_all_instances().items()
         ]
         return ConverterInstanceListResponse(items=items)
 
-    async def get_converter(self, converter_id: str) -> Optional[ConverterInstance]:
+    async def get_converter_async(self, *, converter_id: str) -> Optional[ConverterInstance]:
         """
         Get a converter instance by ID.
 
@@ -102,9 +102,9 @@ class ConverterService:
         obj = self._registry.get_instance_by_name(converter_id)
         if obj is None:
             return None
-        return self._build_instance_from_object(converter_id, obj)
+        return self._build_instance_from_object(converter_id=converter_id, converter_obj=obj)
 
-    def get_converter_object(self, converter_id: str) -> Optional[Any]:
+    def get_converter_object(self, *, converter_id: str) -> Optional[Any]:
         """
         Get the actual converter object.
 
@@ -113,7 +113,7 @@ class ConverterService:
         """
         return self._registry.get_instance_by_name(converter_id)
 
-    async def create_converter(self, request: CreateConverterRequest) -> CreateConverterResponse:
+    async def create_converter_async(self, *, request: CreateConverterRequest) -> CreateConverterResponse:
         """
         Create a new converter instance from API request.
 
@@ -132,8 +132,8 @@ class ConverterService:
         converter_id = str(uuid.uuid4())
 
         # Resolve any converter references in params and instantiate
-        params = self._resolve_converter_params(request.params)
-        converter_class = self._get_converter_class(request.type)
+        params = self._resolve_converter_params(params=request.params)
+        converter_class = self._get_converter_class(converter_type=request.type)
         converter_obj = converter_class(**params)
         self._registry.register_instance(converter_obj, name=converter_id)
 
@@ -144,16 +144,16 @@ class ConverterService:
             params=request.params,
         )
 
-    async def preview_conversion(self, request: ConverterPreviewRequest) -> ConverterPreviewResponse:
+    async def preview_conversion_async(self, *, request: ConverterPreviewRequest) -> ConverterPreviewResponse:
         """
         Preview conversion through a converter pipeline.
 
         Returns:
             ConverterPreviewResponse with step-by-step conversion results.
         """
-        converters = self._gather_converters(request.converter_ids)
+        converters = self._gather_converters(converter_ids=request.converter_ids)
         steps, final_value, final_type = await self._apply_converters(
-            converters, request.original_value, request.original_value_data_type
+            converters=converters, initial_value=request.original_value, initial_type=request.original_value_data_type
         )
 
         return ConverterPreviewResponse(
@@ -164,7 +164,7 @@ class ConverterService:
             steps=steps,
         )
 
-    def get_converter_objects_for_ids(self, converter_ids: List[str]) -> List[Any]:
+    def get_converter_objects_for_ids(self, *, converter_ids: List[str]) -> List[Any]:
         """
         Get converter objects for a list of IDs.
 
@@ -173,7 +173,7 @@ class ConverterService:
         """
         converters = []
         for conv_id in converter_ids:
-            conv_obj = self.get_converter_object(conv_id)
+            conv_obj = self.get_converter_object(converter_id=conv_id)
             if conv_obj is None:
                 raise ValueError(f"Converter instance '{conv_id}' not found")
             converters.append(conv_obj)
@@ -183,7 +183,7 @@ class ConverterService:
     # Private Helper Methods
     # ========================================================================
 
-    def _get_converter_class(self, converter_type: str) -> type:
+    def _get_converter_class(self, *, converter_type: str) -> type:
         """
         Get the converter class for a given type name.
 
@@ -206,7 +206,7 @@ class ConverterService:
             )
         return cls
 
-    def _resolve_converter_params(self, params: dict[str, Any]) -> dict[str, Any]:
+    def _resolve_converter_params(self, *, params: dict[str, Any]) -> dict[str, Any]:
         """
         Resolve converter references in params.
 
@@ -220,13 +220,13 @@ class ConverterService:
         if "converter" in resolved and isinstance(resolved["converter"], dict):
             ref = resolved["converter"]
             if "converter_id" in ref:
-                conv_obj = self.get_converter_object(ref["converter_id"])
+                conv_obj = self.get_converter_object(converter_id=ref["converter_id"])
                 if conv_obj is None:
                     raise ValueError(f"Referenced converter '{ref['converter_id']}' not found")
                 resolved["converter"] = conv_obj
         return resolved
 
-    def _gather_converters(self, converter_ids: List[str]) -> List[Tuple[str, str, Any]]:
+    def _gather_converters(self, *, converter_ids: List[str]) -> List[Tuple[str, str, Any]]:
         """
         Gather converters to apply from IDs.
 
@@ -235,7 +235,7 @@ class ConverterService:
         """
         converters: List[Tuple[str, str, Any]] = []
         for conv_id in converter_ids:
-            conv_obj = self.get_converter_object(conv_id)
+            conv_obj = self.get_converter_object(converter_id=conv_id)
             if conv_obj is None:
                 raise ValueError(f"Converter instance '{conv_id}' not found")
             conv_type = conv_obj.__class__.__name__
@@ -244,6 +244,7 @@ class ConverterService:
 
     async def _apply_converters(
         self,
+        *,
         converters: List[Tuple[str, str, Any]],
         initial_value: str,
         initial_type: PromptDataType,

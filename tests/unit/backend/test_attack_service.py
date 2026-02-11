@@ -145,7 +145,7 @@ class TestListAttacks:
         """Test that list_attacks returns empty list when no AttackResults exist."""
         mock_memory.get_attack_results.return_value = []
 
-        result = await attack_service.list_attacks()
+        result = await attack_service.list_attacks_async()
 
         assert result.items == []
         assert result.pagination.has_more is False
@@ -157,7 +157,7 @@ class TestListAttacks:
         mock_memory.get_attack_results.return_value = [ar]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks()
+        result = await attack_service.list_attacks_async()
 
         assert len(result.items) == 1
         assert result.items[0].attack_id == "attack-1"
@@ -171,7 +171,7 @@ class TestListAttacks:
         mock_memory.get_attack_results.return_value = [ar1, ar2]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks(target_id="target-1")
+        result = await attack_service.list_attacks_async(target_id="target-1")
 
         assert len(result.items) == 1
         assert result.items[0].target_id == "target-1"
@@ -184,7 +184,7 @@ class TestListAttacks:
         mock_memory.get_attack_results.return_value = [ar1, ar2]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks(name="test")
+        result = await attack_service.list_attacks_async(name="test")
 
         assert len(result.items) == 1
         assert result.items[0].name == "Test Attack"
@@ -199,7 +199,7 @@ class TestListAttacks:
         mock_memory.get_attack_results.return_value = [ar1, ar2]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks(min_turns=3)
+        result = await attack_service.list_attacks_async(min_turns=3)
 
         assert len(result.items) == 1
         assert result.items[0].attack_id == "attack-1"
@@ -214,7 +214,7 @@ class TestListAttacks:
         mock_memory.get_attack_results.return_value = [ar1, ar2]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks(max_turns=3)
+        result = await attack_service.list_attacks_async(max_turns=3)
 
         assert len(result.items) == 1
         assert result.items[0].attack_id == "attack-2"
@@ -229,7 +229,7 @@ class TestListAttacks:
         mock_memory.get_attack_results.return_value = [ar]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks()
+        result = await attack_service.list_attacks_async()
 
         assert len(result.items) == 1
         assert result.items[0].labels == {"env": "prod", "team": "red"}
@@ -249,7 +249,7 @@ class TestGetAttack:
         """Test that get_attack returns None when AttackResult doesn't exist."""
         mock_memory.get_attack_results.return_value = []
 
-        result = await attack_service.get_attack("nonexistent")
+        result = await attack_service.get_attack_async(attack_id="nonexistent")
 
         assert result is None
 
@@ -265,7 +265,7 @@ class TestGetAttack:
         mock_memory.get_attack_results.return_value = [ar]
         mock_memory.get_conversation.return_value = []
 
-        result = await attack_service.get_attack("test-id")
+        result = await attack_service.get_attack_async(attack_id="test-id")
 
         assert result is not None
         assert result.attack_id == "test-id"
@@ -288,7 +288,7 @@ class TestGetAttackMessages:
         """Test that get_attack_messages returns None when attack doesn't exist."""
         mock_memory.get_attack_results.return_value = []
 
-        result = await attack_service.get_attack_messages("nonexistent")
+        result = await attack_service.get_attack_messages_async(attack_id="nonexistent")
 
         assert result is None
 
@@ -299,7 +299,7 @@ class TestGetAttackMessages:
         mock_memory.get_attack_results.return_value = [ar]
         mock_memory.get_conversation.return_value = []
 
-        result = await attack_service.get_attack_messages("test-id")
+        result = await attack_service.get_attack_messages_async(attack_id="test-id")
 
         assert result is not None
         assert result.attack_id == "test-id"
@@ -320,21 +320,21 @@ class TestCreateAttack:
         """Test that create_attack validates target exists."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_service = MagicMock()
-            mock_target_service.get_target = AsyncMock(return_value=None)
+            mock_target_service.get_target_async = AsyncMock(return_value=None)
             mock_get_target_service.return_value = mock_target_service
 
             with pytest.raises(ValueError, match="not found"):
-                await attack_service.create_attack(CreateAttackRequest(target_id="nonexistent"))
+                await attack_service.create_attack_async(request=CreateAttackRequest(target_id="nonexistent"))
 
     @pytest.mark.asyncio
     async def test_create_attack_stores_attack_result(self, attack_service, mock_memory) -> None:
         """Test that create_attack stores AttackResult in memory."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_service = MagicMock()
-            mock_target_service.get_target = AsyncMock(return_value=MagicMock(type="TextTarget"))
+            mock_target_service.get_target_async = AsyncMock(return_value=MagicMock(type="TextTarget"))
             mock_get_target_service.return_value = mock_target_service
 
-            result = await attack_service.create_attack(CreateAttackRequest(target_id="target-1", name="My Attack"))
+            result = await attack_service.create_attack_async(request=CreateAttackRequest(target_id="target-1", name="My Attack"))
 
             assert result.attack_id is not None
             assert result.created_at is not None
@@ -347,7 +347,7 @@ class TestCreateAttack:
 
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_service = MagicMock()
-            mock_target_service.get_target = AsyncMock(return_value=MagicMock(type="TextTarget"))
+            mock_target_service.get_target_async = AsyncMock(return_value=MagicMock(type="TextTarget"))
             mock_get_target_service.return_value = mock_target_service
 
             prepended = [
@@ -357,8 +357,8 @@ class TestCreateAttack:
                 )
             ]
 
-            result = await attack_service.create_attack(
-                CreateAttackRequest(target_id="target-1", prepended_conversation=prepended)
+            result = await attack_service.create_attack_async(
+                request=CreateAttackRequest(target_id="target-1", prepended_conversation=prepended)
             )
 
             assert result.attack_id is not None
@@ -371,11 +371,11 @@ class TestCreateAttack:
         """Test that create_attack stores labels under metadata['labels'], not spread."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_service = MagicMock()
-            mock_target_service.get_target = AsyncMock(return_value=MagicMock(type="TextTarget"))
+            mock_target_service.get_target_async = AsyncMock(return_value=MagicMock(type="TextTarget"))
             mock_get_target_service.return_value = mock_target_service
 
-            await attack_service.create_attack(
-                CreateAttackRequest(
+            await attack_service.create_attack_async(
+                request=CreateAttackRequest(
                     target_id="target-1",
                     name="Labeled Attack",
                     labels={"env": "prod", "team": "red"},
@@ -406,7 +406,7 @@ class TestUpdateAttack:
         """Test that update_attack returns None for nonexistent attack."""
         mock_memory.get_attack_results.return_value = []
 
-        result = await attack_service.update_attack("nonexistent", UpdateAttackRequest(outcome="success"))
+        result = await attack_service.update_attack_async(attack_id="nonexistent", request=UpdateAttackRequest(outcome="success"))
 
         assert result is None
 
@@ -417,7 +417,7 @@ class TestUpdateAttack:
         mock_memory.get_attack_results.return_value = [ar]
         mock_memory.get_conversation.return_value = []
 
-        await attack_service.update_attack("test-id", UpdateAttackRequest(outcome="success"))
+        await attack_service.update_attack_async(attack_id="test-id", request=UpdateAttackRequest(outcome="success"))
 
         # Should call add_attack_results_to_memory to update
         mock_memory.add_attack_results_to_memory.assert_called()
@@ -442,7 +442,7 @@ class TestAddMessage:
         )
 
         with pytest.raises(ValueError, match="not found"):
-            await attack_service.add_message("nonexistent", request)
+            await attack_service.add_message_async(attack_id="nonexistent", request=request)
 
     @pytest.mark.asyncio
     async def test_add_message_without_send_stores_message(self, attack_service, mock_memory) -> None:
@@ -458,7 +458,7 @@ class TestAddMessage:
             send=False,
         )
 
-        result = await attack_service.add_message("test-id", request)
+        result = await attack_service.add_message_async(attack_id="test-id", request=request)
 
         assert result.attack is not None
         mock_memory.add_message_pieces_to_memory.assert_called()
@@ -475,7 +475,7 @@ class TestAddMessage:
         )
 
         with pytest.raises(ValueError, match="has no target configured"):
-            await attack_service.add_message("test-id", request)
+            await attack_service.add_message_async(attack_id="test-id", request=request)
 
     @pytest.mark.asyncio
     async def test_add_message_with_send_calls_normalizer(self, attack_service, mock_memory) -> None:
@@ -502,7 +502,7 @@ class TestAddMessage:
                 send=True,
             )
 
-            result = await attack_service.add_message("test-id", request)
+            result = await attack_service.add_message_async(attack_id="test-id", request=request)
 
             mock_normalizer.send_prompt_async.assert_called_once()
             assert result.attack is not None
@@ -525,7 +525,7 @@ class TestAddMessage:
             )
 
             with pytest.raises(ValueError, match="Target object .* not found"):
-                await attack_service.add_message("test-id", request)
+                await attack_service.add_message_async(attack_id="test-id", request=request)
 
     @pytest.mark.asyncio
     async def test_add_message_with_converter_ids_gets_converters(self, attack_service, mock_memory) -> None:
@@ -561,9 +561,48 @@ class TestAddMessage:
                 converter_ids=["conv-1"],
             )
 
-            await attack_service.add_message("test-id", request)
+            await attack_service.add_message_async(attack_id="test-id", request=request)
 
-            mock_conv_svc.get_converter_objects_for_ids.assert_called_once_with(["conv-1"])
+            mock_conv_svc.get_converter_objects_for_ids.assert_called_once_with(converter_ids=["conv-1"])
+
+    @pytest.mark.asyncio
+    async def test_add_message_raises_when_attack_not_found_after_update(self, attack_service, mock_memory) -> None:
+        """Test that add_message raises ValueError when attack disappears after update."""
+        ar = make_attack_result(conversation_id="test-id", target_id="target-1")
+        mock_memory.get_attack_results.return_value = [ar]
+        mock_memory.get_message_pieces.return_value = []
+        mock_memory.get_conversation.return_value = []
+
+        request = AddMessageRequest(
+            role="system",
+            pieces=[MessagePieceRequest(original_value="Hello")],
+            send=False,
+        )
+
+        with patch.object(attack_service, "get_attack_async", new=AsyncMock(return_value=None)):
+            with pytest.raises(ValueError, match="not found after update"):
+                await attack_service.add_message_async(attack_id="test-id", request=request)
+
+    @pytest.mark.asyncio
+    async def test_add_message_raises_when_messages_not_found_after_update(self, attack_service, mock_memory) -> None:
+        """Test that add_message raises ValueError when messages disappear after update."""
+        ar = make_attack_result(conversation_id="test-id", target_id="target-1")
+        mock_memory.get_attack_results.return_value = [ar]
+        mock_memory.get_message_pieces.return_value = []
+        mock_memory.get_conversation.return_value = []
+
+        request = AddMessageRequest(
+            role="system",
+            pieces=[MessagePieceRequest(original_value="Hello")],
+            send=False,
+        )
+
+        with (
+            patch.object(attack_service, "get_attack_async", new=AsyncMock(return_value=MagicMock())),
+            patch.object(attack_service, "get_attack_messages_async", new=AsyncMock(return_value=None)),
+        ):
+            with pytest.raises(ValueError, match="messages not found after update"):
+                await attack_service.add_message_async(attack_id="test-id", request=request)
 
 
 # ============================================================================
@@ -585,7 +624,7 @@ class TestPagination:
         mock_memory.get_message_pieces.return_value = []
 
         # Get first page
-        result = await attack_service.list_attacks(limit=2)
+        result = await attack_service.list_attacks_async(limit=2)
         # Results are sorted by updated_at desc, so order may vary
         assert len(result.items) == 2
 
@@ -598,9 +637,34 @@ class TestPagination:
         mock_memory.get_attack_results.return_value = [ar1, ar2, ar3]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks(limit=2)
+        result = await attack_service.list_attacks_async(limit=2)
 
         assert result.pagination.has_more is True
+        assert len(result.items) == 2
+
+    @pytest.mark.asyncio
+    async def test_list_attacks_cursor_skips_to_correct_position(self, attack_service, mock_memory) -> None:
+        """Test that list_attacks with cursor skips items before cursor."""
+        ar1 = make_attack_result(
+            conversation_id="attack-1",
+            updated_at=datetime(2024, 1, 3, tzinfo=timezone.utc),
+        )
+        ar2 = make_attack_result(
+            conversation_id="attack-2",
+            updated_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        )
+        ar3 = make_attack_result(
+            conversation_id="attack-3",
+            updated_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        mock_memory.get_attack_results.return_value = [ar1, ar2, ar3]
+        mock_memory.get_message_pieces.return_value = []
+
+        # Cursor = attack-1 should skip attack-1 and return from attack-2 onward
+        result = await attack_service.list_attacks_async(cursor="attack-1", limit=10)
+
+        attack_ids = [item.attack_id for item in result.items]
+        assert "attack-1" not in attack_ids
         assert len(result.items) == 2
 
 
@@ -637,7 +701,7 @@ class TestMessageBuilding:
 
         mock_memory.get_conversation.return_value = [mock_msg]
 
-        result = await attack_service.get_attack_messages("test-id")
+        result = await attack_service.get_attack_messages_async(attack_id="test-id")
 
         assert result is not None
         assert len(result.messages) == 1
