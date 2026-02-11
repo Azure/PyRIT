@@ -102,7 +102,7 @@ def crescendo_jailbreak_strategy() -> JailbreakStrategy:
 
 
 @pytest.fixture
-def redtemaing_jailbreak_strategy() -> JailbreakStrategy:
+def redteaming_jailbreak_strategy() -> JailbreakStrategy:
     return JailbreakStrategy.RedTeaming
 
 
@@ -336,7 +336,7 @@ class TestJailbreakAttackGeneration:
     ):
         """Test that random jailbreak template selection works."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
-            scenario = Jailbreak(objective_scorer=mock_objective_scorer, k=mock_random_n)
+            scenario = Jailbreak(objective_scorer=mock_objective_scorer, k=mock_random_k)
             await scenario.initialize_async(objective_target=mock_objective_target)
             assert len(scenario._get_all_jailbreak_templates()) == mock_random_k
 
