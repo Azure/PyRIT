@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from pyrit.backend.mappers.attack_mappers import (
+    _infer_mime_type,
     attack_result_to_summary,
     map_outcome,
     pyrit_messages_to_dto,
@@ -220,6 +221,43 @@ class TestPyritMessagesToDto:
         result = pyrit_messages_to_dto([])
         assert result == []
 
+    def test_populates_mime_type_for_image(self) -> None:
+        """Test that MIME types are inferred for image pieces."""
+        piece = _make_mock_piece(original_value="/path/to/photo.png", converted_value="/path/to/photo.jpg")
+        piece.original_value_data_type = "image"
+        piece.converted_value_data_type = "image"
+        msg = MagicMock()
+        msg.message_pieces = [piece]
+
+        result = pyrit_messages_to_dto([msg])
+
+        assert result[0].pieces[0].original_value_mime_type == "image/png"
+        assert result[0].pieces[0].converted_value_mime_type == "image/jpeg"
+
+    def test_mime_type_none_for_text(self) -> None:
+        """Test that MIME type is None for text pieces."""
+        piece = _make_mock_piece(original_value="hello", converted_value="hello")
+        msg = MagicMock()
+        msg.message_pieces = [piece]
+
+        result = pyrit_messages_to_dto([msg])
+
+        assert result[0].pieces[0].original_value_mime_type is None
+        assert result[0].pieces[0].converted_value_mime_type is None
+
+    def test_mime_type_for_audio(self) -> None:
+        """Test that MIME types are inferred for audio pieces."""
+        piece = _make_mock_piece(original_value="/tmp/speech.wav", converted_value="/tmp/speech.mp3")
+        piece.original_value_data_type = "audio"
+        piece.converted_value_data_type = "audio"
+        msg = MagicMock()
+        msg.message_pieces = [piece]
+
+        result = pyrit_messages_to_dto([msg])
+
+        assert result[0].pieces[0].original_value_mime_type == "audio/x-wav"
+        assert result[0].pieces[0].converted_value_mime_type == "audio/mpeg"
+
 
 class TestRequestToPyritMessage:
     """Tests for request_to_pyrit_message function."""
@@ -283,6 +321,79 @@ class TestRequestPieceToPyritMessagePiece:
         )
 
         assert result.converted_value == "fallback"
+
+    def test_passes_mime_type_through_prompt_metadata(self) -> None:
+        """Test that mime_type is stored in prompt_metadata."""
+        piece = MagicMock()
+        piece.data_type = "image_path"
+        piece.original_value = "base64data"
+        piece.converted_value = None
+        piece.mime_type = "image/png"
+
+        result = request_piece_to_pyrit_message_piece(
+            piece=piece,
+            role="user",
+            conversation_id="conv-1",
+            sequence=0,
+        )
+
+        assert result.prompt_metadata == {"mime_type": "image/png"}
+
+    def test_no_metadata_when_mime_type_absent(self) -> None:
+        """Test that prompt_metadata is empty when mime_type is None."""
+        piece = MagicMock()
+        piece.data_type = "text"
+        piece.original_value = "hello"
+        piece.converted_value = None
+        piece.mime_type = None
+
+        result = request_piece_to_pyrit_message_piece(
+            piece=piece,
+            role="user",
+            conversation_id="conv-1",
+            sequence=0,
+        )
+
+        assert result.prompt_metadata == {}
+
+
+class TestInferMimeType:
+    """Tests for _infer_mime_type helper function."""
+
+    def test_returns_none_for_text(self) -> None:
+        """Text data type should always return None."""
+        assert _infer_mime_type(value="/path/to/file.png", data_type="text") is None
+
+    def test_returns_none_for_empty_value(self) -> None:
+        """Empty or None value should return None."""
+        assert _infer_mime_type(value=None, data_type="image") is None
+        assert _infer_mime_type(value="", data_type="image") is None
+
+    def test_infers_png(self) -> None:
+        """Test MIME type inference for PNG files."""
+        assert _infer_mime_type(value="/tmp/photo.png", data_type="image") == "image/png"
+
+    def test_infers_jpeg(self) -> None:
+        """Test MIME type inference for JPEG files."""
+        assert _infer_mime_type(value="/tmp/photo.jpg", data_type="image") == "image/jpeg"
+
+    def test_infers_wav(self) -> None:
+        """Test MIME type inference for WAV files."""
+        result = _infer_mime_type(value="/tmp/audio.wav", data_type="audio")
+        assert result is not None
+        assert "wav" in result
+
+    def test_infers_mp3(self) -> None:
+        """Test MIME type inference for MP3 files."""
+        assert _infer_mime_type(value="/tmp/audio.mp3", data_type="audio") == "audio/mpeg"
+
+    def test_returns_none_for_unknown_extension(self) -> None:
+        """Test that unrecognized extensions return None."""
+        assert _infer_mime_type(value="/tmp/data.xyz123", data_type="image") is None
+
+    def test_infers_mp4(self) -> None:
+        """Test MIME type inference for MP4 video files."""
+        assert _infer_mime_type(value="/tmp/video.mp4", data_type="video") == "video/mp4"
 
 
 # ============================================================================

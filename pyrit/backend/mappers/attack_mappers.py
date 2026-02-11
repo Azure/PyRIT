@@ -8,6 +8,7 @@ All functions are pure (no database or service calls) so they are easy to test.
 The one exception is `attack_result_to_summary` which receives pre-fetched pieces.
 """
 
+import mimetypes
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Literal, Optional, cast
@@ -100,6 +101,27 @@ def pyrit_scores_to_dto(scores: List[Any]) -> List[Score]:
     ]
 
 
+def _infer_mime_type(*, value: Optional[str], data_type: str) -> Optional[str]:
+    """
+    Infer MIME type from a value and its data type.
+
+    For non-text data types, attempts to guess the MIME type from the value
+    treated as a file path (using the file extension).  Returns ``None`` for
+    text content or when the type cannot be determined.
+
+    Args:
+        value: The value (typically a file path for media content).
+        data_type: The prompt data type (e.g., 'text', 'image', 'audio').
+
+    Returns:
+        MIME type string (e.g., 'image/png') or None.
+    """
+    if not value or data_type == "text":
+        return None
+    mime_type, _ = mimetypes.guess_type(value)
+    return mime_type
+
+
 def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
     """
     Translate PyRIT messages to backend Message DTOs.
@@ -115,7 +137,13 @@ def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
                 original_value_data_type=p.original_value_data_type or "text",
                 converted_value_data_type=p.converted_value_data_type or "text",
                 original_value=p.original_value,
+                original_value_mime_type=_infer_mime_type(
+                    value=p.original_value, data_type=p.original_value_data_type or "text"
+                ),
                 converted_value=p.converted_value or "",
+                converted_value_mime_type=_infer_mime_type(
+                    value=p.converted_value, data_type=p.converted_value_data_type or "text"
+                ),
                 scores=pyrit_scores_to_dto(p.scores) if hasattr(p, "scores") and p.scores else [],
                 response_error=p.response_error or "none",
             )
@@ -160,6 +188,7 @@ def request_piece_to_pyrit_message_piece(
     Returns:
         PyritMessagePiece domain object.
     """
+    metadata = {"mime_type": piece.mime_type} if getattr(piece, "mime_type", None) else None
     return PyritMessagePiece(
         role=role,
         original_value=piece.original_value,
@@ -168,6 +197,7 @@ def request_piece_to_pyrit_message_piece(
         converted_value_data_type=cast(PromptDataType, piece.data_type),
         conversation_id=conversation_id,
         sequence=sequence,
+        prompt_metadata=metadata,
     )
 
 

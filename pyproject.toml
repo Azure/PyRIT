@@ -72,8 +72,10 @@ dev = [
     "jupyter>=1.1.1",
     "jupyter-book==1.0.4",
     "jupytext>=1.17.1",
+    "matplotlib>=3.10.0",
     "mypy>=1.16.0",
     "mock-alchemy>=0.2.6",
+    "pandas>=2.2.0",
     "pre-commit>=4.2.0",
     "pytest>=8.3.5",
     "pytest-asyncio>=1.0.0",
@@ -128,7 +130,6 @@ opencv = [
 speech = [
     "azure-cognitiveservices-speech>=1.46.0",
 ]
-
 
 # all includes all functional dependencies excluding the ones from the "dev" extra
 all = [

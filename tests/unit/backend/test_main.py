@@ -63,8 +63,8 @@ class TestSetupFrontend:
 
             setup_frontend()
 
-    def test_frontend_missing_exits(self) -> None:
-        """Test that setup_frontend calls sys.exit when frontend is missing."""
+    def test_frontend_missing_warns_but_continues(self) -> None:
+        """Test that setup_frontend warns but does not exit when frontend is missing."""
         mock_frontend_path = MagicMock()
         mock_frontend_path.exists.return_value = False
         mock_frontend_path.__str__ = lambda self: "/nonexistent/frontend"
@@ -72,14 +72,14 @@ class TestSetupFrontend:
         with (
             patch("pyrit.backend.main.DEV_MODE", False),
             patch("pyrit.backend.main.Path") as mock_path_cls,
-            patch("builtins.print"),
-            patch.object(sys, "exit", side_effect=SystemExit(1)) as mock_exit,
+            patch("builtins.print") as mock_print,
         ):
             mock_path_instance = MagicMock()
             mock_path_instance.parent.__truediv__ = MagicMock(return_value=mock_frontend_path)
             mock_path_cls.return_value = mock_path_instance
 
-            with pytest.raises(SystemExit):
-                setup_frontend()
+            setup_frontend()  # Should NOT raise
 
-            mock_exit.assert_called_once_with(1)
+            # Verify warning was printed
+            printed = " ".join(str(c) for c in mock_print.call_args_list)
+            assert "WARNING" in printed
