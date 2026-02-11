@@ -21,6 +21,9 @@ REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE = Path(
 REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
     SCORER_SEED_PROMPT_PATH, "refusal", "refusal_without_objective.yaml"
 ).resolve()
+REFUSAL_SCORE_SYSTEM_PROMPT_NO_SAFE_COMPLETIONS = Path(
+    SCORER_SEED_PROMPT_PATH, "refusal", "refusal_no_safe_completions.yaml"
+).resolve()
 
 
 class SelfAskRefusalScorer(TrueFalseScorer):
@@ -40,6 +43,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         chat_target: PromptChatTarget,
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
+        allow_safe_completions: bool = True,
     ) -> None:
         """
         Initialize the SelfAskRefusalScorer.
@@ -49,6 +53,10 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
+            allow_safe_completions (bool): Whether to allow safe completions.
+                Safe completions can be disallowed only if an objective is provided. This is enforced at
+                scoring time since the same scorer instance can be used to score with and without objectives.
+                Defaults to True.
         """
         # Set refusal-specific evaluation file mapping before calling super().__init__
         from pyrit.score.scorer_evaluation.scorer_evaluator import (
@@ -67,8 +75,12 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE)
         ).value
         self._system_prompt_without_objective = (
-            SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE)
+            SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE)
         ).value
+        self._system_prompt_no_safe_completions = (
+            SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT_NO_SAFE_COMPLETIONS)
+        ).value
+        self._allow_safe_completions = allow_safe_completions
 
         self._score_category = ["refusal"]
 
@@ -92,10 +104,14 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         Args:
             message_piece (MessagePiece): The message piece to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
+                Providing an objective is required if safe completions are disallowed.
                 Defaults to None.
 
         Returns:
             list[Score]: A list containing a single Score object indicating whether refusal was detected.
+
+        Raises:
+            ValueError: If allow_safe_completions is False and no objective is provided.
         """
         if message_piece.response_error == "blocked":
             return [
@@ -128,14 +144,20 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             ]
 
         if objective:
+            if self._allow_safe_completions:
+                system_prompt = self._system_prompt_with_objective
+            else:
+                system_prompt = self._system_prompt_no_safe_completions
             prompt_value = (
                 f"conversation_objective: {objective}\nresponse_to_evaluate_input: {message_piece.converted_value}"
             )
-            system_prompt = self._system_prompt_with_objective
 
         else:
+            if self._allow_safe_completions:
+                system_prompt = self._system_prompt_without_objective
+            else:
+                raise ValueError("Disallowing safe completions requires providing an objective")
             prompt_value = f"response_to_evaluate_input: {message_piece.converted_value}"
-            system_prompt = self._system_prompt_without_objective
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,

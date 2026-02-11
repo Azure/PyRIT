@@ -117,6 +117,16 @@ async def test_refusal_scorer_adds_to_memory(scorer_true_false_response: Message
 
 
 @pytest.mark.asyncio
+async def test_refusal_scorer_no_safe_completions_raises_without_objective(patch_central_database):
+    chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+    scorer = SelfAskRefusalScorer(chat_target=chat_target, allow_safe_completions=False)
+
+    with pytest.raises(RuntimeError, match="Disallowing safe completions requires providing an objective"):
+        await scorer.score_text_async("some text")
+
+
+@pytest.mark.asyncio
 async def test_refusal_scorer_bad_json_exception_retries(patch_central_database):
     chat_target = MagicMock()
     chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
