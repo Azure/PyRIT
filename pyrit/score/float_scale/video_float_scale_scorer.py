@@ -36,7 +36,7 @@ class VideoFloatScaleScorer(
     the audio is extracted, transcribed, and scored. The audio scores are included in the aggregation.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
 
     def __init__(
         self,
@@ -78,7 +78,7 @@ class VideoFloatScaleScorer(
         Raises:
             ValueError: If audio_scorer is provided and does not support audio_path data type.
         """
-        FloatScaleScorer.__init__(self, validator=validator or self._default_validator)
+        FloatScaleScorer.__init__(self, validator=validator or self._DEFAULT_VALIDATOR)
 
         _BaseVideoScorer.__init__(
             self,
