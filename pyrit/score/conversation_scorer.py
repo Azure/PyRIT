@@ -28,7 +28,7 @@ class ConversationScorer(Scorer, ABC):
     Note: This class cannot be instantiated directly. Use create_conversation_scorer() factory instead.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         enforce_all_pieces_valid=True,
     )
@@ -189,7 +189,7 @@ def create_conversation_scorer(
 
         def __init__(self) -> None:
             # Initialize with the validator and wrapped scorer
-            Scorer.__init__(self, validator=validator or ConversationScorer._default_validator)
+            Scorer.__init__(self, validator=validator or ConversationScorer._DEFAULT_VALIDATOR)
             self._wrapped_scorer = scorer
 
         def _get_wrapped_scorer(self) -> Scorer:

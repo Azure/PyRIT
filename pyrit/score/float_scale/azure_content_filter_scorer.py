@@ -47,7 +47,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     MAX_TEXT_LENGTH = 10000  # Azure Content Safety API limit
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
 
@@ -140,7 +140,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint and api_key")
 
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
 
     @property
     def _category_values(self) -> list[str]:

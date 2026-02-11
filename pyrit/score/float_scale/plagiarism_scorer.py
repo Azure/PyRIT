@@ -32,7 +32,7 @@ class PlagiarismScorer(FloatScaleScorer):
     3. Word-level n-gram Jaccard similarity
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -50,7 +50,7 @@ class PlagiarismScorer(FloatScaleScorer):
             n (int): The n-gram size for n-gram similarity. Defaults to 5.
             validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
         """
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
 
         self.reference_text = reference_text
         self.metric = metric
