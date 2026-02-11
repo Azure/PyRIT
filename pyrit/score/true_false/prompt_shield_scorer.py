@@ -27,7 +27,7 @@ class PromptShieldScorer(TrueFalseScorer):
     scorer_type: ScoreType
     _prompt_shield_target: PromptShieldTarget
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -47,7 +47,7 @@ class PromptShieldScorer(TrueFalseScorer):
         """
         self._prompt_target = prompt_shield_target
 
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
 
     def _build_identifier(self) -> ScorerIdentifier:
         """

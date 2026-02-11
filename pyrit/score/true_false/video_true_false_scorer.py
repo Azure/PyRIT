@@ -23,7 +23,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
     meaning if any frame meets the objective, the entire video is scored as True).
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
 
     def __init__(
         self,
@@ -47,7 +47,7 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
         )
 
         TrueFalseScorer.__init__(
-            self, validator=validator or self._default_validator, score_aggregator=score_aggregator
+            self, validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator
         )
 
     def _build_identifier(self) -> ScorerIdentifier:

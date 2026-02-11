@@ -22,7 +22,7 @@ class SubStringScorer(TrueFalseScorer):
     Supports both exact substring matching and approximate matching.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -49,7 +49,7 @@ class SubStringScorer(TrueFalseScorer):
         self._text_matcher = text_matcher if text_matcher else ExactTextMatching(case_sensitive=False)
         self._score_categories = categories if categories else []
 
-        super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)
+        super().__init__(score_aggregator=aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
     def _build_identifier(self) -> ScorerIdentifier:
         """

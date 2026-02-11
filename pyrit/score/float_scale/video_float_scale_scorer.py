@@ -30,7 +30,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
     use FloatScaleScoreAggregator.MAX, FloatScaleScorerAllCategories.MAX, etc.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["video_path"])
 
     def __init__(
         self,
@@ -55,7 +55,7 @@ class VideoFloatScaleScorer(FloatScaleScorer, _BaseVideoScorer):
                 Use FloatScaleScoreAggregator.MAX/AVERAGE/MIN for simple aggregation preserving all categories
                 (returns single score with all categories preserved).
         """
-        FloatScaleScorer.__init__(self, validator=validator or self._default_validator)
+        FloatScaleScorer.__init__(self, validator=validator or self._DEFAULT_VALIDATOR)
 
         _BaseVideoScorer.__init__(
             self, image_capable_scorer=image_capable_scorer, num_sampled_frames=num_sampled_frames
