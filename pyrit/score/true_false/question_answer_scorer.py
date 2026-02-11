@@ -22,7 +22,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
 
     CORRECT_ANSWER_MATCHING_PATTERNS = ["{correct_answer_index}:", "{correct_answer}"]
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"], required_metadata=["correct_answer_index", "correct_answer"]
     )
 
@@ -49,7 +49,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category if category is not None else []
 
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
 
     def _build_identifier(self) -> ScorerIdentifier:
         """
