@@ -16,6 +16,7 @@ from pyrit.backend.models.attacks import (
     AddMessageRequest,
     CreateAttackRequest,
     MessagePieceRequest,
+    PrependedMessageRequest,
     UpdateAttackRequest,
 )
 from pyrit.backend.services.attack_service import (
@@ -343,8 +344,6 @@ class TestCreateAttack:
     @pytest.mark.asyncio
     async def test_create_attack_stores_prepended_conversation(self, attack_service, mock_memory) -> None:
         """Test that create_attack stores prepended conversation messages."""
-        from pyrit.backend.models.attacks import PrependedMessageRequest
-
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_service = MagicMock()
             mock_target_service.get_target_async = AsyncMock(return_value=MagicMock(type="TextTarget"))

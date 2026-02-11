@@ -7,10 +7,13 @@ Tests for the FastAPI application entry point (main.py).
 Covers the lifespan manager and setup_frontend function.
 """
 
+import os
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+from pyrit.backend.main import app, lifespan, setup_frontend
 
 
 class TestLifespan:
@@ -20,8 +23,6 @@ class TestLifespan:
     async def test_lifespan_initializes_pyrit_and_yields(self) -> None:
         """Test that lifespan calls initialize_pyrit_async on startup and yields."""
         with patch("pyrit.backend.main.initialize_pyrit_async", new_callable=AsyncMock) as mock_init:
-            from pyrit.backend.main import app, lifespan
-
             async with lifespan(app):
                 pass  # The body of the context manager is the "yield" phase
 
@@ -37,8 +38,6 @@ class TestSetupFrontend:
             patch("pyrit.backend.main.DEV_MODE", True),
             patch("builtins.print") as mock_print,
         ):
-            from pyrit.backend.main import setup_frontend
-
             setup_frontend()
 
             mock_print.assert_called_once()
@@ -51,8 +50,6 @@ class TestSetupFrontend:
         mock_frontend_path.__str__ = lambda self: "/tmp/fake_frontend"
 
         # Create the directory so StaticFiles doesn't raise
-        import os
-
         os.makedirs("/tmp/fake_frontend", exist_ok=True)
 
         with (
@@ -63,8 +60,6 @@ class TestSetupFrontend:
             mock_path_instance = MagicMock()
             mock_path_instance.parent.__truediv__ = MagicMock(return_value=mock_frontend_path)
             mock_path_cls.return_value = mock_path_instance
-
-            from pyrit.backend.main import setup_frontend
 
             setup_frontend()
 
@@ -83,8 +78,6 @@ class TestSetupFrontend:
             mock_path_instance = MagicMock()
             mock_path_instance.parent.__truediv__ = MagicMock(return_value=mock_frontend_path)
             mock_path_cls.return_value = mock_path_instance
-
-            from pyrit.backend.main import setup_frontend
 
             with pytest.raises(SystemExit):
                 setup_frontend()

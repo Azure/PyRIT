@@ -38,6 +38,7 @@ from pyrit.backend.models.targets import (
     TargetInstance,
     TargetListResponse,
 )
+from pyrit.backend.routes.labels import get_label_options
 
 
 @pytest.fixture
@@ -914,8 +915,6 @@ class TestLabelsRoutes:
     @pytest.mark.asyncio
     async def test_get_label_options_unsupported_source_returns_empty_labels(self) -> None:
         """Test that get_label_options returns empty labels for unsupported source types."""
-        from pyrit.backend.routes.labels import get_label_options
-
         with patch("pyrit.backend.routes.labels.CentralMemory"):
             # Call the function directly with a non-"attacks" source to cover the else branch.
             # The Literal["attacks"] type hint prevents this via the API, but the function

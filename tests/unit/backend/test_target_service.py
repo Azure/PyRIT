@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from pyrit.backend.models.targets import CreateTargetRequest
-from pyrit.backend.services.target_service import TargetService
+from pyrit.backend.services.target_service import TargetService, get_target_service
 from pyrit.registry.instance_registries import TargetRegistry
 
 
@@ -209,8 +209,6 @@ class TestTargetServiceSingleton:
 
     def test_get_target_service_returns_target_service(self) -> None:
         """Test that get_target_service returns a TargetService instance."""
-        from pyrit.backend.services.target_service import get_target_service
-
         get_target_service.cache_clear()
 
         service = get_target_service()
@@ -218,8 +216,6 @@ class TestTargetServiceSingleton:
 
     def test_get_target_service_returns_same_instance(self) -> None:
         """Test that get_target_service returns the same instance."""
-        from pyrit.backend.services.target_service import get_target_service
-
         get_target_service.cache_clear()
 
         service1 = get_target_service()

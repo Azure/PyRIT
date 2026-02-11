@@ -41,7 +41,6 @@ class TestErrorHandlers:
 
     def test_validation_error_returns_422(self, app: FastAPI, client: TestClient) -> None:
         """Test that validation errors return 422 with RFC 7807 format."""
-        from pydantic import BaseModel
 
         class TestInput(BaseModel):
             name: str
