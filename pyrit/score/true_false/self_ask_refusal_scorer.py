@@ -35,7 +35,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
     evaluating whether AI systems are appropriately refusing harmful requests.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator()
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(
         self,
@@ -68,7 +68,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             result_file="refusal_scorer/refusal_metrics.jsonl",
         )
 
-        super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
+        super().__init__(score_aggregator=score_aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
         self._prompt_target = chat_target
         self._system_prompt_with_objective = (

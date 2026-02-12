@@ -21,7 +21,7 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     In the future this will not be a TrueFalseScorer. However, it is all that is supported currently.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -43,7 +43,7 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
         # Import here to avoid importing rpyc in the main module that might not be installed
         from pyrit.ui.rpc import AppRPCServer
 
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
         self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 

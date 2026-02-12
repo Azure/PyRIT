@@ -108,7 +108,7 @@ class TestEncodingInitialization:
 
         assert scenario._deprecated_seed_prompts == sample_seeds
         assert scenario.name == "Encoding"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_seed_prompts(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with default seed prompts (Garak dataset)."""
