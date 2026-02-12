@@ -367,3 +367,140 @@ class TestInitializeFromConfigAsync:
 
         mock_default_path.assert_called_once()
         mock_from_yaml.assert_called_once_with(pathlib.Path("/default/path/.pyrit_conf"))
+
+
+class TestLoadWithOverrides:
+    """Tests for ConfigurationLoader.load_with_overrides static method."""
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_defaults_when_no_config_file(self, mock_default_path):
+        """Test default values when no config file exists."""
+        mock_default_path.exists.return_value = False
+
+        config = ConfigurationLoader.load_with_overrides()
+
+        assert config.memory_db_type == "sqlite"
+        assert config.initializers == []
+        assert config.initialization_scripts is None
+        assert config.env_files is None
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_memory_db_type_override(self, mock_default_path):
+        """Test memory_db_type override takes precedence."""
+        mock_default_path.exists.return_value = False
+
+        config = ConfigurationLoader.load_with_overrides(memory_db_type="in_memory")
+
+        assert config.memory_db_type == "in_memory"
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_initializers_override(self, mock_default_path):
+        """Test initializers override takes precedence."""
+        mock_default_path.exists.return_value = False
+
+        config = ConfigurationLoader.load_with_overrides(initializers=["custom_init"])
+
+        assert len(config._initializer_configs) == 1
+        assert config._initializer_configs[0].name == "custom_init"
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_initialization_scripts_override(self, mock_default_path):
+        """Test initialization_scripts override takes precedence."""
+        mock_default_path.exists.return_value = False
+
+        config = ConfigurationLoader.load_with_overrides(initialization_scripts=["/path/to/script.py"])
+
+        assert config.initialization_scripts == ["/path/to/script.py"]
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_env_files_override(self, mock_default_path):
+        """Test env_files override takes precedence."""
+        mock_default_path.exists.return_value = False
+
+        config = ConfigurationLoader.load_with_overrides(env_files=["/path/to/.env"])
+
+        assert config.env_files == ["/path/to/.env"]
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_converts_sequence_to_list(self, mock_default_path):
+        """Test that Sequence inputs are converted to list for dataclass compatibility."""
+        mock_default_path.exists.return_value = False
+
+        # Pass tuples (which are Sequences but not Lists)
+        config = ConfigurationLoader.load_with_overrides(
+            initializers=("init1", "init2"),
+            initialization_scripts=("/path/script1.py", "/path/script2.py"),
+            env_files=("/path/.env",),
+        )
+
+        # Verify they are stored as lists
+        assert isinstance(config.initializers, list)
+        assert isinstance(config.initialization_scripts, list)
+        assert isinstance(config.env_files, list)
+        assert config.initializers == ["init1", "init2"]
+        assert config.initialization_scripts == ["/path/script1.py", "/path/script2.py"]
+        assert config.env_files == ["/path/.env"]
+
+    def test_load_with_overrides_explicit_config_file_not_found(self):
+        """Test FileNotFoundError when explicit config file doesn't exist."""
+        non_existent_path = pathlib.Path("/non/existent/config.yaml")
+
+        with pytest.raises(FileNotFoundError, match="Configuration file not found"):
+            ConfigurationLoader.load_with_overrides(config_file=non_existent_path)
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_explicit_config_file_overrides_default(self, mock_default_path):
+        """Test explicit config file values override default config file."""
+        mock_default_path.exists.return_value = False
+
+        # Create a temp config file
+        yaml_content = """
+memory_db_type: azure_sql
+initializers:
+  - explicit_init
+initialization_scripts:
+  - /explicit/script.py
+env_files:
+  - /explicit/.env
+"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write(yaml_content)
+            config_path = pathlib.Path(f.name)
+
+        try:
+            config = ConfigurationLoader.load_with_overrides(config_file=config_path)
+
+            assert config.memory_db_type == "azure_sql"
+            assert config._initializer_configs[0].name == "explicit_init"
+            assert config.initialization_scripts == ["/explicit/script.py"]
+            assert config.env_files == ["/explicit/.env"]
+        finally:
+            config_path.unlink()
+
+    @mock.patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_load_with_overrides_cli_overrides_config_file(self, mock_default_path):
+        """Test CLI arguments override config file values."""
+        mock_default_path.exists.return_value = False
+
+        # Create a temp config file with some values
+        yaml_content = """
+memory_db_type: azure_sql
+initializers:
+  - file_init
+"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write(yaml_content)
+            config_path = pathlib.Path(f.name)
+
+        try:
+            # CLI overrides should take precedence
+            config = ConfigurationLoader.load_with_overrides(
+                config_file=config_path,
+                memory_db_type="in_memory",
+                initializers=["cli_init"],
+            )
+
+            assert config.memory_db_type == "in_memory"
+            assert config._initializer_configs[0].name == "cli_init"
+        finally:
+            config_path.unlink()

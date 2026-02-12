@@ -251,6 +251,7 @@ class ConfigurationLoader(YamlLoadable):
             config_data["env_files"] = explicit_config.env_files
 
         # 3. Apply overrides (non-None values take precedence)
+        # Convert Sequence to list to match dataclass field types
         if memory_db_type is not None:
             # Normalize to snake_case
             normalized_db = memory_db_type.lower().replace("-", "_")
@@ -261,13 +262,13 @@ class ConfigurationLoader(YamlLoadable):
             config_data["memory_db_type"] = normalized_db
 
         if initializers is not None:
-            config_data["initializers"] = initializers
+            config_data["initializers"] = list(initializers)
 
         if initialization_scripts is not None:
-            config_data["initialization_scripts"] = initialization_scripts
+            config_data["initialization_scripts"] = list(initialization_scripts)
 
         if env_files is not None:
-            config_data["env_files"] = env_files
+            config_data["env_files"] = list(env_files)
 
         return ConfigurationLoader.from_dict(config_data)
 
