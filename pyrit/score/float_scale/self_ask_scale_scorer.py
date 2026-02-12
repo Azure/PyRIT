@@ -120,6 +120,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
             scored_prompt_id=message_piece.id,
             category=self._category,
             objective=objective,
+            attack_identifier=message_piece.attack_identifier,
         )
 
         score = unvalidated_score.to_score(

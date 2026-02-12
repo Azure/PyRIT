@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, List, Optional, Type
 
 from pyrit.identifiers.converter_identifier import ConverterIdentifier
 from pyrit.identifiers.identifier import Identifier
@@ -57,5 +57,4 @@ class AttackIdentifier(Identifier):
                 for c in data["request_converter_identifiers"]
             ]
 
-        result = Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]
-        return cast(AttackIdentifier, result)
+        return super().from_dict(data)
