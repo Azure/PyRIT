@@ -6,8 +6,8 @@ import logging
 from typing import Literal
 
 import numpy as np
-from scipy.io import wavfile
 from scipy.interpolate import interp1d
+from scipy.io import wavfile
 
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter

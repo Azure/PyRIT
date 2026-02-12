@@ -9,7 +9,6 @@ from unit.mocks import MockPromptTarget
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import MultiLanguageTranslationConverter
 
-
 # ── Initialisation / validation tests ──────────────────────────────────────
 
 
@@ -41,9 +40,7 @@ def test_init_sets_languages_lowercase(sqlite_instance):
 
 def test_init_system_prompt_template_not_null(sqlite_instance):
     prompt_target = MockPromptTarget()
-    converter = MultiLanguageTranslationConverter(
-        converter_target=prompt_target, languages=["french"]
-    )
+    converter = MultiLanguageTranslationConverter(converter_target=prompt_target, languages=["french"])
     assert converter._prompt_template is not None
 
 
@@ -169,9 +166,7 @@ async def test_convert_async_more_languages_than_words(sqlite_instance):
 async def test_convert_async_single_language(sqlite_instance):
     """Single language behaves like a normal translation."""
     prompt_target = MockPromptTarget()
-    converter = MultiLanguageTranslationConverter(
-        converter_target=prompt_target, languages=["french"]
-    )
+    converter = MultiLanguageTranslationConverter(converter_target=prompt_target, languages=["french"])
 
     mock_send = AsyncMock(return_value=[_make_response_message("Bonjour comment allez-vous")])
     with patch.object(prompt_target, "send_prompt_async", mock_send):
@@ -186,9 +181,7 @@ async def test_convert_async_single_language(sqlite_instance):
 async def test_convert_async_strips_whitespace_from_response(sqlite_instance):
     """Translated segments should have leading/trailing whitespace stripped."""
     prompt_target = MockPromptTarget()
-    converter = MultiLanguageTranslationConverter(
-        converter_target=prompt_target, languages=["french", "spanish"]
-    )
+    converter = MultiLanguageTranslationConverter(converter_target=prompt_target, languages=["french", "spanish"])
 
     responses = [
         [_make_response_message("  Bonjour  ")],
@@ -206,9 +199,7 @@ async def test_convert_async_strips_whitespace_from_response(sqlite_instance):
 async def test_convert_async_unsupported_input_type(sqlite_instance):
     """Passing an unsupported input_type should raise ValueError."""
     prompt_target = MockPromptTarget()
-    converter = MultiLanguageTranslationConverter(
-        converter_target=prompt_target, languages=["french"]
-    )
+    converter = MultiLanguageTranslationConverter(converter_target=prompt_target, languages=["french"])
     with pytest.raises(ValueError, match="Input type not supported"):
         await converter.convert_async(prompt="Hello", input_type="image_path")
 
@@ -235,9 +226,7 @@ async def test_convert_async_retries_on_exception(sqlite_instance):
 async def test_convert_async_succeeds_after_retries(sqlite_instance):
     """Translation should succeed if a retry attempt works."""
     prompt_target = MockPromptTarget()
-    converter = MultiLanguageTranslationConverter(
-        converter_target=prompt_target, languages=["french"], max_retries=3
-    )
+    converter = MultiLanguageTranslationConverter(converter_target=prompt_target, languages=["french"], max_retries=3)
 
     mock_send = AsyncMock(
         side_effect=[
@@ -257,8 +246,6 @@ async def test_convert_async_succeeds_after_retries(sqlite_instance):
 
 def test_input_supported(sqlite_instance):
     prompt_target = MockPromptTarget()
-    converter = MultiLanguageTranslationConverter(
-        converter_target=prompt_target, languages=["french"]
-    )
+    converter = MultiLanguageTranslationConverter(converter_target=prompt_target, languages=["french"])
     assert converter.input_supported("text") is True
     assert converter.input_supported("image_path") is False

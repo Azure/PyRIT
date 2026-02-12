@@ -77,9 +77,7 @@ class TestAzureSpeechTextToAudioConverter:
     @pytest.mark.asyncio
     async def test_audio_path_input_passthrough(self, sqlite_instance):
         """Test that audio_path input is passed through unchanged without calling speech synthesis."""
-        converter = AzureSpeechTextToAudioConverter(
-            azure_speech_region="dummy_value", azure_speech_key="dummy_value"
-        )
+        converter = AzureSpeechTextToAudioConverter(azure_speech_region="dummy_value", azure_speech_key="dummy_value")
         audio_file_path = "/some/path/to/audio.wav"
         result = await converter.convert_async(prompt=audio_file_path, input_type="audio_path")
         assert result.output_text == audio_file_path
