@@ -127,7 +127,8 @@ class Jailbreak(Scenario):
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
             k_jailbreaks (Optional[int]): Choose k random jailbreaks rather than using all of them.
             num_tries (Optional[int]): Number of times to try each jailbreak.
-            jailbreaks (Optional[int]): Dedicated list of jailbreaks to run.
+            jailbreaks (Optional[List[str]]): List of jailbreak names from the template list under datasets
+                to use.
 
         Raises:
             ValueError: If both jailbreaks and k_jailbreaks are provided, as random selection
@@ -136,12 +137,12 @@ class Jailbreak(Scenario):
         """
         if jailbreaks and k_jailbreaks:
             raise ValueError(
-                "Please provide only one of `k_jailbreaks` (random selection) or `jailbreaks` (specific selection).")
+                "Please provide only one of `k_jailbreaks` (random selection) or `jailbreaks` (specific selection)."
+            )
 
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(
-            objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
         self._k = k_jailbreaks
         self._n = num_tries
@@ -172,7 +173,7 @@ class Jailbreak(Scenario):
             jailbreaks (List[str]): List of jailbreak names.
 
         Raises:
-            ValueError: If jailbreaks not discovered.
+            ValueError: If at least one provided jailbreak does not exist.
         """
         all_templates = TextJailBreak.get_all_jailbreak_templates()
         diff = set(jailbreaks) - set(all_templates)
@@ -193,12 +194,9 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -269,25 +267,21 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(
-                template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(
-                converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
-        attack: Optional[Union[ManyShotJailbreakAttack,
-                               PromptSendingAttack, CrescendoAttack, RedTeamingAttack]] = None
+        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, CrescendoAttack, RedTeamingAttack]] = None
         args = {
             "objective_target": self._objective_target,
             "attack_scoring_config": self._scorer_config,
             "attack_converter_config": converter_config,
         }
-        adversarial_config = AttackAdversarialConfig(
-            target=self._get_default_adversarial_target())
+        adversarial_config = AttackAdversarialConfig(target=self._get_default_adversarial_target())
         match strategy:
             case "many_shot":
                 attack = ManyShotJailbreakAttack(**args)
@@ -320,9 +314,6 @@ class Jailbreak(Scenario):
 
         Returns:
             List[AtomicAttack]: List of atomic attacks to execute, one per jailbreak template.
-
-        Raises:
-            ValueError: If self._jailbreaks is not a subset of all jailbreak templates.
         """
         atomic_attacks: List[AtomicAttack] = []
 
