@@ -36,7 +36,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
     There is also a false category that is used if the MessagePiece does not fit any of the categories.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator()
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(
         self,
@@ -56,7 +56,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
-        super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
+        super().__init__(score_aggregator=score_aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
         self._prompt_target = chat_target
 
