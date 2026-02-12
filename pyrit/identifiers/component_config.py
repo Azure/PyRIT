@@ -33,11 +33,6 @@ from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Pure utility functions
-# ---------------------------------------------------------------------------
-
-
 def config_hash(config_dict: Dict[str, Any]) -> str:
     """
     Compute a deterministic SHA256 hash from a config dictionary.
@@ -107,11 +102,6 @@ def _build_hash_dict(
     return hash_dict
 
 
-# ---------------------------------------------------------------------------
-# ComponentConfig — the frozen identity snapshot
-# ---------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class ComponentConfig:
     """
@@ -138,10 +128,6 @@ class ComponentConfig:
         pyrit_version (str): Version tag for storage. Not included in hash.
     """
 
-    # -------------------------------------------------------------------
-    # Serialization key constants
-    # -------------------------------------------------------------------
-
     KEY_CLASS_NAME: ClassVar[str] = "class_name"
     KEY_CLASS_MODULE: ClassVar[str] = "class_module"
     KEY_HASH: ClassVar[str] = "hash"
@@ -149,10 +135,6 @@ class ComponentConfig:
     KEY_CHILDREN: ClassVar[str] = "children"
     LEGACY_KEY_TYPE: ClassVar[str] = "__type__"
     LEGACY_KEY_MODULE: ClassVar[str] = "__module__"
-
-    # -------------------------------------------------------------------
-    # Fields
-    # -------------------------------------------------------------------
 
     class_name: str
     class_module: str
@@ -170,10 +152,6 @@ class ComponentConfig:
             children=self.children,
         )
         object.__setattr__(self, "hash", config_hash(hash_dict))
-
-    # -------------------------------------------------------------------
-    # Computed properties
-    # -------------------------------------------------------------------
 
     @property
     def short_hash(self) -> str:
@@ -207,10 +185,6 @@ class ComponentConfig:
         (e.g., "self_ask_scale_scorer::a1b2c3d4").
         """
         return f"{self.snake_class_name}::{self.short_hash}"
-
-    # -------------------------------------------------------------------
-    # Factory
-    # -------------------------------------------------------------------
 
     @classmethod
     def of(
@@ -250,10 +224,6 @@ class ComponentConfig:
             children=clean_children,
         )
 
-    # -------------------------------------------------------------------
-    # Normalization
-    # -------------------------------------------------------------------
-
     @classmethod
     def normalize(cls, value: Union[ComponentConfig, Dict[str, Any]]) -> ComponentConfig:
         """
@@ -278,10 +248,6 @@ class ComponentConfig:
         if isinstance(value, dict):
             return cls.from_dict(value)
         raise TypeError(f"Expected ComponentConfig or dict, got {type(value).__name__}")
-
-    # -------------------------------------------------------------------
-    # Serialization
-    # -------------------------------------------------------------------
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -382,10 +348,6 @@ class ComponentConfig:
 
         return config
 
-    # -------------------------------------------------------------------
-    # Display
-    # -------------------------------------------------------------------
-
     def __str__(self) -> str:
         """
         Return a human-readable string representation.
@@ -417,11 +379,6 @@ class ComponentConfig:
             parts.append(f"children=({children_str})")
         parts.append(f"hash={self.short_hash}")
         return f"ComponentConfig({', '.join(parts)})"
-
-
-# ---------------------------------------------------------------------------
-# Configurable — the ABC components implement
-# ---------------------------------------------------------------------------
 
 
 class Configurable(ABC):
