@@ -522,7 +522,7 @@ def is_speechsdk_installed():
         ),
         pytest.param(
             AzureSpeechTextToAudioConverter(azure_speech_region="region", azure_speech_key="key"),
-            ["text"],
+            ["text", "audio_path"],
             ["audio_path"],
             marks=pytest.mark.skipif(not is_speechsdk_installed(), reason="Azure Speech SDK is not installed."),
         ),

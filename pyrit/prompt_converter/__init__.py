@@ -21,6 +21,7 @@ from pyrit.prompt_converter.atbash_converter import AtbashConverter
 from pyrit.prompt_converter.audio_echo_converter import AudioEchoConverter
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
 from pyrit.prompt_converter.audio_speed_converter import AudioSpeedConverter
+from pyrit.prompt_converter.audio_volume_converter import AudioVolumeConverter
 from pyrit.prompt_converter.audio_white_noise_converter import AudioWhiteNoiseConverter
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
@@ -49,6 +50,7 @@ from pyrit.prompt_converter.malicious_question_generator_converter import Malici
 from pyrit.prompt_converter.math_obfuscation_converter import MathObfuscationConverter
 from pyrit.prompt_converter.math_prompt_converter import MathPromptConverter
 from pyrit.prompt_converter.morse_converter import MorseConverter
+from pyrit.prompt_converter.multi_language_translation_converter import MultiLanguageTranslationConverter
 from pyrit.prompt_converter.nato_converter import NatoConverter
 from pyrit.prompt_converter.negation_trap_converter import NegationTrapConverter
 from pyrit.prompt_converter.noise_converter import NoiseConverter
@@ -115,6 +117,7 @@ __all__ = [
     "AudioEchoConverter",
     "AudioFrequencyConverter",
     "AudioSpeedConverter",
+    "AudioVolumeConverter",
     "AudioWhiteNoiseConverter",
     "AzureSpeechAudioToTextConverter",
     "AzureSpeechTextToAudioConverter",
@@ -146,6 +149,7 @@ __all__ = [
     "MathObfuscationConverter",
     "MathPromptConverter",
     "MorseConverter",
+    "MultiLanguageTranslationConverter",
     "NatoConverter",
     "NegationTrapConverter",
     "NoiseConverter",

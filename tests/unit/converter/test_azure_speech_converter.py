@@ -71,8 +71,19 @@ class TestAzureSpeechTextToAudioConverter:
 
     def test_azure_speech_audio_text_converter_input_supported(self):
         converter = AzureSpeechTextToAudioConverter()
-        assert converter.input_supported("audio_path") is False
+        assert converter.input_supported("audio_path") is True
         assert converter.input_supported("text") is True
+
+    @pytest.mark.asyncio
+    async def test_audio_path_input_passthrough(self, sqlite_instance):
+        """Test that audio_path input is passed through unchanged without calling speech synthesis."""
+        converter = AzureSpeechTextToAudioConverter(
+            azure_speech_region="dummy_value", azure_speech_key="dummy_value"
+        )
+        audio_file_path = "/some/path/to/audio.wav"
+        result = await converter.convert_async(prompt=audio_file_path, input_type="audio_path")
+        assert result.output_text == audio_file_path
+        assert result.output_type == "audio_path"
 
     def test_use_entra_auth_true_with_api_key_raises_error(self):
         """Test that use_entra_auth=True with api_key raises ValueError."""
