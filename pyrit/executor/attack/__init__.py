@@ -41,7 +41,12 @@ from pyrit.executor.attack.multi_turn import (
 # Import printer modules last to avoid circular dependencies
 from pyrit.executor.attack.printer import AttackResultPrinter, ConsoleAttackResultPrinter, MarkdownAttackResultPrinter
 from pyrit.executor.attack.single_turn import (
+    CANARY_CONTENT,
+    CANARY_MARKERS,
     ContextComplianceAttack,
+    create_category_scorer,
+    create_sensitive_file_scorer,
+    FILE_PATH_TO_CATEGORY,
     FlipAttack,
     ManyShotJailbreakAttack,
     PromptSendingAttack,
@@ -76,6 +81,11 @@ __all__ = [
     "RolePlayAttack",
     "RolePlayPaths",
     "SkeletonKeyAttack",
+    "CANARY_CONTENT",
+    "CANARY_MARKERS",
+    "create_category_scorer",
+    "create_sensitive_file_scorer",
+    "FILE_PATH_TO_CATEGORY",
     "ConversationSession",
     "MultiTurnAttackStrategy",
     "MultiTurnAttackContext",
