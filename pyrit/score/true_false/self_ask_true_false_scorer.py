@@ -87,7 +87,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
     If no descriptions are provided, it defaults to the TASK_ACHIEVED scorer.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
 
@@ -117,7 +117,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             ValueError: If both true_false_question_path and true_false_question are provided.
             ValueError: If required keys are missing in true_false_question.
         """
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
 
         self._prompt_target = chat_target
 

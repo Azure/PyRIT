@@ -148,7 +148,7 @@ class TestScamInitialization:
         # objectives are stored as _deprecated_objectives; _seed_groups is resolved lazily
         assert scenario._deprecated_objectives == sample_objectives
         assert scenario.name == "Scam"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_objectives(
         self,
@@ -162,7 +162,7 @@ class TestScamInitialization:
             # seed_groups are resolved lazily; _deprecated_objectives should be None
             assert scenario._deprecated_objectives is None
             assert scenario.name == "Scam"
-            assert scenario.version == 1
+            assert scenario.VERSION == 1
 
     def test_init_with_default_scorer(self, mock_memory_seed_groups) -> None:
         """Test initialization with default scorer."""
@@ -373,7 +373,7 @@ class TestScamProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     @pytest.mark.asyncio
     async def test_no_target_duplication_async(
