@@ -4,7 +4,7 @@
 import base64
 import json
 import logging
-from typing import Any, Dict, MutableSequence, Optional
+from typing import Any, ClassVar, Dict, MutableSequence, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -13,6 +13,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers.component_config import ComponentConfig
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
@@ -61,6 +62,16 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         extra_body_parameters (dict): Additional parameters to send in the request body
 
     """
+
+    # Configuration key constants
+    CONFIG_KEY_TEMPERATURE: ClassVar[str] = "temperature"
+    CONFIG_KEY_TOP_P: ClassVar[str] = "top_p"
+    CONFIG_KEY_MAX_COMPLETION_TOKENS: ClassVar[str] = "max_completion_tokens"
+    CONFIG_KEY_MAX_TOKENS: ClassVar[str] = "max_tokens"
+    CONFIG_KEY_FREQUENCY_PENALTY: ClassVar[str] = "frequency_penalty"
+    CONFIG_KEY_PRESENCE_PENALTY: ClassVar[str] = "presence_penalty"
+    CONFIG_KEY_SEED: ClassVar[str] = "seed"
+    CONFIG_KEY_N: ClassVar[str] = "n"
 
     def __init__(
         self,
@@ -181,6 +192,26 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 "presence_penalty": self._presence_penalty,
                 "seed": self._seed,
                 "n": self._n,
+            },
+        )
+    
+    def _build_config(self) -> ComponentConfig:
+        """
+        Build the behavioral configuration for this target.
+
+        Returns:
+            ComponentConfig: The frozen configuration snapshot.
+        """
+        return self._create_config(
+            params={
+                self.CONFIG_KEY_TEMPERATURE: self._temperature,
+                self.CONFIG_KEY_TOP_P: self._top_p,
+                self.CONFIG_KEY_MAX_COMPLETION_TOKENS: self._max_completion_tokens,
+                self.CONFIG_KEY_MAX_TOKENS: self._max_tokens,
+                self.CONFIG_KEY_FREQUENCY_PENALTY: self._frequency_penalty,
+                self.CONFIG_KEY_PRESENCE_PENALTY: self._presence_penalty,
+                self.CONFIG_KEY_SEED: self._seed,
+                self.CONFIG_KEY_N: self._n,
             },
         )
 

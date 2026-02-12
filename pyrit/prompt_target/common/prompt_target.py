@@ -3,16 +3,17 @@
 
 import abc
 import logging
-from typing import Any, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from pyrit.identifiers import Identifiable, TargetIdentifier
+from pyrit.identifiers.component_config import Configurable, ComponentConfig
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Message
 
 logger = logging.getLogger(__name__)
 
 
-class PromptTarget(Identifiable[TargetIdentifier]):
+class PromptTarget(Identifiable[TargetIdentifier], Configurable):
     """
     Abstract base class for prompt targets.
 
@@ -27,6 +28,11 @@ class PromptTarget(Identifiable[TargetIdentifier]):
     supported_converters: List[Any]
 
     _identifier: Optional[TargetIdentifier] = None
+
+    # Configuration key constants
+    CONFIG_KEY_ENDPOINT: ClassVar[str] = "endpoint"
+    CONFIG_KEY_MODEL_NAME: ClassVar[str] = "model_name"
+    CONFIG_KEY_MAX_REQUESTS_PER_MINUTE: ClassVar[str] = "max_requests_per_minute"
 
     def __init__(
         self,
@@ -149,3 +155,46 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             TargetIdentifier: The identifier for this prompt target.
         """
         return self._create_identifier()
+    
+    def _create_config(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> ComponentConfig:
+        """
+        Build a ComponentConfig for this target.
+
+        Automatically injects standard target fields. Subclasses pass their
+        specific params (temperature, top_p, etc.); the base class handles
+        the rest.
+
+        Parallel to ``_create_identifier`` — both coexist during migration.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters.
+
+        Returns:
+            ComponentConfig: Frozen config snapshot with computed hash.
+        """
+        from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+
+        model_name = self._underlying_model or self._model_name or ""
+
+        all_params: Dict[str, Any] = {
+            self.CONFIG_KEY_ENDPOINT: self._endpoint,
+            self.CONFIG_KEY_MODEL_NAME: model_name,
+            self.CONFIG_KEY_MAX_REQUESTS_PER_MINUTE: self._max_requests_per_minute,
+        }
+        if params:
+            all_params.update(params)
+
+        return ComponentConfig.of(self, params=all_params)
+
+    def _build_config(self) -> ComponentConfig:
+        """
+        Build the configuration for this target.
+
+        Base implementation includes standard fields only.
+        Subclasses override to add temperature, top_p, etc.
+        """
+        return self._create_config()

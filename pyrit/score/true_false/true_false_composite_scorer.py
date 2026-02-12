@@ -2,9 +2,10 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers.component_config import ComponentConfig
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc
@@ -20,6 +21,10 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
     aggregation function (e.g., ``TrueFalseScoreAggregator.AND``, ``TrueFalseScoreAggregator.OR``,
     ``TrueFalseScoreAggregator.MAJORITY``).
     """
+
+    # Configuration key constants
+    CONFIG_KEY_SCORE_AGGREGATOR: ClassVar[str] = "score_aggregator"
+    CONFIG_KEY_SUB_SCORERS: ClassVar[str] = "sub_scorers"
 
     def __init__(
         self,
@@ -63,6 +68,16 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         return self._create_identifier(
             sub_scorers=self._scorers,
             score_aggregator=self._score_aggregator.__name__,
+        )
+    
+    def _build_config(self) -> ComponentConfig:
+        """Build the behavioral configuration for this scorer."""
+
+        return self._create_config(
+            params={self.CONFIG_KEY_SCORE_AGGREGATOR: self._score_aggregator.__name__},
+            # NOTE: Named children list. Each child carries its own hash.
+            # The composite's hash includes all children's hashes.
+            children={self.CONFIG_KEY_SUB_SCORERS: [s.get_config() for s in self._scorers]},
         )
 
     async def _score_async(

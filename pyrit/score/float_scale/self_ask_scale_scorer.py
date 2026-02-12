@@ -3,13 +3,14 @@
 
 import enum
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, ClassVar, Optional, Union
 
 import yaml
 
 from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_SCALES_PATH
 from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers.component_config import ComponentConfig
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -39,6 +40,11 @@ class SelfAskScaleScorer(FloatScaleScorer):
         supported_data_types=["text"],
         is_objective_required=True,
     )
+
+    # Configuration key constants
+    CONFIG_KEY_SYSTEM_PROMPT: ClassVar[str] = "system_prompt"
+    CONFIG_KEY_USER_PROMPT_TEMPLATE: ClassVar[str] = "user_prompt_template"
+    CONFIG_KEY_PROMPT_TARGET: ClassVar[str] = "prompt_target"
 
     def __init__(
         self,
@@ -95,6 +101,21 @@ class SelfAskScaleScorer(FloatScaleScorer):
             system_prompt_template=self._system_prompt,
             user_prompt_template="objective: {objective}\nresponse: {response}",
             prompt_target=self._prompt_target,
+        )
+    
+    def _build_config(self) -> ComponentConfig:
+        """
+        Build the behavioral configuration for this scorer.
+
+        Returns:
+            ComponentConfig: The frozen configuration snapshot.
+        """
+        return self._create_config(
+            params={
+                self.CONFIG_KEY_SYSTEM_PROMPT: self._system_prompt,
+                self.CONFIG_KEY_USER_PROMPT_TEMPLATE: "objective: {objective}\nresponse: {response}",
+            },
+            children={self.CONFIG_KEY_PROMPT_TARGET: self._prompt_target.get_config()},
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:

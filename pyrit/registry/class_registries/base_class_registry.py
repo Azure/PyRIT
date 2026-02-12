@@ -19,9 +19,8 @@ Terminology:
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
 
-from pyrit.identifiers import Identifier
 from pyrit.identifiers.class_name_utils import class_name_to_snake_case
-from pyrit.registry.base import RegistryProtocol
+from pyrit.registry.base import RegistryEntry, RegistryProtocol
 
 # Type variable for the registered class type
 T = TypeVar("T")
@@ -183,7 +182,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         """
         pass
 
-    def _build_base_metadata(self, name: str, entry: ClassEntry[T]) -> Identifier:
+    def _build_base_metadata(self, name: str, entry: ClassEntry[T]) -> RegistryEntry:
         """
         Build the common base metadata for a registered class.
 
@@ -195,7 +194,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             entry: The ClassEntry containing the registered class.
 
         Returns:
-            An Identifier dataclass with common fields.
+            A RegistryEntry dataclass with common fields.
         """
         registered_class = entry.registered_class
 
@@ -206,8 +205,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         else:
             description = entry.description or "No description available"
 
-        return Identifier(
-            identifier_type="class",
+        return RegistryEntry(
             class_name=registered_class.__name__,
             class_module=registered_class.__module__,
             class_description=description,

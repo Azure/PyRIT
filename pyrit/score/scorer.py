@@ -12,6 +12,7 @@ from abc import abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
     List,
     Optional,
@@ -26,7 +27,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.identifiers import Identifiable, ScorerIdentifier
+from pyrit.identifiers import Identifiable, ScorerIdentifier, ComponentConfig, Configurable
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     ChatMessageRole,
@@ -54,11 +55,15 @@ if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
 
-class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
+class Scorer(Identifiable[ScorerIdentifier], Configurable, abc.ABC):
     """
     Abstract base class for scorers.
     """
 
+    # Configuration key constants
+    CONFIG_KEY_SCORER_TYPE: ClassVar[str] = "scorer_type"
+
+    # Class attributes
     # Evaluation configuration - maps input dataset files to a result file
     # Specifies glob patterns for datasets and a result file name
     evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
@@ -154,6 +159,37 @@ class Scorer(Identifiable[ScorerIdentifier], abc.ABC):
             score_aggregator=score_aggregator,
             scorer_specific_params=scorer_specific_params,
         )
+
+    def _create_config(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentConfig, List[ComponentConfig]]]] = None,
+    ) -> ComponentConfig:
+        """
+        Build a ComponentConfig for this scorer.
+
+        Automatically injects ``scorer_type`` into params. Subclasses pass their
+        behavioral params and child component configs; the base class handles
+        the rest.
+
+        This is the ComponentConfig equivalent of ``_create_identifier``. Both
+        coexist during the migration period.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Behavioral parameters specific to
+                this scorer (e.g., system_prompt, score_aggregator, min_value).
+            children (Optional[Dict[str, Union[ComponentConfig, List[ComponentConfig]]]]): Named
+                child configs (e.g., prompt_target, sub_scorers, image_scorer).
+
+        Returns:
+            ComponentConfig: Frozen config snapshot with computed hash.
+        """
+        all_params: Dict[str, Any] = {self.CONFIG_KEY_SCORER_TYPE: self.scorer_type}
+        if params:
+            all_params.update(params)
+
+        return ComponentConfig.of(self, params=all_params, children=children)
 
     async def score_async(
         self,

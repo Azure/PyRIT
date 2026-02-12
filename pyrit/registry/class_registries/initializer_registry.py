@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
 from pyrit.identifiers import Identifier
+from pyrit.registry.base import RegistryEntry
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -34,16 +35,21 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class InitializerMetadata(Identifier):
+class InitializerMetadata(RegistryEntry):
     """
     Metadata describing a registered PyRITInitializer class.
 
     Use get_class() to get the actual class.
     """
 
-    display_name: str
-    required_env_vars: tuple[str, ...]
-    execution_order: int
+    # Human-readable display name (e.g., "Objective Target Setup").
+    display_name: str = ""
+
+    # Environment variables required by the initializer.
+    required_env_vars: tuple[str, ...] = ()
+
+    # Execution order priority (lower = earlier).
+    execution_order: int = 100
 
 
 class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetadata]):
@@ -208,7 +214,6 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         try:
             instance = initializer_class()
             return InitializerMetadata(
-                identifier_type="class",
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,
                 class_description=instance.description,
@@ -219,7 +224,6 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         except Exception as e:
             logger.warning(f"Failed to get metadata for {name}: {e}")
             return InitializerMetadata(
-                identifier_type="class",
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,
                 class_description="Error loading initializer metadata",

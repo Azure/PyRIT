@@ -15,6 +15,7 @@ from pyrit.identifiers.identifier import (
 )
 from pyrit.identifiers.scorer_identifier import ScorerIdentifier
 from pyrit.identifiers.target_identifier import TargetIdentifier
+from pyrit.identifiers.component_config import ComponentConfig, Configurable
 
 __all__ = [
     "class_name_to_snake_case",
@@ -27,4 +28,6 @@ __all__ = [
     "ScorerIdentifier",
     "snake_case_to_class_name",
     "TargetIdentifier",
+    "ComponentConfig",
+    "Configurable",
 ]

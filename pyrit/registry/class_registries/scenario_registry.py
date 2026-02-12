@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Optional
 
 from pyrit.identifiers import Identifier
 from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.registry.base import RegistryEntry
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -33,18 +34,27 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class ScenarioMetadata(Identifier):
+class ScenarioMetadata(RegistryEntry):
     """
     Metadata describing a registered Scenario class.
 
     Use get_class() to get the actual class.
     """
 
-    default_strategy: str
-    all_strategies: tuple[str, ...]
-    aggregate_strategies: tuple[str, ...]
-    default_datasets: tuple[str, ...]
-    max_dataset_size: Optional[int]
+    # The default strategy name (e.g., "single_turn").
+    default_strategy: str = ""
+
+    # All available strategy names for this scenario.
+    all_strategies: tuple[str, ...] = ()
+
+    # Aggregate strategies that combine multiple attack approaches.
+    aggregate_strategies: tuple[str, ...] = ()
+
+    # Default dataset names used by this scenario.
+    default_datasets: tuple[str, ...] = ()
+
+    # Maximum number of items per dataset.
+    max_dataset_size: Optional[int] = None
 
 
 class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
@@ -170,7 +180,6 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         max_dataset_size = dataset_config.max_dataset_size
 
         return ScenarioMetadata(
-            identifier_type="class",
             class_name=scenario_class.__name__,
             class_module=scenario_class.__module__,
             class_description=description,
