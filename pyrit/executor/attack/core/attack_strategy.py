@@ -286,10 +286,17 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
             scorer_identifier = scoring_config.objective_scorer.get_identifier()
 
         # Get request converter identifiers if present
-        converter_identifiers = None
+        request_converter_ids = None
         if self._request_converters:
-            converter_identifiers = [
+            request_converter_ids = [
                 converter.get_identifier() for config in self._request_converters for converter in config.converters
+            ]
+
+        # Get response converter identifiers if present
+        response_converter_ids = None
+        if self._response_converters:
+            response_converter_ids = [
+                converter.get_identifier() for config in self._response_converters for converter in config.converters
             ]
 
         return AttackIdentifier(
@@ -297,7 +304,8 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
             class_module=self.__class__.__module__,
             objective_target_identifier=objective_target_identifier,
             objective_scorer_identifier=scorer_identifier,
-            request_converter_identifiers=converter_identifiers or None,
+            request_converter_identifiers=request_converter_ids or None,
+            response_converter_identifiers=response_converter_ids or None,
         )
 
     @property
