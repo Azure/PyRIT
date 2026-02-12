@@ -126,13 +126,20 @@ class MessagePieceRequest(BaseModel):
     original_value: str = Field(..., description="Original value (text or base64 for media)")
     converted_value: Optional[str] = Field(None, description="Converted value. If provided, bypasses converters.")
     mime_type: Optional[str] = Field(None, description="MIME type for media content")
+    original_prompt_id: Optional[str] = Field(
+        None,
+        description="ID of the source piece when prepending from an existing conversation. "
+        "Preserves lineage so the new piece traces back to the original.",
+    )
 
 
 class PrependedMessageRequest(BaseModel):
     """A message to prepend to the attack (for system prompt/branching)."""
 
     role: Literal["user", "assistant", "system"] = Field(..., description="Message role")
-    pieces: List[MessagePieceRequest] = Field(..., description="Message pieces (supports multimodal)")
+    pieces: List[MessagePieceRequest] = Field(
+        ..., description="Message pieces (supports multimodal)", max_length=50
+    )
 
 
 class CreateAttackRequest(BaseModel):
@@ -141,7 +148,7 @@ class CreateAttackRequest(BaseModel):
     name: Optional[str] = Field(None, description="Attack name/label")
     target_id: str = Field(..., description="Target instance ID to attack")
     prepended_conversation: Optional[List[PrependedMessageRequest]] = Field(
-        None, description="Messages to prepend (system prompts, branching context)"
+        None, description="Messages to prepend (system prompts, branching context)", max_length=200
     )
     labels: Optional[Dict[str, str]] = Field(None, description="User-defined labels for filtering")
 
@@ -179,7 +186,7 @@ class AddMessageRequest(BaseModel):
     """
 
     role: Literal["user", "assistant", "system"] = Field(default="user", description="Message role")
-    pieces: List[MessagePieceRequest] = Field(..., description="Message pieces")
+    pieces: List[MessagePieceRequest] = Field(..., description="Message pieces", max_length=50)
     send: bool = Field(
         default=True,
         description="If True, send to target and wait for response. If False, just store in memory.",

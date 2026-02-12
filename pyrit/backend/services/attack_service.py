@@ -89,44 +89,39 @@ class AttackService:
         Returns:
             AttackListResponse with filtered and paginated attack summaries.
         """
-        # Map outcome string to AttackOutcome enum value for filtering
-        outcome_filter = outcome  # Already matches enum values
-
-        # Use labels filter at the database level if supported
+        # Phase 1: Query + lightweight filtering (no pieces needed)
         attack_results = self._memory.get_attack_results(
-            outcome=outcome_filter,
+            outcome=outcome,
             labels=labels,
         )
 
-        # Convert to summaries and apply filters
-        summaries = []
+        filtered: List[AttackResult] = []
         for ar in attack_results:
-            # Filter by target_id
-            ar_target_id = ar.attack_identifier.get("target_id", "")
-            if target_id and ar_target_id != target_id:
+            if target_id and ar.attack_identifier.get("target_id", "") != target_id:
                 continue
-
-            # Filter by name (substring match)
-            ar_name = ar.attack_identifier.get("name", "")
-            if name and name.lower() not in ar_name.lower():
+            if name and name.lower() not in ar.attack_identifier.get("name", "").lower():
                 continue
-
-            # Filter by executed_turns
             if min_turns is not None and ar.executed_turns < min_turns:
                 continue
             if max_turns is not None and ar.executed_turns > max_turns:
                 continue
+            filtered.append(ar)
 
+        # Sort by most recent (metadata lives on AttackResult, no pieces needed)
+        filtered.sort(
+            key=lambda ar: ar.metadata.get("updated_at", ar.metadata.get("created_at", "")),
+            reverse=True,
+        )
+
+        # Paginate on the lightweight list first
+        page_results, has_more = self._paginate_attack_results(filtered, cursor, limit)
+        next_cursor = page_results[-1].conversation_id if has_more and page_results else None
+
+        # Phase 2: Fetch pieces only for the page we're returning
+        page: List[AttackSummary] = []
+        for ar in page_results:
             pieces = self._memory.get_message_pieces(conversation_id=ar.conversation_id)
-            summary = attack_result_to_summary(ar, pieces=pieces)
-            summaries.append(summary)
-
-        # Sort by most recent
-        summaries.sort(key=lambda s: s.updated_at, reverse=True)
-
-        # Paginate
-        page, has_more = self._paginate(summaries, cursor, limit)
-        next_cursor = page[-1].attack_id if has_more and page else None
+            page.append(attack_result_to_summary(ar, pieces=pieces))
 
         return AttackListResponse(
             items=page,
@@ -203,7 +198,6 @@ class AttackService:
             metadata={
                 "created_at": now.isoformat(),
                 "updated_at": now.isoformat(),
-                "labels": request.labels or {},
             },
         )
 
@@ -215,6 +209,7 @@ class AttackService:
             await self._store_prepended_messages(
                 conversation_id=conversation_id,
                 prepended=request.prepended_conversation,
+                labels=request.labels,
             )
 
         return CreateAttackResponse(attack_id=conversation_id, created_at=now)
@@ -270,14 +265,20 @@ class AttackService:
         if not target_id:
             raise ValueError(f"Attack '{attack_id}' has no target configured")
 
-        # Get existing messages to determine sequence
+        # Get existing messages to determine sequence.
+        # NOTE: This read-then-write is not atomic (TOCTOU). Fine for the
+        # current single-user UI, but would need a DB-level sequence
+        # generator or optimistic locking if concurrent writes are supported.
         existing = self._memory.get_message_pieces(conversation_id=attack_id)
         sequence = max((p.sequence for p in existing), default=-1) + 1
 
+        # Inherit labels from existing pieces so new messages stay consistent
+        attack_labels = next((p.labels for p in existing if getattr(p, "labels", None)), None)
+
         if request.send:
-            await self._send_and_store_message(attack_id, target_id, request, sequence)
+            await self._send_and_store_message(attack_id, target_id, request, sequence, labels=attack_labels)
         else:
-            await self._store_message_only(attack_id, request, sequence)
+            await self._store_message_only(attack_id, request, sequence, labels=attack_labels)
 
         # Update attack timestamp
         ar.metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -296,11 +297,14 @@ class AttackService:
     # Private Helper Methods - Pagination
     # ========================================================================
 
-    def _paginate(
-        self, items: List[AttackSummary], cursor: Optional[str], limit: int
-    ) -> tuple[List[AttackSummary], bool]:
+    def _paginate_attack_results(
+        self, items: List[AttackResult], cursor: Optional[str], limit: int
+    ) -> tuple[List[AttackResult], bool]:
         """
-        Apply cursor-based pagination.
+        Apply cursor-based pagination over AttackResult objects.
+
+        Operates on lightweight AttackResult objects before pieces are fetched,
+        so only the final page incurs per-attack piece queries.
 
         Returns:
             Tuple of (paginated items, has_more flag).
@@ -308,7 +312,7 @@ class AttackService:
         start_idx = 0
         if cursor:
             for i, item in enumerate(items):
-                if item.attack_id == cursor:
+                if item.conversation_id == cursor:
                     start_idx = i + 1
                     break
 
@@ -324,6 +328,7 @@ class AttackService:
         self,
         conversation_id: str,
         prepended: List[Any],
+        labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """Store prepended conversation messages in memory."""
         seq = 0
@@ -334,6 +339,7 @@ class AttackService:
                     role=msg.role,
                     conversation_id=conversation_id,
                     sequence=seq,
+                    labels=labels,
                 )
                 self._memory.add_message_pieces_to_memory(message_pieces=[piece])
             seq += 1
@@ -344,6 +350,8 @@ class AttackService:
         target_id: str,
         request: AddMessageRequest,
         sequence: int,
+        *,
+        labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """Send message to target via normalizer and store response."""
         target_obj = get_target_service().get_target_object(target_id=target_id)
@@ -354,6 +362,7 @@ class AttackService:
             request=request,
             conversation_id=attack_id,
             sequence=sequence,
+            labels=labels,
         )
         converter_configs = self._get_converter_configs(request)
 
@@ -363,6 +372,7 @@ class AttackService:
             target=target_obj,
             conversation_id=attack_id,
             request_converter_configurations=converter_configs,
+            labels=labels,
         )
         # PromptNormalizer stores both request and response in memory automatically
 
@@ -371,6 +381,8 @@ class AttackService:
         attack_id: str,
         request: AddMessageRequest,
         sequence: int,
+        *,
+        labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """Store message without sending (send=False)."""
         for p in request.pieces:
@@ -379,6 +391,7 @@ class AttackService:
                 role=request.role,
                 conversation_id=attack_id,
                 sequence=sequence,
+                labels=labels,
             )
             self._memory.add_message_pieces_to_memory(message_pieces=[piece])
 

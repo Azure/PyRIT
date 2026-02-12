@@ -808,12 +808,9 @@ class TestLabelsRoutes:
 
     def test_get_labels_for_attacks(self, client: TestClient) -> None:
         """Test getting labels from attack results."""
-        mock_attack_result = MagicMock()
-        mock_attack_result.metadata = {"env": "prod", "team": "red", "created_at": "2024-01-01"}
-
         with patch("pyrit.backend.routes.labels.CentralMemory") as mock_memory_class:
             mock_memory = MagicMock()
-            mock_memory.get_attack_results.return_value = [mock_attack_result]
+            mock_memory.get_unique_attack_labels.return_value = {"env": ["prod"], "team": ["red"]}
             mock_memory_class.get_memory_instance.return_value = mock_memory
 
             response = client.get("/api/labels?source=attacks")
@@ -821,16 +818,14 @@ class TestLabelsRoutes:
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
             assert data["source"] == "attacks"
-            # env and team should be included, created_at should be excluded
-            assert "env" in data["labels"]
-            assert "team" in data["labels"]
-            assert "created_at" not in data["labels"]
+            assert data["labels"] == {"env": ["prod"], "team": ["red"]}
+            mock_memory.get_unique_attack_labels.assert_called_once()
 
     def test_get_labels_empty(self, client: TestClient) -> None:
         """Test getting labels when no attack results exist."""
         with patch("pyrit.backend.routes.labels.CentralMemory") as mock_memory_class:
             mock_memory = MagicMock()
-            mock_memory.get_attack_results.return_value = []
+            mock_memory.get_unique_attack_labels.return_value = {}
             mock_memory_class.get_memory_instance.return_value = mock_memory
 
             response = client.get("/api/labels?source=attacks")
@@ -842,75 +837,20 @@ class TestLabelsRoutes:
 
     def test_get_labels_multiple_values(self, client: TestClient) -> None:
         """Test getting labels with multiple values per key."""
-        mock_ar1 = MagicMock()
-        mock_ar1.metadata = {"env": "prod"}
-        mock_ar2 = MagicMock()
-        mock_ar2.metadata = {"env": "staging"}
-        mock_ar3 = MagicMock()
-        mock_ar3.metadata = {"env": "prod", "team": "blue"}
-
         with patch("pyrit.backend.routes.labels.CentralMemory") as mock_memory_class:
             mock_memory = MagicMock()
-            mock_memory.get_attack_results.return_value = [mock_ar1, mock_ar2, mock_ar3]
+            mock_memory.get_unique_attack_labels.return_value = {
+                "env": ["prod", "staging"],
+                "team": ["blue"],
+            }
             mock_memory_class.get_memory_instance.return_value = mock_memory
 
             response = client.get("/api/labels")
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            # Should have both env values sorted
             assert set(data["labels"]["env"]) == {"prod", "staging"}
             assert data["labels"]["team"] == ["blue"]
-
-    def test_get_labels_skips_internal_metadata(self, client: TestClient) -> None:
-        """Test that internal metadata keys are skipped."""
-        mock_ar = MagicMock()
-        mock_ar.metadata = {
-            "_internal": "value",
-            "created_at": "2024-01-01",
-            "updated_at": "2024-01-02",
-            "visible_label": "keep",
-        }
-
-        with patch("pyrit.backend.routes.labels.CentralMemory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory.get_attack_results.return_value = [mock_ar]
-            mock_memory_class.get_memory_instance.return_value = mock_memory
-
-            response = client.get("/api/labels")
-
-            assert response.status_code == status.HTTP_200_OK
-            data = response.json()
-            # Only visible_label should be included
-            assert "visible_label" in data["labels"]
-            assert "_internal" not in data["labels"]
-            assert "created_at" not in data["labels"]
-            assert "updated_at" not in data["labels"]
-
-    def test_get_labels_skips_non_string_values(self, client: TestClient) -> None:
-        """Test that non-string metadata values are skipped."""
-        mock_ar = MagicMock()
-        mock_ar.metadata = {
-            "string_val": "keep",
-            "int_val": 123,
-            "list_val": ["a", "b"],
-            "dict_val": {"nested": "value"},
-        }
-
-        with patch("pyrit.backend.routes.labels.CentralMemory") as mock_memory_class:
-            mock_memory = MagicMock()
-            mock_memory.get_attack_results.return_value = [mock_ar]
-            mock_memory_class.get_memory_instance.return_value = mock_memory
-
-            response = client.get("/api/labels")
-
-            assert response.status_code == status.HTTP_200_OK
-            data = response.json()
-            # Only string_val should be included
-            assert "string_val" in data["labels"]
-            assert "int_val" not in data["labels"]
-            assert "list_val" not in data["labels"]
-            assert "dict_val" not in data["labels"]
 
     @pytest.mark.asyncio
     async def test_get_label_options_unsupported_source_returns_empty_labels(self) -> None:

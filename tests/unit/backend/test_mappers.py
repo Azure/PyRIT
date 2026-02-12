@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from pyrit.backend.mappers.attack_mappers import (
+    _collect_labels_from_pieces,
     _infer_mime_type,
     attack_result_to_summary,
     map_outcome,
@@ -39,7 +40,6 @@ def _make_attack_result(
     target_type: str = "TextTarget",
     name: str = "Test Attack",
     outcome: AttackOutcome = AttackOutcome.UNDETERMINED,
-    labels: dict = None,
 ) -> AttackResult:
     """Create an AttackResult for mapper tests."""
     now = datetime.now(timezone.utc)
@@ -55,7 +55,6 @@ def _make_attack_result(
         metadata={
             "created_at": now.isoformat(),
             "updated_at": now.isoformat(),
-            "labels": labels or {},
         },
     )
 
@@ -149,10 +148,12 @@ class TestAttackResultToSummary:
         assert summary.last_message_preview.endswith("...")
 
     def test_labels_are_mapped(self) -> None:
-        """Test that labels are extracted from metadata."""
-        ar = _make_attack_result(labels={"env": "prod", "team": "red"})
+        """Test that labels are derived from pieces."""
+        ar = _make_attack_result()
+        piece = _make_mock_piece()
+        piece.labels = {"env": "prod", "team": "red"}
 
-        summary = attack_result_to_summary(ar, pieces=[])
+        summary = attack_result_to_summary(ar, pieces=[piece])
 
         assert summary.labels == {"env": "prod", "team": "red"}
 
@@ -270,6 +271,7 @@ class TestRequestToPyritMessage:
         piece.data_type = "text"
         piece.original_value = "hello"
         piece.converted_value = None
+        piece.original_prompt_id = None
         request.pieces = [piece]
 
         result = request_to_pyrit_message(
@@ -293,6 +295,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.data_type = "text"
         piece.original_value = "original"
         piece.converted_value = "converted"
+        piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
             piece=piece,
@@ -312,6 +315,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.data_type = "text"
         piece.original_value = "fallback"
         piece.converted_value = None
+        piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
             piece=piece,
@@ -329,6 +333,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.original_value = "base64data"
         piece.converted_value = None
         piece.mime_type = "image/png"
+        piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
             piece=piece,
@@ -346,6 +351,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.original_value = "hello"
         piece.converted_value = None
         piece.mime_type = None
+        piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
             piece=piece,
@@ -355,6 +361,83 @@ class TestRequestPieceToPyritMessagePiece:
         )
 
         assert result.prompt_metadata == {}
+
+    def test_labels_are_stamped_on_piece(self) -> None:
+        """Test that labels are passed through to the MessagePiece."""
+        piece = MagicMock()
+        piece.data_type = "text"
+        piece.original_value = "hello"
+        piece.converted_value = None
+        piece.mime_type = None
+        piece.original_prompt_id = None
+
+        result = request_piece_to_pyrit_message_piece(
+            piece=piece,
+            role="user",
+            conversation_id="conv-1",
+            sequence=0,
+            labels={"env": "prod"},
+        )
+
+        assert result.labels == {"env": "prod"}
+
+    def test_labels_default_to_empty_dict(self) -> None:
+        """Test that labels default to empty dict when not provided."""
+        piece = MagicMock()
+        piece.data_type = "text"
+        piece.original_value = "hello"
+        piece.converted_value = None
+        piece.mime_type = None
+        piece.original_prompt_id = None
+
+        result = request_piece_to_pyrit_message_piece(
+            piece=piece,
+            role="user",
+            conversation_id="conv-1",
+            sequence=0,
+        )
+
+        assert result.labels == {}
+
+    def test_original_prompt_id_forwarded_when_provided(self) -> None:
+        """Test that original_prompt_id is passed through for lineage tracking."""
+        piece = MagicMock()
+        piece.data_type = "text"
+        piece.original_value = "hello"
+        piece.converted_value = None
+        piece.mime_type = None
+        piece.original_prompt_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+        result = request_piece_to_pyrit_message_piece(
+            piece=piece,
+            role="user",
+            conversation_id="conv-1",
+            sequence=0,
+        )
+
+        import uuid
+
+        assert result.original_prompt_id == uuid.UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+        # New piece should have its own id, different from original_prompt_id
+        assert result.id != result.original_prompt_id
+
+    def test_original_prompt_id_defaults_to_self_when_absent(self) -> None:
+        """Test that original_prompt_id defaults to the piece's own id when not provided."""
+        piece = MagicMock()
+        piece.data_type = "text"
+        piece.original_value = "hello"
+        piece.converted_value = None
+        piece.mime_type = None
+        piece.original_prompt_id = None
+
+        result = request_piece_to_pyrit_message_piece(
+            piece=piece,
+            role="user",
+            conversation_id="conv-1",
+            sequence=0,
+        )
+
+        assert result.original_prompt_id == result.id
 
 
 class TestInferMimeType:
@@ -394,6 +477,37 @@ class TestInferMimeType:
     def test_infers_mp4(self) -> None:
         """Test MIME type inference for MP4 video files."""
         assert _infer_mime_type(value="/tmp/video.mp4", data_type="video") == "video/mp4"
+
+
+class TestCollectLabelsFromPieces:
+    """Tests for _collect_labels_from_pieces helper."""
+
+    def test_returns_labels_from_first_piece(self) -> None:
+        """Returns labels from the first piece that has them."""
+        p1 = MagicMock()
+        p1.labels = {"env": "prod"}
+        p2 = MagicMock()
+        p2.labels = {"env": "staging"}
+
+        assert _collect_labels_from_pieces([p1, p2]) == {"env": "prod"}
+
+    def test_returns_empty_when_no_pieces(self) -> None:
+        """Returns empty dict for empty list."""
+        assert _collect_labels_from_pieces([]) == {}
+
+    def test_returns_empty_when_pieces_have_no_labels(self) -> None:
+        """Returns empty dict when pieces have no labels attribute."""
+        p = MagicMock(spec=[])
+        assert _collect_labels_from_pieces([p]) == {}
+
+    def test_skips_pieces_with_empty_labels(self) -> None:
+        """Skips pieces with empty/falsy labels."""
+        p1 = MagicMock()
+        p1.labels = {}
+        p2 = MagicMock()
+        p2.labels = {"env": "prod"}
+
+        assert _collect_labels_from_pieces([p1, p2]) == {"env": "prod"}
 
 
 # ============================================================================

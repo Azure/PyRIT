@@ -895,3 +895,99 @@ def test_get_attack_results_labels_key_exists_value_mismatch(sqlite_instance: Me
     results = sqlite_instance.get_attack_results(labels={"op_name": "op_exists", "researcher": "roakey"})
     assert len(results) == 1
     assert results[0].conversation_id == "conv_1"
+
+
+# ---------------------------------------------------------------------------
+# get_unique_attack_labels tests
+# ---------------------------------------------------------------------------
+
+
+def test_get_unique_attack_labels_empty(sqlite_instance: MemoryInterface):
+    """Returns empty dict when there are no attack results."""
+    result = sqlite_instance.get_unique_attack_labels()
+    assert result == {}
+
+
+def test_get_unique_attack_labels_single(sqlite_instance: MemoryInterface):
+    """Returns labels from a single attack result's message pieces."""
+    message = create_message_piece("conv_1", 1, labels={"env": "prod", "team": "red"})
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[message])
+
+    ar = create_attack_result("conv_1", 1)
+    sqlite_instance.add_attack_results_to_memory(attack_results=[ar])
+
+    result = sqlite_instance.get_unique_attack_labels()
+    assert result == {"env": ["prod"], "team": ["red"]}
+
+
+def test_get_unique_attack_labels_multiple_attacks_merges_values(sqlite_instance: MemoryInterface):
+    """Values from different attacks are merged and sorted."""
+    msg1 = create_message_piece("conv_1", 1, labels={"env": "prod", "team": "red"})
+    msg2 = create_message_piece("conv_2", 2, labels={"env": "staging", "team": "red"})
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[msg1, msg2])
+
+    ar1 = create_attack_result("conv_1", 1)
+    ar2 = create_attack_result("conv_2", 2)
+    sqlite_instance.add_attack_results_to_memory(attack_results=[ar1, ar2])
+
+    result = sqlite_instance.get_unique_attack_labels()
+    assert result == {"env": ["prod", "staging"], "team": ["red"]}
+
+
+def test_get_unique_attack_labels_no_pieces(sqlite_instance: MemoryInterface):
+    """Attack results without any message pieces return empty dict."""
+    ar = create_attack_result("conv_1", 1)
+    sqlite_instance.add_attack_results_to_memory(attack_results=[ar])
+
+    result = sqlite_instance.get_unique_attack_labels()
+    assert result == {}
+
+
+def test_get_unique_attack_labels_pieces_without_labels(sqlite_instance: MemoryInterface):
+    """Message pieces with no labels are skipped."""
+    msg = create_message_piece("conv_1", 1)  # labels=None
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[msg])
+
+    ar = create_attack_result("conv_1", 1)
+    sqlite_instance.add_attack_results_to_memory(attack_results=[ar])
+
+    result = sqlite_instance.get_unique_attack_labels()
+    assert result == {}
+
+
+def test_get_unique_attack_labels_ignores_non_attack_pieces(sqlite_instance: MemoryInterface):
+    """Labels on pieces not linked to any attack are excluded."""
+    msg = create_message_piece("conv_no_attack", 1, labels={"env": "prod"})
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[msg])
+
+    # No AttackResult for "conv_no_attack"
+    result = sqlite_instance.get_unique_attack_labels()
+    assert result == {}
+
+
+def test_get_unique_attack_labels_non_string_values_skipped(sqlite_instance: MemoryInterface):
+    """Non-string label values are ignored."""
+    msg = create_message_piece("conv_1", 1, labels={"env": "prod", "count": 42})
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[msg])
+
+    ar = create_attack_result("conv_1", 1)
+    sqlite_instance.add_attack_results_to_memory(attack_results=[ar])
+
+    result = sqlite_instance.get_unique_attack_labels()
+    assert result == {"env": ["prod"]}
+
+
+def test_get_unique_attack_labels_keys_sorted(sqlite_instance: MemoryInterface):
+    """Returned keys and values are sorted alphabetically."""
+    msg1 = create_message_piece("conv_1", 1, labels={"zoo": "z_val", "alpha": "a"})
+    msg2 = create_message_piece("conv_2", 2, labels={"alpha": "b"})
+    sqlite_instance.add_message_pieces_to_memory(message_pieces=[msg1, msg2])
+
+    ar1 = create_attack_result("conv_1", 1)
+    ar2 = create_attack_result("conv_2", 2)
+    sqlite_instance.add_attack_results_to_memory(attack_results=[ar1, ar2])
+
+    result = sqlite_instance.get_unique_attack_labels()
+    assert list(result.keys()) == ["alpha", "zoo"]
+    assert result["alpha"] == ["a", "b"]
+    assert result["zoo"] == ["z_val"]

@@ -7,6 +7,7 @@ import logging
 import uuid
 import warnings
 import weakref
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
@@ -238,8 +239,6 @@ class MemoryInterface(abc.ABC):
         Raises:
             SQLAlchemyError: If there's an error during the database operation.
         """
-        from contextlib import closing
-
         from sqlalchemy.exc import SQLAlchemyError
 
         with closing(self.get_session()) as session:
@@ -1273,6 +1272,45 @@ class MemoryInterface(abc.ABC):
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
             raise
+
+    def get_unique_attack_labels(self) -> dict[str, list[str]]:
+        """
+        Return all unique label key-value pairs across attack results.
+
+        Labels live on ``PromptMemoryEntry.labels`` (the established SDK
+        path).  This method JOINs with ``AttackResultEntry`` to scope the
+        query to conversations that belong to an attack, applies DISTINCT
+        to reduce duplicate label dicts, then aggregates unique key-value
+        pairs in Python.
+
+        Returns:
+            dict[str, list[str]]: Mapping of label keys to sorted lists of
+            unique values.
+        """
+        label_values: dict[str, set[str]] = {}
+
+        with closing(self.get_session()) as session:
+            rows = (
+                session.query(PromptMemoryEntry.labels)
+                .join(
+                    AttackResultEntry,
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                )
+                .filter(PromptMemoryEntry.labels.isnot(None))
+                .distinct()
+                .all()
+            )
+
+        for (labels,) in rows:
+            if not isinstance(labels, dict):
+                continue
+            for key, value in labels.items():
+                if isinstance(value, str):
+                    if key not in label_values:
+                        label_values[key] = set()
+                    label_values[key].add(value)
+
+        return {key: sorted(values) for key, values in sorted(label_values.items())}
 
     def add_scenario_results_to_memory(self, *, scenario_results: Sequence[ScenarioResult]) -> None:
         """

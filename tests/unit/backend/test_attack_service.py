@@ -55,7 +55,6 @@ def make_attack_result(
     outcome: AttackOutcome = AttackOutcome.UNDETERMINED,
     created_at: datetime = None,
     updated_at: datetime = None,
-    labels: dict = None,
 ) -> AttackResult:
     """Create a mock AttackResult for testing."""
     now = datetime.now(timezone.utc)
@@ -74,7 +73,6 @@ def make_attack_result(
         metadata={
             "created_at": created.isoformat(),
             "updated_at": updated.isoformat(),
-            "labels": labels or {},
         },
     )
 
@@ -222,13 +220,14 @@ class TestListAttacks:
 
     @pytest.mark.asyncio
     async def test_list_attacks_includes_labels_in_summary(self, attack_service, mock_memory) -> None:
-        """Test that list_attacks includes labels from metadata in summaries."""
+        """Test that list_attacks includes labels from message pieces in summaries."""
         ar = make_attack_result(
             conversation_id="attack-1",
-            labels={"env": "prod", "team": "red"},
         )
         mock_memory.get_attack_results.return_value = [ar]
-        mock_memory.get_message_pieces.return_value = []
+        piece = make_mock_piece(conversation_id="attack-1")
+        piece.labels = {"env": "prod", "team": "red"}
+        mock_memory.get_message_pieces.return_value = [piece]
 
         result = await attack_service.list_attacks_async()
 
@@ -366,8 +365,8 @@ class TestCreateAttack:
             mock_memory.add_message_pieces_to_memory.assert_called()
 
     @pytest.mark.asyncio
-    async def test_create_attack_stores_labels_under_metadata_key(self, attack_service, mock_memory) -> None:
-        """Test that create_attack stores labels under metadata['labels'], not spread."""
+    async def test_create_attack_does_not_store_labels_in_metadata(self, attack_service, mock_memory) -> None:
+        """Test that labels are not stored in attack metadata (they live on pieces)."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_service = MagicMock()
             mock_target_service.get_target_async = AsyncMock(return_value=MagicMock(type="TextTarget"))
@@ -381,14 +380,98 @@ class TestCreateAttack:
                 )
             )
 
-            # Verify the AttackResult stored in memory has labels nested under metadata["labels"]
             call_args = mock_memory.add_attack_results_to_memory.call_args
             stored_ar = call_args[1]["attack_results"][0]
-            assert "labels" in stored_ar.metadata
-            assert stored_ar.metadata["labels"] == {"env": "prod", "team": "red"}
-            # Labels should NOT be spread as top-level metadata keys
-            assert "env" not in stored_ar.metadata
-            assert "team" not in stored_ar.metadata
+            assert "labels" not in stored_ar.metadata
+
+    @pytest.mark.asyncio
+    async def test_create_attack_stamps_labels_on_prepended_pieces(self, attack_service, mock_memory) -> None:
+        """Test that labels are forwarded to prepended message pieces."""
+        with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
+            mock_target_service = MagicMock()
+            mock_target_service.get_target_async = AsyncMock(return_value=MagicMock(type="TextTarget"))
+            mock_get_target_service.return_value = mock_target_service
+
+            prepended = [
+                PrependedMessageRequest(
+                    role="system",
+                    pieces=[MessagePieceRequest(original_value="Be helpful.")],
+                )
+            ]
+
+            await attack_service.create_attack_async(
+                request=CreateAttackRequest(
+                    target_id="target-1",
+                    labels={"env": "prod"},
+                    prepended_conversation=prepended,
+                )
+            )
+
+            stored_piece = mock_memory.add_message_pieces_to_memory.call_args[1]["message_pieces"][0]
+            assert stored_piece.labels == {"env": "prod"}
+
+    @pytest.mark.asyncio
+    async def test_create_attack_prepended_messages_have_incrementing_sequences(
+        self, attack_service, mock_memory
+    ) -> None:
+        """Test that multiple prepended messages get incrementing sequence numbers and preserve lineage."""
+        with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
+            mock_target_service = MagicMock()
+            mock_target_service.get_target_async = AsyncMock(return_value=MagicMock(type="TextTarget"))
+            mock_get_target_service.return_value = mock_target_service
+
+            original_id_1 = "aaaaaaaa-1111-2222-3333-444444444444"
+            original_id_2 = "bbbbbbbb-1111-2222-3333-444444444444"
+            original_id_3 = "cccccccc-1111-2222-3333-444444444444"
+
+            prepended = [
+                PrependedMessageRequest(
+                    role="system",
+                    pieces=[
+                        MessagePieceRequest(
+                            original_value="You are a helpful assistant.",
+                            original_prompt_id=original_id_1,
+                        )
+                    ],
+                ),
+                PrependedMessageRequest(
+                    role="user",
+                    pieces=[
+                        MessagePieceRequest(original_value="Hello", original_prompt_id=original_id_2),
+                    ],
+                ),
+                PrependedMessageRequest(
+                    role="assistant",
+                    pieces=[
+                        MessagePieceRequest(original_value="Hi there!", original_prompt_id=original_id_3),
+                    ],
+                ),
+            ]
+
+            await attack_service.create_attack_async(
+                request=CreateAttackRequest(target_id="target-1", prepended_conversation=prepended)
+            )
+
+            # Each message stored separately with incrementing sequence
+            calls = mock_memory.add_message_pieces_to_memory.call_args_list
+            assert len(calls) == 3
+            sequences = [call[1]["message_pieces"][0].sequence for call in calls]
+            assert sequences == [0, 1, 2]
+
+            roles = [call[1]["message_pieces"][0].api_role for call in calls]
+            assert roles == ["system", "user", "assistant"]
+
+            # original_prompt_id preserved for lineage tracking
+            import uuid
+
+            stored_pieces = [call[1]["message_pieces"][0] for call in calls]
+            assert stored_pieces[0].original_prompt_id == uuid.UUID(original_id_1)
+            assert stored_pieces[1].original_prompt_id == uuid.UUID(original_id_2)
+            assert stored_pieces[2].original_prompt_id == uuid.UUID(original_id_3)
+
+            # Each piece gets its own new id, different from the original
+            for piece in stored_pieces:
+                assert piece.id != piece.original_prompt_id
 
 
 # ============================================================================
@@ -444,23 +527,60 @@ class TestAddMessage:
             await attack_service.add_message_async(attack_id="nonexistent", request=request)
 
     @pytest.mark.asyncio
-    async def test_add_message_without_send_stores_message(self, attack_service, mock_memory) -> None:
-        """Test that add_message with send=False stores message in memory."""
+    async def test_add_message_without_send_stamps_labels_on_pieces(self, attack_service, mock_memory) -> None:
+        """Test that add_message (send=False) inherits labels from existing pieces."""
         ar = make_attack_result(conversation_id="test-id", target_id="target-1")
         mock_memory.get_attack_results.return_value = [ar]
-        mock_memory.get_message_pieces.return_value = []
+
+        existing_piece = make_mock_piece(conversation_id="test-id")
+        existing_piece.labels = {"env": "prod"}
+        mock_memory.get_message_pieces.return_value = [existing_piece]
         mock_memory.get_conversation.return_value = []
 
         request = AddMessageRequest(
-            role="system",
-            pieces=[MessagePieceRequest(original_value="You are a helpful assistant.")],
+            role="user",
+            pieces=[MessagePieceRequest(original_value="Hello")],
             send=False,
         )
 
         result = await attack_service.add_message_async(attack_id="test-id", request=request)
 
+        stored_piece = mock_memory.add_message_pieces_to_memory.call_args[1]["message_pieces"][0]
+        assert stored_piece.labels == {"env": "prod"}
         assert result.attack is not None
-        mock_memory.add_message_pieces_to_memory.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_add_message_with_send_passes_labels_to_normalizer(self, attack_service, mock_memory) -> None:
+        """Test that add_message (send=True) inherits labels from existing pieces."""
+        ar = make_attack_result(conversation_id="test-id", target_id="target-1")
+        mock_memory.get_attack_results.return_value = [ar]
+
+        existing_piece = make_mock_piece(conversation_id="test-id")
+        existing_piece.labels = {"env": "staging"}
+        mock_memory.get_message_pieces.return_value = [existing_piece]
+        mock_memory.get_conversation.return_value = []
+
+        with (
+            patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_svc,
+            patch("pyrit.backend.services.attack_service.PromptNormalizer") as mock_normalizer_cls,
+        ):
+            mock_target_svc = MagicMock()
+            mock_target_svc.get_target_object.return_value = MagicMock()
+            mock_get_target_svc.return_value = mock_target_svc
+
+            mock_normalizer = MagicMock()
+            mock_normalizer.send_prompt_async = AsyncMock()
+            mock_normalizer_cls.return_value = mock_normalizer
+
+            request = AddMessageRequest(
+                pieces=[MessagePieceRequest(original_value="Hello")],
+                send=True,
+            )
+
+            await attack_service.add_message_async(attack_id="test-id", request=request)
+
+            call_kwargs = mock_normalizer.send_prompt_async.call_args[1]
+            assert call_kwargs["labels"] == {"env": "staging"}
 
     @pytest.mark.asyncio
     async def test_add_message_raises_when_no_target_id(self, attack_service, mock_memory) -> None:
@@ -665,6 +785,18 @@ class TestPagination:
         attack_ids = [item.attack_id for item in result.items]
         assert "attack-1" not in attack_ids
         assert len(result.items) == 2
+
+    @pytest.mark.asyncio
+    async def test_list_attacks_fetches_pieces_only_for_page(self, attack_service, mock_memory) -> None:
+        """Test that pieces are fetched only for the paginated page, not all attacks."""
+        attacks = [make_attack_result(conversation_id=f"attack-{i}") for i in range(5)]
+        mock_memory.get_attack_results.return_value = attacks
+        mock_memory.get_message_pieces.return_value = []
+
+        await attack_service.list_attacks_async(limit=2)
+
+        # get_message_pieces should be called only for the 2 items on the page, not all 5
+        assert mock_memory.get_message_pieces.call_count == 2
 
 
 # ============================================================================

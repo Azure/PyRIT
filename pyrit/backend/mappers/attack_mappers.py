@@ -76,7 +76,7 @@ def attack_result_to_summary(
         outcome=map_outcome(ar.outcome),
         last_message_preview=last_preview,
         message_count=message_count,
-        labels=ar.metadata.get("labels", {}),
+        labels=_collect_labels_from_pieces(pieces),
         created_at=created_at,
         updated_at=updated_at,
     )
@@ -175,6 +175,7 @@ def request_piece_to_pyrit_message_piece(
     role: str,
     conversation_id: str,
     sequence: int,
+    labels: Optional[Dict[str, str]] = None,
 ) -> PyritMessagePiece:
     """
     Convert a single request piece DTO to a PyRIT MessagePiece domain object.
@@ -184,11 +185,14 @@ def request_piece_to_pyrit_message_piece(
         role: The message role.
         conversation_id: The conversation/attack ID.
         sequence: The message sequence number.
+        labels: Optional labels to stamp on the piece.
 
     Returns:
         PyritMessagePiece domain object.
     """
     metadata = {"mime_type": piece.mime_type} if getattr(piece, "mime_type", None) else None
+    raw_id = getattr(piece, "original_prompt_id", None)
+    original_prompt_id = uuid.UUID(raw_id) if raw_id else None
     return PyritMessagePiece(
         role=role,
         original_value=piece.original_value,
@@ -198,6 +202,8 @@ def request_piece_to_pyrit_message_piece(
         conversation_id=conversation_id,
         sequence=sequence,
         prompt_metadata=metadata,
+        labels=labels or {},
+        original_prompt_id=original_prompt_id,
     )
 
 
@@ -206,6 +212,7 @@ def request_to_pyrit_message(
     request: AddMessageRequest,
     conversation_id: str,
     sequence: int,
+    labels: Optional[Dict[str, str]] = None,
 ) -> PyritMessage:
     """
     Build a PyRIT Message from an AddMessageRequest DTO.
@@ -214,6 +221,7 @@ def request_to_pyrit_message(
         request: The inbound API request.
         conversation_id: The conversation/attack ID.
         sequence: The message sequence number.
+        labels: Optional labels to stamp on each piece.
 
     Returns:
         PyritMessage ready to send to the target.
@@ -224,6 +232,7 @@ def request_to_pyrit_message(
             role=request.role,
             conversation_id=conversation_id,
             sequence=sequence,
+            labels=labels,
         )
         for p in request.pieces
     ]
@@ -247,3 +256,21 @@ def _get_preview_from_pieces(pieces: List[Any]) -> Optional[str]:
     last_piece = max(pieces, key=lambda p: p.sequence)
     text = last_piece.converted_value or ""
     return text[:100] + "..." if len(text) > 100 else text
+
+
+def _collect_labels_from_pieces(pieces: List[Any]) -> Dict[str, str]:
+    """
+    Collect labels from message pieces.
+
+    Returns the labels from the first piece that has non-empty labels.
+    All pieces in an attack share the same labels, so the first match
+    is representative.
+
+    Returns:
+        Label dict, or empty dict if no pieces have labels.
+    """
+    for p in pieces:
+        labels = getattr(p, "labels", None)
+        if labels:
+            return dict(labels)
+    return {}
