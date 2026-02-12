@@ -86,9 +86,9 @@ class Jailbreak(Scenario):
         Get the default strategy used when no strategies are specified.
 
         Returns:
-            ScenarioStrategy: JailbreakStrategy.ALL.
+            ScenarioStrategy: JailbreakStrategy.PromptSending.
         """
-        return JailbreakStrategy.ALL
+        return JailbreakStrategy.PromptSending
 
     @classmethod
     def required_datasets(cls) -> list[str]:
@@ -112,8 +112,8 @@ class Jailbreak(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = False,
         scenario_result_id: Optional[str] = None,
-        k: Optional[int] = None,
-        n: int = 1,
+        k_jailbreaks: Optional[int] = None,
+        num_tries: int = 1,
         jailbreaks: Optional[List[str]] = None,
     ) -> None:
         """
@@ -125,24 +125,26 @@ class Jailbreak(Scenario):
             include_baseline (bool): Whether to include a baseline atomic attack that sends all
                 objectives without modifications. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
-            k (Optional[int]): Choose k random jailbreaks rather than using all of them.
-            n (Optional[int]): Number of times to try each jailbreak.
+            k_jailbreaks (Optional[int]): Choose k random jailbreaks rather than using all of them.
+            num_tries (Optional[int]): Number of times to try each jailbreak.
             jailbreaks (Optional[int]): Dedicated list of jailbreaks to run.
 
         Raises:
-            ValueError: If both jailbreaks and k are provided, as random selection
+            ValueError: If both jailbreaks and k_jailbreaks are provided, as random selection
                 is incompatible with a predetermined list.
 
         """
-        if jailbreaks and k:
-            raise ValueError("Please provide only one of `k` (random selection) or `jailbreaks` (specific selection).")
+        if jailbreaks and k_jailbreaks:
+            raise ValueError(
+                "Please provide only one of `k_jailbreaks` (random selection) or `jailbreaks` (specific selection).")
 
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(
+            objective_scorer=objective_scorer)
 
-        self._k = k
-        self._n = n
+        self._k = k_jailbreaks
+        self._n = num_tries
 
         if jailbreaks:
             self._validate_jailbreaks_subset(jailbreaks)
@@ -191,9 +193,12 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -264,21 +269,25 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(
+                template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(
+                converters=[jailbreak_converter])
         )
 
-        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, CrescendoAttack, RedTeamingAttack]] = None
+        attack: Optional[Union[ManyShotJailbreakAttack,
+                               PromptSendingAttack, CrescendoAttack, RedTeamingAttack]] = None
         args = {
             "objective_target": self._objective_target,
             "attack_scoring_config": self._scorer_config,
             "attack_converter_config": converter_config,
         }
-        adversarial_config = AttackAdversarialConfig(target=self._get_default_adversarial_target())
+        adversarial_config = AttackAdversarialConfig(
+            target=self._get_default_adversarial_target())
         match strategy:
             case "many_shot":
                 attack = ManyShotJailbreakAttack(**args)
