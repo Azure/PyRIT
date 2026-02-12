@@ -221,7 +221,6 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
             class_name=self.__class__.__name__,
             class_module=self.__class__.__module__,
             class_description=self.__class__.__doc__ or "",
-            identifier_type="instance",
             supported_input_types=self.SUPPORTED_INPUT_TYPES,
             supported_output_types=self.SUPPORTED_OUTPUT_TYPES,
             sub_identifier=sub_identifier,

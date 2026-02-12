@@ -19,6 +19,7 @@ from pyrit.executor.promptgen.core import (
     PromptGeneratorStrategyContext,
     PromptGeneratorStrategyResult,
 )
+from pyrit.identifiers import AttackIdentifier, Identifiable
 from pyrit.models import (
     Message,
 )
@@ -67,7 +68,10 @@ class AnecdoctorResult(PromptGeneratorStrategyResult):
     generated_content: Message
 
 
-class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult]):
+class AnecdoctorGenerator(
+    PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult],
+    Identifiable[AttackIdentifier],
+):
     """
     Implementation of the Anecdoctor prompt generation strategy.
 
@@ -130,6 +134,21 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             self._system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_KG_YAML)
         else:
             self._system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_FEWSHOT_YAML)
+
+    def _build_identifier(self) -> AttackIdentifier:
+        """
+        Build the typed identifier for this prompt generator.
+
+        Returns:
+            AttackIdentifier: The constructed identifier.
+        """
+        objective_target_identifier = self._objective_target.get_identifier()
+
+        return AttackIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            objective_target_identifier=objective_target_identifier,
+        )
 
     def _validate_context(self, *, context: AnecdoctorContext) -> None:
         """
