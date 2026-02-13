@@ -59,3 +59,15 @@ class TestTopKBeamReviewer:
         assert top_k_beams[2].text == "beam1"
         assert top_k_beams[3].text == "beam2"
         assert top_k_beams[4].text == "beam1"
+
+    def test_review_k1d2(self):
+        beam1 = Beam(id=str(uuid.uuid4()), text="beam111", score=0.9)
+        beam2 = Beam(id=str(uuid.uuid4()), text="beam222", score=0.8)
+        beam3 = Beam(id=str(uuid.uuid4()), text="beam333", score=0.7)
+        beams = [beam1, beam2, beam3]
+        reviewer = TopKBeamReviewer(k=1, drop_chars=2)
+        top_k_beams = reviewer.review(beams)
+        assert len(top_k_beams) == 3
+        assert top_k_beams[0].text == "beam111"
+        assert top_k_beams[1].text == "beam1"
+        assert top_k_beams[2].text == "beam1"
