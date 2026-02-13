@@ -60,6 +60,7 @@ class TestAttackIdentifierCreation:
         assert identifier.objective_target_identifier is None
         assert identifier.objective_scorer_identifier is None
         assert identifier.request_converter_identifiers is None
+        assert identifier.response_converter_identifiers is None
         assert identifier.attack_specific_params is None
         assert identifier.hash is not None
 
@@ -75,12 +76,14 @@ class TestAttackIdentifierCreation:
             objective_target_identifier=target_id,
             objective_scorer_identifier=scorer_id,
             request_converter_identifiers=[converter_id],
+            response_converter_identifiers=[converter_id],
             attack_specific_params={"max_turns": 10},
         )
 
         assert identifier.objective_target_identifier is target_id
         assert identifier.objective_scorer_identifier is scorer_id
         assert identifier.request_converter_identifiers == [converter_id]
+        assert identifier.response_converter_identifiers == [converter_id]
         assert identifier.attack_specific_params == {"max_turns": 10}
 
     def test_frozen(self):
@@ -121,6 +124,7 @@ class TestAttackIdentifierFromDict:
         assert result.objective_target_identifier is None
         assert result.objective_scorer_identifier is None
         assert result.request_converter_identifiers is None
+        assert result.response_converter_identifiers is None
 
     def test_from_dict_deserializes_nested_target(self):
         """Test that from_dict recursively deserializes the target sub-identifier."""
@@ -207,16 +211,34 @@ class TestAttackIdentifierFromDict:
         assert result.objective_target_identifier is target_id
         assert result.request_converter_identifiers[0] is converter_id
 
+    def test_from_dict_deserializes_response_converters(self):
+        """Test that from_dict recursively deserializes response converter sub-identifiers."""
+        converter_id = _make_converter_identifier()
+        data = {
+            "class_name": "PromptSendingAttack",
+            "class_module": "pyrit.executor.attack.single_turn.prompt_sending",
+            "response_converter_identifiers": [converter_id.to_dict()],
+        }
+
+        result = AttackIdentifier.from_dict(data)
+
+        assert result.response_converter_identifiers is not None
+        assert len(result.response_converter_identifiers) == 1
+        assert isinstance(result.response_converter_identifiers[0], ConverterIdentifier)
+        assert result.response_converter_identifiers[0].class_name == "Base64Converter"
+
     def test_from_dict_none_converters_stays_none(self):
-        """Test that None converter list is preserved as None."""
+        """Test that None converter lists are preserved as None."""
         data = {
             "class_name": "PromptSendingAttack",
             "class_module": "pyrit.executor.attack.single_turn.prompt_sending",
             "request_converter_identifiers": None,
+            "response_converter_identifiers": None,
         }
 
         result = AttackIdentifier.from_dict(data)
         assert result.request_converter_identifiers is None
+        assert result.response_converter_identifiers is None
 
 
 class TestAttackIdentifierRoundTrip:
@@ -243,6 +265,7 @@ class TestAttackIdentifierRoundTrip:
             objective_target_identifier=_make_target_identifier(),
             objective_scorer_identifier=_make_scorer_identifier(),
             request_converter_identifiers=[_make_converter_identifier()],
+            response_converter_identifiers=[_make_converter_identifier()],
         )
 
         restored = AttackIdentifier.from_dict(original.to_dict())
@@ -250,6 +273,7 @@ class TestAttackIdentifierRoundTrip:
         assert isinstance(restored.objective_target_identifier, TargetIdentifier)
         assert isinstance(restored.objective_scorer_identifier, ScorerIdentifier)
         assert isinstance(restored.request_converter_identifiers[0], ConverterIdentifier)
+        assert isinstance(restored.response_converter_identifiers[0], ConverterIdentifier)
         assert restored.hash == original.hash
 
     def test_round_trip_with_attack_specific_params(self):

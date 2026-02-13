@@ -25,6 +25,7 @@ class AttackIdentifier(Identifier):
     objective_target_identifier: Optional[TargetIdentifier] = None
     objective_scorer_identifier: Optional[ScorerIdentifier] = None
     request_converter_identifiers: Optional[List[ConverterIdentifier]] = None
+    response_converter_identifiers: Optional[List[ConverterIdentifier]] = None
 
     # Additional attack-specific params for subclass flexibility
     attack_specific_params: Optional[Dict[str, Any]] = None
@@ -55,6 +56,12 @@ class AttackIdentifier(Identifier):
             data["request_converter_identifiers"] = [
                 ConverterIdentifier.from_dict(c) if isinstance(c, dict) else c
                 for c in data["request_converter_identifiers"]
+            ]
+
+        if "response_converter_identifiers" in data and data["response_converter_identifiers"] is not None:
+            data["response_converter_identifiers"] = [
+                ConverterIdentifier.from_dict(c) if isinstance(c, dict) else c
+                for c in data["response_converter_identifiers"]
             ]
 
         return super().from_dict(data)
