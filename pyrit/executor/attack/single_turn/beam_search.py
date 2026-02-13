@@ -33,40 +33,6 @@ from pyrit.score import FloatScaleScorer, Scorer
 logger = logging.getLogger(__name__)
 
 
-def _print_message(message: Message) -> None:
-    for piece in message.message_pieces:
-        if piece.role == "user":
-            # User message header
-            print()
-            print("─" * 10)
-            print("USER")
-
-            # Handle converted values
-            if piece.converted_value != piece.original_value:
-                print(f"Original:")
-                print(piece.original_value)
-                print()
-                print(f"Converted:")
-                print(piece.converted_value)
-            else:
-                print(piece.converted_value)
-        elif piece.role == "system":
-            # System message header (not counted as a turn)
-            print()
-            print("─" * 10)
-            print("SYSTEM")
-
-            print(piece.converted_value)
-        else:
-            if piece.original_value_data_type != "reasoning":
-                # Assistant message header
-                print()
-                print("─" * 10)
-                print(f"{piece.role.upper()}")
-
-                print(piece.converted_value)
-
-
 @dataclass
 class Beam:
     """Represents a beam in the beam search attack strategy."""
@@ -123,11 +89,12 @@ class TopKBeamReviewer(BeamReviewer):
         # Sort beams by score in descending order and select top k
         sorted_beams = sorted(beams, key=lambda b: b.score, reverse=True)
 
-        new_beams = list(reversed(sorted_beams[: self.k]))
+        new_beams = list(sorted_beams[: self.k])
         for i in range(len(beams) - len(new_beams)):
             nxt = copy.deepcopy(new_beams[i % self.k])
-            if len(nxt.text) > self.drop_chars:
-                nxt.text = nxt.text[: -self.drop_chars]
+            if self.drop_chars > 0:
+                if len(nxt.text) > self.drop_chars:
+                    nxt.text = nxt.text[: -self.drop_chars]
             new_beams.append(nxt)
         assert len(beams) == len(new_beams)
         return new_beams
