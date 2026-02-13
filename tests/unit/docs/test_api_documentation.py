@@ -119,7 +119,7 @@ MODULES_TO_CHECK = {
         "exclude": set(),
     },
     "pyrit.identifiers": {
-        "exclude": {"LegacyIdentifiable"},
+        "exclude": set(),
     },
 }
 

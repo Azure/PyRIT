@@ -41,6 +41,7 @@ def mock_true_false_scorer():
     """Create a mock true/false scorer for testing"""
     scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
+    scorer.get_identifier.return_value = get_mock_scorer_identifier()
     return scorer
 
 
