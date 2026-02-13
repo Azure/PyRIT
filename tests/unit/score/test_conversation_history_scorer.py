@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import AttackIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
 from pyrit.score import (
@@ -244,8 +244,8 @@ async def test_conversation_history_scorer_preserves_metadata(patch_central_data
         original_value="Response",
         conversation_id=conversation_id,
         labels={"test": "label"},
-        prompt_target_identifier={"target": "test"},
-        attack_identifier={"attack": "test"},
+        prompt_target_identifier=TargetIdentifier(class_name="test", class_module="test"),
+        attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
         sequence=1,
     )
 
