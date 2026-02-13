@@ -104,7 +104,7 @@ class TextJailBreak:
             self.template.value = self.template.render_template_value_silent(**kwargs)
 
     @classmethod
-    def get_all_jailbreak_templates(cls, k: Optional[int] = None) -> List[str]:
+    def get_jailbreak_templates(cls, k: Optional[int] = None) -> List[str]:
         """
         Retrieve all jailbreaks from the JAILBREAK_TEMPLATES_PATH.
 
