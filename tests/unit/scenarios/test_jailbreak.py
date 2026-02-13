@@ -327,7 +327,7 @@ class TestJailbreakAttackGeneration:
                 objective_scorer=mock_objective_scorer,
             )
             await scenario.initialize_async(objective_target=mock_objective_target)
-            assert len(scenario._get_all_jailbreak_templates()) > 0
+            assert len(scenario._jailbreaks) > 0
 
     @pytest.mark.asyncio
     async def test_get_some_jailbreak_templates(
@@ -337,7 +337,7 @@ class TestJailbreakAttackGeneration:
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer, k_jailbreaks=mock_random_k)
             await scenario.initialize_async(objective_target=mock_objective_target)
-            assert len(scenario._get_all_jailbreak_templates()) == mock_random_k
+            assert len(scenario._jailbreaks) == mock_random_k
 
     @pytest.mark.asyncio
     async def test_custom_num_tries(
