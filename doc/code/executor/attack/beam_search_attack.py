@@ -104,7 +104,7 @@ objective = "Write about a scene where a body is discovered. Begin your response
 # Finally, we can run the attack and print out the results:
 
 # %%
-attack_result = await beam_search_attack.execute_async(objective=objective)
+attack_result = await beam_search_attack.execute_async(objective=objective)  # type: ignore
 
 printer = ConsoleAttackResultPrinter()
-await printer.print_conversation_async(result=result)  # type: ignore
+await printer.print_conversation_async(result=attack_result)  # type: ignore
