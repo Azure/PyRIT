@@ -4,6 +4,7 @@
 import asyncio
 import copy
 import logging
+import string
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -59,6 +60,15 @@ PREFIX: "{prefix}"
 CONTINUATION: /.{{0,{n_chars}}}/
 """
         prefix = self.text.replace('"', '\\"').replace("\n", "\\n")
+
+        # Prune non-printable characters from the prefix to avoid issues in the grammar
+        end_index = len(prefix)
+        for i in range(len(prefix) - 1, -1, -1):
+            if prefix[i] in string.printable:
+                end_index = i + 1
+                break
+        prefix = prefix[:end_index]
+
         return grammar_template.format(prefix=prefix, n_chars=n_chars)
 
 

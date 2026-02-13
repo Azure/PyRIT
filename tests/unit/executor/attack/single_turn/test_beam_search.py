@@ -81,6 +81,16 @@ CONTINUATION: /.{0,1}/
 """
         assert beam.get_grammar(n_chars=1) == expected_grammar
 
+    def test_grammar_with_trailing_nonprintable(self):
+        beam = Beam(id=str(uuid.uuid4()), text="beam1beam2\x12", score=0.9)
+
+        expected_grammar = """
+start: PREFIX CONTINUATION
+PREFIX: "beam1beam2"
+CONTINUATION: /.{0,1}/
+"""
+        assert beam.get_grammar(n_chars=1) == expected_grammar
+
 
 class TestTopKBeamReviewer:
     @pytest.mark.parametrize("k", [0, -1])
