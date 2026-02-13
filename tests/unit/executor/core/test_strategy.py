@@ -11,6 +11,7 @@ from pyrit.exceptions import (
     execution_context,
 )
 from pyrit.executor.core.strategy import Strategy, StrategyContext
+from pyrit.identifiers import ScorerIdentifier
 
 
 @dataclass
@@ -195,7 +196,10 @@ class TestStrategyExecutionContextDetails:
             with execution_context(
                 component_role=ComponentRole.OBJECTIVE_SCORER,
                 attack_strategy_name="TestAttack",
-                component_identifier={"__type__": "SelfAskTrueFalseScorer"},
+                component_identifier=ScorerIdentifier(
+                    class_name="SelfAskTrueFalseScorer",
+                    class_module="pyrit.score.true_false.self_ask_true_false_scorer",
+                ),
             ):
                 await strategy.execute_with_context_async(context=context)
 

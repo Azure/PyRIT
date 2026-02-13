@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pytest
 
@@ -13,7 +13,7 @@ from pyrit.registry.base import _matches_filters
 class MetadataWithTags(Identifier):
     """Test metadata with a tags field for list filtering tests."""
 
-    tags: tuple[str, ...]
+    tags: tuple[str, ...] = field(kw_only=True)
 
 
 class TestMatchesFilters:
