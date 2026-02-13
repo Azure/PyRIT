@@ -257,7 +257,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         Returns:
             Any: SQLAlchemy text condition with bound parameter.
         """
-        return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.id') = :json_id").bindparams(
+        return text("ISJSON(attack_identifier) = 1 AND JSON_VALUE(attack_identifier, '$.hash') = :json_id").bindparams(
             json_id=str(attack_id)
         )
 
