@@ -203,7 +203,16 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             prompt_normalizer=self._prompt_normalizer,
         )
 
+        if not beam_reviewer or not isinstance(beam_reviewer, BeamReviewer):
+            raise ValueError("BeamSearchAttack requires a BeamReviewer instance")
         self._beam_reviewer = beam_reviewer
+
+        if num_beams <= 1:
+            raise ValueError("num_beams must greater than 1")
+        if max_iterations <= 1:
+            raise ValueError("max_iterations must be greater than 1")
+        if num_chars_per_step <= 0:
+            raise ValueError("num_chars_per_step must be a positive integer")
 
         self._num_beams = num_beams
         self._max_iterations = max_iterations
