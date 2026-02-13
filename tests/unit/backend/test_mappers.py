@@ -8,8 +8,11 @@ These tests verify the domain ↔ DTO translation layer in isolation,
 without any database or service dependencies.
 """
 
+import dataclasses
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
+
+import pytest
 
 from pyrit.backend.mappers.attack_mappers import (
     _collect_labels_from_pieces,
@@ -85,6 +88,7 @@ def _make_mock_piece(
     p.original_value_data_type = "text"
     p.response_error = "none"
     p.role = "user"
+    p.get_role_for_storage.return_value = "user"
     p.timestamp = datetime.now(timezone.utc)
     p.scores = []
     return p
@@ -697,3 +701,77 @@ class TestConverterObjectToInstance:
         assert result.supported_output_types == []
         assert result.converter_specific_params is None
         assert result.sub_converter_ids is None
+
+
+# ============================================================================
+# Drift Detection Tests – verify mapper-accessed fields exist on domain models
+# ============================================================================
+
+
+class TestDomainModelFieldsExist:
+    """Lightweight safety-net: ensure fields the mappers access still exist on the domain dataclasses.
+
+    If a domain model field is renamed or removed, these tests fail immediately –
+    before a mapper silently starts returning incorrect data.
+    """
+
+    # -- AttackIdentifier fields used in attack_mappers.py --------------------
+
+    @pytest.mark.parametrize(
+        "field_name",
+        [
+            "class_name",
+            "attack_specific_params",
+            "objective_target_identifier",
+            "request_converter_identifiers",
+        ],
+    )
+    def test_attack_identifier_has_field(self, field_name: str) -> None:
+        from pyrit.identifiers.attack_identifier import AttackIdentifier
+
+        field_names = {f.name for f in dataclasses.fields(AttackIdentifier)}
+        assert field_name in field_names, (
+            f"AttackIdentifier is missing '{field_name}' – attack_mappers.py depends on this field"
+        )
+
+    # -- TargetIdentifier fields used in attack_mappers.py & target_mappers.py
+
+    @pytest.mark.parametrize(
+        "field_name",
+        [
+            "class_name",
+            "unique_name",
+            "endpoint",
+            "model_name",
+            "temperature",
+            "top_p",
+            "max_requests_per_minute",
+            "target_specific_params",
+        ],
+    )
+    def test_target_identifier_has_field(self, field_name: str) -> None:
+        from pyrit.identifiers.target_identifier import TargetIdentifier
+
+        field_names = {f.name for f in dataclasses.fields(TargetIdentifier)}
+        assert field_name in field_names, (
+            f"TargetIdentifier is missing '{field_name}' – target_mappers.py depends on this field"
+        )
+
+    # -- ConverterIdentifier fields used in converter_mappers.py --------------
+
+    @pytest.mark.parametrize(
+        "field_name",
+        [
+            "class_name",
+            "supported_input_types",
+            "supported_output_types",
+            "converter_specific_params",
+        ],
+    )
+    def test_converter_identifier_has_field(self, field_name: str) -> None:
+        from pyrit.identifiers.converter_identifier import ConverterIdentifier
+
+        field_names = {f.name for f in dataclasses.fields(ConverterIdentifier)}
+        assert field_name in field_names, (
+            f"ConverterIdentifier is missing '{field_name}' – converter_mappers.py depends on this field"
+        )

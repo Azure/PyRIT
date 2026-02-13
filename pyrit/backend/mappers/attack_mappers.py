@@ -164,7 +164,7 @@ def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
         messages.append(
             Message(
                 turn_number=first.sequence if first else 0,
-                role=first.role if first else "user",
+                role=first.get_role_for_storage() if first else "user",
                 pieces=pieces,
                 created_at=first.timestamp if first else datetime.now(timezone.utc),
             )

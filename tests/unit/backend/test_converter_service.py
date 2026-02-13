@@ -361,22 +361,122 @@ def _get_all_converter_names() -> list[str]:
 
 def _try_instantiate_converter(converter_name: str):
     """
-    Try to instantiate a converter with no arguments.
+    Try to instantiate a converter with minimal representative arguments.
+
+    Uses mock objects for complex dependencies (PromptChatTarget, PromptConverter)
+    and provides minimal valid values for simple required parameters so that the
+    identifier extraction test covers ALL converters without skipping.
 
     Returns:
         Tuple of (converter_instance, error_message).
         If successful, error_message is None.
         If failed, converter_instance is None and error_message explains why.
     """
+    import inspect
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import MagicMock
+
+    from pyrit.common.apply_defaults import _RequiredValueSentinel
+    from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+
+    # Converters requiring external credentials or resources that can't be mocked
+    # at the constructor level — these validate env vars / files in __init__ body
+    _SKIP_CONVERTERS = {
+        "AzureSpeechAudioToTextConverter",  # requires AZURE_SPEECH_REGION env var
+        "AzureSpeechTextToAudioConverter",  # requires AZURE_SPEECH_REGION env var
+        "TransparencyAttackConverter",  # requires a real JPEG image file on disk
+    }
+
+    # Converter-specific overrides for params with validation
+    _OVERRIDES: dict = {
+        "CodeChameleonConverter": {"encrypt_type": "reverse"},
+        "SearchReplaceConverter": {"pattern": "foo", "replace": "bar"},
+        "PersuasionConverter": {"persuasion_technique": "logical_appeal"},
+    }
+
     converter_cls = getattr(prompt_converter, converter_name, None)
     if converter_cls is None:
         return None, f"Converter {converter_name} not found in prompt_converter module"
 
+    if converter_name in _SKIP_CONVERTERS:
+        return None, None  # Signal to skip without failure
+
+    # Build minimal kwargs based on constructor signature
+    sig = inspect.signature(converter_cls.__init__)
+    kwargs: dict = {}
+
+    for pname, param in sig.parameters.items():
+        if pname in ("self", "args", "kwargs"):
+            continue
+
+        # Check if this param has a REQUIRED_VALUE sentinel as its default
+        is_required_value = isinstance(param.default, _RequiredValueSentinel)
+        has_no_default = param.default is inspect.Parameter.empty
+
+        if not has_no_default and not is_required_value:
+            continue  # Has a real default — skip
+
+        # Check overrides first
+        if converter_name in _OVERRIDES and pname in _OVERRIDES[converter_name]:
+            kwargs[pname] = _OVERRIDES[converter_name][pname]
+            continue
+
+        ann = param.annotation
+        ann_str = str(ann) if ann is not inspect.Parameter.empty else ""
+
+        # PromptChatTarget — mock it with a proper identifier
+        if ann is not inspect.Parameter.empty and (
+            (isinstance(ann, type) and issubclass(ann, PromptChatTarget)) or "PromptChatTarget" in ann_str
+        ):
+            mock_target = MagicMock(spec=PromptChatTarget)
+            mock_target.__class__.__name__ = "MockChatTarget"
+            # Configure get_identifier() to return a proper identifier-like object
+            # so that _create_identifier can extract class_name, model_name, etc.
+            mock_id = MagicMock()
+            mock_id.class_name = "MockChatTarget"
+            mock_id.model_name = "test-model"
+            mock_id.temperature = None
+            mock_id.top_p = None
+            mock_target.get_identifier.return_value = mock_id
+            kwargs[pname] = mock_target
+        # PromptConverter — use a real simple converter to avoid JSON serialization issues
+        elif "PromptConverter" in ann_str:
+            kwargs[pname] = Base64Converter()
+        # TextSelectionStrategy — use a real concrete strategy
+        elif "TextSelectionStrategy" in ann_str:
+            from pyrit.prompt_converter.text_selection_strategy import AllWordsSelectionStrategy
+
+            kwargs[pname] = AllWordsSelectionStrategy()
+        # TextJailBreak — use string template
+        elif "TextJailBreak" in ann_str:
+            from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
+
+            kwargs[pname] = TextJailBreak(string_template="Test {{ prompt }}")
+        # Path — use a temp JPEG file
+        elif ann is Path or "Path" in ann_str:
+            tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+            # Minimal valid JPEG header
+            tmp.write(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00")
+            tmp.close()
+            kwargs[pname] = Path(tmp.name)
+        # str
+        elif ann is str or ann_str == "<class 'str'>":
+            kwargs[pname] = "test_value"
+        # int
+        elif ann is int or ann_str == "<class 'int'>":
+            kwargs[pname] = 1
+        # float
+        elif ann is float or ann_str == "<class 'float'>":
+            kwargs[pname] = 0.5
+        else:
+            kwargs[pname] = "test_value"
+
     try:
-        instance = converter_cls()
+        instance = converter_cls(**kwargs)
         return instance, None
     except Exception as e:
-        return None, f"Could not instantiate {converter_name} with no args: {e}"
+        return None, f"Could not instantiate {converter_name}: {e}"
 
 
 # Get all converter names dynamically
@@ -396,19 +496,19 @@ class TestBuildInstanceFromObjectWithRealConverters:
         """
         Test that _build_instance_from_object works with each converter.
 
-        For converters that can be instantiated with no arguments, verifies:
+        Instantiates every converter with minimal representative arguments
+        (using mocks for complex dependencies like PromptChatTarget) and verifies:
         - converter_id is set correctly
         - converter_type matches the class name
         - supported_input_types and supported_output_types are lists
-
-        For converters requiring arguments, the test is skipped (since we can't
-        know the required parameters without external configuration).
         """
         # Try to instantiate the converter
         converter_instance, error = _try_instantiate_converter(converter_name)
 
+        if converter_instance is None and error is None:
+            pytest.skip(f"{converter_name} requires external credentials/resources")
         if error:
-            pytest.skip(error)
+            pytest.fail(error)
 
         # Build the instance using the service method
         service = ConverterService()

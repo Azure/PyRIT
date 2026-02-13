@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field
 
 from pyrit.backend.models.common import PaginationInfo
-from pyrit.models import PromptResponseError
+from pyrit.models import ChatMessageRole, PromptResponseError
 
 
 class Score(BaseModel):
@@ -59,7 +59,7 @@ class Message(BaseModel):
     """A message within an attack."""
 
     turn_number: int = Field(..., description="Turn number in the conversation (1-indexed)")
-    role: Literal["user", "assistant", "system"] = Field(..., description="Message role")
+    role: ChatMessageRole = Field(..., description="Message role")
     pieces: List[MessagePiece] = Field(..., description="Message pieces (multimodal support)")
     created_at: datetime = Field(..., description="Message creation timestamp")
 
@@ -159,7 +159,7 @@ class MessagePieceRequest(BaseModel):
 class PrependedMessageRequest(BaseModel):
     """A message to prepend to the attack (for system prompt/branching)."""
 
-    role: Literal["user", "assistant", "system"] = Field(..., description="Message role")
+    role: ChatMessageRole = Field(..., description="Message role")
     pieces: List[MessagePieceRequest] = Field(..., description="Message pieces (supports multimodal)", max_length=50)
 
 
@@ -206,7 +206,7 @@ class AddMessageRequest(BaseModel):
     in memory without sending (useful for system messages, context injection).
     """
 
-    role: Literal["user", "assistant", "system"] = Field(default="user", description="Message role")
+    role: ChatMessageRole = Field(default="user", description="Message role")
     pieces: List[MessagePieceRequest] = Field(..., description="Message pieces", max_length=50)
     send: bool = Field(
         default=True,
