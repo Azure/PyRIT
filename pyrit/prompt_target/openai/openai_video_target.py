@@ -3,6 +3,7 @@
 
 import logging
 import os
+from mimetypes import guess_type
 from typing import Any, Optional
 
 from openai.types import VideoSeconds, VideoSize
@@ -48,6 +49,7 @@ class OpenAIVideoTarget(OpenAITarget):
 
     SUPPORTED_RESOLUTIONS: list[VideoSize] = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
     SUPPORTED_DURATIONS: list[VideoSeconds] = ["4", "8", "12"]
+    SUPPORTED_IMAGE_FORMATS: list[str] = ["image/jpeg", "image/png", "image/webp"]
 
     def __init__(
         self,
@@ -261,6 +263,9 @@ class OpenAIVideoTarget(OpenAITarget):
 
         Returns:
             A tuple of (filename, image_bytes, mime_type) for the SDK.
+
+        Raises:
+            ValueError: If the image format is not supported.
         """
         image_path = image_piece.converted_value
         image_serializer = data_serializer_factory(
@@ -270,7 +275,12 @@ class OpenAIVideoTarget(OpenAITarget):
 
         mime_type = DataTypeSerializer.get_mime_type(image_path)
         if not mime_type:
-            mime_type = "image/png"
+            mime_type, _ = guess_type(image_path, strict=False)
+        if not mime_type or mime_type not in self.SUPPORTED_IMAGE_FORMATS:
+            raise ValueError(
+                f"Unsupported image format: {mime_type or 'unknown'}. "
+                f"Supported formats: {', '.join(self.SUPPORTED_IMAGE_FORMATS)}"
+            )
 
         filename = os.path.basename(image_path)
         return (filename, image_bytes, mime_type)
@@ -339,7 +349,7 @@ class OpenAIVideoTarget(OpenAITarget):
             logger.info(f"Video generation completed successfully: {video.id}")
 
             # Log remix metadata if available
-            if hasattr(video, "remixed_from_video_id") and video.remixed_from_video_id:
+            if video.remixed_from_video_id:
                 logger.info(f"Video was remixed from: {video.remixed_from_video_id}")
 
             # Download video content using SDK

@@ -770,8 +770,62 @@ class TestVideoTargetEdgeCases:
             assert input_ref[2] == "image/jpeg"
 
     @pytest.mark.asyncio
-    async def test_image_to_video_with_unknown_mime_defaults_to_png(self, video_target: OpenAIVideoTarget):
-        """Test image-to-video defaults to PNG when MIME type cannot be determined."""
+    async def test_image_to_video_with_webp_uses_guess_type_fallback(self, video_target: OpenAIVideoTarget):
+        """Test image-to-video correctly identifies .webp via guess_type fallback."""
+        conversation_id = str(uuid.uuid4())
+        msg_text = MessagePiece(
+            role="user",
+            original_value="animate",
+            converted_value="animate",
+            conversation_id=conversation_id,
+        )
+        msg_image = MessagePiece(
+            role="user",
+            original_value="/path/image.webp",
+            converted_value="/path/image.webp",
+            converted_value_data_type="image_path",
+            conversation_id=conversation_id,
+        )
+
+        mock_video = MagicMock()
+        mock_video.id = "video_webp"
+        mock_video.status = "completed"
+        mock_video.error = None
+        mock_video.remixed_from_video_id = None
+
+        mock_video_response = MagicMock()
+        mock_video_response.content = b"video data"
+
+        mock_serializer = MagicMock()
+        mock_serializer.value = "/path/to/output.mp4"
+        mock_serializer.save_data = AsyncMock()
+
+        mock_image_serializer = MagicMock()
+        mock_image_serializer.read_data = AsyncMock(return_value=b"webp bytes")
+
+        with (
+            patch.object(video_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create,
+            patch.object(
+                video_target._async_client.videos, "download_content", new_callable=AsyncMock
+            ) as mock_download,
+            patch("pyrit.prompt_target.openai.openai_video_target.data_serializer_factory") as mock_factory,
+            patch("pyrit.prompt_target.openai.openai_video_target.DataTypeSerializer.get_mime_type") as mock_mime,
+        ):
+            mock_factory.side_effect = [mock_image_serializer, mock_serializer]
+            mock_create.return_value = mock_video
+            mock_download.return_value = mock_video_response
+            mock_mime.return_value = None  # strict=True returns None for .webp
+
+            response = await video_target.send_prompt_async(message=Message([msg_text, msg_image]))
+
+            # Verify webp MIME type is correctly resolved via guess_type fallback
+            call_kwargs = mock_create.call_args.kwargs
+            input_ref = call_kwargs["input_reference"]
+            assert input_ref[2] == "image/webp"
+
+    @pytest.mark.asyncio
+    async def test_image_to_video_with_unknown_mime_raises_error(self, video_target: OpenAIVideoTarget):
+        """Test image-to-video raises ValueError when image format is unsupported."""
         conversation_id = str(uuid.uuid4())
         msg_text = MessagePiece(
             role="user",
@@ -787,41 +841,18 @@ class TestVideoTargetEdgeCases:
             conversation_id=conversation_id,
         )
 
-        mock_video = MagicMock()
-        mock_video.id = "video_unknown"
-        mock_video.status = "completed"
-        mock_video.error = None
-        mock_video.remixed_from_video_id = None
-
-        mock_video_response = MagicMock()
-        mock_video_response.content = b"video data"
-
-        mock_serializer = MagicMock()
-        mock_serializer.value = "/path/to/output.mp4"
-        mock_serializer.save_data = AsyncMock()
-
         mock_image_serializer = MagicMock()
         mock_image_serializer.read_data = AsyncMock(return_value=b"unknown bytes")
 
         with (
-            patch.object(video_target._async_client.videos, "create_and_poll", new_callable=AsyncMock) as mock_create,
-            patch.object(
-                video_target._async_client.videos, "download_content", new_callable=AsyncMock
-            ) as mock_download,
             patch("pyrit.prompt_target.openai.openai_video_target.data_serializer_factory") as mock_factory,
             patch("pyrit.prompt_target.openai.openai_video_target.DataTypeSerializer.get_mime_type") as mock_mime,
+            pytest.raises(ValueError, match="Unsupported image format"),
         ):
-            mock_factory.side_effect = [mock_image_serializer, mock_serializer]
-            mock_create.return_value = mock_video
-            mock_download.return_value = mock_video_response
+            mock_factory.return_value = mock_image_serializer
             mock_mime.return_value = None  # MIME type cannot be determined
 
-            response = await video_target.send_prompt_async(message=Message([msg_text, msg_image]))
-
-            # Verify default PNG MIME type is used
-            call_kwargs = mock_create.call_args.kwargs
-            input_ref = call_kwargs["input_reference"]
-            assert input_ref[2] == "image/png"  # Default
+            await video_target.send_prompt_async(message=Message([msg_text, msg_image]))
 
     @pytest.mark.asyncio
     async def test_remix_with_failed_status(self, video_target: OpenAIVideoTarget):
