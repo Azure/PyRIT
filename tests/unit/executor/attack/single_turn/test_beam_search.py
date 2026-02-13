@@ -3,7 +3,32 @@
 
 import uuid
 
+import pytest
+
 from pyrit.executor.attack.single_turn.beam_search import Beam, TopKBeamReviewer
+
+
+class TestBeam:
+    @pytest.mark.parametrize("n_extend", [1, 2, 4])
+    def test_grammar_smoke(self, n_extend):
+        beam = Beam(id=str(uuid.uuid4()), text="beam1", score=0.9)
+
+        expected_grammar = f"""
+start: PREFIX CONTINUATION
+PREFIX: "beam1"
+CONTINUATION: /.{{0,{n_extend}}}/
+"""
+        assert beam.get_grammar(n_chars=n_extend) == expected_grammar
+
+    def test_grammar_with_newline(self):
+        beam = Beam(id=str(uuid.uuid4()), text="beam1\nbeam2", score=0.9)
+
+        expected_grammar = """
+start: PREFIX CONTINUATION
+PREFIX: "beam1\\nbeam2"
+CONTINUATION: /.{0,1}/
+"""
+        assert beam.get_grammar(n_chars=1) == expected_grammar
 
 
 class TestTopKBeamReviewer:

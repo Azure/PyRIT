@@ -43,6 +43,24 @@ class Beam:
     objective_score: Optional[Score] = None
     message: Message | None = None
 
+    def get_grammar(self, n_chars: int) -> str:
+        """
+        Generate a grammar definition for the beam to be used in the attack.
+
+        Args:
+            n_chars (int): The number of characters to allow in the continuation.
+
+        Returns:
+            str: A string representing the grammar definition for the beam.
+        """
+        grammar_template = """
+start: PREFIX CONTINUATION
+PREFIX: "{prefix}"
+CONTINUATION: /.{{0,{n_chars}}}/
+"""
+        prefix = self.text.replace('"', '\\"').replace("\n", "\\n")
+        return grammar_template.format(prefix=prefix, n_chars=n_chars)
+
 
 class BeamReviewer(ABC):
     """Abstract base class for beam reviewers in beam search attacks."""
@@ -346,14 +364,9 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         Raises:
             ValueError: If the objective target is not an OpenAIResponseTarget.
         """
-        grammar_template = """
-start: PREFIX CONTINUATION
-PREFIX: "{prefix}"
-CONTINUATION: /.{{0,{n_chars}}}/
-"""
         if not (isinstance(self._objective_target, OpenAIResponseTarget)):
             raise ValueError("Objective target must be an OpenAIResponseTarget")
-        lark_grammar = grammar_template.format(prefix=beam.text.replace('"', '\\"'), n_chars=self._num_chars_per_step)
+        lark_grammar = beam.get_grammar(n_chars=self._num_chars_per_step)
 
         grammar_tool = {
             "type": "custom",
