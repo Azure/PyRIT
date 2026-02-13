@@ -732,8 +732,7 @@ class TestDomainModelFieldsExist:
 
         field_names = {f.name for f in dataclasses.fields(AttackIdentifier)}
         assert field_name in field_names, (
-            f"AttackIdentifier is missing '{field_name}' – "
-            f"attack_mappers.py depends on this field"
+            f"AttackIdentifier is missing '{field_name}' – attack_mappers.py depends on this field"
         )
 
     # -- TargetIdentifier fields used in attack_mappers.py & target_mappers.py
@@ -756,8 +755,7 @@ class TestDomainModelFieldsExist:
 
         field_names = {f.name for f in dataclasses.fields(TargetIdentifier)}
         assert field_name in field_names, (
-            f"TargetIdentifier is missing '{field_name}' – "
-            f"target_mappers.py depends on this field"
+            f"TargetIdentifier is missing '{field_name}' – target_mappers.py depends on this field"
         )
 
     # -- ConverterIdentifier fields used in converter_mappers.py --------------
@@ -776,6 +774,5 @@ class TestDomainModelFieldsExist:
 
         field_names = {f.name for f in dataclasses.fields(ConverterIdentifier)}
         assert field_name in field_names, (
-            f"ConverterIdentifier is missing '{field_name}' – "
-            f"converter_mappers.py depends on this field"
+            f"ConverterIdentifier is missing '{field_name}' – converter_mappers.py depends on this field"
         )
