@@ -35,7 +35,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
         RED_TEAMER_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "red_teamer_system_prompt.yaml").resolve()
         CRITERIA_SYSTEM_PROMPT = Path(SCORER_SCALES_PATH, "criteria_system_prompt.yaml").resolve()
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         is_objective_required=True,
     )
@@ -59,7 +59,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
                 Defaults to GENERAL_SYSTEM_PROMPT if not provided.
             validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
         """
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
 
         self._prompt_target = chat_target
 
@@ -120,6 +120,7 @@ class SelfAskScaleScorer(FloatScaleScorer):
             scored_prompt_id=message_piece.id,
             category=self._category,
             objective=objective,
+            attack_identifier=message_piece.attack_identifier,
         )
 
         score = unvalidated_score.to_score(

@@ -29,7 +29,7 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
     RedTeamingAttack,
 )
-from pyrit.prompt_converter import SearchReplaceConverter
+from pyrit.prompt_converter import JsonStringConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
 from pyrit.prompt_target import (
     HTTPTarget,
@@ -72,11 +72,9 @@ parsing_function = get_http_target_json_response_callback_function(key="choices[
 # httpx AsyncClient parameters can be passed as kwargs to HTTPTarget, for example the timeout below
 http_prompt_target = HTTPTarget(http_request=raw_http_request, callback_function=parsing_function, timeout=20.0)
 
-converters = PromptConverterConfiguration.from_converters(
-    converters=[SearchReplaceConverter(pattern=r"(?! )\s", replace="")]
-)
+converters = PromptConverterConfiguration.from_converters(converters=[JsonStringConverter()])
 
-# Note, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
+# Note, a converter is used to format the prompt to be JSON safe by properly escaping special characters
 converter_config = AttackConverterConfig(request_converters=converters)
 
 attack = PromptSendingAttack(objective_target=http_prompt_target, attack_converter_config=converter_config)
@@ -115,12 +113,10 @@ http_prompt_target = HTTPTarget(
 )
 
 converter_config = AttackConverterConfig(
-    request_converters=PromptConverterConfiguration.from_converters(
-        converters=[SearchReplaceConverter(pattern=r"(?! )\s", replace="")]
-    )
+    request_converters=PromptConverterConfiguration.from_converters(converters=[JsonStringConverter()])
 )
 
-# Note, like above, a converter is used to format the prompt to be json safe without new lines/carriage returns, etc
+# Note, like above, a converter is used to format the prompt to be JSON safe by properly escaping special characters
 red_teaming_attack = RedTeamingAttack(
     objective_target=http_prompt_target,
     attack_adversarial_config=adversarial_config,

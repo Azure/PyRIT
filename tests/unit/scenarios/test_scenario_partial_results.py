@@ -138,7 +138,6 @@ class TestScenarioPartialAttackCompletion:
                     AttackResult(
                         conversation_id=f"conv-{i}",
                         objective=f"obj{i}",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                         outcome=AttackOutcome.SUCCESS,
                         executed_turns=1,
                     )
@@ -156,7 +155,6 @@ class TestScenarioPartialAttackCompletion:
                     AttackResult(
                         conversation_id="conv-3",
                         objective="obj3",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "3"},
                         outcome=AttackOutcome.SUCCESS,
                         executed_turns=1,
                     )
@@ -199,7 +197,6 @@ class TestScenarioPartialAttackCompletion:
                 AttackResult(
                     conversation_id=f"conv-{i}",
                     objective=f"obj{i}",
-                    attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                     outcome=AttackOutcome.SUCCESS,
                     executed_turns=1,
                 )
@@ -258,7 +255,6 @@ class TestScenarioPartialAttackCompletion:
                     AttackResult(
                         conversation_id=f"conv-{i}",
                         objective=f"obj{i}",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                         outcome=AttackOutcome.SUCCESS,
                         executed_turns=1,
                     )
@@ -275,7 +271,6 @@ class TestScenarioPartialAttackCompletion:
                     AttackResult(
                         conversation_id=f"conv-{i}",
                         objective=f"obj{i}",
-                        attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                         outcome=AttackOutcome.SUCCESS,
                         executed_turns=1,
                     )
@@ -335,7 +330,6 @@ class TestScenarioPartialAttackCompletion:
                         AttackResult(
                             conversation_id="conv-a2-1",
                             objective="a2_obj1",
-                            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "a2_1"},
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
                         )
@@ -351,7 +345,6 @@ class TestScenarioPartialAttackCompletion:
                         AttackResult(
                             conversation_id=f"conv-{obj}",
                             objective=obj,
-                            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": obj},
                             outcome=AttackOutcome.SUCCESS,
                             executed_turns=1,
                         )

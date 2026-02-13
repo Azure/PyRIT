@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Dict, List, Optional, Type
 
 from pyrit.identifiers.identifier import _MAX_STORAGE_LENGTH, Identifier
 from pyrit.models.score import ScoreType
@@ -64,5 +64,4 @@ class ScorerIdentifier(Identifier):
             ]
 
         # Delegate to parent class for standard processing
-        result = Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]
-        return cast(ScorerIdentifier, result)
+        return super().from_dict(data)

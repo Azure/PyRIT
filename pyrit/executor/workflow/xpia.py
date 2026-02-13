@@ -14,6 +14,7 @@ from pyrit.executor.workflow.core import (
     WorkflowResult,
     WorkflowStrategy,
 )
+from pyrit.identifiers import AttackIdentifier, Identifiable
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -127,7 +128,7 @@ class XPIAResult(WorkflowResult):
         return XPIAStatus.SUCCESS if self.success else XPIAStatus.FAILURE
 
 
-class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
+class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable[AttackIdentifier]):
     """
     Implementation of Cross-Domain Prompt Injection Attack (XPIA) workflow.
 
@@ -173,6 +174,26 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult]):
 
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._memory = CentralMemory.get_memory_instance()
+
+    def _build_identifier(self) -> AttackIdentifier:
+        """
+        Build the typed identifier for this XPIA workflow.
+
+        Returns:
+            AttackIdentifier: The constructed identifier.
+        """
+        objective_target_identifier = self._attack_setup_target.get_identifier()
+
+        scorer_identifier = None
+        if self._scorer:
+            scorer_identifier = self._scorer.get_identifier()
+
+        return AttackIdentifier(
+            class_name=self.__class__.__name__,
+            class_module=self.__class__.__module__,
+            objective_target_identifier=objective_target_identifier,
+            objective_scorer_identifier=scorer_identifier,
+        )
 
     def _validate_context(self, *, context: XPIAContext) -> None:
         """
