@@ -51,7 +51,7 @@ class TextJailBreak:
             self.template = SeedPrompt.from_yaml_file(template_path)
             self.template_source = str(template_path)
         elif string_template:
-            self.template = SeedPrompt(value=string_template)
+            self.template = SeedPrompt(value=string_template, is_general_strategy=True)
             self.template_source = "<string_template>"
         else:
             # Get all yaml files in the jailbreak directory and its subdirectories

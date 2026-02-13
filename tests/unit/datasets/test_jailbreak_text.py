@@ -7,6 +7,7 @@ import pytest
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
+from pyrit.models import SeedPrompt
 
 
 @pytest.fixture
@@ -186,3 +187,21 @@ def test_template_source_tracking(jailbreak_dir):
     # Test with string template
     jailbreak_string = TextJailBreak(string_template="Test {{ prompt }}")
     assert jailbreak_string.template_source == "<string_template>"
+
+
+def test_all_jailbreak_yaml_templates_have_is_general_strategy(jailbreak_dir):
+    """Test that all jailbreak YAML templates have is_general_strategy set to true."""
+    yaml_files = list(jailbreak_dir.rglob("*.yaml"))
+    assert len(yaml_files) > 0, "No YAML templates found in jailbreak directory"
+
+    missing = []
+    for yaml_file in yaml_files:
+        seed = SeedPrompt.from_yaml_file(yaml_file)
+        if not seed.is_general_strategy:
+            missing.append(str(yaml_file.relative_to(jailbreak_dir)))
+
+    if missing:
+        pytest.fail(
+            f"{len(missing)} jailbreak template(s) missing is_general_strategy: true:\n"
+            + "\n".join(f"  - {f}" for f in missing)
+        )

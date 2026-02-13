@@ -22,8 +22,12 @@ logger = logging.getLogger(__name__)
 class SeedObjective(Seed):
     """Represents a seed objective with various attributes and metadata."""
 
+    is_general_strategy: bool = False
+
     def __post_init__(self) -> None:
         """Post-initialization to render the template to replace existing values."""
+        if self.is_general_strategy:
+            raise ValueError("SeedObjective cannot be a general strategy.")
         self.value = super().render_template_value_silent(**PATHS_DICT)
 
     @classmethod
