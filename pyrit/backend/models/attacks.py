@@ -9,7 +9,7 @@ This is the attack-centric API design where every user interaction targets a mod
 """
 
 from datetime import datetime
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,8 +36,12 @@ class MessagePiece(BaseModel):
     """
 
     piece_id: str = Field(..., description="Unique piece identifier")
-    original_value_data_type: str = Field(default="text", description="Data type of the original value: 'text', 'image', 'audio', etc.")
-    converted_value_data_type: str = Field(default="text", description="Data type of the converted value: 'text', 'image', 'audio', etc.")
+    original_value_data_type: str = Field(
+        default="text", description="Data type of the original value: 'text', 'image', 'audio', etc."
+    )
+    converted_value_data_type: str = Field(
+        default="text", description="Data type of the converted value: 'text', 'image', 'audio', etc."
+    )
     original_value: Optional[str] = Field(default=None, description="Original value before conversion")
     original_value_mime_type: Optional[str] = Field(default=None, description="MIME type of original value")
     converted_value: str = Field(..., description="Converted value (text or base64 for media)")
@@ -54,7 +58,6 @@ class MessagePiece(BaseModel):
 class Message(BaseModel):
     """A message within an attack."""
 
-    message_id: str = Field(..., description="Unique message identifier")
     turn_number: int = Field(..., description="Turn number in the conversation (1-indexed)")
     role: Literal["user", "assistant", "system"] = Field(..., description="Message role")
     pieces: List[MessagePiece] = Field(..., description="Message pieces (multimodal support)")
@@ -69,10 +72,14 @@ class Message(BaseModel):
 class AttackSummary(BaseModel):
     """Summary view of an attack (for list views, omits full message content)."""
 
-    attack_id: str = Field(..., description="Unique attack identifier")
-    name: Optional[str] = Field(None, description="Attack name/label")
-    target_id: str = Field(..., description="Target instance ID")
-    target_type: str = Field(..., description="Target type (e.g., 'azure_openai')")
+    conversation_id: str = Field(..., description="Unique attack identifier")
+    attack_type: str = Field(..., description="Attack class name (e.g., 'CrescendoAttack', 'ManualAttack')")
+    attack_specific_params: Optional[Dict[str, Any]] = Field(None, description="Additional attack-specific parameters")
+    target_unique_name: Optional[str] = Field(None, description="Unique name of the objective target")
+    target_type: Optional[str] = Field(None, description="Target class name (e.g., 'OpenAIChatTarget')")
+    converters: List[str] = Field(
+        default_factory=list, description="Request converter class names applied in this attack"
+    )
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Field(
         None, description="Attack outcome (null if not yet determined)"
     )
@@ -93,7 +100,7 @@ class AttackSummary(BaseModel):
 class AttackMessagesResponse(BaseModel):
     """Response containing all messages for an attack."""
 
-    attack_id: str = Field(..., description="Attack identifier")
+    conversation_id: str = Field(..., description="Attack identifier")
     messages: List[Message] = Field(default_factory=list, description="All messages in order")
 
 
@@ -107,6 +114,22 @@ class AttackListResponse(BaseModel):
 
     items: List[AttackSummary] = Field(..., description="List of attack summaries")
     pagination: PaginationInfo = Field(..., description="Pagination metadata")
+
+
+class AttackOptionsResponse(BaseModel):
+    """Response containing unique attack class names used across attacks."""
+
+    attack_classes: List[str] = Field(
+        ..., description="Sorted list of unique attack class names found in attack results"
+    )
+
+
+class ConverterOptionsResponse(BaseModel):
+    """Response containing unique converter class names used across attacks."""
+
+    converter_classes: List[str] = Field(
+        ..., description="Sorted list of unique converter class names found in attack results"
+    )
 
 
 # ============================================================================
@@ -137,16 +160,14 @@ class PrependedMessageRequest(BaseModel):
     """A message to prepend to the attack (for system prompt/branching)."""
 
     role: Literal["user", "assistant", "system"] = Field(..., description="Message role")
-    pieces: List[MessagePieceRequest] = Field(
-        ..., description="Message pieces (supports multimodal)", max_length=50
-    )
+    pieces: List[MessagePieceRequest] = Field(..., description="Message pieces (supports multimodal)", max_length=50)
 
 
 class CreateAttackRequest(BaseModel):
     """Request to create a new attack."""
 
     name: Optional[str] = Field(None, description="Attack name/label")
-    target_id: str = Field(..., description="Target instance ID to attack")
+    target_unique_name: str = Field(..., description="Target instance ID to attack")
     prepended_conversation: Optional[List[PrependedMessageRequest]] = Field(
         None, description="Messages to prepend (system prompts, branching context)", max_length=200
     )
@@ -156,7 +177,7 @@ class CreateAttackRequest(BaseModel):
 class CreateAttackResponse(BaseModel):
     """Response after creating an attack."""
 
-    attack_id: str = Field(..., description="Unique attack identifier")
+    conversation_id: str = Field(..., description="Unique attack identifier")
     created_at: datetime = Field(..., description="Attack creation timestamp")
 
 

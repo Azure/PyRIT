@@ -15,7 +15,6 @@ from fastapi import APIRouter, HTTPException, Query, status
 from pyrit.backend.models.common import ProblemDetail
 from pyrit.backend.models.targets import (
     CreateTargetRequest,
-    CreateTargetResponse,
     TargetInstance,
     TargetListResponse,
 )
@@ -33,7 +32,7 @@ router = APIRouter(prefix="/targets", tags=["targets"])
 )
 async def list_targets(
     limit: int = Query(50, ge=1, le=200, description="Maximum items per page"),
-    cursor: Optional[str] = Query(None, description="Pagination cursor (target_id)"),
+    cursor: Optional[str] = Query(None, description="Pagination cursor (target_unique_name)"),
 ) -> TargetListResponse:
     """
     List target instances with pagination.
@@ -49,13 +48,13 @@ async def list_targets(
 
 @router.post(
     "",
-    response_model=CreateTargetResponse,
+    response_model=TargetInstance,
     status_code=status.HTTP_201_CREATED,
     responses={
         400: {"model": ProblemDetail, "description": "Invalid target type or parameters"},
     },
 )
-async def create_target(request: CreateTargetRequest) -> CreateTargetResponse:
+async def create_target(request: CreateTargetRequest) -> TargetInstance:
     """
     Create a new target instance.
 
@@ -84,26 +83,26 @@ async def create_target(request: CreateTargetRequest) -> CreateTargetResponse:
 
 
 @router.get(
-    "/{target_id}",
+    "/{target_unique_name}",
     response_model=TargetInstance,
     responses={
         404: {"model": ProblemDetail, "description": "Target not found"},
     },
 )
-async def get_target(target_id: str) -> TargetInstance:
+async def get_target(target_unique_name: str) -> TargetInstance:
     """
-    Get a target instance by ID.
+    Get a target instance by unique name.
 
     Returns:
         TargetInstance: The target instance details.
     """
     service = get_target_service()
 
-    target = await service.get_target_async(target_id=target_id)
+    target = await service.get_target_async(target_unique_name=target_unique_name)
     if not target:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Target '{target_id}' not found",
+            detail=f"Target '{target_unique_name}' not found",
         )
 
     return target

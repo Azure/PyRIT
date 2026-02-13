@@ -7,29 +7,32 @@ Target mappers – domain → DTO translation for target-related models.
 
 from typing import Any
 
-from pyrit.backend.models.common import filter_sensitive_fields
 from pyrit.backend.models.targets import TargetInstance
 
 
-def target_object_to_instance(target_id: str, target_obj: Any) -> TargetInstance:
+def target_object_to_instance(target_unique_name: str, target_obj: Any) -> TargetInstance:
     """
     Build a TargetInstance DTO from a registry target object.
 
+    Extracts only the frontend-relevant fields from the internal identifier,
+    avoiding leakage of internal PyRIT core structures.
+
     Args:
-        target_id: The unique target instance identifier.
+        target_unique_name: The unique target instance identifier (registry key / unique_name).
         target_obj: The domain PromptTarget object from the registry.
 
     Returns:
         TargetInstance DTO with metadata derived from the object.
     """
-    identifier = target_obj.get_identifier() if hasattr(target_obj, "get_identifier") else {}
-    identifier_dict = identifier.to_dict() if hasattr(identifier, "to_dict") else identifier
-    target_type = identifier_dict.get("__type__", target_obj.__class__.__name__)
-    filtered_params = filter_sensitive_fields(identifier_dict)
+    identifier = target_obj.get_identifier() if hasattr(target_obj, "get_identifier") else None
 
     return TargetInstance(
-        target_id=target_id,
-        type=target_type,
-        display_name=None,
-        params=filtered_params,
+        target_unique_name=target_unique_name,
+        target_type=identifier.class_name if identifier else target_obj.__class__.__name__,
+        endpoint=getattr(identifier, "endpoint", None) if identifier else None,
+        model_name=getattr(identifier, "model_name", None) if identifier else None,
+        temperature=getattr(identifier, "temperature", None) if identifier else None,
+        top_p=getattr(identifier, "top_p", None) if identifier else None,
+        max_requests_per_minute=getattr(identifier, "max_requests_per_minute", None) if identifier else None,
+        target_specific_params=getattr(identifier, "target_specific_params", None) if identifier else None,
     )

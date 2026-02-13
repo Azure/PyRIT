@@ -53,12 +53,11 @@ class TestListConverters:
         mock_converter = MagicMock()
         mock_converter.__class__.__name__ = "MockConverter"
         mock_identifier = MagicMock()
-        mock_identifier.to_dict.return_value = {
-            "class_name": "MockConverter",
-            "converter_specific_params": {"param1": "value1", "param2": 42},
-            "supported_input_types": ["text"],
-            "supported_output_types": ["text"],
-        }
+        mock_identifier.class_name = "MockConverter"
+        mock_identifier.supported_input_types = ("text",)
+        mock_identifier.supported_output_types = ("text",)
+        mock_identifier.converter_specific_params = {"param1": "value1", "param2": 42}
+        mock_identifier.sub_identifier = None
         mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 
@@ -66,12 +65,10 @@ class TestListConverters:
 
         assert len(result.items) == 1
         assert result.items[0].converter_id == "conv-1"
-        assert result.items[0].type == "MockConverter"
-        # Verify params contains the full identifier dict
-        assert result.items[0].params["class_name"] == "MockConverter"
-        assert result.items[0].params["converter_specific_params"] == {"param1": "value1", "param2": 42}
-        assert result.items[0].params["supported_input_types"] == ["text"]
-        assert result.items[0].params["supported_output_types"] == ["text"]
+        assert result.items[0].converter_type == "MockConverter"
+        assert result.items[0].supported_input_types == ["text"]
+        assert result.items[0].supported_output_types == ["text"]
+        assert result.items[0].converter_specific_params == {"param1": "value1", "param2": 42}
 
 
 class TestGetConverter:
@@ -94,10 +91,11 @@ class TestGetConverter:
         mock_converter = MagicMock()
         mock_converter.__class__.__name__ = "MockConverter"
         mock_identifier = MagicMock()
-        mock_identifier.to_dict.return_value = {
-            "class_name": "MockConverter",
-            "converter_specific_params": {"param1": "value1"},
-        }
+        mock_identifier.class_name = "MockConverter"
+        mock_identifier.supported_input_types = ("text",)
+        mock_identifier.supported_output_types = ("text",)
+        mock_identifier.converter_specific_params = {"param1": "value1"}
+        mock_identifier.sub_identifier = None
         mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 
@@ -105,7 +103,7 @@ class TestGetConverter:
 
         assert result is not None
         assert result.converter_id == "conv-1"
-        assert result.type == "MockConverter"
+        assert result.converter_type == "MockConverter"
 
 
 class TestGetConverterObject:
@@ -160,7 +158,7 @@ class TestCreateConverter:
         result = await service.create_converter_async(request=request)
 
         assert result.converter_id is not None
-        assert result.type == "Base64Converter"
+        assert result.converter_type == "Base64Converter"
         assert result.display_name == "My Base64"
 
     @pytest.mark.asyncio
@@ -400,8 +398,8 @@ class TestBuildInstanceFromObjectWithRealConverters:
 
         For converters that can be instantiated with no arguments, verifies:
         - converter_id is set correctly
-        - type matches the class name
-        - params contains class_name from the identifier
+        - converter_type matches the class name
+        - supported_input_types and supported_output_types are lists
 
         For converters requiring arguments, the test is skipped (since we can't
         know the required parameters without external configuration).
@@ -418,11 +416,9 @@ class TestBuildInstanceFromObjectWithRealConverters:
 
         # Verify the result
         assert result.converter_id == "test-id"
-        assert result.type == converter_name
-        assert isinstance(result.params, dict)
-        # The params should contain at least class_name from the identifier
-        assert "class_name" in result.params
-        assert result.params["class_name"] == converter_name
+        assert result.converter_type == converter_name
+        assert isinstance(result.supported_input_types, list)
+        assert isinstance(result.supported_output_types, list)
 
 
 class TestConverterParamsExtraction:
@@ -439,9 +435,9 @@ class TestConverterParamsExtraction:
         service = ConverterService()
         result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
-        assert result.type == "CaesarConverter"
-        converter_specific = result.params.get("converter_specific_params", {})
-        assert converter_specific.get("caesar_offset") == 13
+        assert result.converter_type == "CaesarConverter"
+        assert result.converter_specific_params is not None
+        assert result.converter_specific_params.get("caesar_offset") == 13
 
     def test_suffix_append_converter_params(self) -> None:
         """Test that SuffixAppendConverter params are extracted correctly."""
@@ -449,9 +445,9 @@ class TestConverterParamsExtraction:
         service = ConverterService()
         result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
-        assert result.type == "SuffixAppendConverter"
-        converter_specific = result.params.get("converter_specific_params", {})
-        assert converter_specific.get("suffix") == "test suffix"
+        assert result.converter_type == "SuffixAppendConverter"
+        assert result.converter_specific_params is not None
+        assert result.converter_specific_params.get("suffix") == "test suffix"
 
     def test_repeat_token_converter_params(self) -> None:
         """Test that RepeatTokenConverter params are extracted correctly."""
@@ -459,10 +455,10 @@ class TestConverterParamsExtraction:
         service = ConverterService()
         result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
-        assert result.type == "RepeatTokenConverter"
-        converter_specific = result.params.get("converter_specific_params", {})
-        assert converter_specific.get("token_to_repeat") == "x"
-        assert converter_specific.get("times_to_repeat") == 5
+        assert result.converter_type == "RepeatTokenConverter"
+        assert result.converter_specific_params is not None
+        assert result.converter_specific_params.get("token_to_repeat") == "x"
+        assert result.converter_specific_params.get("times_to_repeat") == 5
 
     def test_base64_converter_default_params(self) -> None:
         """Test that Base64Converter default params are captured."""
@@ -470,8 +466,7 @@ class TestConverterParamsExtraction:
         service = ConverterService()
         result = service._build_instance_from_object(converter_id="test-id", converter_obj=converter)
 
-        assert result.type == "Base64Converter"
-        # Verify params dict is populated from identifier
-        assert "class_name" in result.params
-        assert "supported_input_types" in result.params
-        assert "supported_output_types" in result.params
+        assert result.converter_type == "Base64Converter"
+        # Verify type info is populated from identifier
+        assert isinstance(result.supported_input_types, list)
+        assert isinstance(result.supported_output_types, list)

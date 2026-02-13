@@ -17,6 +17,7 @@ from functools import lru_cache
 from typing import Any, List, Optional, Tuple
 
 from pyrit import prompt_converter
+from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.backend.models.converters import (
     ConverterInstance,
     ConverterInstanceListResponse,
@@ -26,7 +27,6 @@ from pyrit.backend.models.converters import (
     CreateConverterResponse,
     PreviewStep,
 )
-from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.registry.instance_registries import ConverterRegistry
@@ -88,7 +88,8 @@ class ConverterService:
             ConverterInstanceListResponse containing all registered converters.
         """
         items = [
-            self._build_instance_from_object(converter_id=name, converter_obj=obj) for name, obj in self._registry.get_all_instances().items()
+            self._build_instance_from_object(converter_id=name, converter_obj=obj)
+            for name, obj in self._registry.get_all_instances().items()
         ]
         return ConverterInstanceListResponse(items=items)
 
@@ -139,9 +140,8 @@ class ConverterService:
 
         return CreateConverterResponse(
             converter_id=converter_id,
-            type=request.type,
+            converter_type=request.type,
             display_name=request.display_name,
-            params=request.params,
         )
 
     async def preview_conversion_async(self, *, request: ConverterPreviewRequest) -> ConverterPreviewResponse:

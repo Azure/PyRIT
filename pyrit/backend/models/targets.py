@@ -23,12 +23,17 @@ class TargetInstance(BaseModel):
     A runtime target instance.
 
     Created either by an initializer (at startup) or by user (via API).
+    Also used as the create-target response (same shape as GET).
     """
 
-    target_id: str = Field(..., description="Unique target instance identifier")
-    type: str = Field(..., description="Target type (e.g., 'azure_openai', 'text_target')")
-    display_name: Optional[str] = Field(None, description="Human-readable display name")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Target configuration (sensitive fields filtered)")
+    target_unique_name: str = Field(..., description="Unique target instance identifier (TargetIdentifier.unique_name)")
+    target_type: str = Field(..., description="Target class name (e.g., 'OpenAIChatTarget')")
+    endpoint: Optional[str] = Field(None, description="Target endpoint URL")
+    model_name: Optional[str] = Field(None, description="Model or deployment name")
+    temperature: Optional[float] = Field(None, description="Temperature parameter for generation")
+    top_p: Optional[float] = Field(None, description="Top-p parameter for generation")
+    max_requests_per_minute: Optional[int] = Field(None, description="Maximum requests per minute")
+    target_specific_params: Optional[Dict[str, Any]] = Field(None, description="Additional target-specific parameters")
 
 
 class TargetListResponse(BaseModel):
@@ -42,14 +47,4 @@ class CreateTargetRequest(BaseModel):
     """Request to create a new target instance."""
 
     type: str = Field(..., description="Target type (e.g., 'OpenAIChatTarget')")
-    display_name: Optional[str] = Field(None, description="Human-readable display name")
     params: Dict[str, Any] = Field(default_factory=dict, description="Target constructor parameters")
-
-
-class CreateTargetResponse(BaseModel):
-    """Response after creating a target instance."""
-
-    target_id: str = Field(..., description="Unique target instance identifier")
-    type: str = Field(..., description="Target type")
-    display_name: Optional[str] = Field(None, description="Human-readable display name")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Filtered configuration (no secrets)")

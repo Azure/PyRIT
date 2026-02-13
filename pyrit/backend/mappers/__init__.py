@@ -13,8 +13,8 @@ from pyrit.backend.mappers.attack_mappers import (
     map_outcome,
     pyrit_messages_to_dto,
     pyrit_scores_to_dto,
-    request_to_pyrit_message,
     request_piece_to_pyrit_message_piece,
+    request_to_pyrit_message,
 )
 from pyrit.backend.mappers.converter_mappers import (
     converter_object_to_instance,

@@ -33,9 +33,20 @@ class ConverterInstance(BaseModel):
     """A registered converter instance."""
 
     converter_id: str = Field(..., description="Unique converter instance identifier")
-    type: str = Field(..., description="Converter type (e.g., 'base64', 'translation')")
+    converter_type: str = Field(..., description="Converter class name (e.g., 'Base64Converter')")
     display_name: Optional[str] = Field(None, description="Human-readable display name")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Converter parameters (resolved)")
+    supported_input_types: List[str] = Field(
+        default_factory=list, description="Input data types supported by this converter"
+    )
+    supported_output_types: List[str] = Field(
+        default_factory=list, description="Output data types produced by this converter"
+    )
+    converter_specific_params: Optional[Dict[str, Any]] = Field(
+        None, description="Additional converter-specific parameters"
+    )
+    sub_converter_ids: Optional[List[str]] = Field(
+        None, description="Converter IDs of sub-converters (for pipelines/composites)"
+    )
 
 
 class ConverterInstanceListResponse(BaseModel):
@@ -59,9 +70,8 @@ class CreateConverterResponse(BaseModel):
     """Response after creating a converter instance."""
 
     converter_id: str = Field(..., description="Unique converter instance identifier")
-    type: str = Field(..., description="Converter type")
+    converter_type: str = Field(..., description="Converter class name")
     display_name: Optional[str] = Field(None, description="Human-readable display name")
-    params: Dict[str, Any] = Field(default_factory=dict, description="Converter parameters")
 
 
 # ============================================================================

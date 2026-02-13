@@ -34,7 +34,6 @@ from pyrit.backend.models.converters import (
     PreviewStep,
 )
 from pyrit.backend.models.targets import (
-    CreateTargetResponse,
     TargetInstance,
     TargetListResponse,
 )
@@ -87,14 +86,14 @@ class TestAttackRoutes:
 
             response = client.get(
                 "/api/attacks",
-                params={"target_id": "t1", "outcome": "success", "limit": 10},
+                params={"attack_class": "CrescendoAttack", "outcome": "success", "limit": 10},
             )
 
             assert response.status_code == status.HTTP_200_OK
             mock_service.list_attacks_async.assert_called_once_with(
-                target_id="t1",
+                attack_class="CrescendoAttack",
+                converter_classes=None,
                 outcome="success",
-                name=None,
                 labels=None,
                 min_turns=None,
                 max_turns=None,
@@ -110,7 +109,7 @@ class TestAttackRoutes:
             mock_service = MagicMock()
             mock_service.create_attack_async = AsyncMock(
                 return_value=CreateAttackResponse(
-                    attack_id="attack-1",
+                    conversation_id="attack-1",
                     created_at=now,
                 )
             )
@@ -118,12 +117,12 @@ class TestAttackRoutes:
 
             response = client.post(
                 "/api/attacks",
-                json={"target_id": "target-1", "name": "Test Attack"},
+                json={"target_unique_name": "target-1", "name": "Test Attack"},
             )
 
             assert response.status_code == status.HTTP_201_CREATED
             data = response.json()
-            assert data["attack_id"] == "attack-1"
+            assert data["conversation_id"] == "attack-1"
 
     def test_create_attack_target_not_found(self, client: TestClient) -> None:
         """Test attack creation with non-existent target."""
@@ -134,7 +133,7 @@ class TestAttackRoutes:
 
             response = client.post(
                 "/api/attacks",
-                json={"target_id": "nonexistent"},
+                json={"target_unique_name": "nonexistent"},
             )
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -147,10 +146,8 @@ class TestAttackRoutes:
             mock_service = MagicMock()
             mock_service.get_attack_async = AsyncMock(
                 return_value=AttackSummary(
-                    attack_id="attack-1",
-                    name="Test",
-                    target_id="target-1",
-                    target_type="TextTarget",
+                    conversation_id="attack-1",
+                    attack_type="TestAttack",
                     outcome=None,
                     last_message_preview=None,
                     message_count=0,
@@ -164,7 +161,7 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["attack_id"] == "attack-1"
+            assert data["conversation_id"] == "attack-1"
 
     def test_get_attack_not_found(self, client: TestClient) -> None:
         """Test getting a non-existent attack."""
@@ -185,10 +182,8 @@ class TestAttackRoutes:
             mock_service = MagicMock()
             mock_service.update_attack_async = AsyncMock(
                 return_value=AttackSummary(
-                    attack_id="attack-1",
-                    name=None,
-                    target_id="target-1",
-                    target_type="TextTarget",
+                    conversation_id="attack-1",
+                    attack_type="TestAttack",
                     outcome="success",
                     last_message_preview=None,
                     message_count=0,
@@ -212,10 +207,8 @@ class TestAttackRoutes:
         now = datetime.now(timezone.utc)
 
         attack_summary = AttackSummary(
-            attack_id="attack-1",
-            name=None,
-            target_id="target-1",
-            target_type="TextTarget",
+            conversation_id="attack-1",
+            attack_type="TestAttack",
             outcome=None,
             last_message_preview=None,
             message_count=2,
@@ -224,10 +217,9 @@ class TestAttackRoutes:
         )
 
         attack_messages = AttackMessagesResponse(
-            attack_id="attack-1",
+            conversation_id="attack-1",
             messages=[
                 Message(
-                    message_id="msg-1",
                     turn_number=1,
                     role="user",
                     pieces=[
@@ -239,7 +231,6 @@ class TestAttackRoutes:
                     created_at=now,
                 ),
                 Message(
-                    message_id="msg-2",
                     turn_number=2,
                     role="assistant",
                     pieces=[
@@ -350,10 +341,9 @@ class TestAttackRoutes:
             mock_service = MagicMock()
             mock_service.get_attack_messages_async = AsyncMock(
                 return_value=AttackMessagesResponse(
-                    attack_id="attack-1",
+                    conversation_id="attack-1",
                     messages=[
                         Message(
-                            message_id="msg-1",
                             turn_number=1,
                             role="user",
                             pieces=[MessagePiece(piece_id="p1", converted_value="Hello")],
@@ -368,7 +358,7 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["attack_id"] == "attack-1"
+            assert data["conversation_id"] == "attack-1"
             assert len(data["messages"]) == 1
 
     def test_get_attack_messages_not_found(self, client: TestClient) -> None:
@@ -392,10 +382,8 @@ class TestAttackRoutes:
                 return_value=AttackListResponse(
                     items=[
                         AttackSummary(
-                            attack_id="attack-1",
-                            name=None,
-                            target_id="target-1",
-                            target_type="TextTarget",
+                            conversation_id="attack-1",
+                            attack_type="TestAttack",
                             outcome=None,
                             last_message_preview=None,
                             message_count=0,
@@ -416,6 +404,105 @@ class TestAttackRoutes:
             mock_service.list_attacks_async.assert_called_once()
             call_kwargs = mock_service.list_attacks_async.call_args[1]
             assert call_kwargs["labels"] == {"env": "prod", "team": "red"}
+
+    def test_get_attack_options(self, client: TestClient) -> None:
+        """Test getting attack type options from attack results."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.get_attack_options_async = AsyncMock(return_value=["CrescendoAttack", "ManualAttack"])
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks/attack-options")
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["attack_classes"] == ["CrescendoAttack", "ManualAttack"]
+
+    def test_get_converter_options(self, client: TestClient) -> None:
+        """Test getting converter options from attack results."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.get_converter_options_async = AsyncMock(return_value=["Base64Converter", "ROT13Converter"])
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks/converter-options")
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["converter_classes"] == ["Base64Converter", "ROT13Converter"]
+
+    def test_parse_labels_skips_param_without_colon(self, client: TestClient) -> None:
+        """Test that _parse_labels skips label params that have no colon."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.list_attacks_async = AsyncMock(
+                return_value=AttackListResponse(
+                    items=[],
+                    pagination=PaginationInfo(limit=20, has_more=False, next_cursor=None, prev_cursor=None),
+                )
+            )
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks?label=nocolon&label=env:prod")
+
+            assert response.status_code == status.HTTP_200_OK
+            call_kwargs = mock_service.list_attacks_async.call_args[1]
+            # Only the valid label should be parsed
+            assert call_kwargs["labels"] == {"env": "prod"}
+
+    def test_parse_labels_all_invalid_returns_none(self, client: TestClient) -> None:
+        """Test that _parse_labels returns None when all params lack colons."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.list_attacks_async = AsyncMock(
+                return_value=AttackListResponse(
+                    items=[],
+                    pagination=PaginationInfo(limit=20, has_more=False, next_cursor=None, prev_cursor=None),
+                )
+            )
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks?label=nocolon&label=alsonocolon")
+
+            assert response.status_code == status.HTTP_200_OK
+            call_kwargs = mock_service.list_attacks_async.call_args[1]
+            assert call_kwargs["labels"] is None
+
+    def test_parse_labels_value_with_extra_colons(self, client: TestClient) -> None:
+        """Test that _parse_labels handles values containing colons (split on first only)."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.list_attacks_async = AsyncMock(
+                return_value=AttackListResponse(
+                    items=[],
+                    pagination=PaginationInfo(limit=20, has_more=False, next_cursor=None, prev_cursor=None),
+                )
+            )
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks?label=url:http://example.com:8080")
+
+            assert response.status_code == status.HTTP_200_OK
+            call_kwargs = mock_service.list_attacks_async.call_args[1]
+            assert call_kwargs["labels"] == {"url": "http://example.com:8080"}
+
+    def test_list_attacks_forwards_converter_classes_param(self, client: TestClient) -> None:
+        """Test that converter_classes query params are forwarded to service."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.list_attacks_async = AsyncMock(
+                return_value=AttackListResponse(
+                    items=[],
+                    pagination=PaginationInfo(limit=20, has_more=False, next_cursor=None, prev_cursor=None),
+                )
+            )
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks?converter_classes=Base64&converter_classes=ROT13")
+
+            assert response.status_code == status.HTTP_200_OK
+            call_kwargs = mock_service.list_attacks_async.call_args[1]
+            assert call_kwargs["converter_classes"] == ["Base64", "ROT13"]
 
 
 # ============================================================================
@@ -450,23 +537,21 @@ class TestTargetRoutes:
         with patch("pyrit.backend.routes.targets.get_target_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.create_target_async = AsyncMock(
-                return_value=CreateTargetResponse(
-                    target_id="target-1",
-                    type="TextTarget",
-                    display_name="My Target",
-                    params={},
+                return_value=TargetInstance(
+                    target_unique_name="target-1",
+                    target_type="TextTarget",
                 )
             )
             mock_get_service.return_value = mock_service
 
             response = client.post(
                 "/api/targets",
-                json={"type": "TextTarget", "display_name": "My Target", "params": {}},
+                json={"type": "TextTarget", "params": {}},
             )
 
             assert response.status_code == status.HTTP_201_CREATED
             data = response.json()
-            assert data["target_id"] == "target-1"
+            assert data["target_unique_name"] == "target-1"
 
     def test_create_target_invalid_type(self, client: TestClient) -> None:
         """Test target creation with invalid type."""
@@ -502,10 +587,8 @@ class TestTargetRoutes:
             mock_service = MagicMock()
             mock_service.get_target_async = AsyncMock(
                 return_value=TargetInstance(
-                    target_id="target-1",
-                    type="TextTarget",
-                    display_name=None,
-                    params={},
+                    target_unique_name="target-1",
+                    target_type="TextTarget",
                 )
             )
             mock_get_service.return_value = mock_service
@@ -514,7 +597,7 @@ class TestTargetRoutes:
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["target_id"] == "target-1"
+            assert data["target_unique_name"] == "target-1"
 
     def test_get_target_not_found(self, client: TestClient) -> None:
         """Test getting a non-existent target."""
@@ -556,9 +639,8 @@ class TestConverterRoutes:
             mock_service.create_converter_async = AsyncMock(
                 return_value=CreateConverterResponse(
                     converter_id="conv-1",
-                    type="Base64Converter",
+                    converter_type="Base64Converter",
                     display_name="My Base64",
-                    params={},
                 )
             )
             mock_get_service.return_value = mock_service
@@ -607,9 +689,8 @@ class TestConverterRoutes:
             mock_service.get_converter_async = AsyncMock(
                 return_value=ConverterInstance(
                     converter_id="conv-1",
-                    type="Base64Converter",
+                    converter_type="Base64Converter",
                     display_name=None,
-                    params={},
                 )
             )
             mock_get_service.return_value = mock_service

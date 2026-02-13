@@ -11,7 +11,7 @@ The one exception is `attack_result_to_summary` which receives pre-fetched piece
 import mimetypes
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, cast
+from typing import Any, Dict, List, Literal, Optional, Sequence, cast
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
@@ -20,10 +20,9 @@ from pyrit.backend.models.attacks import (
     MessagePiece,
     Score,
 )
-from pyrit.models import AttackOutcome, AttackResult, PromptDataType
+from pyrit.models import AttackOutcome, AttackResult, ChatMessageRole, PromptDataType
 from pyrit.models import Message as PyritMessage
 from pyrit.models import MessagePiece as PyritMessagePiece
-
 
 # ============================================================================
 # Domain → DTO  (for API responses)
@@ -48,10 +47,13 @@ def map_outcome(outcome: AttackOutcome) -> Optional[Literal["undetermined", "suc
 def attack_result_to_summary(
     ar: AttackResult,
     *,
-    pieces: List[Any],
+    pieces: Sequence[Any],
 ) -> AttackSummary:
     """
     Build an AttackSummary DTO from an AttackResult and its message pieces.
+
+    Extracts only the frontend-relevant fields from the internal identifiers,
+    avoiding leakage of internal PyRIT core structures.
 
     Args:
         ar: The domain AttackResult.
@@ -68,11 +70,19 @@ def attack_result_to_summary(
     created_at = datetime.fromisoformat(created_str) if created_str else datetime.now(timezone.utc)
     updated_at = datetime.fromisoformat(updated_str) if updated_str else created_at
 
+    aid = ar.attack_identifier
+
+    # Extract only frontend-relevant fields from identifiers
+    target_id = aid.objective_target_identifier if aid else None
+    converter_ids = aid.request_converter_identifiers if aid else None
+
     return AttackSummary(
-        attack_id=ar.conversation_id,
-        name=ar.attack_identifier.get("name"),
-        target_id=ar.attack_identifier.get("target_id", ""),
-        target_type=ar.attack_identifier.get("target_type", ""),
+        conversation_id=ar.conversation_id,
+        attack_type=aid.class_name if aid else "Unknown",
+        attack_specific_params=aid.attack_specific_params if aid else None,
+        target_unique_name=target_id.unique_name if target_id else None,
+        target_type=target_id.class_name if target_id else None,
+        converters=[c.class_name for c in converter_ids] if converter_ids else [],
         outcome=map_outcome(ar.outcome),
         last_message_preview=last_preview,
         message_count=message_count,
@@ -153,7 +163,6 @@ def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
         first = msg.message_pieces[0] if msg.message_pieces else None
         messages.append(
             Message(
-                message_id=str(first.id) if first else str(uuid.uuid4()),
                 turn_number=first.sequence if first else 0,
                 role=first.role if first else "user",
                 pieces=pieces,
@@ -172,7 +181,7 @@ def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
 def request_piece_to_pyrit_message_piece(
     *,
     piece: Any,
-    role: str,
+    role: "ChatMessageRole",
     conversation_id: str,
     sequence: int,
     labels: Optional[Dict[str, str]] = None,
@@ -244,7 +253,7 @@ def request_to_pyrit_message(
 # ============================================================================
 
 
-def _get_preview_from_pieces(pieces: List[Any]) -> Optional[str]:
+def _get_preview_from_pieces(pieces: Sequence[Any]) -> Optional[str]:
     """
     Get a preview of the last message from a list of pieces.
 
@@ -258,7 +267,7 @@ def _get_preview_from_pieces(pieces: List[Any]) -> Optional[str]:
     return text[:100] + "..." if len(text) > 100 else text
 
 
-def _collect_labels_from_pieces(pieces: List[Any]) -> Dict[str, str]:
+def _collect_labels_from_pieces(pieces: Sequence[Any]) -> Dict[str, str]:
     """
     Collect labels from message pieces.
 

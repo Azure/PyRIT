@@ -11,8 +11,6 @@ without any database or service dependencies.
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
-import pytest
-
 from pyrit.backend.mappers.attack_mappers import (
     _collect_labels_from_pieces,
     _infer_mime_type,
@@ -25,8 +23,8 @@ from pyrit.backend.mappers.attack_mappers import (
 )
 from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.backend.mappers.target_mappers import target_object_to_instance
+from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, TargetIdentifier
 from pyrit.models import AttackOutcome, AttackResult
-
 
 # ============================================================================
 # Helpers
@@ -36,21 +34,33 @@ from pyrit.models import AttackOutcome, AttackResult
 def _make_attack_result(
     *,
     conversation_id: str = "attack-1",
-    target_id: str = "target-1",
-    target_type: str = "TextTarget",
+    has_target: bool = True,
     name: str = "Test Attack",
     outcome: AttackOutcome = AttackOutcome.UNDETERMINED,
 ) -> AttackResult:
     """Create an AttackResult for mapper tests."""
     now = datetime.now(timezone.utc)
+
+    target_identifier = (
+        TargetIdentifier(
+            class_name="TextTarget",
+            class_module="pyrit.prompt_target",
+        )
+        if has_target
+        else None
+    )
+
     return AttackResult(
         conversation_id=conversation_id,
         objective="test",
-        attack_identifier={
-            "name": name,
-            "target_id": target_id,
-            "target_type": target_type,
-        },
+        attack_identifier=AttackIdentifier(
+            class_name=name,
+            class_module="pyrit.backend",
+            objective_target_identifier=target_identifier,
+            attack_specific_params={
+                "source": "gui",
+            },
+        ),
         outcome=outcome,
         metadata={
             "created_at": now.isoformat(),
@@ -114,17 +124,18 @@ class TestAttackResultToSummary:
 
     def test_basic_mapping(self) -> None:
         """Test that all fields are mapped correctly."""
-        ar = _make_attack_result(name="My Attack", target_id="t-1", target_type="OpenAIChatTarget")
+        ar = _make_attack_result(name="My Attack")
         pieces = [_make_mock_piece(sequence=0), _make_mock_piece(sequence=1)]
 
         summary = attack_result_to_summary(ar, pieces=pieces)
 
-        assert summary.attack_id == ar.conversation_id
-        assert summary.name == "My Attack"
-        assert summary.target_id == "t-1"
-        assert summary.target_type == "OpenAIChatTarget"
+        assert summary.conversation_id == ar.conversation_id
         assert summary.outcome == "undetermined"
         assert summary.message_count == 2
+        # Attack metadata should be extracted into explicit fields
+        assert summary.attack_type == "My Attack"
+        assert summary.target_type == "TextTarget"
+        assert summary.target_unique_name is not None
 
     def test_empty_pieces_gives_zero_messages(self) -> None:
         """Test mapping with no message pieces."""
@@ -164,6 +175,63 @@ class TestAttackResultToSummary:
         summary = attack_result_to_summary(ar, pieces=[])
 
         assert summary.outcome == "success"
+
+    def test_no_target_returns_none_fields(self) -> None:
+        """Test that target fields are None when no target identifier exists."""
+        ar = _make_attack_result(has_target=False)
+
+        summary = attack_result_to_summary(ar, pieces=[])
+
+        assert summary.target_unique_name is None
+        assert summary.target_type is None
+
+    def test_attack_specific_params_passed_through(self) -> None:
+        """Test that attack_specific_params are extracted from identifier."""
+        ar = _make_attack_result()
+
+        summary = attack_result_to_summary(ar, pieces=[])
+
+        assert summary.attack_specific_params == {"source": "gui"}
+
+    def test_converters_extracted_from_identifier(self) -> None:
+        """Test that converter class names are extracted into converters list."""
+        now = datetime.now(timezone.utc)
+        ar = AttackResult(
+            conversation_id="attack-conv",
+            objective="test",
+            attack_identifier=AttackIdentifier(
+                class_name="TestAttack",
+                class_module="pyrit.backend",
+                request_converter_identifiers=[
+                    ConverterIdentifier(
+                        class_name="Base64Converter",
+                        class_module="pyrit.converters",
+                        supported_input_types=("text",),
+                        supported_output_types=("text",),
+                    ),
+                    ConverterIdentifier(
+                        class_name="ROT13Converter",
+                        class_module="pyrit.converters",
+                        supported_input_types=("text",),
+                        supported_output_types=("text",),
+                    ),
+                ],
+            ),
+            outcome=AttackOutcome.UNDETERMINED,
+            metadata={"created_at": now.isoformat(), "updated_at": now.isoformat()},
+        )
+
+        summary = attack_result_to_summary(ar, pieces=[])
+
+        assert summary.converters == ["Base64Converter", "ROT13Converter"]
+
+    def test_no_converters_returns_empty_list(self) -> None:
+        """Test that converters is empty list when no converters in identifier."""
+        ar = _make_attack_result()
+
+        summary = attack_result_to_summary(ar, pieces=[])
+
+        assert summary.converters == []
 
 
 class TestPyritScoresToDto:
@@ -521,37 +589,52 @@ class TestTargetObjectToInstance:
     def test_maps_target_with_identifier(self) -> None:
         """Test mapping a target object that has get_identifier."""
         target_obj = MagicMock()
-        target_obj.get_identifier.return_value = {"__type__": "OpenAIChatTarget", "endpoint": "http://test"}
+        mock_identifier = MagicMock()
+        mock_identifier.class_name = "OpenAIChatTarget"
+        mock_identifier.endpoint = "http://test"
+        mock_identifier.model_name = "gpt-4"
+        mock_identifier.temperature = 0.7
+        mock_identifier.top_p = None
+        mock_identifier.max_requests_per_minute = None
+        mock_identifier.target_specific_params = None
+        target_obj.get_identifier.return_value = mock_identifier
 
         result = target_object_to_instance("t-1", target_obj)
 
-        assert result.target_id == "t-1"
-        assert result.type == "OpenAIChatTarget"
-        assert result.display_name is None
+        assert result.target_unique_name == "t-1"
+        assert result.target_type == "OpenAIChatTarget"
+        assert result.endpoint == "http://test"
+        assert result.model_name == "gpt-4"
+        assert result.temperature == 0.7
 
-    def test_filters_sensitive_fields(self) -> None:
-        """Test that sensitive fields are removed from params."""
+    def test_no_endpoint_returns_none(self) -> None:
+        """Test that missing endpoint returns None."""
         target_obj = MagicMock()
-        target_obj.get_identifier.return_value = {
-            "__type__": "TestTarget",
-            "api_key": "secret-key",
-            "endpoint": "http://test",
-        }
+        mock_identifier = MagicMock()
+        mock_identifier.class_name = "TextTarget"
+        mock_identifier.endpoint = None
+        mock_identifier.model_name = None
+        mock_identifier.temperature = None
+        mock_identifier.top_p = None
+        mock_identifier.max_requests_per_minute = None
+        mock_identifier.target_specific_params = None
+        target_obj.get_identifier.return_value = mock_identifier
 
         result = target_object_to_instance("t-1", target_obj)
 
-        assert "api_key" not in result.params
-        assert result.params.get("endpoint") == "http://test"
+        assert result.target_type == "TextTarget"
+        assert result.endpoint is None
+        assert result.model_name is None
 
-    def test_fallback_to_class_name(self) -> None:
-        """Test fallback to __class__.__name__ when no __type__ in identifier."""
-        target_obj = MagicMock()
-        target_obj.__class__.__name__ = "FallbackTarget"
-        target_obj.get_identifier.return_value = {"endpoint": "http://test"}
+    def test_no_get_identifier_falls_back_to_class_name(self) -> None:
+        """Test fallback when target has no get_identifier method."""
+        target_obj = MagicMock(spec=[])
+        target_obj.__class__ = type("FakeTarget", (), {})
 
         result = target_object_to_instance("t-1", target_obj)
 
-        assert result.type == "FallbackTarget"
+        assert result.target_type == "FakeTarget"
+        assert result.endpoint is None
 
 
 # ============================================================================
@@ -566,24 +649,51 @@ class TestConverterObjectToInstance:
         """Test mapping a converter object."""
         converter_obj = MagicMock()
         identifier = MagicMock()
-        identifier.to_dict.return_value = {"class_name": "Base64Converter", "param1": "value1"}
+        identifier.class_name = "Base64Converter"
+        identifier.supported_input_types = ("text",)
+        identifier.supported_output_types = ("text",)
+        identifier.converter_specific_params = {"param1": "value1"}
+        identifier.sub_identifier = None
         converter_obj.get_identifier.return_value = identifier
 
         result = converter_object_to_instance("c-1", converter_obj)
 
         assert result.converter_id == "c-1"
-        assert result.type == "Base64Converter"
+        assert result.converter_type == "Base64Converter"
         assert result.display_name is None
-        assert result.params["class_name"] == "Base64Converter"
+        assert result.supported_input_types == ["text"]
+        assert result.supported_output_types == ["text"]
+        assert result.converter_specific_params == {"param1": "value1"}
+        assert result.sub_converter_ids is None
 
-    def test_fallback_to_class_name(self) -> None:
-        """Test fallback to __class__.__name__ when no class_name in identifier."""
+    def test_sub_converter_ids_passed_through(self) -> None:
+        """Test that sub_converter_ids are passed through when provided."""
         converter_obj = MagicMock()
-        converter_obj.__class__.__name__ = "FallbackConverter"
         identifier = MagicMock()
-        identifier.to_dict.return_value = {"param1": "value1"}
+        identifier.class_name = "PipelineConverter"
+        identifier.supported_input_types = ("text",)
+        identifier.supported_output_types = ("text",)
+        identifier.converter_specific_params = None
+        identifier.sub_identifier = None
+        converter_obj.get_identifier.return_value = identifier
+
+        result = converter_object_to_instance("c-1", converter_obj, sub_converter_ids=["sub-1", "sub-2"])
+
+        assert result.sub_converter_ids == ["sub-1", "sub-2"]
+
+    def test_none_input_output_types_returns_empty_lists(self) -> None:
+        """Test that None supported types produce empty lists."""
+        converter_obj = MagicMock()
+        identifier = MagicMock()
+        identifier.class_name = "CustomConverter"
+        identifier.supported_input_types = None
+        identifier.supported_output_types = None
+        identifier.converter_specific_params = None
         converter_obj.get_identifier.return_value = identifier
 
         result = converter_object_to_instance("c-1", converter_obj)
 
-        assert result.type == "FallbackConverter"
+        assert result.supported_input_types == []
+        assert result.supported_output_types == []
+        assert result.converter_specific_params is None
+        assert result.sub_converter_ids is None

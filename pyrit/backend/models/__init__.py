@@ -12,7 +12,9 @@ from pyrit.backend.models.attacks import (
     AddMessageResponse,
     AttackListResponse,
     AttackMessagesResponse,
+    AttackOptionsResponse,
     AttackSummary,
+    ConverterOptionsResponse,
     CreateAttackRequest,
     CreateAttackResponse,
     Message,
@@ -40,7 +42,6 @@ from pyrit.backend.models.converters import (
 )
 from pyrit.backend.models.targets import (
     CreateTargetRequest,
-    CreateTargetResponse,
     TargetInstance,
     TargetListResponse,
 )
@@ -76,7 +77,8 @@ __all__ = [
     "PreviewStep",
     # Targets
     "CreateTargetRequest",
-    "CreateTargetResponse",
     "TargetInstance",
     "TargetListResponse",
+    "AttackOptionsResponse",
+    "ConverterOptionsResponse",
 ]

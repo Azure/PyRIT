@@ -17,7 +17,9 @@ from pyrit.backend.models.attacks import (
     AddMessageResponse,
     AttackListResponse,
     AttackMessagesResponse,
+    AttackOptionsResponse,
     AttackSummary,
+    ConverterOptionsResponse,
     CreateAttackRequest,
     CreateAttackResponse,
     UpdateAttackRequest,
@@ -50,14 +52,17 @@ def _parse_labels(label_params: Optional[List[str]]) -> Optional[Dict[str, str]]
     response_model=AttackListResponse,
 )
 async def list_attacks(
-    target_id: Optional[str] = Query(None, description="Filter by target instance ID"),
+    attack_class: Optional[str] = Query(None, description="Filter by exact attack class name"),
+    converter_classes: Optional[List[str]] = Query(
+        None,
+        description="Filter by converter class names (repeatable, AND logic). Pass empty to match no-converter attacks.",
+    ),
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Query(None, description="Filter by outcome"),
-    name: Optional[str] = Query(None, description="Filter by attack name (substring match)"),
     label: Optional[List[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
     min_turns: Optional[int] = Query(None, ge=0, description="Filter by minimum executed turns"),
     max_turns: Optional[int] = Query(None, ge=0, description="Filter by maximum executed turns"),
     limit: int = Query(20, ge=1, le=100, description="Maximum items per page"),
-    cursor: Optional[str] = Query(None, description="Pagination cursor (attack_id)"),
+    cursor: Optional[str] = Query(None, description="Pagination cursor (conversation_id)"),
 ) -> AttackListResponse:
     """
     List attacks with optional filtering and pagination.
@@ -71,15 +76,53 @@ async def list_attacks(
     service = get_attack_service()
     labels = _parse_labels(label)
     return await service.list_attacks_async(
-        target_id=target_id,
+        attack_class=attack_class,
+        converter_classes=converter_classes,
         outcome=outcome,
-        name=name,
         labels=labels,
         min_turns=min_turns,
         max_turns=max_turns,
         limit=limit,
         cursor=cursor,
     )
+
+
+@router.get(
+    "/attack-options",
+    response_model=AttackOptionsResponse,
+)
+async def get_attack_options() -> AttackOptionsResponse:
+    """
+    Get unique attack class names used across all attacks.
+
+    Returns all attack class names found in stored attack results.
+    Useful for populating attack type filter dropdowns in the GUI.
+
+    Returns:
+        AttackOptionsResponse: Sorted list of unique attack class names.
+    """
+    service = get_attack_service()
+    class_names = await service.get_attack_options_async()
+    return AttackOptionsResponse(attack_classes=class_names)
+
+
+@router.get(
+    "/converter-options",
+    response_model=ConverterOptionsResponse,
+)
+async def get_converter_options() -> ConverterOptionsResponse:
+    """
+    Get unique converter class names used across all attacks.
+
+    Returns all converter class names found in stored attack results.
+    Useful for populating converter filter dropdowns in the GUI.
+
+    Returns:
+        ConverterOptionsResponse: Sorted list of unique converter class names.
+    """
+    service = get_attack_service()
+    class_names = await service.get_converter_options_async()
+    return ConverterOptionsResponse(converter_classes=class_names)
 
 
 @router.post(
@@ -114,13 +157,13 @@ async def create_attack(request: CreateAttackRequest) -> CreateAttackResponse:
 
 
 @router.get(
-    "/{attack_id}",
+    "/{conversation_id}",
     response_model=AttackSummary,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
     },
 )
-async def get_attack(attack_id: str) -> AttackSummary:
+async def get_attack(conversation_id: str) -> AttackSummary:
     """
     Get attack details.
 
@@ -131,25 +174,25 @@ async def get_attack(attack_id: str) -> AttackSummary:
     """
     service = get_attack_service()
 
-    attack = await service.get_attack_async(attack_id=attack_id)
+    attack = await service.get_attack_async(conversation_id=conversation_id)
     if not attack:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Attack '{attack_id}' not found",
+            detail=f"Attack '{conversation_id}' not found",
         )
 
     return attack
 
 
 @router.patch(
-    "/{attack_id}",
+    "/{conversation_id}",
     response_model=AttackSummary,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
     },
 )
 async def update_attack(
-    attack_id: str,
+    conversation_id: str,
     request: UpdateAttackRequest,
 ) -> AttackSummary:
     """
@@ -162,24 +205,24 @@ async def update_attack(
     """
     service = get_attack_service()
 
-    attack = await service.update_attack_async(attack_id=attack_id, request=request)
+    attack = await service.update_attack_async(conversation_id=conversation_id, request=request)
     if not attack:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Attack '{attack_id}' not found",
+            detail=f"Attack '{conversation_id}' not found",
         )
 
     return attack
 
 
 @router.get(
-    "/{attack_id}/messages",
+    "/{conversation_id}/messages",
     response_model=AttackMessagesResponse,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
     },
 )
-async def get_attack_messages(attack_id: str) -> AttackMessagesResponse:
+async def get_attack_messages(conversation_id: str) -> AttackMessagesResponse:
     """
     Get all messages for an attack.
 
@@ -190,18 +233,18 @@ async def get_attack_messages(attack_id: str) -> AttackMessagesResponse:
     """
     service = get_attack_service()
 
-    messages = await service.get_attack_messages_async(attack_id=attack_id)
+    messages = await service.get_attack_messages_async(conversation_id=conversation_id)
     if not messages:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Attack '{attack_id}' not found",
+            detail=f"Attack '{conversation_id}' not found",
         )
 
     return messages
 
 
 @router.post(
-    "/{attack_id}/messages",
+    "/{conversation_id}/messages",
     response_model=AddMessageResponse,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
@@ -209,7 +252,7 @@ async def get_attack_messages(attack_id: str) -> AttackMessagesResponse:
     },
 )
 async def add_message(
-    attack_id: str,
+    conversation_id: str,
     request: AddMessageRequest,
 ) -> AddMessageResponse:
     """
@@ -230,7 +273,7 @@ async def add_message(
     service = get_attack_service()
 
     try:
-        return await service.add_message_async(attack_id=attack_id, request=request)
+        return await service.add_message_async(conversation_id=conversation_id, request=request)
     except ValueError as e:
         error_msg = str(e)
         if "not found" in error_msg.lower():

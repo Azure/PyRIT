@@ -287,6 +287,64 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
+    def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
+        """
+        Return a database-specific condition for filtering AttackResults by attack type
+        (class_name in the attack_identifier JSON column).
+
+        Args:
+            attack_class: Exact attack class name to match.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_converter_condition(self, *, converter_classes: Sequence[str]) -> Any:
+        """
+        Return a database-specific condition for filtering AttackResults by converter classes
+        in the request_converter_identifiers array within attack_identifier JSON column.
+
+        This method is only called when converter filtering is requested (converter_classes
+        is not None). The caller handles the None-vs-list distinction:
+
+        - ``len(converter_classes) == 0``: return a condition matching attacks with NO converters.
+        - ``len(converter_classes) > 0``: return a condition requiring ALL specified converter
+          class names to be present (AND logic, case-insensitive).
+
+        Args:
+            converter_classes: Converter class names to require. An empty sequence means
+                "match only attacks that have no converters".
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def get_unique_attack_class_names(self) -> list[str]:
+        """
+        Return sorted unique attack class names from all stored attack results.
+
+        Extracts class_name from the attack_identifier JSON column via a
+        database-level DISTINCT query.
+
+        Returns:
+            Sorted list of unique attack class name strings.
+        """
+
+    @abc.abstractmethod
+    def get_unique_converter_class_names(self) -> list[str]:
+        """
+        Return sorted unique converter class names used across all attack results.
+
+        Extracts class_name values from the request_converter_identifiers array
+        within the attack_identifier JSON column via a database-level query.
+
+        Returns:
+            Sorted list of unique converter class name strings.
+        """
+
+    @abc.abstractmethod
     def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
         Return a database-specific condition for filtering ScenarioResults by labels.
@@ -1209,6 +1267,8 @@ class MemoryInterface(abc.ABC):
         objective: Optional[str] = None,
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
+        attack_class: Optional[str] = None,
+        converter_classes: Optional[Sequence[str]] = None,
         targeted_harm_categories: Optional[Sequence[str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
@@ -1222,6 +1282,11 @@ class MemoryInterface(abc.ABC):
             objective_sha256 (Optional[Sequence[str]], optional): A list of objective SHA256 hashes to filter by.
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
+                Defaults to None.
+            attack_class (Optional[str], optional): Filter by exact attack class_name in attack_identifier.
+                Defaults to None.
+            converter_classes (Optional[Sequence[str]], optional): Filter by converter class names.
+                Returns only attacks that used ALL specified converters (AND logic, case-insensitive).
                 Defaults to None.
             targeted_harm_categories (Optional[Sequence[str]], optional):
                 A list of targeted harm categories to filter results by.
@@ -1253,6 +1318,15 @@ class MemoryInterface(abc.ABC):
             conditions.append(AttackResultEntry.objective_sha256.in_(objective_sha256))
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
+
+        if attack_class:
+            # Use database-specific JSON query method
+            conditions.append(self._get_attack_result_attack_class_condition(attack_class=attack_class))
+
+        if converter_classes is not None:
+            # converter_classes=[] means "only attacks with no converters"
+            # converter_classes=["A","B"] means "must have all listed converters"
+            conditions.append(self._get_attack_result_converter_condition(converter_classes=converter_classes))
 
         if targeted_harm_categories:
             # Use database-specific JSON query method

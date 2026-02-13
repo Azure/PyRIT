@@ -8,7 +8,6 @@ Covers the lifespan manager and setup_frontend function.
 """
 
 import os
-import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

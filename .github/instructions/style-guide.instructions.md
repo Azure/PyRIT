@@ -478,4 +478,13 @@ Before committing code, ensure:
 
 ---
 
+## File Editing Rules
+
+### Never Use `sed` for File Edits
+- **MANDATORY**: Never use `sed` (or similar stream-editing CLI tools) to modify source files
+- `sed` frequently corrupts files, applies partial edits, or silently fails
+- Always use the editor's built-in replace/edit tools (e.g., `replace_string_in_file`, `multi_replace_string_in_file`) to make targeted, verifiable changes
+
+---
+
 **Remember**: Clean code is written for humans to read. Make your intent clear and your code self-documenting.

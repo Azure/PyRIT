@@ -20,6 +20,12 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any, Dict, List, Literal, Optional
 
+from pyrit.backend.mappers.attack_mappers import (
+    attack_result_to_summary,
+    pyrit_messages_to_dto,
+    request_piece_to_pyrit_message_piece,
+    request_to_pyrit_message,
+)
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
     AddMessageResponse,
@@ -31,14 +37,9 @@ from pyrit.backend.models.attacks import (
     UpdateAttackRequest,
 )
 from pyrit.backend.models.common import PaginationInfo
-from pyrit.backend.mappers.attack_mappers import (
-    attack_result_to_summary,
-    pyrit_messages_to_dto,
-    request_piece_to_pyrit_message_piece,
-    request_to_pyrit_message,
-)
 from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
+from pyrit.identifiers import AttackIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -62,9 +63,9 @@ class AttackService:
     async def list_attacks_async(
         self,
         *,
-        target_id: Optional[str] = None,
+        attack_class: Optional[str] = None,
+        converter_classes: Optional[List[str]] = None,
         outcome: Optional[Literal["undetermined", "success", "failure"]] = None,
-        name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
         min_turns: Optional[int] = None,
         max_turns: Optional[int] = None,
@@ -77,9 +78,11 @@ class AttackService:
         Queries AttackResult entries from the database.
 
         Args:
-            target_id: Filter by target instance ID (from attack_identifier).
+            attack_class: Filter by exact attack class_name (case-sensitive).
+            converter_classes: Filter by converter usage.
+                None = no filter, [] = only attacks with no converters,
+                ["A", "B"] = only attacks using ALL specified converters (AND logic, case-insensitive).
             outcome: Filter by attack outcome.
-            name: Filter by attack name (substring match on attack_identifier.name).
             labels: Filter by labels (all must match).
             min_turns: Filter by minimum executed turns.
             max_turns: Filter by maximum executed turns.
@@ -93,14 +96,12 @@ class AttackService:
         attack_results = self._memory.get_attack_results(
             outcome=outcome,
             labels=labels,
+            attack_class=attack_class,
+            converter_classes=converter_classes,
         )
 
         filtered: List[AttackResult] = []
         for ar in attack_results:
-            if target_id and ar.attack_identifier.get("target_id", "") != target_id:
-                continue
-            if name and name.lower() not in ar.attack_identifier.get("name", "").lower():
-                continue
             if min_turns is not None and ar.executed_turns < min_turns:
                 continue
             if max_turns is not None and ar.executed_turns > max_turns:
@@ -128,7 +129,31 @@ class AttackService:
             pagination=PaginationInfo(limit=limit, has_more=has_more, next_cursor=next_cursor, prev_cursor=cursor),
         )
 
-    async def get_attack_async(self, *, attack_id: str) -> Optional[AttackSummary]:
+    async def get_attack_options_async(self) -> List[str]:
+        """
+        Get all unique attack class names from stored attack results.
+
+        Delegates to the memory layer which extracts distinct class_name
+        values from the attack_identifier JSON column via SQL.
+
+        Returns:
+            Sorted list of unique attack class names.
+        """
+        return self._memory.get_unique_attack_class_names()
+
+    async def get_converter_options_async(self) -> List[str]:
+        """
+        Get all unique converter class names used across attack results.
+
+        Delegates to the memory layer which extracts distinct converter
+        class_name values from the attack_identifier JSON column via SQL.
+
+        Returns:
+            Sorted list of unique converter class names.
+        """
+        return self._memory.get_unique_converter_class_names()
+
+    async def get_attack_async(self, *, conversation_id: str) -> Optional[AttackSummary]:
         """
         Get attack details (high-level metadata, no messages).
 
@@ -137,7 +162,7 @@ class AttackService:
         Returns:
             AttackSummary if found, None otherwise.
         """
-        results = self._memory.get_attack_results(conversation_id=attack_id)
+        results = self._memory.get_attack_results(conversation_id=conversation_id)
         if not results:
             return None
 
@@ -145,7 +170,7 @@ class AttackService:
         pieces = self._memory.get_message_pieces(conversation_id=ar.conversation_id)
         return attack_result_to_summary(ar, pieces=pieces)
 
-    async def get_attack_messages_async(self, *, attack_id: str) -> Optional[AttackMessagesResponse]:
+    async def get_attack_messages_async(self, *, conversation_id: str) -> Optional[AttackMessagesResponse]:
         """
         Get all messages for an attack.
 
@@ -153,16 +178,16 @@ class AttackService:
             AttackMessagesResponse if attack found, None otherwise.
         """
         # Check attack exists
-        results = self._memory.get_attack_results(conversation_id=attack_id)
+        results = self._memory.get_attack_results(conversation_id=conversation_id)
         if not results:
             return None
 
         # Get messages for this conversation
-        pyrit_messages = self._memory.get_conversation(conversation_id=attack_id)
+        pyrit_messages = self._memory.get_conversation(conversation_id=conversation_id)
         backend_messages = pyrit_messages_to_dto(list(pyrit_messages))
 
         return AttackMessagesResponse(
-            attack_id=attack_id,
+            conversation_id=conversation_id,
             messages=backend_messages,
         )
 
@@ -176,11 +201,15 @@ class AttackService:
             CreateAttackResponse with the new attack's ID and creation time.
         """
         target_service = get_target_service()
-        target_instance = await target_service.get_target_async(target_id=request.target_id)
+        target_instance = await target_service.get_target_async(target_unique_name=request.target_unique_name)
         if not target_instance:
-            raise ValueError(f"Target instance '{request.target_id}' not found")
+            raise ValueError(f"Target instance '{request.target_unique_name}' not found")
 
-        # Generate conversation_id (this is the attack_id)
+        # Get the actual target object so we can capture its TargetIdentifier
+        target_obj = target_service.get_target_object(target_unique_name=request.target_unique_name)
+        target_identifier = target_obj.get_identifier() if target_obj else None
+
+        # Generate a new conversation_id for this attack
         conversation_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc)
 
@@ -188,18 +217,21 @@ class AttackService:
         attack_result = AttackResult(
             conversation_id=conversation_id,
             objective=request.name or "Manual attack via GUI",
-            attack_identifier={
-                "name": request.name or "",
-                "target_id": request.target_id,
-                "target_type": target_instance.type,
-                "source": "gui",
-            },
+            attack_identifier=AttackIdentifier(
+                class_name=request.name or "ManualAttack",
+                class_module="pyrit.backend",
+                objective_target_identifier=target_identifier,
+            ),
             outcome=AttackOutcome.UNDETERMINED,
             metadata={
                 "created_at": now.isoformat(),
                 "updated_at": now.isoformat(),
             },
         )
+
+        # Merge source label with any user-supplied labels
+        labels = dict(request.labels) if request.labels else {}
+        labels.setdefault("source", "gui")
 
         # Store in memory
         self._memory.add_attack_results_to_memory(attack_results=[attack_result])
@@ -209,12 +241,14 @@ class AttackService:
             await self._store_prepended_messages(
                 conversation_id=conversation_id,
                 prepended=request.prepended_conversation,
-                labels=request.labels,
+                labels=labels,
             )
 
-        return CreateAttackResponse(attack_id=conversation_id, created_at=now)
+        return CreateAttackResponse(conversation_id=conversation_id, created_at=now)
 
-    async def update_attack_async(self, *, attack_id: str, request: UpdateAttackRequest) -> Optional[AttackSummary]:
+    async def update_attack_async(
+        self, *, conversation_id: str, request: UpdateAttackRequest
+    ) -> Optional[AttackSummary]:
         """
         Update an attack's outcome.
 
@@ -223,7 +257,7 @@ class AttackService:
         Returns:
             Updated AttackSummary if found, None otherwise.
         """
-        results = self._memory.get_attack_results(conversation_id=attack_id)
+        results = self._memory.get_attack_results(conversation_id=conversation_id)
         if not results:
             return None
 
@@ -244,9 +278,9 @@ class AttackService:
         # Re-add to memory (this should update)
         self._memory.add_attack_results_to_memory(attack_results=[ar])
 
-        return await self.get_attack_async(attack_id=attack_id)
+        return await self.get_attack_async(conversation_id=conversation_id)
 
-    async def add_message_async(self, *, attack_id: str, request: AddMessageRequest) -> AddMessageResponse:
+    async def add_message_async(self, *, conversation_id: str, request: AddMessageRequest) -> AddMessageResponse:
         """
         Add a message to an attack, optionally sending to target.
 
@@ -256,42 +290,49 @@ class AttackService:
             AddMessageResponse containing the updated attack detail.
         """
         # Check if attack exists
-        results = self._memory.get_attack_results(conversation_id=attack_id)
+        results = self._memory.get_attack_results(conversation_id=conversation_id)
         if not results:
-            raise ValueError(f"Attack '{attack_id}' not found")
+            raise ValueError(f"Attack '{conversation_id}' not found")
 
         ar = results[0]
-        target_id = ar.attack_identifier.get("target_id")
-        if not target_id:
-            raise ValueError(f"Attack '{attack_id}' has no target configured")
+        aid = ar.attack_identifier
+        if not aid or not aid.objective_target_identifier:
+            raise ValueError(f"Attack '{conversation_id}' has no target configured")
+        target_unique_name = aid.objective_target_identifier.unique_name
 
         # Get existing messages to determine sequence.
         # NOTE: This read-then-write is not atomic (TOCTOU). Fine for the
         # current single-user UI, but would need a DB-level sequence
         # generator or optimistic locking if concurrent writes are supported.
-        existing = self._memory.get_message_pieces(conversation_id=attack_id)
+        existing = self._memory.get_message_pieces(conversation_id=conversation_id)
         sequence = max((p.sequence for p in existing), default=-1) + 1
 
         # Inherit labels from existing pieces so new messages stay consistent
         attack_labels = next((p.labels for p in existing if getattr(p, "labels", None)), None)
 
         if request.send:
-            await self._send_and_store_message(attack_id, target_id, request, sequence, labels=attack_labels)
+            await self._send_and_store_message(
+                conversation_id, target_unique_name, request, sequence, labels=attack_labels
+            )
         else:
-            await self._store_message_only(attack_id, request, sequence, labels=attack_labels)
+            await self._store_message_only(conversation_id, request, sequence, labels=attack_labels)
 
         # Update attack timestamp
         ar.metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-        attack_detail = await self.get_attack_async(attack_id=attack_id)
+        attack_detail = await self.get_attack_async(conversation_id=conversation_id)
         if attack_detail is None:
-            raise ValueError(f"Attack '{attack_id}' not found after update")
+            raise ValueError(f"Attack '{conversation_id}' not found after update")
 
-        attack_messages = await self.get_attack_messages_async(attack_id=attack_id)
+        attack_messages = await self.get_attack_messages_async(conversation_id=conversation_id)
         if attack_messages is None:
-            raise ValueError(f"Attack '{attack_id}' messages not found after update")
+            raise ValueError(f"Attack '{conversation_id}' messages not found after update")
 
         return AddMessageResponse(attack=attack_detail, messages=attack_messages)
+
+    # ========================================================================
+    # Private Helper Methods - Identifier Access
+    # ========================================================================
 
     # ========================================================================
     # Private Helper Methods - Pagination
@@ -346,21 +387,21 @@ class AttackService:
 
     async def _send_and_store_message(
         self,
-        attack_id: str,
-        target_id: str,
+        conversation_id: str,
+        target_unique_name: str,
         request: AddMessageRequest,
         sequence: int,
         *,
         labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """Send message to target via normalizer and store response."""
-        target_obj = get_target_service().get_target_object(target_id=target_id)
+        target_obj = get_target_service().get_target_object(target_unique_name=target_unique_name)
         if not target_obj:
-            raise ValueError(f"Target object for '{target_id}' not found")
+            raise ValueError(f"Target object for '{target_unique_name}' not found")
 
         pyrit_message = request_to_pyrit_message(
             request=request,
-            conversation_id=attack_id,
+            conversation_id=conversation_id,
             sequence=sequence,
             labels=labels,
         )
@@ -370,7 +411,7 @@ class AttackService:
         await normalizer.send_prompt_async(
             message=pyrit_message,
             target=target_obj,
-            conversation_id=attack_id,
+            conversation_id=conversation_id,
             request_converter_configurations=converter_configs,
             labels=labels,
         )
@@ -378,7 +419,7 @@ class AttackService:
 
     async def _store_message_only(
         self,
-        attack_id: str,
+        conversation_id: str,
         request: AddMessageRequest,
         sequence: int,
         *,
@@ -389,7 +430,7 @@ class AttackService:
             piece = request_piece_to_pyrit_message_piece(
                 piece=p,
                 role=request.role,
-                conversation_id=attack_id,
+                conversation_id=conversation_id,
                 sequence=sequence,
                 labels=labels,
             )
