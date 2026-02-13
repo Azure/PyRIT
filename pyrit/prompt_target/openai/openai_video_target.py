@@ -33,7 +33,7 @@ class OpenAIVideoTarget(OpenAITarget):
 
     Supports three modes:
     - Text-to-video: Generate video from a text prompt
-    - Image-to-video: Generate video using an image as the first frame (include image_path piece)
+    - Text+Image-to-video: Generate video using an image as the first frame (include image_path piece)
     - Remix: Create variation of existing video (include video_id in prompt_metadata)
 
     Supported resolutions:
@@ -44,7 +44,7 @@ class OpenAIVideoTarget(OpenAITarget):
 
     Default: resolution="1280x720", duration=4 seconds
 
-    Supported image formats for image-to-video: JPEG, PNG, WEBP
+    Supported image formats for text+image-to-video: JPEG, PNG, WEBP
     """
 
     SUPPORTED_RESOLUTIONS: list[VideoSize] = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
@@ -155,7 +155,7 @@ class OpenAIVideoTarget(OpenAITarget):
 
         Supports three modes:
         - Text-to-video: Single text piece
-        - Image-to-video: Text piece + image_path piece (image becomes first frame)
+        - Text+Image-to-video: Text piece + image_path piece (image becomes first frame)
         - Remix: Text piece with prompt_metadata["video_id"] set to an existing video ID
 
         Args:
@@ -182,7 +182,7 @@ class OpenAIVideoTarget(OpenAITarget):
         if remix_video_id:
             response = await self._send_remix_async(video_id=remix_video_id, prompt=prompt, request=message)
         elif image_piece:
-            response = await self._send_image_to_video_async(image_piece=image_piece, prompt=prompt, request=message)
+            response = await self._send_text_plus_image_to_video_async(image_piece=image_piece, prompt=prompt, request=message)
         else:
             response = await self._send_text_to_video_async(prompt=prompt, request=message)
 
@@ -206,9 +206,11 @@ class OpenAIVideoTarget(OpenAITarget):
             request=request,
         )
 
-    async def _send_image_to_video_async(self, *, image_piece: MessagePiece, prompt: str, request: Message) -> Message:
+    async def _send_text_plus_image_to_video_async(
+        self, *, image_piece: MessagePiece, prompt: str, request: Message
+    ) -> Message:
         """
-        Send an image-to-video request using an image as the first frame.
+        Send a text+image-to-video request using an image as the first frame.
 
         Args:
             image_piece: The MessagePiece containing the image path.
@@ -218,7 +220,7 @@ class OpenAIVideoTarget(OpenAITarget):
         Returns:
             The response Message with the generated video path.
         """
-        logger.info("Image-to-video mode: Using image as first frame")
+        logger.info("Text+Image-to-video mode: Using image as first frame")
         input_file = await self._prepare_image_input_async(image_piece=image_piece)
         return await self._handle_openai_request(
             api_call=lambda: self._async_client.videos.create_and_poll(
@@ -423,7 +425,7 @@ class OpenAIVideoTarget(OpenAITarget):
 
         Accepts:
         - Single text piece (text-to-video or remix mode)
-        - Text piece + image_path piece (image-to-video mode)
+        - Text piece + image_path piece (text+image-to-video mode)
 
         Args:
             message: The message to validate.

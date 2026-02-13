@@ -14,7 +14,7 @@
 # `OpenAIVideoTarget` supports three modes:
 # - **Text-to-video**: Generate a video from a text prompt.
 # - **Remix**: Create a variation of an existing video (using `video_id` from a prior generation).
-# - **Image-to-video**: Use an image as the first frame of the generated video.
+# - **Text+Image-to-video**: Use an image as the first frame of the generated video.
 #
 # Note that the video scorer requires `opencv`, which is not a default PyRIT dependency. You need to install it manually or using `pip install pyrit[opencv]`.
 
@@ -74,6 +74,10 @@ results = await AttackExecutor().execute_attack_async(  # type: ignore
 for result in results:
     await ConsoleAttackResultPrinter().print_result_async(result=result, include_auxiliary_scores=True)  # type: ignore
 
+# Capture video_id from the first result for use in the remix section below
+video_id = results[0].last_response.prompt_metadata["video_id"]
+print(f"Video ID for remix: {video_id}")
+
 # %% [markdown]
 # ## Remix (Video Variation)
 #
@@ -83,31 +87,17 @@ for result in results:
 # %%
 from pyrit.models import Message, MessagePiece
 
-# Use the same target from above, or create a new one
-remix_target = OpenAIVideoTarget()
-
-# Step 1: Generate a video
-text_piece = MessagePiece(
-    role="user",
-    original_value="A bird flying over a lake at sunset",
-)
-result = await remix_target.send_prompt_async(message=Message([text_piece]))  # type: ignore
-response = result[0].message_pieces[0]
-print(f"Generated video: {response.converted_value}")
-video_id = response.prompt_metadata["video_id"]
-print(f"Video ID for remix: {video_id}")
-
-# Step 2: Remix using the video_id
+# Remix using the video_id captured from the text-to-video section above
 remix_piece = MessagePiece(
     role="user",
     original_value="Make it a watercolor painting style",
     prompt_metadata={"video_id": video_id},
 )
-remix_result = await remix_target.send_prompt_async(message=Message([remix_piece]))  # type: ignore
+remix_result = await video_target.send_prompt_async(message=Message([remix_piece]))  # type: ignore
 print(f"Remixed video: {remix_result[0].message_pieces[0].converted_value}")
 
 # %% [markdown]
-# ## Image-to-Video
+# ## Text+Image-to-Video
 #
 # Use an image as the first frame of the generated video. The input image dimensions must match
 # the video resolution (e.g. 1280x720). Pass both a text piece and an `image_path` piece in the same message.
@@ -146,4 +136,4 @@ image_piece = MessagePiece(
     conversation_id=conversation_id,
 )
 result = await i2v_target.send_prompt_async(message=Message([text_piece, image_piece]))  # type: ignore
-print(f"Image-to-video result: {result[0].message_pieces[0].converted_value}")
+print(f"Text+Image-to-video result: {result[0].message_pieces[0].converted_value}")
