@@ -203,7 +203,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             prompt_normalizer=self._prompt_normalizer,
         )
 
-        if not beam_reviewer or not isinstance(beam_reviewer, BeamReviewer):
+        if not isinstance(beam_reviewer, BeamReviewer):
             raise ValueError("BeamSearchAttack requires a BeamReviewer instance")
         self._beam_reviewer = beam_reviewer
 

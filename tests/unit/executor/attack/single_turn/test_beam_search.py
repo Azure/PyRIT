@@ -166,3 +166,57 @@ class TestBeamSearchAttack:
                 beam_reviewer=TopKBeamReviewer(k=2, drop_chars=1),
                 attack_scoring_config=scoring_config,
             )
+
+    @pytest.mark.parametrize("beam_reviewer", ["not_a_reviewer", MagicMock()])
+    def test_init_invalid_beam_reviewer(
+        self, mock_target, mock_true_false_scorer, mock_float_scale_scorer, beam_reviewer
+    ):
+        """Test initialization with an invalid beam reviewer"""
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
+        )
+        with pytest.raises(ValueError, match="BeamSearchAttack requires a BeamReviewer instance"):
+            _ = BeamSearchAttack(
+                objective_target=mock_target,
+                beam_reviewer=beam_reviewer,
+                attack_scoring_config=scoring_config,
+            )
+
+    def tests_init_invalid_num_beams(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
+        """Test initialization with invalid num_beams values"""
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
+        )
+        with pytest.raises(ValueError, match="num_beams must greater than 1"):
+            _ = BeamSearchAttack(
+                objective_target=mock_target,
+                beam_reviewer=TopKBeamReviewer(k=2, drop_chars=1),
+                attack_scoring_config=scoring_config,
+                num_beams=1,
+            )
+
+    def tests_init_invalid_max_iterations(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
+        """Test initialization with invalid max_iterations values"""
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
+        )
+        with pytest.raises(ValueError, match="max_iterations must be greater than 1"):
+            _ = BeamSearchAttack(
+                objective_target=mock_target,
+                beam_reviewer=TopKBeamReviewer(k=2, drop_chars=1),
+                attack_scoring_config=scoring_config,
+                max_iterations=1,
+            )
+
+    def tests_init_invalid_num_chars_per_step(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
+        """Test initialization with invalid num_chars_per_step values"""
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
+        )
+        with pytest.raises(ValueError, match="num_chars_per_step must be a positive integer"):
+            _ = BeamSearchAttack(
+                objective_target=mock_target,
+                beam_reviewer=TopKBeamReviewer(k=2, drop_chars=1),
+                attack_scoring_config=scoring_config,
+                num_chars_per_step=0,
+            )
