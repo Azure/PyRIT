@@ -2,21 +2,17 @@
 # Licensed under the MIT license.
 
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from unit.mocks import get_mock_scorer_identifier, get_mock_target_identifier
 
 from pyrit.executor.attack import (
-    AttackConverterConfig,
-    AttackParameters,
     AttackScoringConfig,
-    PromptSendingAttack,
-    SingleTurnAttackContext,
 )
-from pyrit.executor.attack.single_turn.beam_search import Beam, TopKBeamReviewer, BeamSearchAttack
+from pyrit.executor.attack.single_turn.beam_search import Beam, BeamSearchAttack, TopKBeamReviewer
 from pyrit.prompt_target import OpenAIResponseTarget, PromptTarget
-from pyrit.score import Scorer, TrueFalseScorer, FloatScaleScorer
+from pyrit.score import FloatScaleScorer, Scorer, TrueFalseScorer
 
 
 @pytest.fixture
