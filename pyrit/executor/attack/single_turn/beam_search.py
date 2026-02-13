@@ -90,7 +90,14 @@ class TopKBeamReviewer(BeamReviewer):
             k (int): The number of top beams to retain.
             drop_chars (int): The number of characters to drop from the end of the retained beams
                 to create new beams.
+
+        Raises:
+            ValueError: If k is not positive or drop_chars is negative.
         """
+        if k <= 0:
+            raise ValueError("k must be a positive integer")
+        if drop_chars < 0:
+            raise ValueError("drop_chars must be a non-negative integer")
         self.k = k
         self.drop_chars = drop_chars
 
@@ -158,6 +165,9 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         Raises:
             ValueError: If required configurations are missing or invalid.
         """
+        if not isinstance(objective_target, OpenAIResponseTarget):
+            raise ValueError("BeamSearchAttack requires an OpenAIResponseTarget as the objective target")
+
         # Initialize base class
         super().__init__(
             objective_target=objective_target,
@@ -178,10 +188,10 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         warn_if_set(config=attack_scoring_config, unused_fields=["refusal_scorer"], log=logger)
 
         if not attack_scoring_config.auxiliary_scorers:
-            raise ValueError("At least one auxiliary scorer must be provided in attack_scoring_config")
+            raise ValueError("BeamSearchAttack requires at least one auxiliary scorer")
         for aux_scorer in attack_scoring_config.auxiliary_scorers:
             if not isinstance(aux_scorer, FloatScaleScorer):
-                raise ValueError("All auxiliary scorers must be instances of FloatScaleScorer")
+                raise ValueError("BeamSearchAttack requires all auxiliary scorers to be instances of FloatScaleScorer")
 
         self._auxiliary_scorers = attack_scoring_config.auxiliary_scorers
         self._objective_scorer = attack_scoring_config.objective_scorer
