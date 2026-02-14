@@ -14,8 +14,8 @@ from typing import Optional
 
 # Ensure emoji and other Unicode characters don't crash on Windows consoles
 # that use legacy encodings like cp1252.
-sys.stdout.reconfigure(errors="replace")  # type: ignore[attr-defined]
-sys.stderr.reconfigure(errors="replace")  # type: ignore[attr-defined]
+sys.stdout.reconfigure(errors="replace")  # type: ignore[union-attr]
+sys.stderr.reconfigure(errors="replace")  # type: ignore[union-attr]
 
 from pyrit.cli import frontend_core
 

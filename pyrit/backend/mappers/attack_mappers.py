@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 """
 Attack mappers – domain ↔ DTO translation for attack-related models.
 
@@ -11,43 +13,30 @@ The one exception is `attack_result_to_summary` which receives pre-fetched piece
 import mimetypes
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Literal, Optional, Sequence, cast
+from typing import Dict, List, Optional, Sequence, cast
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
     AttackSummary,
     Message,
     MessagePiece,
+    MessagePieceRequest,
     Score,
 )
-from pyrit.models import AttackOutcome, AttackResult, ChatMessageRole, PromptDataType
+from pyrit.models import AttackResult, ChatMessageRole, PromptDataType
 from pyrit.models import Message as PyritMessage
 from pyrit.models import MessagePiece as PyritMessagePiece
+from pyrit.models import Score as PyritScore
 
 # ============================================================================
 # Domain → DTO  (for API responses)
 # ============================================================================
 
 
-def map_outcome(outcome: AttackOutcome) -> Optional[Literal["undetermined", "success", "failure"]]:
-    """
-    Map AttackOutcome enum to API outcome string.
-
-    Returns:
-        Outcome string ('success', 'failure', 'undetermined') or None.
-    """
-    if outcome == AttackOutcome.SUCCESS:
-        return "success"
-    elif outcome == AttackOutcome.FAILURE:
-        return "failure"
-    else:
-        return "undetermined"
-
-
 def attack_result_to_summary(
     ar: AttackResult,
     *,
-    pieces: Sequence[Any],
+    pieces: Sequence[PyritMessagePiece],
 ) -> AttackSummary:
     """
     Build an AttackSummary DTO from an AttackResult and its message pieces.
@@ -83,7 +72,7 @@ def attack_result_to_summary(
         target_unique_name=target_id.unique_name if target_id else None,
         target_type=target_id.class_name if target_id else None,
         converters=[c.class_name for c in converter_ids] if converter_ids else [],
-        outcome=map_outcome(ar.outcome),
+        outcome=ar.outcome.value,
         last_message_preview=last_preview,
         message_count=message_count,
         labels=_collect_labels_from_pieces(pieces),
@@ -92,7 +81,7 @@ def attack_result_to_summary(
     )
 
 
-def pyrit_scores_to_dto(scores: List[Any]) -> List[Score]:
+def pyrit_scores_to_dto(scores: List[PyritScore]) -> List[Score]:
     """
     Translate PyRIT score objects to backend Score DTOs.
 
@@ -102,8 +91,8 @@ def pyrit_scores_to_dto(scores: List[Any]) -> List[Score]:
     return [
         Score(
             score_id=str(s.id),
-            scorer_type=s.scorer_class_identifier.get("__type__", "unknown"),
-            score_value=s.score_value,
+            scorer_type=s.scorer_class_identifier.class_name,
+            score_value=float(s.score_value),
             score_rationale=s.score_rationale,
             scored_at=s.timestamp,
         )
@@ -111,7 +100,7 @@ def pyrit_scores_to_dto(scores: List[Any]) -> List[Score]:
     ]
 
 
-def _infer_mime_type(*, value: Optional[str], data_type: str) -> Optional[str]:
+def _infer_mime_type(*, value: Optional[str], data_type: PromptDataType) -> Optional[str]:
     """
     Infer MIME type from a value and its data type.
 
@@ -132,7 +121,7 @@ def _infer_mime_type(*, value: Optional[str], data_type: str) -> Optional[str]:
     return mime_type
 
 
-def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
+def pyrit_messages_to_dto(pyrit_messages: List[PyritMessage]) -> List[Message]:
     """
     Translate PyRIT messages to backend Message DTOs.
 
@@ -154,7 +143,7 @@ def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
                 converted_value_mime_type=_infer_mime_type(
                     value=p.converted_value, data_type=p.converted_value_data_type or "text"
                 ),
-                scores=pyrit_scores_to_dto(p.scores) if hasattr(p, "scores") and p.scores else [],
+                scores=pyrit_scores_to_dto(p.scores) if p.scores else [],
                 response_error=p.response_error or "none",
             )
             for p in msg.message_pieces
@@ -180,8 +169,8 @@ def pyrit_messages_to_dto(pyrit_messages: List[Any]) -> List[Message]:
 
 def request_piece_to_pyrit_message_piece(
     *,
-    piece: Any,
-    role: "ChatMessageRole",
+    piece: MessagePieceRequest,
+    role: ChatMessageRole,
     conversation_id: str,
     sequence: int,
     labels: Optional[Dict[str, str]] = None,
@@ -199,9 +188,8 @@ def request_piece_to_pyrit_message_piece(
     Returns:
         PyritMessagePiece domain object.
     """
-    metadata = {"mime_type": piece.mime_type} if getattr(piece, "mime_type", None) else None
-    raw_id = getattr(piece, "original_prompt_id", None)
-    original_prompt_id = uuid.UUID(raw_id) if raw_id else None
+    metadata: Optional[Dict[str, str | int]] = {"mime_type": piece.mime_type} if piece.mime_type else None
+    original_prompt_id = uuid.UUID(piece.original_prompt_id) if piece.original_prompt_id else None
     return PyritMessagePiece(
         role=role,
         original_value=piece.original_value,
@@ -253,7 +241,7 @@ def request_to_pyrit_message(
 # ============================================================================
 
 
-def _get_preview_from_pieces(pieces: Sequence[Any]) -> Optional[str]:
+def _get_preview_from_pieces(pieces: Sequence[PyritMessagePiece]) -> Optional[str]:
     """
     Get a preview of the last message from a list of pieces.
 
@@ -267,7 +255,7 @@ def _get_preview_from_pieces(pieces: Sequence[Any]) -> Optional[str]:
     return text[:100] + "..." if len(text) > 100 else text
 
 
-def _collect_labels_from_pieces(pieces: Sequence[Any]) -> Dict[str, str]:
+def _collect_labels_from_pieces(pieces: Sequence[PyritMessagePiece]) -> Dict[str, str]:
     """
     Collect labels from message pieces.
 
@@ -279,7 +267,6 @@ def _collect_labels_from_pieces(pieces: Sequence[Any]) -> Dict[str, str]:
         Label dict, or empty dict if no pieces have labels.
     """
     for p in pieces:
-        labels = getattr(p, "labels", None)
-        if labels:
-            return dict(labels)
+        if p.labels:
+            return dict(p.labels)
     return {}

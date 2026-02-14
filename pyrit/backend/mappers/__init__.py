@@ -10,7 +10,6 @@ Centralizes all translation logic so domain models can evolve independently of t
 
 from pyrit.backend.mappers.attack_mappers import (
     attack_result_to_summary,
-    map_outcome,
     pyrit_messages_to_dto,
     pyrit_scores_to_dto,
     request_piece_to_pyrit_message_piece,
@@ -26,7 +25,6 @@ from pyrit.backend.mappers.target_mappers import (
 __all__ = [
     "attack_result_to_summary",
     "converter_object_to_instance",
-    "map_outcome",
     "pyrit_messages_to_dto",
     "pyrit_scores_to_dto",
     "request_piece_to_pyrit_message_piece",

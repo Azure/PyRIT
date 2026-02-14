@@ -12,10 +12,9 @@ NOTE: This is a placeholder implementation. A full implementation will be added 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import Identifier
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
@@ -27,15 +26,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Placeholder identifier type until proper ConverterIdentifier is defined
-# TODO: Replace with ConverterIdentifier when available
-@dataclass(frozen=True)
-class ConverterIdentifier(Identifier):
-    """Temporary identifier type for converters."""
-
-    pass
-
-
 class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentifier]):
     """
     Registry for managing available converter instances.
@@ -43,8 +33,6 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
     This registry stores pre-configured PromptConverter instances (not classes).
     Converters are registered explicitly via initializers after being instantiated
     with their required parameters.
-
-    NOTE: This is a placeholder. A full implementation will be added soon.
     """
 
     @classmethod
@@ -105,4 +93,6 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
             class_module=instance.__class__.__module__,
             class_description=f"Converter: {name}",
             identifier_type="instance",
+            supported_input_types=instance.SUPPORTED_INPUT_TYPES,
+            supported_output_types=instance.SUPPORTED_OUTPUT_TYPES,
         )

@@ -5,14 +5,15 @@
 Converter mappers – domain → DTO translation for converter-related models.
 """
 
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from pyrit.backend.models.converters import ConverterInstance
+from pyrit.prompt_converter import PromptConverter
 
 
 def converter_object_to_instance(
     converter_id: str,
-    converter_obj: Any,
+    converter_obj: PromptConverter,
     *,
     sub_converter_ids: Optional[List[str]] = None,
 ) -> ConverterInstance:

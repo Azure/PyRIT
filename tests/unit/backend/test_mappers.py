@@ -18,7 +18,6 @@ from pyrit.backend.mappers.attack_mappers import (
     _collect_labels_from_pieces,
     _infer_mime_type,
     attack_result_to_summary,
-    map_outcome,
     pyrit_messages_to_dto,
     pyrit_scores_to_dto,
     request_piece_to_pyrit_message_piece,
@@ -26,7 +25,7 @@ from pyrit.backend.mappers.attack_mappers import (
 )
 from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.backend.mappers.target_mappers import target_object_to_instance
-from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, TargetIdentifier
+from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 
 # ============================================================================
@@ -98,7 +97,11 @@ def _make_mock_score():
     """Create a mock score for mapper tests."""
     s = MagicMock()
     s.id = "score-1"
-    s.scorer_class_identifier = {"__type__": "TrueFalseScorer"}
+    s.scorer_class_identifier = ScorerIdentifier(
+        class_name="TrueFalseScorer",
+        class_module="pyrit.score",
+        scorer_type="true_false",
+    )
     s.score_value = 1.0
     s.score_rationale = "Looks correct"
     s.timestamp = datetime.now(timezone.utc)
@@ -108,19 +111,6 @@ def _make_mock_score():
 # ============================================================================
 # Attack Mapper Tests
 # ============================================================================
-
-
-class TestMapOutcome:
-    """Tests for map_outcome function."""
-
-    def test_maps_success(self) -> None:
-        assert map_outcome(AttackOutcome.SUCCESS) == "success"
-
-    def test_maps_failure(self) -> None:
-        assert map_outcome(AttackOutcome.FAILURE) == "failure"
-
-    def test_maps_undetermined(self) -> None:
-        assert map_outcome(AttackOutcome.UNDETERMINED) == "undetermined"
 
 
 class TestAttackResultToSummary:
@@ -569,8 +559,9 @@ class TestCollectLabelsFromPieces:
         assert _collect_labels_from_pieces([]) == {}
 
     def test_returns_empty_when_pieces_have_no_labels(self) -> None:
-        """Returns empty dict when pieces have no labels attribute."""
-        p = MagicMock(spec=[])
+        """Returns empty dict when pieces have None/empty labels."""
+        p = MagicMock()
+        p.labels = None
         assert _collect_labels_from_pieces([p]) == {}
 
     def test_skips_pieces_with_empty_labels(self) -> None:
@@ -631,15 +622,24 @@ class TestTargetObjectToInstance:
         assert result.endpoint is None
         assert result.model_name is None
 
-    def test_no_get_identifier_falls_back_to_class_name(self) -> None:
-        """Test fallback when target has no get_identifier method."""
-        target_obj = MagicMock(spec=[])
-        target_obj.__class__ = type("FakeTarget", (), {})
+    def test_no_get_identifier_uses_class_name(self) -> None:
+        """Test that target uses class name from identifier."""
+        target_obj = MagicMock()
+        mock_identifier = MagicMock()
+        mock_identifier.class_name = "FakeTarget"
+        mock_identifier.endpoint = ""
+        mock_identifier.model_name = ""
+        mock_identifier.temperature = None
+        mock_identifier.top_p = None
+        mock_identifier.max_requests_per_minute = None
+        mock_identifier.target_specific_params = None
+        target_obj.get_identifier.return_value = mock_identifier
 
         result = target_object_to_instance("t-1", target_obj)
 
         assert result.target_type == "FakeTarget"
         assert result.endpoint is None
+        assert result.model_name is None
 
 
 # ============================================================================
