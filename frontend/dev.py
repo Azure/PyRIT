@@ -8,11 +8,16 @@ Cross-platform script to manage PyRIT UI development servers
 import json
 import os
 import platform
-import signal
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+# Ensure emoji and other Unicode characters don't crash on Windows consoles
+# that use legacy encodings like cp1252. Characters that can't be encoded
+# are replaced with '?' instead of raising UnicodeEncodeError.
+sys.stdout.reconfigure(errors="replace")  # type: ignore[attr-defined]
+sys.stderr.reconfigure(errors="replace")  # type: ignore[attr-defined]
 
 # Determine workspace root (parent of frontend directory)
 FRONTEND_DIR = Path(__file__).parent.absolute()
@@ -115,14 +120,7 @@ def start_backend(initializers: list[str] | None = None):
         cmd.extend(["--initializers"] + initializers)
 
     # Start backend
-    if is_windows():
-        backend = subprocess.Popen(
-            cmd,
-            env=env,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0,
-        )
-    else:
-        backend = subprocess.Popen(cmd, env=env)
+    backend = subprocess.Popen(cmd, env=env)
 
     return backend
 
@@ -136,14 +134,7 @@ def start_frontend():
 
     # Start frontend process
     npm_cmd = "npm.cmd" if is_windows() else "npm"
-
-    if is_windows():
-        frontend = subprocess.Popen(
-            [npm_cmd, "run", "dev"],
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if is_windows() else 0,
-        )
-    else:
-        frontend = subprocess.Popen([npm_cmd, "run", "dev"])
+    frontend = subprocess.Popen([npm_cmd, "run", "dev"])
 
     return frontend
 
@@ -183,12 +174,8 @@ def wait_for_interrupt(backend, frontend):
 
         # Terminate processes
         try:
-            if is_windows():
-                backend.send_signal(signal.CTRL_BREAK_EVENT)
-                frontend.send_signal(signal.CTRL_BREAK_EVENT)
-            else:
-                backend.terminate()
-                frontend.terminate()
+            backend.terminate()
+            frontend.terminate()
 
             # Wait for clean shutdown
             backend.wait(timeout=5)

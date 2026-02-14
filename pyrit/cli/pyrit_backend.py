@@ -12,6 +12,11 @@ import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from typing import Optional
 
+# Ensure emoji and other Unicode characters don't crash on Windows consoles
+# that use legacy encodings like cp1252.
+sys.stdout.reconfigure(errors="replace")  # type: ignore[attr-defined]
+sys.stderr.reconfigure(errors="replace")  # type: ignore[attr-defined]
+
 from pyrit.cli import frontend_core
 
 
@@ -175,7 +180,7 @@ async def initialize_and_run(*, parsed_args: Namespace) -> int:
         "pyrit.backend.main:app",
         host=parsed_args.host,
         port=parsed_args.port,
-        log_level=parsed_args.log_level.lower(),
+        log_level=parsed_args.log_level,
         reload=parsed_args.reload,
     )
     server = uvicorn.Server(config)

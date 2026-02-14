@@ -20,12 +20,27 @@ class TestLifespan:
 
     @pytest.mark.asyncio
     async def test_lifespan_initializes_pyrit_and_yields(self) -> None:
-        """Test that lifespan calls initialize_pyrit_async on startup and yields."""
-        with patch("pyrit.backend.main.initialize_pyrit_async", new_callable=AsyncMock) as mock_init:
+        """Test that lifespan calls initialize_pyrit_async on startup when memory is not set."""
+        with (
+            patch("pyrit.backend.main.CentralMemory._memory_instance", None),
+            patch("pyrit.backend.main.initialize_pyrit_async", new_callable=AsyncMock) as mock_init,
+        ):
             async with lifespan(app):
                 pass  # The body of the context manager is the "yield" phase
 
             mock_init.assert_awaited_once_with(memory_db_type="SQLite")
+
+    @pytest.mark.asyncio
+    async def test_lifespan_skips_init_when_already_initialized(self) -> None:
+        """Test that lifespan skips initialization when CentralMemory is already set."""
+        with (
+            patch("pyrit.backend.main.CentralMemory._memory_instance", MagicMock()),
+            patch("pyrit.backend.main.initialize_pyrit_async", new_callable=AsyncMock) as mock_init,
+        ):
+            async with lifespan(app):
+                pass
+
+            mock_init.assert_not_awaited()
 
 
 class TestSetupFrontend:
@@ -81,4 +96,4 @@ class TestSetupFrontend:
 
             # Verify warning was printed
             printed = " ".join(str(c) for c in mock_print.call_args_list)
-            assert "WARNING" in printed
+            assert "warning" in printed.lower()

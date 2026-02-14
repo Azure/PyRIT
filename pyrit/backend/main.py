@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 import pyrit
 from pyrit.backend.middleware import register_error_handlers
 from pyrit.backend.routes import attacks, converters, health, labels, targets, version
+from pyrit.memory import CentralMemory
 from pyrit.setup.initialization import initialize_pyrit_async
 
 # Check for development mode from environment variable
@@ -26,8 +27,10 @@ DEV_MODE = os.getenv("PYRIT_DEV_MODE", "false").lower() == "true"
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage application startup and shutdown lifecycle."""
-    # Startup: initialize PyRIT to load .env and .env.local files
-    await initialize_pyrit_async(memory_db_type="SQLite")
+    # When launched via pyrit_backend CLI, initialization is already done.
+    # Only initialize here for standalone uvicorn usage (e.g. uvicorn pyrit.backend.main:app).
+    if not CentralMemory._memory_instance:
+        await initialize_pyrit_async(memory_db_type="SQLite")
     yield
     # Shutdown: nothing to clean up currently
 
