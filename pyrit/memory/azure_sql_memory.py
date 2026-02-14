@@ -385,6 +385,101 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         )
         return labels_subquery
 
+    def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
+        """
+        Azure SQL implementation for filtering AttackResults by attack type.
+        Uses JSON_VALUE() to match class_name in the attack_identifier JSON column.
+
+        Args:
+            attack_class (str): Exact attack class name to match.
+
+        Returns:
+            Any: SQLAlchemy text condition with bound parameter.
+        """
+        return text(
+            """ISJSON("AttackResultEntries".attack_identifier) = 1
+            AND JSON_VALUE("AttackResultEntries".attack_identifier, '$.class_name') = :attack_class"""
+        ).bindparams(attack_class=attack_class)
+
+    def _get_attack_result_converter_condition(self, *, converter_classes: Sequence[str]) -> Any:
+        """
+        Azure SQL implementation for filtering AttackResults by converter classes.
+
+        When converter_classes is empty, matches attacks with no converters.
+        When non-empty, uses OPENJSON() to check all specified classes are present
+        (AND logic, case-insensitive).
+
+        Args:
+            converter_classes (Sequence[str]): List of converter class names. Empty list means no converters.
+
+        Returns:
+            Any: SQLAlchemy combined condition with bound parameters.
+        """
+        if len(converter_classes) == 0:
+            # Explicitly "no converters": match attacks where the converter list
+            # is absent, null, or empty in the stored JSON.
+            return text(
+                """("AttackResultEntries".attack_identifier IS NULL
+                OR "AttackResultEntries".attack_identifier = '{}'
+                OR JSON_QUERY("AttackResultEntries".attack_identifier, '$.request_converter_identifiers') IS NULL
+                OR JSON_QUERY("AttackResultEntries".attack_identifier, '$.request_converter_identifiers') = '[]')"""
+            )
+
+        conditions = []
+        bindparams_dict: dict[str, str] = {}
+        for i, cls in enumerate(converter_classes):
+            param_name = f"conv_cls_{i}"
+            conditions.append(
+                f'EXISTS(SELECT 1 FROM OPENJSON(JSON_QUERY("AttackResultEntries".attack_identifier, '
+                f"'$.request_converter_identifiers')) "
+                f"WHERE LOWER(JSON_VALUE(value, '$.class_name')) = :{param_name})"
+            )
+            bindparams_dict[param_name] = cls.lower()
+
+        combined = " AND ".join(conditions)
+        return text(f"""ISJSON("AttackResultEntries".attack_identifier) = 1 AND {combined}""").bindparams(
+            **bindparams_dict
+        )
+
+    def get_unique_attack_class_names(self) -> list[str]:
+        """
+        Azure SQL implementation: extract unique class_name values from attack_identifier JSON.
+
+        Returns:
+            Sorted list of unique attack class name strings.
+        """
+        with closing(self.get_session()) as session:
+            rows = session.execute(
+                text(
+                    """SELECT DISTINCT JSON_VALUE(attack_identifier, '$.class_name') AS cls
+                    FROM "AttackResultEntries"
+                    WHERE ISJSON(attack_identifier) = 1
+                    AND JSON_VALUE(attack_identifier, '$.class_name') IS NOT NULL"""
+                )
+            ).fetchall()
+        return sorted(row[0] for row in rows)
+
+    def get_unique_converter_class_names(self) -> list[str]:
+        """
+        Azure SQL implementation: extract unique converter class_name values
+        from the request_converter_identifiers array in attack_identifier JSON.
+
+        Returns:
+            Sorted list of unique converter class name strings.
+        """
+        with closing(self.get_session()) as session:
+            rows = session.execute(
+                text(
+                    """SELECT DISTINCT JSON_VALUE(c.value, '$.class_name') AS cls
+                    FROM "AttackResultEntries"
+                    CROSS APPLY OPENJSON(JSON_QUERY(attack_identifier,
+                        '$.request_converter_identifiers')) AS c
+                    WHERE ISJSON(attack_identifier) = 1
+                    AND JSON_VALUE(c.value, '$.class_name') IS NOT NULL"""
+                )
+            ).fetchall()
+        return sorted(row[0] for row in rows)
+
     def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
         Get the SQL Azure implementation for filtering ScenarioResults by labels.
