@@ -8,14 +8,13 @@ from typing import List, Optional, Union
 from pyrit.common import apply_defaults
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
-    AttackAdversarialConfig,
     AttackConverterConfig,
     AttackScoringConfig,
 )
-from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
-from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.executor.attack.single_turn.role_play import RolePlayAttack
+from pyrit.executor.attack.single_turn.skeleton_key import SkeletonKeyAttack
 from pyrit.models import SeedAttackGroup
 from pyrit.prompt_converter import TextJailbreakConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -34,18 +33,26 @@ from pyrit.score import (
 class JailbreakStrategy(ScenarioStrategy):
     """
     Strategy for jailbreak attacks.
+
+    The SIMPLE strategy just sends the jailbroken prompt and records the response. It is meant to
+    expose an obvious way of using this scenario without worrying about additional tweaks and changes
+    to the prompt.
+
+    COMPLEX strategies
     """
 
     # Aggregate members (special markers that expand to strategies with matching tags)
     ALL = ("all", {"all"})
-    SINGLE_TURN = ("single_turn", {"single_turn"})
-    MULTI_TURN = ("multi_turn", {"multi_turn"})
+    SIMPLE = ("simple", {"simple"})
+    COMPLEX = ("complex", {"complex"})
 
-    # Strategies for tweaking jailbreak efficacy through attack patterns
-    ManyShot = ("many_shot", {"single_turn"})
-    PromptSending = ("prompt_sending", {"single_turn"})
-    Crescendo = ("crescendo", {"multi_turn"})
-    RedTeaming = ("red_teaming", {"multi_turn"})
+    # Simple strategies
+    PromptSending = ("prompt_sending", {"simple"})
+
+    # Complex strategies
+    ManyShot = ("many_shot", {"complex"})
+    SkeletonKey = ("skeleton", {"complex"})
+    RolePlay = ("role_play", {"complex"})
 
     @classmethod
     def get_aggregate_tags(cls) -> set[str]:
@@ -56,7 +63,7 @@ class JailbreakStrategy(ScenarioStrategy):
             set[str]: Set of tags that are aggregate markers.
         """
         # Include base class aggregates ("all") and add scenario-specific ones
-        return super().get_aggregate_tags() | {"single_turn", "multi_turn"}
+        return super().get_aggregate_tags() | {"simple", "complex"}
 
 
 class Jailbreak(Scenario):
@@ -254,24 +261,21 @@ class Jailbreak(Scenario):
             request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
-        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, CrescendoAttack, RedTeamingAttack]] = None
+        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, RolePlayAttack, SkeletonKeyAttack]] = None
         args = {
             "objective_target": self._objective_target,
             "attack_scoring_config": self._scorer_config,
             "attack_converter_config": converter_config,
         }
-        adversarial_config = AttackAdversarialConfig(target=self._get_default_adversarial_target())
         match strategy:
             case "many_shot":
                 attack = ManyShotJailbreakAttack(**args)
             case "prompt_sending":
                 attack = PromptSendingAttack(**args)
-            case "crescendo":
-                args["attack_adversarial_config"] = adversarial_config
-                attack = CrescendoAttack(**args)
-            case "red_teaming":
-                args["attack_adversarial_config"] = adversarial_config
-                attack = RedTeamingAttack(**args)
+            case "skeleton":
+                attack = SkeletonKeyAttack(**args)
+            case "role_play":
+                attack = RolePlayAttack(**args)
             case _:
                 raise ValueError(f"Unknown JailbreakStrategy `{strategy}`.")
 
@@ -305,9 +309,10 @@ class Jailbreak(Scenario):
 
         for strategy in strategies:
             for template_name in self._jailbreaks:
-                atomic_attack = await self._get_atomic_attack_from_strategy_async(
-                    strategy=strategy, jailbreak_template_name=template_name
-                )
-                atomic_attacks.extend([atomic_attack] * self._n)
+                for _ in range(0, self._n):
+                    atomic_attack = await self._get_atomic_attack_from_strategy_async(
+                        strategy=strategy, jailbreak_template_name=template_name
+                    )
+                    atomic_attacks.append(atomic_attack)
 
         return atomic_attacks

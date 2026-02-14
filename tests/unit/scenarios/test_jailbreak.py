@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
-from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.executor.attack.single_turn.role_play import RolePlayAttack
+from pyrit.executor.attack.single_turn.skeleton_key import SkeletonKeyAttack
 from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_target import PromptTarget
@@ -78,13 +78,13 @@ def all_jailbreak_strategy() -> JailbreakStrategy:
 
 
 @pytest.fixture
-def singleturn_jailbreak_strategy() -> JailbreakStrategy:
-    return JailbreakStrategy.SINGLE_TURN
+def simple_jailbreak_strategy() -> JailbreakStrategy:
+    return JailbreakStrategy.SIMPLE
 
 
 @pytest.fixture
-def multiturn_jailbreak_strategy() -> JailbreakStrategy:
-    return JailbreakStrategy.MULTI_TURN
+def complex_jailbreak_strategy() -> JailbreakStrategy:
+    return JailbreakStrategy.COMPLEX
 
 
 @pytest.fixture
@@ -98,13 +98,13 @@ def promptsending_jailbreak_strategy() -> JailbreakStrategy:
 
 
 @pytest.fixture
-def crescendo_jailbreak_strategy() -> JailbreakStrategy:
-    return JailbreakStrategy.Crescendo
+def skeleton_jailbreak_attack() -> JailbreakStrategy:
+    return JailbreakStrategy.SkeletonKey
 
 
 @pytest.fixture
-def redteaming_jailbreak_strategy() -> JailbreakStrategy:
-    return JailbreakStrategy.RedTeaming
+def roleplay_jailbreak_strategy() -> JailbreakStrategy:
+    return JailbreakStrategy.RolePlay
 
 
 @pytest.fixture
@@ -196,34 +196,38 @@ class TestJailbreakAttackGeneration:
             assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
     @pytest.mark.asyncio
-    async def test_attack_generation_for_singleturn(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, singleturn_jailbreak_strategy
+    async def test_attack_generation_for_simple(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, simple_jailbreak_strategy
     ):
-        """Test that the single turn attack generation works."""
+        """Test that the simple attack generation works."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[singleturn_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[simple_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
-                assert isinstance(run._attack, PromptSendingAttack) or isinstance(run._attack, ManyShotJailbreakAttack)
+                assert isinstance(run._attack, PromptSendingAttack)
 
     @pytest.mark.asyncio
-    async def test_attack_generation_for_multiturn(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, multiturn_jailbreak_strategy
+    async def test_attack_generation_for_complex(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, complex_jailbreak_strategy
     ):
-        """Test that the multi turn attack generation works."""
+        """Test that the complex attack generation works."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[multiturn_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[complex_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
-                assert isinstance(run._attack, CrescendoAttack) or isinstance(run._attack, RedTeamingAttack)
+                assert (
+                    isinstance(run._attack, RolePlayAttack)
+                    or isinstance(run._attack, ManyShotJailbreakAttack)
+                    or isinstance(run._attack, SkeletonKeyAttack)
+                )
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_manyshot(
@@ -256,34 +260,34 @@ class TestJailbreakAttackGeneration:
                 assert isinstance(run._attack, PromptSendingAttack)
 
     @pytest.mark.asyncio
-    async def test_attack_generation_for_crescendo(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, crescendo_jailbreak_strategy
+    async def test_attack_generation_for_skeleton(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, skeleton_jailbreak_attack
     ):
-        """Test that the crescendo attack generation works."""
+        """Test that the skelton key attack generation works."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[crescendo_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[skeleton_jailbreak_attack]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
-                assert isinstance(run._attack, CrescendoAttack)
+                assert isinstance(run._attack, SkeletonKeyAttack)
 
     @pytest.mark.asyncio
-    async def test_attack_generation_for_redteaming(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, redteaming_jailbreak_strategy
+    async def test_attack_generation_for_roleplay(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seed_groups, roleplay_jailbreak_strategy
     ):
-        """Test that the red teaming attack generation works."""
+        """Test that the roleplaying attack generation works."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[redteaming_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[roleplay_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
-                assert isinstance(run._attack, RedTeamingAttack)
+                assert isinstance(run._attack, RolePlayAttack)
 
     @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(
