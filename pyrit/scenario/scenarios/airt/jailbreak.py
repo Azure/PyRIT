@@ -281,7 +281,7 @@ class Jailbreak(Scenario):
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                     temperature=1.2,
                 )
-                args["role_play_path"] = RolePlayPaths.PERSUASION_SCRIPT
+                args["role_play_definition_path"] = RolePlayPaths.PERSUASION_SCRIPT.value
                 attack = RolePlayAttack(**args)
             case _:
                 raise ValueError(f"Unknown JailbreakStrategy `{strategy}`.")
