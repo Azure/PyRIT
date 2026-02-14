@@ -13,7 +13,7 @@ from pyrit.executor.attack.core.attack_config import (
 )
 from pyrit.executor.attack.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.executor.attack.single_turn.role_play import RolePlayAttack
+from pyrit.executor.attack.single_turn.role_play import RolePlayAttack, RolePlayPaths
 from pyrit.executor.attack.single_turn.skeleton_key import SkeletonKeyAttack
 from pyrit.models import SeedAttackGroup
 from pyrit.prompt_converter import TextJailbreakConverter
@@ -281,6 +281,7 @@ class Jailbreak(Scenario):
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                     temperature=1.2,
                 )
+                args["role_play_path"] = RolePlayPaths.PERSUASION_SCRIPT
                 attack = RolePlayAttack(**args)
             case _:
                 raise ValueError(f"Unknown JailbreakStrategy `{strategy}`.")
