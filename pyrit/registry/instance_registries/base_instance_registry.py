@@ -45,7 +45,7 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
     _instances: Dict[type, "BaseInstanceRegistry[Any, Any]"] = {}
 
     @classmethod
-    def get_registry_singleton(cls) -> "BaseInstanceRegistry[T, MetadataT]":
+    def get_registry_singleton(cls) -> BaseInstanceRegistry[T, MetadataT]:
         """
         Get the singleton instance of this registry.
 
@@ -110,6 +110,15 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
             Sorted list of registry names (keys).
         """
         return sorted(self._registry_items.keys())
+
+    def get_all_instances(self) -> Dict[str, T]:
+        """
+        Get all registered instances as a name -> instance mapping.
+
+        Returns:
+            Dict mapping registry names to their instances.
+        """
+        return dict(self._registry_items)
 
     def list_metadata(
         self,
