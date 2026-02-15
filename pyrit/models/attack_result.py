@@ -16,9 +16,12 @@ from pyrit.models.strategy_result import StrategyResult
 AttackResultT = TypeVar("AttackResultT", bound="AttackResult")
 
 
-class AttackOutcome(Enum):
+class AttackOutcome(str, Enum):
     """
     Enum representing the possible outcomes of an attack.
+
+    Inherits from ``str`` so that values serialize naturally in Pydantic
+    models and REST responses without a dedicated mapping function.
     """
 
     # The attack was successful in achieving its objective
