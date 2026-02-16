@@ -176,19 +176,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
             default_values.get_non_required_value(env_var_name="GLOBAL_MEMORY_LABELS") or "{}"
         )
 
-    def get_identifier(self) -> Dict[str, str]:
-        """
-        Get a serializable identifier for the strategy instance.
-
-        Returns:
-            dict: A dictionary containing the type, module, and unique ID of the strategy.
-        """
-        return {
-            "__type__": self.__class__.__name__,
-            "__module__": self.__class__.__module__,
-            "id": str(self._id),
-        }
-
     def _register_event_handler(self, event_handler: StrategyEventHandler[StrategyContextT, StrategyResultT]) -> None:
         """
         Register an event handler for strategy events.

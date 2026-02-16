@@ -30,8 +30,10 @@ export default defineConfig({
   /* Automatically start servers before running tests */
   webServer: {
     command: process.env.CI ? "cd .. && uv run python frontend/dev.py" : "python dev.py",
-    url: "http://localhost:3000",
+    // Use 127.0.0.1 to avoid Node.js 17+ resolving localhost to IPv6 ::1
+    url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
-    timeout: 30000,
+    // CI needs extra time for uv sync + backend startup
+    timeout: 120_000,
   },
 });

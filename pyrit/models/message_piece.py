@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
-from pyrit.identifiers import ConverterIdentifier, ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -39,7 +39,7 @@ class MessagePiece:
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
         converter_identifiers: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = None,
         prompt_target_identifier: Optional[Union[TargetIdentifier, Dict[str, Any]]] = None,
-        attack_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[Union[AttackIdentifier, Dict[str, str]]] = None,
         scorer_identifier: Optional[Union[ScorerIdentifier, Dict[str, str]]] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: Optional[PromptDataType] = None,
@@ -118,7 +118,10 @@ class MessagePiece:
             TargetIdentifier.normalize(prompt_target_identifier) if prompt_target_identifier else None
         )
 
-        self.attack_identifier = attack_identifier or {}
+        # Handle attack_identifier: normalize to AttackIdentifier (handles dict with deprecation warning)
+        self.attack_identifier: Optional[AttackIdentifier] = (
+            AttackIdentifier.normalize(attack_identifier) if attack_identifier else None
+        )
 
         # Handle scorer_identifier: normalize to ScorerIdentifier (handles dict with deprecation warning)
         self.scorer_identifier: Optional[ScorerIdentifier] = (
@@ -283,7 +286,7 @@ class MessagePiece:
             "prompt_target_identifier": (
                 self.prompt_target_identifier.to_dict() if self.prompt_target_identifier else None
             ),
-            "attack_identifier": self.attack_identifier,
+            "attack_identifier": self.attack_identifier.to_dict() if self.attack_identifier else None,
             "scorer_identifier": self.scorer_identifier.to_dict() if self.scorer_identifier else None,
             "original_value_data_type": self.original_value_data_type,
             "original_value": self.original_value,
