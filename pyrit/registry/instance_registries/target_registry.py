@@ -36,7 +36,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
     """
 
     @classmethod
-    def get_registry_singleton(cls) -> "TargetRegistry":
+    def get_registry_singleton(cls) -> TargetRegistry:
         """
         Get the singleton instance of the TargetRegistry.
 
