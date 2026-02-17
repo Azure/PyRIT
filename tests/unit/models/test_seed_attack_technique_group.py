@@ -6,14 +6,11 @@
 import pytest
 
 from pyrit.models.seeds import (
-    Seed,
     SeedAttackTechniqueGroup,
-    SeedGroup,
     SeedObjective,
     SeedPrompt,
     SeedSimulatedConversation,
 )
-
 
 # =============================================================================
 # is_general_strategy on Seed / SeedPrompt
@@ -125,8 +122,9 @@ class TestSeedAttackTechniqueGroupInit:
                     num_turns=3,
                     adversarial_chat_system_prompt_path=adv_path,
                 ),
-                SeedPrompt(value="Strategy prompt", data_type="text", sequence=10, role="user",
-                           is_general_strategy=True),
+                SeedPrompt(
+                    value="Strategy prompt", data_type="text", sequence=10, role="user", is_general_strategy=True
+                ),
             ]
         )
 
