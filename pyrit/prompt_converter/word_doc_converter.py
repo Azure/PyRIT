@@ -27,7 +27,7 @@ class _WordDocInjectionConfig:
     placeholder: str
 
 
-class WordDoc_Converter(PromptConverter):
+class WordDocConverter(PromptConverter):
     """Convert a text prompt into a Word (.docx) document.
 
     This converter supports two main modes:
@@ -70,9 +70,10 @@ class WordDoc_Converter(PromptConverter):
 
         Args:
             prompt_template: Optional ``SeedPrompt`` template used to render the
-                final content before injection. If provided, ``prompt`` should
-                be a dict-like object (or string representation) whose keys map
-                to the template parameters.
+                final content before injection. If provided, ``prompt`` passed
+                to ``convert_async`` must be a string whose contents can be
+                interpreted as the template parameters (for example, a
+                JSON-encoded or other parseable mapping of keys to values).
             existing_docx: Optional path to an existing `.docx` file. When
                 provided, the converter will search for ``placeholder`` inside
                 the document paragraphs and replace it with the rendered content.
@@ -150,7 +151,7 @@ class WordDoc_Converter(PromptConverter):
         else:
             doc_bytes = self._generate_new_docx(content)
 
-        serializer = await self._serialize_docx(doc_bytes)
+        serializer = await self._serialize_docx_async(doc_bytes)
 
         return ConverterResult(output_text=serializer.value, output_type="binary_path")
 
@@ -202,7 +203,11 @@ class WordDoc_Converter(PromptConverter):
         The placeholder must appear fully inside a single run; if it only exists
         across multiple runs, it will not be replaced.
         """
-        assert self._injection_config.existing_docx is not None
+        if self._injection_config.existing_docx is None:
+            raise ValueError(
+                "Cannot inject into an existing Word document because no 'existing_docx' "
+                "path was provided in the injection configuration."
+            )
         document = Document(self._injection_config.existing_docx)
 
         placeholder = self._injection_config.placeholder
@@ -244,7 +249,7 @@ class WordDoc_Converter(PromptConverter):
                 return True
         return False
 
-    async def _serialize_docx(self, docx_bytes: bytes) -> DataTypeSerializer:
+    async def _serialize_docx_async(self, docx_bytes: bytes) -> DataTypeSerializer:
         """Serialize the generated document using a data serializer."""
         extension = "docx"
 
