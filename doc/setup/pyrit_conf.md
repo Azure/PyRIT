@@ -29,10 +29,10 @@ The `.pyrit_conf` file is YAML-formatted with the following fields:
 
 The database backend for storing prompts and results.
 
-| Value | Description |
-|-------|-------------|
-| `in_memory` | Temporary in-memory database (data lost on exit) |
-| `sqlite` | Persistent local SQLite database **(default)** |
+| Value       | Description                                                 |
+| ----------- | ----------------------------------------------------------- |
+| `in_memory` | Temporary in-memory database (data lost on exit)            |
+| `sqlite`    | Persistent local SQLite database **(default)**              |
 | `azure_sql` | Azure SQL database (requires connection string in env vars) |
 
 Values are case-insensitive and accept underscores or hyphens (e.g., `in_memory`, `in-memory`, `InMemory` all work).
@@ -42,6 +42,7 @@ Values are case-insensitive and accept underscores or hyphens (e.g., `in_memory`
 A list of built-in initializers to run during PyRIT initialization. Initializers configure default values for converters, scorers, and targets. Names are automatically normalized to snake_case.
 
 Each entry can be:
+
 - **A simple string** — just the initializer name
 - **A dictionary** — with `name` and optional `args` for constructor arguments
 
@@ -54,6 +55,7 @@ initializers:
 ```
 
 Available built-in initializers include:
+
 - **`simple`** — Basic OpenAI configuration (requires `OPENAI_CHAT_ENDPOINT`, `OPENAI_CHAT_MODEL`, `OPENAI_CHAT_KEY`)
 - **`airt`** — AI Red Team setup with Azure OpenAI (requires additional `AZURE_OPENAI_*` env vars)
 
@@ -63,11 +65,11 @@ Use `pyrit list initializers` in the CLI to see all registered initializers.
 
 Paths to custom Python scripts containing `PyRITInitializer` subclasses. Paths can be absolute or relative to the current working directory.
 
-| Value | Behavior |
-|-------|----------|
+| Value             | Behavior                           |
+| ----------------- | ---------------------------------- |
 | Omitted or `null` | No custom scripts loaded (default) |
-| `[]` (empty list) | Explicitly load no scripts |
-| List of paths | Load the specified scripts |
+| `[]` (empty list) | Explicitly load no scripts         |
+| List of paths     | Load the specified scripts         |
 
 ```yaml
 initialization_scripts:
@@ -79,11 +81,11 @@ initialization_scripts:
 
 Environment file paths to load during initialization. Later files override values from earlier files.
 
-| Value | Behavior |
-|-------|----------|
+| Value             | Behavior                                                             |
+| ----------------- | -------------------------------------------------------------------- |
 | Omitted or `null` | Load default `~/.pyrit/.env` and `~/.pyrit/.env.local` if they exist |
-| `[]` (empty list) | Load **no** environment files |
-| List of paths | Load **only** the specified files (defaults are skipped) |
+| `[]` (empty list) | Load **no** environment files                                        |
+| List of paths     | Load **only** the specified files (defaults are skipped)             |
 
 ```yaml
 env_files:
@@ -105,13 +107,24 @@ flowchart LR
     B --> C["3. Individual arguments\nCLI flags / API params"]
 ```
 
-| Priority | Source | Description |
-|----------|--------|-------------|
-| Lowest | `~/.pyrit/.pyrit_conf` | Loaded automatically if it exists |
-| Medium | Explicit config file | Passed via `--config-file` (CLI) or `config_file` parameter |
-| Highest | Individual arguments | CLI flags like `--database`, `--initializers`, or API keyword arguments |
+| Priority | Source                 | Description                                                             |
+| -------- | ---------------------- | ----------------------------------------------------------------------- |
+| Lowest   | `~/.pyrit/.pyrit_conf` | Loaded automatically if it exists                                       |
+| Medium   | Explicit config file   | Passed via `--config-file` (CLI) or `config_file` parameter             |
+| Highest  | Individual arguments   | CLI flags like `--database`, `--initializers`, or API keyword arguments |
 
 This means you can set sensible defaults in `~/.pyrit/.pyrit_conf` and override specific values on a per-run basis without modifying the file.
+
+### Execution Order Within Resolved Configuration
+
+The 3-layer model above determines **which config values are selected**. Once resolved, the values are applied in a fixed runtime order:
+
+1. Environment files are loaded
+2. Default values are reset
+3. Memory database is configured (from `memory_db_type`)
+4. Initializers are executed (sorted by `execution_order`)
+
+Because initializers run last, they can modify anything set up in earlier steps — including environment variables and the memory instance. In practice, built-in initializers like `simple` and `airt` only call `set_default_value` and `set_global_variable` and do not touch memory or environment variables. However, a custom initializer could override those if needed. When this happens, the initializer's changes take effect because it runs after the other settings have been applied.
 
 ## Usage
 
@@ -142,12 +155,15 @@ await initialize_from_config_async("/path/to/my_config.yaml")
 For more control, use `ConfigurationLoader.load_with_overrides` which implements the full 3-layer precedence model:
 
 ```python
+from pathlib import Path
 from pyrit.setup import ConfigurationLoader
 
+# Layer 1 (~/.pyrit/.pyrit_conf) is always loaded automatically if it exists.
+# Layer 2 and 3 overrides are optional keyword arguments:
 config = ConfigurationLoader.load_with_overrides(
-    config_file=None,            # Layer 2: explicit config file (or None to skip)
-    memory_db_type="in_memory",  # Layer 3: override database type
-    initializers=["simple"],     # Layer 3: override initializers
+    config_file=Path("./my_project.yaml"),  # Layer 2: explicit config file (omit to skip)
+    memory_db_type="in_memory",             # Layer 3: override database type
+    initializers=["simple"],                # Layer 3: override initializers
 )
 
 await config.initialize_pyrit_async()
