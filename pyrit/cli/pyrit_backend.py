@@ -10,12 +10,15 @@ This module provides the main entry point for the pyrit_backend command.
 import asyncio
 import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
+from pathlib import Path
 from typing import Optional
 
 # Ensure emoji and other Unicode characters don't crash on Windows consoles
 # that use legacy encodings like cp1252.
 sys.stdout.reconfigure(errors="replace")  # type: ignore[union-attr]
 sys.stderr.reconfigure(errors="replace")  # type: ignore[union-attr]
+
+import uvicorn
 
 from pyrit.cli import frontend_core
 
@@ -124,55 +127,26 @@ async def initialize_and_run(*, parsed_args: Namespace) -> int:
     Returns:
         int: Exit code (0 for success, 1 for error).
     """
-    from pyrit.setup import initialize_pyrit_async
+    try:
+        core = frontend_core.FrontendCore(
+            database=parsed_args.database,
+            initialization_scripts=(
+                [Path(p) for p in parsed_args.initialization_scripts] if parsed_args.initialization_scripts else None
+            ),
+            initializer_names=parsed_args.initializers,
+            env_files=([Path(p) for p in parsed_args.env_files] if parsed_args.env_files else None),
+            log_level=parsed_args.log_level,
+        )
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}")
+        return 1
 
-    # Resolve initialization scripts if provided
-    initialization_scripts = None
-    if parsed_args.initialization_scripts:
-        try:
-            initialization_scripts = frontend_core.resolve_initialization_scripts(
-                script_paths=parsed_args.initialization_scripts
-            )
-        except FileNotFoundError as e:
-            print(f"Error: {e}")
-            return 1
-
-    # Resolve env files if provided
-    env_files = None
-    if parsed_args.env_files:
-        try:
-            env_files = frontend_core.resolve_env_files(env_file_paths=parsed_args.env_files)
-        except ValueError as e:
-            print(f"Error: {e}")
-            return 1
-
-    # Resolve initializer instances if names provided
-    initializer_instances = None
-    if parsed_args.initializers:
-        from pyrit.registry import InitializerRegistry
-
-        registry = InitializerRegistry()
-        initializer_instances = []
-        for name in parsed_args.initializers:
-            try:
-                initializer_class = registry.get_class(name)
-                initializer_instances.append(initializer_class())
-            except Exception as e:
-                print(f"Error: Could not load initializer '{name}': {e}")
-                return 1
-
-    # Initialize PyRIT with the provided configuration
+    # Initialize memory, registries, and run initializers.
     print("🔧 Initializing PyRIT...")
-    await initialize_pyrit_async(
-        memory_db_type=parsed_args.database,
-        initialization_scripts=initialization_scripts,
-        initializers=initializer_instances,
-        env_files=env_files,
-    )
+    await core.initialize_async()
+    await core.run_initializers_async()
 
     # Start uvicorn server
-    import uvicorn
-
     print(f"🚀 Starting PyRIT backend on http://{parsed_args.host}:{parsed_args.port}")
     print(f"   API Docs: http://{parsed_args.host}:{parsed_args.port}/docs")
 

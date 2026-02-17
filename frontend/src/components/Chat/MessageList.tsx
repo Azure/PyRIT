@@ -4,6 +4,8 @@ import {
   Text,
   Avatar,
   tokens,
+  MessageBar,
+  MessageBarBody,
 } from '@fluentui/react-components'
 import { Message } from '../../types'
 
@@ -61,10 +63,16 @@ const useStyles = makeStyles({
     marginTop: tokens.spacingVerticalS,
   },
   attachmentPreview: {
-    maxWidth: '200px',
-    maxHeight: '200px',
+    maxWidth: '400px',
+    maxHeight: '400px',
     borderRadius: tokens.borderRadiusMedium,
-    objectFit: 'cover',
+    objectFit: 'contain',
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
+  },
+  videoPreview: {
+    maxWidth: '400px',
+    maxHeight: '300px',
+    borderRadius: tokens.borderRadiusMedium,
     border: `1px solid ${tokens.colorNeutralStroke1}`,
   },
   attachmentFile: {
@@ -80,6 +88,9 @@ const useStyles = makeStyles({
     justifyContent: 'center',
     height: '100%',
     gap: tokens.spacingVerticalM,
+  },
+  errorContainer: {
+    marginTop: tokens.spacingVerticalS,
   },
 })
 
@@ -110,12 +121,9 @@ export default function MessageList({ messages }: MessageListProps) {
     <div className={styles.root}>
       {messages.map((message, index) => {
         const isUser = message.role === 'user'
+        const isSimulated = message.role === 'simulated_assistant'
         const timestamp = new Date(message.timestamp).toLocaleTimeString()
-
-        // Debug attachments
-        if (message.attachments && message.attachments.length > 0) {
-          console.log('Message has attachments:', message.attachments)
-        }
+        const avatarName = isUser ? 'User' : isSimulated ? 'Simulated' : 'Assistant'
 
         return (
           <div
@@ -123,15 +131,32 @@ export default function MessageList({ messages }: MessageListProps) {
             className={`${styles.message} ${isUser ? styles.userMessage : ''}`}
           >
             <Avatar
-              name={isUser ? 'User' : 'Assistant'}
-              color={isUser ? 'colorful' : 'brand'}
+              name={avatarName}
+              color={isUser ? 'colorful' : isSimulated ? 'steel' : 'brand'}
             />
             <div className={`${styles.messageContent} ${isUser ? styles.userMessageContent : ''}`}>
+              {/* Error rendering */}
+              {message.error && (
+                <div className={styles.errorContainer}>
+                  <MessageBar intent="error">
+                    <MessageBarBody>
+                      <Text weight="semibold">{message.error.type}</Text>
+                      {message.error.description && (
+                        <Text>: {message.error.description}</Text>
+                      )}
+                    </MessageBarBody>
+                  </MessageBar>
+                </div>
+              )}
+
+              {/* Text content */}
               {message.content && (
-                <Text className={message.content === '...' ? styles.loadingEllipsis : styles.messageText}>
+                <Text className={message.isLoading ? styles.loadingEllipsis : styles.messageText}>
                   {message.content}
                 </Text>
               )}
+
+              {/* Attachments (images, audio, video, files) */}
               {message.attachments && message.attachments.length > 0 && (
                 <div className={styles.attachmentsContainer}>
                   {message.attachments.map((att, attIndex) => (
@@ -147,7 +172,7 @@ export default function MessageList({ messages }: MessageListProps) {
                         <video
                           src={att.url}
                           controls
-                          className={styles.attachmentPreview}
+                          className={styles.videoPreview}
                         />
                       )}
                       {att.type === 'audio' && (

@@ -22,6 +22,7 @@ from pyrit.backend.models.attacks import (
     MessagePiece,
     MessagePieceRequest,
     Score,
+    TargetInfo,
 )
 from pyrit.models import AttackResult, ChatMessageRole, PromptDataType
 from pyrit.models import Message as PyritMessage
@@ -65,12 +66,21 @@ def attack_result_to_summary(
     target_id = aid.objective_target_identifier if aid else None
     converter_ids = aid.request_converter_identifiers if aid else None
 
+    target_info = (
+        TargetInfo(
+            target_type=target_id.class_name,
+            endpoint=target_id.endpoint or None,
+            model_name=target_id.model_name or None,
+        )
+        if target_id
+        else None
+    )
+
     return AttackSummary(
         conversation_id=ar.conversation_id,
         attack_type=aid.class_name if aid else "Unknown",
         attack_specific_params=aid.attack_specific_params if aid else None,
-        target_unique_name=target_id.unique_name if target_id else None,
-        target_type=target_id.class_name if target_id else None,
+        target=target_info,
         converters=[c.class_name for c in converter_ids] if converter_ids else [],
         outcome=ar.outcome.value,
         last_message_preview=last_preview,

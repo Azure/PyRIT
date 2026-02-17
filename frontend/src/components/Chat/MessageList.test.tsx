@@ -3,9 +3,9 @@ import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 import MessageList from "./MessageList";
 import { Message } from "../../types";
 
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <FluentProvider theme={webLightTheme}>{children}</FluentProvider>
-);
+const TestWrapper: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => <FluentProvider theme={webLightTheme}>{children}</FluentProvider>;
 
 describe("MessageList", () => {
   const mockMessages: Message[] = [
@@ -33,7 +33,6 @@ describe("MessageList", () => {
       </TestWrapper>
     );
 
-    // Should render without errors even with empty messages
     expect(document.body).toBeTruthy();
   });
 
@@ -45,7 +44,9 @@ describe("MessageList", () => {
     );
 
     expect(screen.getByText("Hello, how are you?")).toBeInTheDocument();
-    expect(screen.getByText("I am doing well, thank you!")).toBeInTheDocument();
+    expect(
+      screen.getByText("I am doing well, thank you!")
+    ).toBeInTheDocument();
     expect(screen.getByText("Can you help me?")).toBeInTheDocument();
   });
 
@@ -85,17 +86,17 @@ describe("MessageList", () => {
     expect(screen.getByText("Assistant message test")).toBeInTheDocument();
   });
 
-  it("should handle messages with attachments", () => {
+  it("should handle messages with image attachments", () => {
     const messagesWithAttachments: Message[] = [
       {
-        role: "user",
-        content: "Message with attachment",
+        role: "assistant",
+        content: "Here is your image",
         timestamp: new Date().toISOString(),
         attachments: [
           {
             type: "image",
             name: "test.png",
-            url: "http://example.com/test.png",
+            url: "data:image/png;base64,iVBORw0KGgo=",
             mimeType: "image/png",
             size: 1024,
           },
@@ -109,7 +110,93 @@ describe("MessageList", () => {
       </TestWrapper>
     );
 
-    expect(screen.getByText("Message with attachment")).toBeInTheDocument();
+    expect(screen.getByText("Here is your image")).toBeInTheDocument();
+    const img = screen.getByAltText("test.png");
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute(
+      "src",
+      "data:image/png;base64,iVBORw0KGgo="
+    );
+  });
+
+  it("should handle messages with audio attachments", () => {
+    const messagesWithAudio: Message[] = [
+      {
+        role: "assistant",
+        content: "",
+        timestamp: new Date().toISOString(),
+        attachments: [
+          {
+            type: "audio",
+            name: "audio.wav",
+            url: "data:audio/wav;base64,UklGRg==",
+            mimeType: "audio/wav",
+            size: 512,
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestWrapper>
+        <MessageList messages={messagesWithAudio} />
+      </TestWrapper>
+    );
+
+    const audioElements = document.querySelectorAll("audio");
+    expect(audioElements.length).toBeGreaterThan(0);
+  });
+
+  it("should handle messages with video attachments", () => {
+    const messagesWithVideo: Message[] = [
+      {
+        role: "assistant",
+        content: "",
+        timestamp: new Date().toISOString(),
+        attachments: [
+          {
+            type: "video",
+            name: "video.mp4",
+            url: "data:video/mp4;base64,dmlkZW8=",
+            mimeType: "video/mp4",
+            size: 2048,
+          },
+        ],
+      },
+    ];
+
+    render(
+      <TestWrapper>
+        <MessageList messages={messagesWithVideo} />
+      </TestWrapper>
+    );
+
+    const videoElements = document.querySelectorAll("video");
+    expect(videoElements.length).toBeGreaterThan(0);
+  });
+
+  it("should render error messages", () => {
+    const errorMessages: Message[] = [
+      {
+        role: "assistant",
+        content: "",
+        timestamp: new Date().toISOString(),
+        error: {
+          type: "blocked",
+          description: "Content was filtered by safety system",
+        },
+      },
+    ];
+
+    render(
+      <TestWrapper>
+        <MessageList messages={errorMessages} />
+      </TestWrapper>
+    );
+
+    expect(
+      screen.getByText(/Content was filtered by safety system/)
+    ).toBeInTheDocument();
   });
 
   it("should render multiple messages in order", () => {
@@ -121,5 +208,27 @@ describe("MessageList", () => {
 
     const messageElements = screen.getAllByText(/Hello|doing well|help/);
     expect(messageElements.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("should render simulated_assistant with distinct avatar", () => {
+    const simMessages: Message[] = [
+      {
+        role: "simulated_assistant",
+        content: "Simulated response from another conversation",
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
+    render(
+      <TestWrapper>
+        <MessageList messages={simMessages} />
+      </TestWrapper>
+    );
+
+    expect(
+      screen.getByText("Simulated response from another conversation")
+    ).toBeInTheDocument();
+    // Avatar should be labelled "Simulated" instead of "Assistant"
+    expect(screen.getByText("S")).toBeInTheDocument();
   });
 });

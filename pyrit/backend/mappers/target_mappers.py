@@ -9,7 +9,7 @@ from pyrit.backend.models.targets import TargetInstance
 from pyrit.prompt_target import PromptTarget
 
 
-def target_object_to_instance(target_unique_name: str, target_obj: PromptTarget) -> TargetInstance:
+def target_object_to_instance(target_registry_name: str, target_obj: PromptTarget) -> TargetInstance:
     """
     Build a TargetInstance DTO from a registry target object.
 
@@ -17,7 +17,7 @@ def target_object_to_instance(target_unique_name: str, target_obj: PromptTarget)
     avoiding leakage of internal PyRIT core structures.
 
     Args:
-        target_unique_name: The unique target instance identifier (registry key / unique_name).
+        target_registry_name: The human-friendly target registry name.
         target_obj: The domain PromptTarget object from the registry.
 
     Returns:
@@ -26,7 +26,7 @@ def target_object_to_instance(target_unique_name: str, target_obj: PromptTarget)
     identifier = target_obj.get_identifier()
 
     return TargetInstance(
-        target_unique_name=target_unique_name,
+        target_registry_name=target_registry_name,
         target_type=identifier.class_name,
         endpoint=identifier.endpoint or None,
         model_name=identifier.model_name or None,

@@ -122,7 +122,12 @@ class AttackService:
         page: List[AttackSummary] = []
         for ar in page_results:
             pieces = self._memory.get_message_pieces(conversation_id=ar.conversation_id)
-            page.append(attack_result_to_summary(ar, pieces=pieces))
+            page.append(
+                attack_result_to_summary(
+                    ar,
+                    pieces=pieces,
+                )
+            )
 
         return AttackListResponse(
             items=page,
@@ -168,7 +173,10 @@ class AttackService:
 
         ar = results[0]
         pieces = self._memory.get_message_pieces(conversation_id=ar.conversation_id)
-        return attack_result_to_summary(ar, pieces=pieces)
+        return attack_result_to_summary(
+            ar,
+            pieces=pieces,
+        )
 
     async def get_attack_messages_async(self, *, conversation_id: str) -> Optional[AttackMessagesResponse]:
         """
@@ -201,12 +209,12 @@ class AttackService:
             CreateAttackResponse with the new attack's ID and creation time.
         """
         target_service = get_target_service()
-        target_instance = await target_service.get_target_async(target_unique_name=request.target_unique_name)
+        target_instance = await target_service.get_target_async(target_registry_name=request.target_registry_name)
         if not target_instance:
-            raise ValueError(f"Target instance '{request.target_unique_name}' not found")
+            raise ValueError(f"Target instance '{request.target_registry_name}' not found")
 
         # Get the actual target object so we can capture its TargetIdentifier
-        target_obj = target_service.get_target_object(target_unique_name=request.target_unique_name)
+        target_obj = target_service.get_target_object(target_registry_name=request.target_registry_name)
         target_identifier = target_obj.get_identifier() if target_obj else None
 
         # Generate a new conversation_id for this attack
@@ -218,7 +226,7 @@ class AttackService:
             conversation_id=conversation_id,
             objective=request.name or "Manual attack via GUI",
             attack_identifier=AttackIdentifier(
-                class_name=request.name or "ManualAttack",
+                class_name="ManualAttack",
                 class_module="pyrit.backend",
                 objective_target_identifier=target_identifier,
             ),
@@ -295,10 +303,12 @@ class AttackService:
             raise ValueError(f"Attack '{conversation_id}' not found")
 
         ar = results[0]
-        aid = ar.attack_identifier
-        if not aid or not aid.objective_target_identifier:
-            raise ValueError(f"Attack '{conversation_id}' has no target configured")
-        target_unique_name = aid.objective_target_identifier.unique_name
+
+        # The frontend must supply the target registry name so the backend
+        # stays stateless — no reverse lookups, no in-memory mapping.
+        target_registry_name = request.target_registry_name
+        if request.send and not target_registry_name:
+            raise ValueError("target_registry_name is required when send=True")
 
         # Get existing messages to determine sequence.
         # NOTE: This read-then-write is not atomic (TOCTOU). Fine for the
@@ -312,7 +322,7 @@ class AttackService:
 
         if request.send:
             await self._send_and_store_message(
-                conversation_id, target_unique_name, request, sequence, labels=attack_labels
+                conversation_id, target_registry_name, request, sequence, labels=attack_labels
             )
         else:
             await self._store_message_only(conversation_id, request, sequence, labels=attack_labels)
@@ -329,10 +339,6 @@ class AttackService:
             raise ValueError(f"Attack '{conversation_id}' messages not found after update")
 
         return AddMessageResponse(attack=attack_detail, messages=attack_messages)
-
-    # ========================================================================
-    # Private Helper Methods - Identifier Access
-    # ========================================================================
 
     # ========================================================================
     # Private Helper Methods - Pagination
@@ -388,16 +394,16 @@ class AttackService:
     async def _send_and_store_message(
         self,
         conversation_id: str,
-        target_unique_name: str,
+        target_registry_name: str,
         request: AddMessageRequest,
         sequence: int,
         *,
         labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """Send message to target via normalizer and store response."""
-        target_obj = get_target_service().get_target_object(target_unique_name=target_unique_name)
+        target_obj = get_target_service().get_target_object(target_registry_name=target_registry_name)
         if not target_obj:
-            raise ValueError(f"Target object for '{target_unique_name}' not found")
+            raise ValueError(f"Target object for '{target_registry_name}' not found")
 
         pyrit_message = request_to_pyrit_message(
             request=request,
