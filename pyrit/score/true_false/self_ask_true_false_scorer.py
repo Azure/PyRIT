@@ -78,9 +78,16 @@ class TrueFalseQuestion:
 
 
 class SelfAskTrueFalseScorer(TrueFalseScorer):
-    """A class that represents a self-ask true/false for scoring."""
+    """
+    A class that represents a self-ask true/false for scoring.
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    Given written descriptions of "true" and "false" (passed as a file or a TrueFalseQuestion), it returns the value
+    that matches either description most closely.
+
+    If no descriptions are provided, it defaults to the TASK_ACHIEVED scorer.
+    """
+
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
 
@@ -107,18 +114,17 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
 
         Raises:
-            ValueError: If neither true_false_question_path nor true_false_question is provided.
             ValueError: If both true_false_question_path and true_false_question are provided.
             ValueError: If required keys are missing in true_false_question.
         """
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
 
         self._prompt_target = chat_target
 
-        if not true_false_question_path and not true_false_question:
-            raise ValueError("Either true_false_question_path or true_false_question must be provided.")
         if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
+        if not true_false_question_path and not true_false_question:
+            true_false_question_path = TrueFalseQuestionPaths.TASK_ACHIEVED.value
 
         true_false_system_prompt_path = (
             true_false_system_prompt_path

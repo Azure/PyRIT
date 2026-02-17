@@ -242,7 +242,7 @@ class TestContentHarmsBasic:
         # Constructor should set adversarial chat and basic metadata
         assert scenario._adversarial_chat == mock_adversarial_target
         assert scenario.name == "Content Harms"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
         # Initialization populates objective target and scenario composites
         await scenario.initialize_async(objective_target=mock_objective_target)
@@ -391,7 +391,7 @@ class TestContentHarmsBasic:
 
     def test_scenario_version(self):
         """Test that scenario has correct version."""
-        assert ContentHarms.version == 1
+        assert ContentHarms.VERSION == 1
 
     @patch.dict(
         "os.environ",

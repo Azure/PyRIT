@@ -144,7 +144,7 @@ class TestLeakageScenarioInitialization:
 
         assert len(scenario._objectives) == len(sample_objectives)
         assert scenario.name == "Leakage Scenario"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_objectives(self, mock_objective_scorer, leakage_prompts, mock_memory_seeds):
         """Test initialization with default objectives."""
@@ -153,7 +153,7 @@ class TestLeakageScenarioInitialization:
 
             assert scenario._objectives == leakage_prompts
             assert scenario.name == "Leakage Scenario"
-            assert scenario.version == 1
+            assert scenario.VERSION == 1
 
     def test_init_with_default_scorer(self, mock_memory_seeds):
         """Test initialization with default scorer."""
@@ -434,7 +434,7 @@ class TestLeakageScenarioProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_get_strategy_class_returns_leakage_strategy(self):
         """Test that get_strategy_class returns LeakageStrategy."""

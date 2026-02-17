@@ -69,7 +69,6 @@ def create_attack_result(
     return AttackResult(
         conversation_id=conversation_id or f"{CONV_ID_PREFIX}{index}",
         objective=objective or f"{OBJECTIVE_PREFIX}{index}",
-        attack_identifier={"__type__": TEST_ATTACK_TYPE, "__module__": TEST_MODULE, "id": str(index)},
         outcome=outcome,
         executed_turns=executed_turns,
     )

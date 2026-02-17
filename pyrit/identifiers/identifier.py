@@ -135,12 +135,12 @@ class Identifier:
     All component-specific identifier types should extend this with additional fields.
     """
 
-    class_name: str  # The actual class name, equivalent to __type__ (e.g., "SelfAskRefusalScorer")
-    class_module: str  # The module path, equivalent to __module__ (e.g., "pyrit.score.self_ask_refusal_scorer")
+    class_name: str
+    class_module: str
 
     # Fields excluded from storage (STORAGE auto-expands to include HASH)
-    class_description: str = field(metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
-    identifier_type: IdentifierType = field(metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
+    class_description: str = field(default="", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
+    identifier_type: IdentifierType = field(default="instance", metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
 
     # Auto-computed fields
     snake_class_name: str = field(init=False, metadata={_EXCLUDE: {_ExcludeFrom.STORAGE}})
