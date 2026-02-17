@@ -311,8 +311,9 @@ class WebSocketCopilotTarget(PromptTarget):
         """
         data_url = await convert_local_image_to_data_url(image_path)
 
-        file_name = pathlib.Path(image_path).name
-        file_type = pathlib.Path(image_path).suffix.lstrip(".").lower() or "png"
+        normalized_image_path = image_path.replace("\\", "/")
+        file_name = pathlib.Path(normalized_image_path).name
+        file_type = pathlib.Path(file_name).suffix.lstrip(".").lower() or "png"
 
         doc_id = await self._upload_image_async(
             image_path=image_path,
@@ -391,7 +392,7 @@ class WebSocketCopilotTarget(PromptTarget):
         }
 
         if message_annotations:  # add images only if previously uploaded
-            message_content["messageAnnotations"] = [str(annotation) for annotation in message_annotations]
+            message_content["messageAnnotations"] = message_annotations
 
         result = {
             "arguments": [
