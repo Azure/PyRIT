@@ -1,13 +1,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Tests for is_general_strategy property and SeedAttackStrategyGroup class."""
+"""Tests for is_general_strategy property and SeedAttackTechniqueGroup class."""
 
 import pytest
 
 from pyrit.models.seeds import (
     Seed,
-    SeedAttackStrategyGroup,
+    SeedAttackTechniqueGroup,
     SeedGroup,
     SeedObjective,
     SeedPrompt,
@@ -68,12 +68,12 @@ class TestIsGeneralStrategy:
 
 
 # =============================================================================
-# SeedAttackStrategyGroup Tests
+# SeedAttackTechniqueGroup Tests
 # =============================================================================
 
 
-class TestSeedAttackStrategyGroupInit:
-    """Tests for SeedAttackStrategyGroup initialization."""
+class TestSeedAttackTechniqueGroupInit:
+    """Tests for SeedAttackTechniqueGroup initialization."""
 
     def test_init_with_general_strategy_prompts(self):
         """Test initialization with all general strategy seeds."""
@@ -81,14 +81,14 @@ class TestSeedAttackStrategyGroupInit:
             SeedPrompt(value="Strategy 1", data_type="text", is_general_strategy=True),
             SeedPrompt(value="Strategy 2", data_type="text", is_general_strategy=True),
         ]
-        group = SeedAttackStrategyGroup(seeds=prompts)
+        group = SeedAttackTechniqueGroup(seeds=prompts)
 
         assert len(group.seeds) == 2
 
     def test_init_raises_if_non_general_strategy_prompt(self):
         """Test that initialization fails if any seed is not a general strategy."""
         with pytest.raises(ValueError, match="must have is_general_strategy=True"):
-            SeedAttackStrategyGroup(
+            SeedAttackTechniqueGroup(
                 seeds=[
                     SeedPrompt(value="Strategy", data_type="text", is_general_strategy=True),
                     SeedPrompt(value="Not a strategy", data_type="text", is_general_strategy=False),
@@ -98,7 +98,7 @@ class TestSeedAttackStrategyGroupInit:
     def test_init_raises_if_all_non_general_strategy(self):
         """Test that initialization fails if all seeds are not general strategies."""
         with pytest.raises(ValueError, match="must have is_general_strategy=True"):
-            SeedAttackStrategyGroup(
+            SeedAttackTechniqueGroup(
                 seeds=[
                     SeedPrompt(value="Not a strategy", data_type="text"),
                 ]
@@ -107,7 +107,7 @@ class TestSeedAttackStrategyGroupInit:
     def test_init_raises_with_objective(self):
         """Test that initialization fails with a SeedObjective (never general strategy)."""
         with pytest.raises(ValueError, match="must have is_general_strategy=True"):
-            SeedAttackStrategyGroup(
+            SeedAttackTechniqueGroup(
                 seeds=[
                     SeedObjective(value="Objective"),
                     SeedPrompt(value="Strategy", data_type="text", is_general_strategy=True),
@@ -119,7 +119,7 @@ class TestSeedAttackStrategyGroupInit:
         adv_path = tmp_path / "adversarial.yaml"
         adv_path.write_text("value: Adversarial\ndata_type: text")
 
-        group = SeedAttackStrategyGroup(
+        group = SeedAttackTechniqueGroup(
             seeds=[
                 SeedSimulatedConversation(
                     num_turns=3,
@@ -136,15 +136,15 @@ class TestSeedAttackStrategyGroupInit:
     def test_init_empty_raises_error(self):
         """Test that empty seeds raises ValueError."""
         with pytest.raises(ValueError, match="SeedGroup cannot be empty"):
-            SeedAttackStrategyGroup(seeds=[])
+            SeedAttackTechniqueGroup(seeds=[])
 
 
-class TestSeedAttackStrategyGroupValidation:
-    """Tests for SeedAttackStrategyGroup validation."""
+class TestSeedAttackTechniqueGroupValidation:
+    """Tests for SeedAttackTechniqueGroup validation."""
 
     def test_validate_all_general_strategy_passes(self):
         """Test validate passes when all seeds are general strategies."""
-        group = SeedAttackStrategyGroup(
+        group = SeedAttackTechniqueGroup(
             seeds=[
                 SeedPrompt(value="Strategy 1", data_type="text", is_general_strategy=True),
             ]
@@ -155,7 +155,7 @@ class TestSeedAttackStrategyGroupValidation:
     def test_error_message_includes_non_general_types(self):
         """Test that error message lists the types of non-general seeds."""
         with pytest.raises(ValueError, match="SeedPrompt"):
-            SeedAttackStrategyGroup(
+            SeedAttackTechniqueGroup(
                 seeds=[
                     SeedPrompt(value="Non-strategy", data_type="text", is_general_strategy=False),
                 ]
@@ -164,7 +164,7 @@ class TestSeedAttackStrategyGroupValidation:
     def test_mixed_general_and_non_general_raises(self):
         """Test that mix of general and non-general seeds raises error."""
         with pytest.raises(ValueError, match="must have is_general_strategy=True"):
-            SeedAttackStrategyGroup(
+            SeedAttackTechniqueGroup(
                 seeds=[
                     SeedPrompt(value="General", data_type="text", is_general_strategy=True),
                     SeedPrompt(value="Not general", data_type="text", is_general_strategy=False),
@@ -172,12 +172,12 @@ class TestSeedAttackStrategyGroupValidation:
             )
 
 
-class TestSeedAttackStrategyGroupRepr:
-    """Tests for SeedAttackStrategyGroup.__repr__ method."""
+class TestSeedAttackTechniqueGroupRepr:
+    """Tests for SeedAttackTechniqueGroup.__repr__ method."""
 
     def test_repr_basic(self):
         """Test basic __repr__ output."""
-        group = SeedAttackStrategyGroup(
+        group = SeedAttackTechniqueGroup(
             seeds=[
                 SeedPrompt(value="Strategy", data_type="text", is_general_strategy=True),
             ]

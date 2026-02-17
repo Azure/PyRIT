@@ -2,8 +2,8 @@
 # Licensed under the MIT license.
 
 """
-SeedAttackStrategyGroup - A group of seeds representing a general attack strategy.
-For example, this includes jailbreaks, roleplays, or other reusable strategies that 
+SeedAttackTechniqueGroup - A group of seeds representing a general attack technique.
+For example, this includes jailbreaks, roleplays, or other reusable techniques that
 can be applied to multiple objectives.
 
 Extends SeedGroup to enforce that all seeds have is_general_strategy=True.
@@ -17,11 +17,11 @@ from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_group import SeedGroup
 
 
-class SeedAttackStrategyGroup(SeedGroup):
+class SeedAttackTechniqueGroup(SeedGroup):
     """
-    A group of seeds representing a general attack strategy.
+    A group of seeds representing a general attack technique.
 
-    This class extends SeedGroup with strategy-specific validation:
+    This class extends SeedGroup with technique-specific validation:
     - Requires all seeds to have is_general_strategy=True
 
     All other functionality (simulated conversation, prepended conversation,
@@ -34,7 +34,7 @@ class SeedAttackStrategyGroup(SeedGroup):
         seeds: Sequence[Union[Seed, Dict[str, Any]]],
     ):
         """
-        Initialize a SeedAttackStrategyGroup.
+        Initialize a SeedAttackTechniqueGroup.
 
         Args:
             seeds: Sequence of seeds. All seeds must have is_general_strategy=True.
@@ -47,7 +47,7 @@ class SeedAttackStrategyGroup(SeedGroup):
 
     def validate(self) -> None:
         """
-        Validate the seed attack strategy group state.
+        Validate the seed attack technique group state.
 
         Extends SeedGroup validation to require all seeds to be general strategies.
 
@@ -68,6 +68,6 @@ class SeedAttackStrategyGroup(SeedGroup):
         if non_general:
             non_general_types = [type(s).__name__ for s in non_general]
             raise ValueError(
-                f"All seeds in SeedAttackStrategyGroup must have is_general_strategy=True. "
+                f"All seeds in SeedAttackTechniqueGroup must have is_general_strategy=True. "
                 f"Found {len(non_general)} seed(s) without it: {non_general_types}"
             )
