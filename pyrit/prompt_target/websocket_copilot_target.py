@@ -361,8 +361,8 @@ class WebSocketCopilotTarget(PromptTarget):
         """
         request_id = trace_id = uuid.uuid4().hex
 
-        text_parts = []
-        message_annotations = []
+        text_parts: list[str] = []
+        message_annotations: list[dict[str, Any]] = []
 
         for idx, piece in enumerate(message_pieces):
             if piece.converted_value_data_type == "text":
@@ -377,7 +377,7 @@ class WebSocketCopilotTarget(PromptTarget):
 
         prompt_text = "\n".join(text_parts) if text_parts else ""  # combine text parts with newlines
 
-        message_content = {
+        message_content: dict[str, Any] = {
             "author": "user",
             "inputMethod": "Keyboard",
             "text": prompt_text,
