@@ -16,14 +16,6 @@ resolution-markers = [
     "(python_full_version < '3.11' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.11' and sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 
-[manifest]
-constraints = [
-    { name = "google-auth", specifier = "!=2.46.0" },
-    { name = "nbconvert", specifier = ">7.16.6" },
-    { name = "numpy", specifier = "!=2.4.0" },
-    { name = "virtualenv", specifier = ">=20.36.1" },
-]
-
 [[package]]
 name = "absl-py"
 version = "2.3.1"
@@ -6060,8 +6052,10 @@ dev = [
     { name = "jupyter" },
     { name = "jupyter-book" },
     { name = "jupytext" },
+    { name = "matplotlib" },
     { name = "mock-alchemy" },
     { name = "mypy" },
+    { name = "pandas" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -6155,6 +6149,7 @@ requires-dist = [
     { name = "jupyter", marker = "extra == 'dev'", specifier = ">=1.1.1" },
     { name = "jupyter-book", marker = "extra == 'dev'", specifier = "==1.0.4" },
     { name = "jupytext", marker = "extra == 'dev'", specifier = ">=1.17.1" },
+    { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.10.0" },
     { name = "ml-collections", marker = "extra == 'all'", specifier = ">=1.1.0" },
     { name = "ml-collections", marker = "extra == 'gcg'", specifier = ">=1.1.0" },
     { name = "mlflow", marker = "extra == 'all'", specifier = ">=2.22.0" },
@@ -6168,6 +6163,7 @@ requires-dist = [
     { name = "opencv-python", marker = "extra == 'all'", specifier = ">=4.11.0.86" },
     { name = "opencv-python", marker = "extra == 'opencv'", specifier = ">=4.11.0.86" },
     { name = "openpyxl", specifier = ">=3.1.5" },
+    { name = "pandas", marker = "extra == 'dev'", specifier = ">=2.2.0" },
     { name = "pillow", specifier = ">=12.1.0" },
     { name = "playwright", marker = "extra == 'all'", specifier = ">=1.49.0" },
     { name = "playwright", marker = "extra == 'playwright'", specifier = ">=1.49.0" },

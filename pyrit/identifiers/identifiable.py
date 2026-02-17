@@ -12,24 +12,6 @@ from pyrit.identifiers.identifier import Identifier
 IdentifierT = TypeVar("IdentifierT", bound=Identifier)
 
 
-class LegacyIdentifiable(ABC):
-    """
-    Deprecated legacy interface for objects that can provide an identifier dictionary.
-
-    This interface will eventually be replaced by Identifier dataclass.
-    Classes implementing this interface should return a dict describing their identity.
-    """
-
-    @abstractmethod
-    def get_identifier(self) -> dict[str, str]:
-        """Return a dictionary describing this object's identity."""
-        pass
-
-    def __str__(self) -> str:
-        """Return string representation of the identifier."""
-        return f"{self.get_identifier()}"
-
-
 class Identifiable(ABC, Generic[IdentifierT]):
     """
     Abstract base class for objects that can provide a typed identifier.

@@ -96,6 +96,27 @@ def process(self, data: str) -> str:
 
 ## Documentation Standards
 
+### Import Placement
+- **MANDATORY**: All import statements MUST be at the top of the file
+- Do NOT use inline/local imports inside functions or methods
+- The only exception is breaking circular import dependencies, which should be rare and documented
+
+```python
+# CORRECT — imports at the top of the file
+from contextlib import closing
+from sqlalchemy.exc import SQLAlchemyError
+
+def update_entry(self, entry: Base) -> None:
+    with closing(self.get_session()) as session:
+        ...
+
+# INCORRECT — inline import inside a function
+def update_entry(self, entry: Base) -> None:
+    from contextlib import closing          # ← WRONG, must be at top of file
+    with closing(self.get_session()) as session:
+        ...
+```
+
 ### Docstring Format
 - Use Google-style docstrings
 - Include type information in parameter descriptions
@@ -454,6 +475,15 @@ Before committing code, ensure:
 - [ ] Code follows the import organization pattern
 - [ ] No hard-coded dependencies
 - [ ] Complex logic is extracted to helper methods
+
+---
+
+## File Editing Rules
+
+### Never Use `sed` for File Edits
+- **MANDATORY**: Never use `sed` (or similar stream-editing CLI tools) to modify source files
+- `sed` frequently corrupts files, applies partial edits, or silently fails
+- Always use the editor's built-in replace/edit tools (e.g., `replace_string_in_file`, `multi_replace_string_in_file`) to make targeted, verifiable changes
 
 ---
 

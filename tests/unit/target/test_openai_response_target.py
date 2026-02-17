@@ -21,6 +21,7 @@ from pyrit.exceptions.exception_classes import (
     PyritException,
     RateLimitException,
 )
+from pyrit.identifiers import AttackIdentifier, TargetIdentifier
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
@@ -317,8 +318,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -328,8 +329,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -412,8 +413,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -423,8 +424,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -459,8 +460,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -470,8 +471,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]

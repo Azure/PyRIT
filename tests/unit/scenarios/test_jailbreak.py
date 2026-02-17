@@ -10,6 +10,7 @@ import pytest
 
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import SeedGroup, SeedObjective
 from pyrit.prompt_target import PromptTarget
 from pyrit.scenario.scenarios.airt.jailbreak import Jailbreak, JailbreakStrategy
@@ -43,7 +44,7 @@ def mock_memory_seed_groups() -> List[SeedGroup]:
 def mock_objective_target() -> PromptTarget:
     """Create a mock objective target for testing."""
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = TargetIdentifier(class_name="MockObjectiveTarget", class_module="test")
     return mock
 
 
@@ -51,7 +52,7 @@ def mock_objective_target() -> PromptTarget:
 def mock_objective_scorer() -> TrueFalseInverterScorer:
     """Create a mock scorer for testing."""
     mock = MagicMock(spec=TrueFalseInverterScorer)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = ScorerIdentifier(class_name="MockObjectiveScorer", class_module="test")
     return mock
 
 
