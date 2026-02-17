@@ -19,7 +19,6 @@ Terminology:
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
 
-from pyrit.identifiers import Identifier
 from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.base import RegistryProtocol
 
@@ -182,36 +181,6 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             A metadata dataclass with descriptive information about the registered class.
         """
         pass
-
-    def _build_base_metadata(self, name: str, entry: ClassEntry[T]) -> Identifier:
-        """
-        Build the common base metadata for a registered class.
-
-        This helper extracts fields common to all registries: name, class_name, class_description.
-        Subclasses can use this for building common fields if needed.
-
-        Args:
-            name: The registry name (snake_case identifier).
-            entry: The ClassEntry containing the registered class.
-
-        Returns:
-            An Identifier dataclass with common fields.
-        """
-        registered_class = entry.registered_class
-
-        # Extract description from docstring, clean up whitespace
-        doc = registered_class.__doc__ or ""
-        if doc:
-            description = " ".join(doc.split())
-        else:
-            description = entry.description or "No description available"
-
-        return Identifier(
-            identifier_type="class",
-            class_name=registered_class.__name__,
-            class_module=registered_class.__module__,
-            class_description=description,
-        )
 
     def get_class(self, name: str) -> Type[T]:
         """
