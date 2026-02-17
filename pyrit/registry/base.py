@@ -18,7 +18,7 @@ MetadataT = TypeVar("MetadataT")
 
 
 @dataclass(frozen=True)
-class RegistryEntry:
+class ClassRegistryEntry:
     """
     Minimal base for class-level registry metadata.
 

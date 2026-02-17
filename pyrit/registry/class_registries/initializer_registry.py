@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
-from pyrit.registry.base import RegistryEntry
+from pyrit.registry.base import ClassRegistryEntry
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class InitializerMetadata(RegistryEntry):
+class InitializerMetadata(ClassRegistryEntry):
     """
     Metadata describing a registered PyRITInitializer class.
 

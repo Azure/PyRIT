@@ -3,11 +3,11 @@
 
 from dataclasses import dataclass, field
 
-from pyrit.registry.base import RegistryEntry, _matches_filters
+from pyrit.registry.base import ClassRegistryEntry, _matches_filters
 
 
 @dataclass(frozen=True)
-class MetadataWithTags(RegistryEntry):
+class MetadataWithTags(ClassRegistryEntry):
     """Test metadata with a tags field for list filtering tests."""
 
     tags: tuple[str, ...] = field(kw_only=True)
@@ -18,7 +18,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_exact_match_string(self):
         """Test that exact string matches work."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -28,7 +28,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_no_match_string(self):
         """Test that non-matching strings return False."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -38,7 +38,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_multiple_filters_all_match(self):
         """Test that all filters must match."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -50,7 +50,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_multiple_filters_partial_match(self):
         """Test that partial matches return False when not all filters match."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -62,7 +62,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_key_not_in_metadata(self):
         """Test that filtering on a non-existent key returns False."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -71,7 +71,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_empty_filters(self):
         """Test that empty filters return True."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -101,7 +101,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_exclude_exact_match(self):
         """Test that exclude filters work for exact matches."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -122,7 +122,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_exclude_nonexistent_key(self):
         """Test that exclude filters for non-existent keys don't exclude the item."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
@@ -132,7 +132,7 @@ class TestMatchesFilters:
 
     def test_matches_filters_combined_include_and_exclude(self):
         """Test combined include and exclude filters."""
-        metadata = RegistryEntry(
+        metadata = ClassRegistryEntry(
             class_name="TestClass",
             class_module="test.module",
             class_description="A test item",
