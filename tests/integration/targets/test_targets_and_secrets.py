@@ -460,7 +460,7 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key, model_name):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_VIDEO2_ENDPOINT", "OPENAI_VIDEO2_KEY", "OPENAI_VIDEO2_MODEL"),
+        ("AZURE_OPENAI_VIDEO_ENDPOINT", "AZURE_OPENAI_VIDEO_KEY", "AZURE_OPENAI_VIDEO_MODEL"),
         # OpenAI Platform endpoint returns HTTP 401 "Missing scopes: api.videos.write" for all requests
         # ("PLATFORM_OPENAI_VIDEO_ENDPOINT", "PLATFORM_OPENAI_VIDEO_KEY", "PLATFORM_OPENAI_VIDEO_MODEL"),
     ],
@@ -491,9 +491,9 @@ async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
     This verifies that each video generation creates a unique file based on
     the video ID mechanism.
     """
-    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
-    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
-    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
+    endpoint_value = _get_required_env_var("AZURE_OPENAI_VIDEO_ENDPOINT")
+    api_key_value = _get_required_env_var("AZURE_OPENAI_VIDEO_KEY")
+    model_name_value = _get_required_env_var("AZURE_OPENAI_VIDEO_MODEL")
 
     target = OpenAIVideoTarget(
         endpoint=endpoint_value,
