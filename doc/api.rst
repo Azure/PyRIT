@@ -406,10 +406,14 @@ API Reference
     AddTextImageConverter
     AnsiAttackConverter
     AsciiArtConverter
+    AudioEchoConverter
     AsciiSmugglerConverter
     AskToDecodeConverter
     AtbashConverter
     AudioFrequencyConverter
+    AudioSpeedConverter
+    AudioVolumeConverter
+    AudioWhiteNoiseConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base2048Converter
@@ -441,6 +445,7 @@ API Reference
     MaliciousQuestionGeneratorConverter
     MathObfuscationConverter
     MathPromptConverter
+    MultiLanguageTranslationConverter
     MorseConverter
     NatoConverter
     NegationTrapConverter
