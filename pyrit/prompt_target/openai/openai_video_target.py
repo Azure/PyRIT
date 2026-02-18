@@ -4,7 +4,7 @@
 import logging
 import os
 from mimetypes import guess_type
-from typing import Any, Optional
+from typing import Any, Optional, Union, cast
 
 from openai.types import VideoSeconds, VideoSize
 
@@ -92,7 +92,7 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         super().__init__(**kwargs)
 
-        self._n_seconds: VideoSeconds = str(n_seconds) if isinstance(n_seconds, int) else n_seconds
+        self._n_seconds: VideoSeconds = cast(VideoSeconds, str(n_seconds)) if isinstance(n_seconds, int) else n_seconds
         self._validate_duration()
         self._size: VideoSize = self._validate_resolution(resolution_dimensions=resolution_dimensions)
 
@@ -180,7 +180,7 @@ class OpenAIVideoTarget(OpenAITarget):
         logger.info(f"Sending video generation prompt: {prompt}")
 
         if remix_video_id:
-            response = await self._send_remix_async(video_id=remix_video_id, prompt=prompt, request=message)
+            response = await self._send_remix_async(video_id=str(remix_video_id), prompt=prompt, request=message)
         elif image_piece:
             response = await self._send_text_plus_image_to_video_async(
                 image_piece=image_piece, prompt=prompt, request=message
@@ -409,7 +409,7 @@ class OpenAIVideoTarget(OpenAITarget):
         logger.info(f"Video saved to: {video_path}")
 
         # Include video_id in metadata for chaining (e.g., remix the generated video later)
-        prompt_metadata = {"video_id": video_id} if video_id else None
+        prompt_metadata: Optional[dict[str, Union[str, int]]] = {"video_id": video_id} if video_id else None
 
         # Construct response
         response_entry = construct_response_from_request(
