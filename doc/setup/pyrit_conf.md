@@ -1,6 +1,6 @@
 # Configuration File (.pyrit_conf)
 
-PyRIT supports an optional YAML configuration file that declares initialization settings — database type, initializers, environment files, and more. When present, these settings are loaded automatically so you don't have to pass them every time you start PyRIT.
+PyRIT supports an optional YAML configuration file that declares initialization settings — database type, initializers, environment files, and more. When present, these settings are loaded automatically so you don't have to pass them every time you start PyRIT. It (`.pyrit_conf`) is basically just a YAML file specifying how to call `initialize_pyrit`. You try it yourself in the [PyRIT Configuration Notebook](../code/setup/1_configuration.ipynb)
 
 ## File Location
 
@@ -46,6 +46,8 @@ Each entry can be:
 - **A simple string** — just the initializer name
 - **A dictionary** — with `name` and optional `args` for constructor arguments
 
+Example:
+
 ```yaml
 initializers:
   - simple
@@ -54,12 +56,7 @@ initializers:
       some_param: value
 ```
 
-Available built-in initializers include:
-
-- **`simple`** — Basic OpenAI configuration (requires `OPENAI_CHAT_ENDPOINT`, `OPENAI_CHAT_MODEL`, `OPENAI_CHAT_KEY`)
-- **`airt`** — AI Red Team setup with Azure OpenAI (requires additional `AZURE_OPENAI_*` env vars)
-
-Use `pyrit list initializers` in the CLI to see all registered initializers.
+Use `pyrit list initializers` in the CLI to see all registered initializers. See the [initializer documentation notebook](../code/setup/pyrit_initializer.ipynb) for reference.
 
 ### `initialization_scripts`
 
