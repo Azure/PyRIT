@@ -182,7 +182,9 @@ class OpenAIVideoTarget(OpenAITarget):
         if remix_video_id:
             response = await self._send_remix_async(video_id=remix_video_id, prompt=prompt, request=message)
         elif image_piece:
-            response = await self._send_text_plus_image_to_video_async(image_piece=image_piece, prompt=prompt, request=message)
+            response = await self._send_text_plus_image_to_video_async(
+                image_piece=image_piece, prompt=prompt, request=message
+            )
         else:
             response = await self._send_text_to_video_async(prompt=prompt, request=message)
 
