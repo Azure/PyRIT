@@ -27,7 +27,7 @@
 
 # %% [markdown]
 # ## From a Config File
-# If don't want to explicitly set up PyRIT, but do have a configuration you would like to persist, use `~/.pyrit/.pyrit_conf`. See the [PyRIT Configuration Guide](../../setup/pyrit_conf.md) for more details. Note that changes to the config file are not auto-updating, and you will need to run `initialize_from_config_async` after each change.
+# If you don't want to explicitly set up PyRIT, but do have a configuration you would like to persist, use `~/.pyrit/.pyrit_conf`. See the [PyRIT Configuration Guide](../../setup/pyrit_conf.md) for more details. Note that changes to the config file are not auto-updating, and you will need to run `initialize_from_config_async` after each change.
 
 # %%
 # You can specify your own path for the config file using config_path
