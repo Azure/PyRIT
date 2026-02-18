@@ -5,6 +5,7 @@ import random
 import re
 from typing import Dict, List, Optional
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -50,6 +51,20 @@ class ColloquialWordswapConverter(PromptConverter):
         # Use custom substitutions if provided, otherwise default to the standard ones
         self._colloquial_substitutions = custom_substitutions if custom_substitutions else default_substitutions
         self._deterministic = deterministic
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """
+        Build identifier with colloquial wordswap parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._create_identifier(
+            converter_specific_params={
+                "deterministic": self._deterministic,
+                "substitution_keys": sorted(self._colloquial_substitutions.keys()),
+            }
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

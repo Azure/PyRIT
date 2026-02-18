@@ -21,6 +21,7 @@ from pyrit.exceptions import (
     PyritException,
     pyrit_target_retry,
 )
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -155,6 +156,21 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     tool_name = tool.get("name")
                     logger.debug("Detected grammar tool: %s", tool_name)
                     self._grammar_name = tool_name
+
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with OpenAI response-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_output_tokens": self._max_output_tokens,
+            },
+        )
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_RESPONSES_MODEL"

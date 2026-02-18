@@ -9,6 +9,7 @@ import yaml
 
 from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_CONTENT_CLASSIFIERS_PATH
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -35,7 +36,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
     There is also a false category that is used if the MessagePiece does not fit any of the categories.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator()
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator()
 
     def __init__(
         self,
@@ -55,7 +56,7 @@ class SelfAskCategoryScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
         """
-        super().__init__(score_aggregator=score_aggregator, validator=validator or self._default_validator)
+        super().__init__(score_aggregator=score_aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
         self._prompt_target = chat_target
 
@@ -77,9 +78,14 @@ class SelfAskCategoryScorer(TrueFalseScorer):
             no_category_found=self._no_category_found_category,
         )
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             system_prompt_template=self._system_prompt,
             prompt_target=self._prompt_target,
             score_aggregator=self._score_aggregator.__name__,

@@ -57,6 +57,7 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         source_type: Literal["public_url", "file"] = "public_url",
         categories: Optional[List[VLSUCategory]] = None,
         unsafe_grades: Optional[List[str]] = ["unsafe", "borderline"],
+        max_examples: Optional[int] = None,
     ):
         """
         Initialize the ML-VLSU multimodal dataset loader.
@@ -69,6 +70,9 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
             unsafe_grades: List of grades considered unsafe (e.g., ['unsafe', 'borderline']).
                 Prompts are created only when the respective grade matches one of these values.
                 Defaults to ['unsafe', 'borderline']. Possible options further include 'safe' and 'not_sure'.
+            max_examples: Maximum number of multimodal examples to fetch. Each example produces
+                2 prompts (text + image). If None, fetches all examples. Useful for testing
+                or quick validations.
 
         Raises:
             ValueError: If any of the specified categories are invalid.
@@ -77,6 +81,7 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         self.source_type: Literal["public_url", "file"] = source_type
         self.categories = categories
         self.unsafe_grades = unsafe_grades
+        self.max_examples = max_examples
 
         # Validate categories if provided
         if categories is not None:
@@ -207,6 +212,10 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
 
                 prompts.append(text_prompt)
                 prompts.append(image_prompt)
+
+                # Check if we've reached max_examples (each example = 2 prompts)
+                if self.max_examples is not None and len(prompts) >= self.max_examples * 2:
+                    break
 
             except Exception as e:
                 failed_image_count += 1

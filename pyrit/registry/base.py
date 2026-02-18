@@ -11,8 +11,38 @@ and instance registries (which store T instances).
 from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Optional, Protocol, TypeVar, runtime_checkable
 
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+
 # Type variable for metadata (invariant for Protocol compatibility)
 MetadataT = TypeVar("MetadataT")
+
+
+@dataclass(frozen=True)
+class ClassRegistryEntry:
+    """
+    Minimal base for class-level registry metadata.
+
+    Provides the common fields every registry metadata type needs for display,
+    lookup, and filtering in class registries.
+
+    Attributes:
+        class_name (str): Python class name (e.g., "ContentHarmsScenario").
+        class_module (str): Full module path (e.g., "pyrit.scenario.scenarios.content_harms").
+        class_description (str): Human-readable description, typically from the class docstring.
+    """
+
+    class_name: str
+    class_module: str
+    class_description: str = ""
+
+    @property
+    def snake_class_name(self) -> str:
+        """
+        Snake_case version of class_name (e.g., "content_harms_scenario").
+
+        Used by CLI formatting and as registry display keys.
+        """
+        return class_name_to_snake_case(self.class_name)
 
 
 @runtime_checkable
@@ -75,23 +105,6 @@ class RegistryProtocol(Protocol[MetadataT]):
     def __iter__(self) -> Iterator[str]:
         """Iterate over registered names."""
         ...
-
-
-@dataclass(frozen=True)
-class RegistryItemMetadata:
-    """
-    Base dataclass for registry item metadata.
-
-    This dataclass provides descriptive information about a registered item
-    (either a class or an instance). It is NOT the item itself - it's a
-    structured object describing the item.
-
-    All registry-specific metadata types should extend this with additional fields.
-    """
-
-    name: str  # The snake_case registry name (e.g., "self_ask_refusal")
-    class_name: str  # The actual class name (e.g., "SelfAskRefusalScorer")
-    description: str  # Description from docstring or manual override
 
 
 def _matches_filters(

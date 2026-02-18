@@ -4,6 +4,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from unit.mocks import get_mock_target_identifier
 
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_converter import ConverterResult
@@ -15,6 +16,7 @@ async def test_math_prompt_converter_convert_async():
     # Mock the converter target - use MagicMock for synchronous methods
     mock_converter_target = MagicMock()
     mock_converter_target.send_prompt_async = AsyncMock()
+    mock_converter_target.get_identifier.return_value = get_mock_target_identifier("MockMathTarget")
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Solve the following problem: {{ prompt }}"
     dataset_name = "dataset_1"
@@ -72,6 +74,7 @@ async def test_math_prompt_converter_handles_disallowed_content():
     # Mock the converter target - use MagicMock for synchronous methods
     mock_converter_target = MagicMock()
     mock_converter_target.send_prompt_async = AsyncMock()
+    mock_converter_target.get_identifier.return_value = get_mock_target_identifier("MockMathTarget")
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
@@ -126,6 +129,7 @@ async def test_math_prompt_converter_invalid_input_type():
     # Mock the converter target - use MagicMock for synchronous methods
     mock_converter_target = MagicMock()
     mock_converter_target.send_prompt_async = AsyncMock()
+    mock_converter_target.get_identifier.return_value = get_mock_target_identifier("MockMathTarget")
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"
@@ -148,6 +152,7 @@ async def test_math_prompt_converter_error_handling():
     # Mock the converter target - use MagicMock for synchronous methods
     mock_converter_target = MagicMock()
     mock_converter_target.send_prompt_async = AsyncMock()
+    mock_converter_target.get_identifier.return_value = get_mock_target_identifier("MockMathTarget")
     # Specify parameters=['prompt'] to match the placeholder in the template
     template_value = "Encode this instruction: {{ prompt }}"
     dataset_name = "dataset_1"

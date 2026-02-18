@@ -5,17 +5,19 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
+    BatchEncoding,
     PretrainedConfig,
 )
 
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
+from pyrit.identifiers import TargetIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
@@ -135,6 +137,28 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
+    def _build_identifier(self) -> TargetIdentifier:
+        """
+        Build the identifier with HuggingFace chat-specific parameters.
+
+        Returns:
+            TargetIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            temperature=self._temperature,
+            top_p=self._top_p,
+            target_specific_params={
+                "max_new_tokens": self.max_new_tokens,
+                "skip_special_tokens": self.skip_special_tokens,
+                "use_cuda": self.use_cuda,
+                "tensor_format": self.tensor_format,
+                "trust_remote_code": self.trust_remote_code,
+                "device_map": self.device_map,
+                "torch_dtype": str(self.torch_dtype) if self.torch_dtype else None,
+                "attn_implementation": self.attn_implementation,
+            },
+        )
+
     def _load_from_path(self, path: str, **kwargs: Any) -> None:
         """
         Load the model and tokenizer from a given path.
@@ -144,7 +168,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             **kwargs: Additional keyword arguments to pass to the model loader.
         """
         logger.info(f"Loading model and tokenizer from path: {path}...")
-        self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+        self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call, unused-ignore]
             path, trust_remote_code=self.trust_remote_code
         )
         self.model = AutoModelForCausalLM.from_pretrained(path, trust_remote_code=self.trust_remote_code, **kwargs)
@@ -222,7 +246,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
                 # Load the tokenizer and model from the specified directory
                 logger.info(f"Loading model {self.model_id} from cache path: {cache_dir}...")
-                self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call]
+                self.tokenizer = AutoTokenizer.from_pretrained(  # type: ignore[no-untyped-call, unused-ignore]
                     self.model_id, cache_dir=cache_dir, trust_remote_code=self.trust_remote_code
                 )
                 self.model = AutoModelForCausalLM.from_pretrained(
@@ -306,8 +330,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
             generated_tokens = generated_ids[0][input_length:]
 
             # Decode the assistant's response from the generated token IDs
-            assistant_response = self.tokenizer.decode(
-                generated_tokens, skip_special_tokens=self.skip_special_tokens
+            assistant_response = cast(
+                str,
+                self.tokenizer.decode(generated_tokens, skip_special_tokens=self.skip_special_tokens),
             ).strip()
 
             if not assistant_response:
@@ -346,12 +371,15 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.info("Tokenizer has a chat template. Applying it to the input messages.")
 
             # Apply the chat template to format and tokenize the messages
-            tokenized_chat = self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=True,
-                add_generation_prompt=True,
-                return_tensors=self.tensor_format,
-                return_dict=True,
+            tokenized_chat = cast(
+                BatchEncoding,
+                self.tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=True,
+                    add_generation_prompt=True,
+                    return_tensors=self.tensor_format,
+                    return_dict=True,
+                ),
             ).to(self.device)
             return tokenized_chat
         else:

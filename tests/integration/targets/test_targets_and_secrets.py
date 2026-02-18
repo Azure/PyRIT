@@ -2,11 +2,14 @@
 # Licensed under the MIT license.
 
 import os
+import uuid
 from pathlib import Path
 
 import pytest
 
+from pyrit.common.path import HOME_PATH
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import (
     AzureMLChatTarget,
     OpenAIChatTarget,
@@ -324,6 +327,111 @@ async def test_connect_image(sqlite_instance, endpoint, api_key, model_name):
     image_path = Path(result.last_response.converted_value)
     assert image_path.exists(), f"Image file not found at path: {image_path}"
     assert image_path.is_file(), f"Path exists but is not a file: {image_path}"
+
+
+# Path to sample image file for image editing tests
+SAMPLE_IMAGE_FILE = HOME_PATH / "assets" / "pyrit_architecture.png"
+
+
+@pytest.mark.asyncio
+async def test_image_editing_single_image_api_key(sqlite_instance):
+    """
+    Test image editing with a single image input using API key authentication.
+    Uses gpt-image-1 which supports image editing/remix.
+
+    Verifies that:
+    1. A text prompt + single image generates a modified image
+    2. The edit endpoint is correctly called
+    3. The output image file is created
+    """
+    endpoint_value = _get_required_env_var("OPENAI_IMAGE_ENDPOINT2")
+    api_key_value = _get_required_env_var("OPENAI_IMAGE_API_KEY2")
+    model_name_value = os.getenv("OPENAI_IMAGE_MODEL2") or "gpt-image-1"
+
+    target = OpenAIImageTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+    )
+
+    conv_id = str(uuid.uuid4())
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Add a red border around this image",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+    image_piece = MessagePiece(
+        role="user",
+        original_value=str(SAMPLE_IMAGE_FILE),
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+
+    message = Message(message_pieces=[text_piece, image_piece])
+    result = await target.send_prompt_async(message=message)
+
+    assert result is not None
+    assert len(result) >= 1
+    assert result[0].message_pieces[0].response_error == "none"
+
+    # Validate we got a valid image file path
+    output_path = Path(result[0].message_pieces[0].converted_value)
+    assert output_path.exists(), f"Output image file not found at path: {output_path}"
+    assert output_path.is_file(), f"Path exists but is not a file: {output_path}"
+
+
+@pytest.mark.asyncio
+async def test_image_editing_multiple_images_api_key(sqlite_instance):
+    """
+    Test image editing with multiple image inputs using API key authentication.
+    Uses gpt-image-1 which supports 1-16 image inputs.
+
+    Verifies that:
+    1. Multiple images can be passed to the edit endpoint
+    2. The model processes multiple image inputs correctly
+    """
+    endpoint_value = _get_required_env_var("OPENAI_IMAGE_ENDPOINT2")
+    api_key_value = _get_required_env_var("OPENAI_IMAGE_API_KEY2")
+    model_name_value = os.getenv("OPENAI_IMAGE_MODEL2") or "gpt-image-1"
+
+    target = OpenAIImageTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+    )
+
+    conv_id = str(uuid.uuid4())
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Combine these images into one",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+    image_piece1 = MessagePiece(
+        role="user",
+        original_value=str(SAMPLE_IMAGE_FILE),
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+    image_piece2 = MessagePiece(
+        role="user",
+        original_value=str(SAMPLE_IMAGE_FILE),
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+
+    message = Message(message_pieces=[text_piece, image_piece1, image_piece2])
+    result = await target.send_prompt_async(message=message)
+
+    assert result is not None
+    assert len(result) >= 1
+    assert result[0].message_pieces[0].response_error == "none"
+
+    # Validate we got a valid image file path
+    output_path = Path(result[0].message_pieces[0].converted_value)
+    assert output_path.exists(), f"Output image file not found at path: {output_path}"
+    assert output_path.is_file(), f"Path exists but is not a file: {output_path}"
 
 
 @pytest.mark.asyncio

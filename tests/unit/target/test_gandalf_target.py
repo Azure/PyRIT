@@ -20,7 +20,7 @@ def test_gandalf_initializes(gandalf_target: GandalfTarget):
 def test_gandalf_sets_endpoint_and_rate_limit():
     target = GandalfTarget(level=GandalfLevel.LEVEL_1, max_requests_per_minute=15)
     identifier = target.get_identifier()
-    assert identifier["endpoint"] == "https://gandalf-api.lakera.ai/api/send-message"
+    assert identifier.endpoint == "https://gandalf-api.lakera.ai/api/send-message"
     assert target._max_requests_per_minute == 15
 
 
