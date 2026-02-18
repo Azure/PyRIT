@@ -15,8 +15,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import Identifier
 from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.registry.base import ClassRegistryEntry
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -33,17 +33,26 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class ScenarioMetadata(Identifier):
+class ScenarioMetadata(ClassRegistryEntry):
     """
     Metadata describing a registered Scenario class.
 
     Use get_class() to get the actual class.
     """
 
+    # The default strategy name (e.g., "single_turn")
     default_strategy: str = field(kw_only=True)
+
+    # All available strategy names for this scenario.
     all_strategies: tuple[str, ...] = field(kw_only=True)
+
+    # Aggregate strategies that combine multiple attack approaches.
     aggregate_strategies: tuple[str, ...] = field(kw_only=True)
+
+    # Default dataset names used by this scenario.
     default_datasets: tuple[str, ...] = field(kw_only=True)
+
+    # Maximum number of items per dataset.
     max_dataset_size: Optional[int] = field(kw_only=True)
 
 
@@ -131,7 +140,7 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         from pyrit.scenario.core import Scenario
 
         try:
-            for module_name, scenario_class in discover_subclasses_in_loaded_modules(
+            for _, scenario_class in discover_subclasses_in_loaded_modules(
                 base_class=Scenario  # type: ignore[type-abstract]
             ):
                 # Check if this is a user-defined class (not from pyrit.scenario.scenarios)
@@ -170,7 +179,6 @@ class ScenarioRegistry(BaseClassRegistry["Scenario", ScenarioMetadata]):
         max_dataset_size = dataset_config.max_dataset_size
 
         return ScenarioMetadata(
-            identifier_type="class",
             class_name=scenario_class.__name__,
             class_module=scenario_class.__module__,
             class_description=description,
