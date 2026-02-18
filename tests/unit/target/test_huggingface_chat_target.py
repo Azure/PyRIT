@@ -329,7 +329,7 @@ async def test_is_json_response_supported():
 
 @pytest.mark.skipif(not is_torch_installed(), reason="torch is not installed")
 @pytest.mark.asyncio
-async def test_hugging_face_chat_sets_endpoint_and_rate_limit():
+async def test_hugging_face_chat_sets_endpoint_and_rate_limit(patch_central_database):
     target = HuggingFaceChatTarget(
         model_id="test_model",
         use_cuda=False,
@@ -338,6 +338,6 @@ async def test_hugging_face_chat_sets_endpoint_and_rate_limit():
     # Await the background task to prevent warnings
     await target.load_model_and_tokenizer_task
     identifier = target.get_identifier()
-    # HuggingFaceChatTarget doesn't set an endpoint (it's local), so it shouldn't be in identifier
-    assert "endpoint" not in identifier
+    # HuggingFaceChatTarget doesn't set an endpoint (it's local), so it should be empty
+    assert not identifier.endpoint
     assert target._max_requests_per_minute == 30

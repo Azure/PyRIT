@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Type, cast
 from uuid import UUID
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer import Scorer
@@ -27,7 +28,7 @@ class ConversationScorer(Scorer, ABC):
     Note: This class cannot be instantiated directly. Use create_conversation_scorer() factory instead.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         enforce_all_pieces_valid=True,
     )
@@ -188,16 +189,21 @@ def create_conversation_scorer(
 
         def __init__(self) -> None:
             # Initialize with the validator and wrapped scorer
-            Scorer.__init__(self, validator=validator or ConversationScorer._default_validator)
+            Scorer.__init__(self, validator=validator or ConversationScorer._DEFAULT_VALIDATOR)
             self._wrapped_scorer = scorer
 
         def _get_wrapped_scorer(self) -> Scorer:
             """Return the wrapped scorer."""
             return self._wrapped_scorer
 
-        def _build_scorer_identifier(self) -> None:
-            """Build the scorer evaluation identifier for this conversation scorer."""
-            self._set_scorer_identifier(
+        def _build_identifier(self) -> ScorerIdentifier:
+            """
+            Build the scorer evaluation identifier for this conversation scorer.
+
+            Returns:
+                ScorerIdentifier: The identifier for this scorer.
+            """
+            return self._create_identifier(
                 sub_scorers=[self._wrapped_scorer],
             )
 

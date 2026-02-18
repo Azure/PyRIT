@@ -4,6 +4,7 @@
 from typing import Optional
 
 from pyrit.analytics.text_matching import ExactTextMatching, TextMatching
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -21,7 +22,7 @@ class SubStringScorer(TrueFalseScorer):
     Supports both exact substring matching and approximate matching.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -48,11 +49,16 @@ class SubStringScorer(TrueFalseScorer):
         self._text_matcher = text_matcher if text_matcher else ExactTextMatching(case_sensitive=False)
         self._score_categories = categories if categories else []
 
-        super().__init__(score_aggregator=aggregator, validator=validator or self._default_validator)
+        super().__init__(score_aggregator=aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             score_aggregator=self._score_aggregator.__name__,
             scorer_specific_params={
                 "substring": self._substring,

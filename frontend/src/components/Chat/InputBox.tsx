@@ -45,11 +45,11 @@ const useStyles = makeStyles({
     padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalL}`,
     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
     ':focus-within': {
-      borderTopColor: tokens.colorBrandStroke1 as any,
-      borderRightColor: tokens.colorBrandStroke1 as any,
-      borderBottomColor: tokens.colorBrandStroke1 as any,
-      borderLeftColor: tokens.colorBrandStroke1 as any,
-      boxShadow: `0 0 0 2px ${tokens.colorBrandBackground2}` as any,
+      borderTopColor: tokens.colorBrandStroke1,
+      borderRightColor: tokens.colorBrandStroke1,
+      borderBottomColor: tokens.colorBrandStroke1,
+      borderLeftColor: tokens.colorBrandStroke1,
+      boxShadow: `0 0 0 2px ${tokens.colorBrandBackground2}`,
     },
   },
   textInput: {
@@ -155,8 +155,8 @@ export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
   }
 
   const handleSend = () => {
-    if ((input.trim() || attachments.length > 0) && !disabled) {
-      onSend(input.trim(), undefined, attachments)
+    if ((input || attachments.length > 0) && !disabled) {
+      onSend(input, undefined, attachments)
       setInput('')
       setAttachments([])
       if (textareaRef.current) {
@@ -245,7 +245,7 @@ export default function InputBox({ onSend, disabled = false }: InputBoxProps) {
               appearance="primary"
               icon={<SendRegular />}
               onClick={handleSend}
-              disabled={disabled || (!input.trim() && attachments.length === 0)}
+              disabled={disabled || (!input && attachments.length === 0)}
               title="Send message"
             />
           </div>

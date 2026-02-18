@@ -18,10 +18,11 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generic, Iterator, List, Optional, TypeVar
 
-from pyrit.registry.base import RegistryItemMetadata, RegistryProtocol
+from pyrit.identifiers import Identifier
+from pyrit.registry.base import RegistryProtocol
 
 T = TypeVar("T")  # The type of instances stored
-MetadataT = TypeVar("MetadataT", bound=RegistryItemMetadata)
+MetadataT = TypeVar("MetadataT", bound=Identifier)
 
 
 class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT]):
@@ -44,7 +45,7 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
     _instances: Dict[type, "BaseInstanceRegistry[Any, Any]"] = {}
 
     @classmethod
-    def get_registry_singleton(cls) -> "BaseInstanceRegistry[T, MetadataT]":
+    def get_registry_singleton(cls) -> BaseInstanceRegistry[T, MetadataT]:
         """
         Get the singleton instance of this registry.
 
@@ -109,6 +110,15 @@ class BaseInstanceRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, Metadata
             Sorted list of registry names (keys).
         """
         return sorted(self._registry_items.keys())
+
+    def get_all_instances(self) -> Dict[str, T]:
+        """
+        Get all registered instances as a name -> instance mapping.
+
+        Returns:
+            Dict mapping registry names to their instances.
+        """
+        return dict(self._registry_items)
 
     def list_metadata(
         self,

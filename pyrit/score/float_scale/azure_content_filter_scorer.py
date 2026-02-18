@@ -17,6 +17,7 @@ from azure.core.credentials import AzureKeyCredential
 
 from pyrit.auth import TokenProviderCredential
 from pyrit.common import default_values
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import (
     DataTypeSerializer,
     MessagePiece,
@@ -46,7 +47,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     MAX_TEXT_LENGTH = 10000  # Azure Content Safety API limit
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
 
@@ -139,16 +140,21 @@ class AzureContentFilterScorer(FloatScaleScorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint and api_key")
 
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
 
     @property
     def _category_values(self) -> list[str]:
         """Get the string values of the configured harm categories for API calls."""
         return [category.value for category in self._harm_categories]
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             scorer_specific_params={
                 "score_categories": self._category_values,
             }

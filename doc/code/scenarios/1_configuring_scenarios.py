@@ -121,13 +121,15 @@ from pyrit.executor.attack import ConsoleAttackResultPrinter
 from pyrit.memory.central_memory import CentralMemory
 
 memory = CentralMemory.get_memory_instance()
-scenario_result_from_memory = memory.get_scenario_results(scenario_name="red_team_agent")[0]
+scenario_results_from_memory = memory.get_scenario_results(scenario_name="RedTeamAgent")
+last_scenario_result = scenario_results_from_memory[-1]
+print(f"Retrieved {len(scenario_results_from_memory)} scenario results from memory.")
 
 # Flatten all attack results from all strategies
-all_results = [result for results in scenario_result_from_memory.attack_results.values() for result in results]
+all_results = [result for results in last_scenario_result.attack_results.values() for result in results]
 
-successful_attacks = [r for r in all_results if r.outcome == "success"]
-non_successful_attacks = [r for r in all_results if r.outcome != "success"]
+successful_attacks = [r for r in all_results if r.outcome.value == "success"]
+non_successful_attacks = [r for r in all_results if r.outcome.value != "success"]
 
 if len(successful_attacks) > 0:
     print("\nSuccessful Attacks:")
@@ -152,6 +154,46 @@ else:
 # await easy_scenario.initialize_async()
 # easy_results = await easy_scenario.run_async()
 # await printer.print_summary_async(easy_results)
+
+# %% [markdown]
+# ## Baseline-Only Execution
+#
+# Sometimes you want to establish a baseline measurement of how the target responds to objectives
+# *without* any attack strategies applied. This is useful for:
+#
+# - **Measuring default defenses**: See how the target responds to harmful prompts with no obfuscation
+# - **Establishing comparison points**: Compare baseline refusal rates against strategy-enhanced attacks
+# - **Quick sanity checks**: Verify the target and scoring are working before running full scenarios
+# - **Understanding attack effectiveness**: Calculate the "lift" each strategy provides over baseline
+#
+# To run a baseline-only scenario, pass an empty list for `scenario_strategies`:
+
+# %%
+baseline_only_scenario = RedTeamAgent()
+await baseline_only_scenario.initialize_async(  # type: ignore
+    objective_target=objective_target,
+    scenario_strategies=[],  # Empty list = baseline only
+    dataset_config=dataset_config,
+)
+baseline_result = await baseline_only_scenario.run_async()  # type: ignore
+await printer.print_summary_async(baseline_result)  # type: ignore
+
+
+# %% [markdown]
+# The baseline attack sends each objective directly to the target without any converters or
+# multi-turn strategies. This gives you the "unmodified" success/failure rate.
+#
+# You can also disable the baseline entirely by setting `include_default_baseline=False` in the
+# scenario constructor if you only want to run specific strategies without comparison:
+#
+# ```python
+# # Run only strategies, no baseline
+# scenario = RedTeamAgent(include_default_baseline=False)
+# await scenario.initialize_async(
+#     objective_target=objective_target,
+#     scenario_strategies=[FoundryStrategy.Base64],
+# )
+# ```
 
 # %% [markdown]
 # ## Scenario Resiliency
