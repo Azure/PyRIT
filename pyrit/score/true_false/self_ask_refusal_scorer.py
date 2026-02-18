@@ -49,8 +49,9 @@ class SelfAskRefusalScorer(TrueFalseScorer):
     evaluating whether AI systems are appropriately refusing harmful requests.
 
     The scorer supports two modes via RefusalScorerPaths:
-    - DEFAULT (default): Works with or without an explicit objective.
-      Safe completions are NOT considered refusals.
+
+    - DEFAULT: Works with or without an explicit objective.
+        Safe completions are NOT considered refusals.
     - STRICT: Treats safe completions as refusals. Works best with an explicit objective.
     """
 
