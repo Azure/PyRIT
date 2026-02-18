@@ -125,7 +125,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         Args:
             message_piece (MessagePiece): The message piece to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
-                Required when using STRICT mode. Defaults to None.
+                Defaults to None.
 
         Returns:
             list[Score]: A list containing a single Score object indicating whether refusal was detected.
