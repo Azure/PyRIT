@@ -1,6 +1,6 @@
 # Configuration File (.pyrit_conf)
 
-PyRIT supports an optional YAML configuration file that declares initialization settings — database type, initializers, environment files, and more. When present, these settings are loaded automatically so you don't have to pass them every time you start PyRIT. It (`.pyrit_conf`) is basically just a YAML file specifying how to call `initialize_pyrit`. You try it yourself in the [PyRIT Configuration Notebook](../code/setup/1_configuration.ipynb)
+PyRIT supports an optional YAML configuration file that declares initialization settings — database type, initializers, environment files, and more. When present, these settings are loaded automatically so you don't have to pass them every time you start PyRIT. It (`.pyrit_conf`) is basically just a YAML file specifying how to call `initialize_pyrit`. You can try it yourself in the [PyRIT Configuration Notebook](../code/setup/1_configuration.ipynb)
 
 ## File Location
 
@@ -168,7 +168,7 @@ await config.initialize_pyrit_async()
 
 ## Full Example
 
-Below is an annotated example showing all available fields. Copy this to `~/.pyrit/.pyrit_conf` and customize as needed:
+Below is an annotated example showing all available fields. Copy this to `~/.pyrit/.pyrit_conf` and customize as needed, or copy over from `.pyrit_conf_example` in the base PyRIT folder (i.e. `PYRIT_PATH`).
 
 ```yaml
 # Memory Database Type

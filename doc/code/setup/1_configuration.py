@@ -6,10 +6,6 @@
 #       format_name: percent
 #       format_version: '1.3'
 #       jupytext_version: 1.19.1
-#   kernelspec:
-#     display_name: pyrit-dev
-#     language: python
-#     name: python3
 # ---
 
 # %% [markdown]
@@ -27,7 +23,7 @@
 
 # %% [markdown]
 # ## From a Config File
-# If you don't want to explicitly set up PyRIT, but do have a configuration you would like to persist, use `~/.pyrit/.pyrit_conf`. See the [PyRIT Configuration Guide](../../setup/pyrit_conf.md) for more details. Note that changes to the config file are not auto-updating, and you will need to run `initialize_from_config_async` after each change.
+# If you don't want to explicitly set up PyRIT, but do have a configuration you would like to persist, use `~/.pyrit/.pyrit_conf`. See the [PyRIT Configuration Guide](../../setup/pyrit_conf.md) for more details. Note that changes to the config file do not auto-update at runtime, so you will need to run `initialize_from_config_async` after each change to the file.
 
 # %%
 # You can specify your own path for the config file using config_path
@@ -38,7 +34,7 @@ await initialize_from_config_async()  # type: ignore
 # %% [markdown]
 # ## Simple Example
 #
-# This section goes into each of these steps. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
+# This section goes into each of the three steps mentioned earlier. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
 
 # %%
 # Set OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY environment variables before running this code
