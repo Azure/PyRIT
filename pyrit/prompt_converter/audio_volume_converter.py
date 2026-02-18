@@ -3,7 +3,7 @@
 
 import io
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from scipy.io import wavfile
@@ -55,7 +55,7 @@ class AudioVolumeConverter(PromptConverter):
         self._output_format = output_format
         self._volume_factor = volume_factor
 
-    def _apply_volume(self, data: np.ndarray) -> np.ndarray:
+    def _apply_volume(self, data: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
         """
         Scale audio samples by the volume factor and clip to the valid range.
 

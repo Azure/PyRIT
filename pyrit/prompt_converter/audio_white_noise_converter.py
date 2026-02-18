@@ -3,7 +3,7 @@
 
 import io
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from scipy.io import wavfile
@@ -53,7 +53,7 @@ class AudioWhiteNoiseConverter(PromptConverter):
         self._output_format = output_format
         self._noise_scale = noise_scale
 
-    def _add_noise(self, data: np.ndarray) -> np.ndarray:
+    def _add_noise(self, data: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
         """
         Add white noise to a 1-D audio signal.
 
@@ -79,7 +79,7 @@ class AudioWhiteNoiseConverter(PromptConverter):
         if np.issubdtype(data.dtype, np.integer):
             noisy = np.clip(noisy, info.min, info.max)
 
-        return noisy
+        return np.asarray(noisy)
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """

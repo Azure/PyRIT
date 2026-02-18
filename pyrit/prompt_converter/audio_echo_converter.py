@@ -3,7 +3,7 @@
 
 import io
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from scipy.io import wavfile
@@ -59,7 +59,7 @@ class AudioEchoConverter(PromptConverter):
         self._delay = delay
         self._decay = decay
 
-    def _apply_echo(self, data: np.ndarray, sample_rate: int) -> np.ndarray:
+    def _apply_echo(self, data: np.ndarray[Any, Any], sample_rate: int) -> np.ndarray[Any, Any]:
         """
         Apply echo effect to a 1-D audio signal.
 
