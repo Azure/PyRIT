@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import enum
 import logging
+import uuid
 from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
@@ -33,6 +34,7 @@ from pyrit.models import (
     ConversationReference,
     ConversationType,
     Message,
+    MessagePiece,
     Score,
     SeedPrompt,
 )
@@ -356,11 +358,41 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         logger.debug(f"Generating prompt for turn {context.executed_turns + 1}")
 
         # Prepare prompt for the adversarial chat
-        prompt_text = await self._build_adversarial_prompt(context)
+        prompt_result = await self._build_adversarial_prompt(context)
 
-        # Send the prompt to the adversarial chat and get the response
-        logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
-        prompt_message = Message.from_prompt(prompt=prompt_text, role="user")
+        # Build the message for the adversarial chat.
+        # For file/media responses, construct a multimodal message with both
+        # the textual feedback and the actual media (image/video) so the
+        # adversarial chat (e.g. GPT-4o) can see what the target generated.
+        if isinstance(prompt_result, tuple):
+            feedback_text, media_piece = prompt_result
+            # Use a shared conversation_id so Message validation passes
+            shared_conversation_id = str(uuid.uuid4())
+            pieces = [
+                MessagePiece(
+                    original_value=feedback_text,
+                    role="user",
+                    conversation_id=shared_conversation_id,
+                )
+            ]
+            if media_piece is not None:
+                pieces.append(
+                    MessagePiece(
+                        original_value=media_piece.converted_value,
+                        role="user",
+                        original_value_data_type=media_piece.converted_value_data_type,
+                        conversation_id=shared_conversation_id,
+                    )
+                )
+            prompt_message = Message(message_pieces=pieces)
+            logger.debug(
+                f"Sending multimodal prompt to adversarial chat: {feedback_text[:50]}... "
+                f"+ {media_piece.converted_value_data_type if media_piece else 'no'} media"
+            )
+        else:
+            prompt_text = prompt_result
+            prompt_message = Message.from_prompt(prompt=prompt_text, role="user")
+            logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
 
         with execution_context(
             component_role=ComponentRole.ADVERSARIAL_CHAT,
@@ -388,15 +420,20 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
     async def _build_adversarial_prompt(
         self,
         context: MultiTurnAttackContext[Any],
-    ) -> str:
+    ) -> Union[str, tuple[str, Optional[MessagePiece]]]:
         """
         Build a prompt for the adversarial chat based on the last response.
+
+        For text responses, returns a plain string. For file/media responses (images, video, etc.),
+        returns a tuple of (feedback_text, media_piece) so the caller can construct a multimodal
+        message that includes the actual generated media alongside the textual feedback.
 
         Args:
             context (MultiTurnAttackContext): The attack context containing the current state and configuration.
 
         Returns:
-            str: The prompt to be sent to the adversarial chat.
+            Union[str, tuple[str, Optional[MessagePiece]]]: Either a plain text prompt string,
+                or a tuple of (feedback_text, media_piece) when the target returned media content.
         """
         # If no last response, return the seed prompt (rendered with objective if template exists)
         if not context.last_response:
@@ -405,15 +442,11 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         # Get the last assistant piece from the response
         response_piece = context.last_response.get_piece()
 
-        # Delegate to appropriate handler based on data type
-        handlers = {
-            "text": self._handle_adversarial_text_response,
-            "error": self._handle_adversarial_text_response,
-        }
+        # Text/error responses return str; file responses return tuple[str, Optional[MessagePiece]]
+        if response_piece.converted_value_data_type in ("text", "error"):
+            return self._handle_adversarial_text_response(context=context)
 
-        handler = handlers.get(response_piece.converted_value_data_type, self._handle_adversarial_file_response)
-
-        return handler(context=context)
+        return self._handle_adversarial_file_response(context=context)
 
     def _handle_adversarial_text_response(self, *, context: MultiTurnAttackContext[Any]) -> str:
         """
@@ -450,25 +483,34 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
 
         return f"Request to target failed: {response_piece.response_error}"
 
-    def _handle_adversarial_file_response(self, *, context: MultiTurnAttackContext[Any]) -> str:
+    def _handle_adversarial_file_response(
+        self, *, context: MultiTurnAttackContext[Any]
+    ) -> tuple[str, Optional[MessagePiece]]:
         """
         Handle the file response from the target.
 
+        Returns the scoring feedback text along with the media piece from the target's response,
+        enabling the adversarial chat to receive a multimodal message with both the textual feedback
+        and the actual generated media (image, video, etc.) for more informed prompt generation.
+
         If the response indicates an error, raise a RuntimeError. When scoring is disabled or no
-        scoring rationale is provided, raise a ValueError. Otherwise, return the textual feedback as the prompt.
+        scoring rationale is provided, raise a ValueError. Otherwise, return the textual feedback
+        and the media piece as a tuple.
 
         Args:
             context (MultiTurnAttackContext): The attack context containing the response and score.
 
         Returns:
-            str: The suitable feedback or error message to pass back to the adversarial chat.
+            tuple[str, Optional[MessagePiece]]: A tuple of (feedback_text, media_piece).
+                The media_piece is the response piece from the target containing the generated media,
+                or None if no response is available.
 
         Raises:
             RuntimeError: If the target response indicates an error.
             ValueError: If scoring is disabled or no scoring rationale is available.
         """
         if not context.last_response:
-            return "No response available. Please continue."
+            return ("No response available. Please continue.", None)
 
         response_piece = context.last_response.get_piece()
 
@@ -494,7 +536,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
                 "However, no scoring rationale was provided by the scorer."
             )
 
-        return feedback
+        return (feedback, response_piece)
 
     async def _send_prompt_to_objective_target_async(
         self,

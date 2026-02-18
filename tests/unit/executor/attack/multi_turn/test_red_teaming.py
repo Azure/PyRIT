@@ -1078,7 +1078,7 @@ class TestAdversarialPromptBuilding:
         basic_context: MultiTurnAttackContext,
         success_score: Score,
     ):
-        """Test that file response with feedback returns score rationale."""
+        """Test that file response with feedback returns score rationale and media piece."""
         adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
         scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, use_score_as_feedback=True)
 
@@ -1098,7 +1098,10 @@ class TestAdversarialPromptBuilding:
 
         result = attack._handle_adversarial_file_response(context=basic_context)
 
-        assert result == success_score.score_rationale
+        assert isinstance(result, tuple)
+        feedback_text, media = result
+        assert feedback_text == success_score.score_rationale
+        assert media is response_piece
 
     def test_handle_adversarial_file_response_no_response(
         self,
@@ -1121,7 +1124,227 @@ class TestAdversarialPromptBuilding:
 
         result = attack._handle_adversarial_file_response(context=basic_context)
 
-        assert result == "No response available. Please continue."
+        assert isinstance(result, tuple)
+        feedback_text, media = result
+        assert feedback_text == "No response available. Please continue."
+        assert media is None
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestMultimodalFeedbackLoop:
+    """Tests for multimodal media content flowing through the adversarial feedback loop."""
+
+    @pytest.mark.asyncio
+    async def test_generate_next_prompt_sends_multimodal_message_for_image_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+        success_score: Score,
+    ):
+        """Test that when the target returns an image, the adversarial chat receives
+        a multimodal message containing both the text feedback and the image."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, use_score_as_feedback=True)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Simulate a target response with an image
+        response_piece = MagicMock(spec=MessagePiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.converted_value = "/path/to/generated_image.png"
+        response_piece.has_error.return_value = False
+
+        basic_context.last_response = MagicMock(spec=Message)
+        basic_context.last_response.get_piece.return_value = response_piece
+        basic_context.last_score = success_score
+        basic_context.executed_turns = 1  # Not the first turn
+
+        # Mock the adversarial chat response
+        adversarial_response = MagicMock(spec=Message)
+        adversarial_response.get_value.return_value = "Generate a more explicit image"
+
+        mock_normalizer = AsyncMock(spec=PromptNormalizer)
+        mock_normalizer.send_prompt_async = AsyncMock(return_value=adversarial_response)
+        attack._prompt_normalizer = mock_normalizer
+
+        result = await attack._generate_next_prompt_async(context=basic_context)
+
+        # Verify the message sent to adversarial chat was multimodal
+        call_args = mock_normalizer.send_prompt_async.call_args
+        sent_message = call_args.kwargs.get("message") or call_args[1].get("message")
+        assert len(sent_message.message_pieces) == 2
+        assert sent_message.message_pieces[0].original_value == success_score.score_rationale
+        assert sent_message.message_pieces[0].original_value_data_type == "text"
+        assert sent_message.message_pieces[1].original_value == "/path/to/generated_image.png"
+        assert sent_message.message_pieces[1].original_value_data_type == "image_path"
+
+        # Verify the returned message for the objective target is text-only
+        assert result.get_value() == "Generate a more explicit image"
+
+    @pytest.mark.asyncio
+    async def test_generate_next_prompt_sends_multimodal_message_for_video_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+        success_score: Score,
+    ):
+        """Test that when the target returns a video, the adversarial chat receives
+        a multimodal message containing both the text feedback and the video."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, use_score_as_feedback=True)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Simulate a target response with a video
+        response_piece = MagicMock(spec=MessagePiece)
+        response_piece.converted_value_data_type = "video_path"
+        response_piece.converted_value = "/path/to/generated_video.mp4"
+        response_piece.has_error.return_value = False
+
+        basic_context.last_response = MagicMock(spec=Message)
+        basic_context.last_response.get_piece.return_value = response_piece
+        basic_context.last_score = success_score
+        basic_context.executed_turns = 1
+
+        adversarial_response = MagicMock(spec=Message)
+        adversarial_response.get_value.return_value = "Try again with different content"
+
+        mock_normalizer = AsyncMock(spec=PromptNormalizer)
+        mock_normalizer.send_prompt_async = AsyncMock(return_value=adversarial_response)
+        attack._prompt_normalizer = mock_normalizer
+
+        result = await attack._generate_next_prompt_async(context=basic_context)
+
+        # Verify multimodal message with video
+        call_args = mock_normalizer.send_prompt_async.call_args
+        sent_message = call_args.kwargs.get("message") or call_args[1].get("message")
+        assert len(sent_message.message_pieces) == 2
+        assert sent_message.message_pieces[1].original_value_data_type == "video_path"
+        assert sent_message.message_pieces[1].original_value == "/path/to/generated_video.mp4"
+
+    @pytest.mark.asyncio
+    async def test_generate_next_prompt_text_response_stays_text_only(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+        success_score: Score,
+    ):
+        """Test that text responses still produce text-only messages (no regression)."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, use_score_as_feedback=True)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        # Simulate a text response
+        response_piece = MagicMock(spec=MessagePiece)
+        response_piece.converted_value_data_type = "text"
+        response_piece.converted_value = "I cannot help with that"
+        response_piece.has_error.return_value = False
+
+        basic_context.last_response = MagicMock(spec=Message)
+        basic_context.last_response.get_piece.return_value = response_piece
+        basic_context.last_score = success_score
+        basic_context.executed_turns = 1
+
+        adversarial_response = MagicMock(spec=Message)
+        adversarial_response.get_value.return_value = "Try rephrasing"
+
+        mock_normalizer = AsyncMock(spec=PromptNormalizer)
+        mock_normalizer.send_prompt_async = AsyncMock(return_value=adversarial_response)
+        attack._prompt_normalizer = mock_normalizer
+
+        await attack._generate_next_prompt_async(context=basic_context)
+
+        # Verify message sent to adversarial chat is text-only (single piece)
+        call_args = mock_normalizer.send_prompt_async.call_args
+        sent_message = call_args.kwargs.get("message") or call_args[1].get("message")
+        assert len(sent_message.message_pieces) == 1
+        assert sent_message.message_pieces[0].original_value_data_type == "text"
+
+    @pytest.mark.asyncio
+    async def test_build_adversarial_prompt_returns_tuple_for_image_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+        success_score: Score,
+    ):
+        """Test that _build_adversarial_prompt returns a tuple for image responses."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer, use_score_as_feedback=True)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        response_piece = MagicMock(spec=MessagePiece)
+        response_piece.converted_value_data_type = "image_path"
+        response_piece.converted_value = "/path/to/image.png"
+        response_piece.has_error.return_value = False
+
+        basic_context.last_response = MagicMock(spec=Message)
+        basic_context.last_response.get_piece.return_value = response_piece
+        basic_context.last_score = success_score
+
+        result = await attack._build_adversarial_prompt(basic_context)
+
+        assert isinstance(result, tuple)
+        feedback_text, media = result
+        assert feedback_text == success_score.score_rationale
+        assert media is response_piece
+
+    @pytest.mark.asyncio
+    async def test_build_adversarial_prompt_returns_str_for_text_response(
+        self,
+        mock_objective_target: MagicMock,
+        mock_objective_scorer: MagicMock,
+        mock_adversarial_chat: MagicMock,
+        basic_context: MultiTurnAttackContext,
+    ):
+        """Test that _build_adversarial_prompt returns a string for text responses."""
+        adversarial_config = AttackAdversarialConfig(target=mock_adversarial_chat)
+        scoring_config = AttackScoringConfig(objective_scorer=mock_objective_scorer)
+
+        attack = RedTeamingAttack(
+            objective_target=mock_objective_target,
+            attack_adversarial_config=adversarial_config,
+            attack_scoring_config=scoring_config,
+        )
+
+        response_piece = MagicMock(spec=MessagePiece)
+        response_piece.converted_value_data_type = "text"
+        response_piece.converted_value = "Hello world"
+        response_piece.has_error.return_value = False
+
+        basic_context.last_response = MagicMock(spec=Message)
+        basic_context.last_response.get_piece.return_value = response_piece
+        basic_context.last_score = None
+
+        result = await attack._build_adversarial_prompt(basic_context)
+
+        assert isinstance(result, str)
+        assert result == "Hello world"
 
 
 @pytest.mark.usefixtures("patch_central_database")
