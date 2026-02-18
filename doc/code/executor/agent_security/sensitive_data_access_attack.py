@@ -19,6 +19,8 @@
 #
 # This notebook is relevant for any AI agent that exposes **file system access** or **command / code execution** capabilities — whether implemented as plugins, tools, skills, or function-calling. If your agent can read files or run shell commands on the host, it is a candidate for this test.
 #
+# > **Note:** The attack prompts in this version target **Linux environments** only. The canary files and file paths used (e.g., `/etc/shadow`, `~/.ssh/id_rsa`, `/proc/self/environ`) are Linux-specific.
+#
 # ## Solution Overview
 #
 # This notebook is part of a **Red Team AI Agent Evaluation** module, built on [PyRIT](https://github.com/Azure/PyRIT), that automatically tests agent behavior under adversarial attack scenarios.
