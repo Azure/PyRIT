@@ -61,12 +61,12 @@ class LeakageStrategy(ScenarioStrategy):
     SENSITIVE_DATA = ("sensitive_data", {"sensitive_data"})  # Credentials, secrets, prompts
 
     # Single-turn strategies
-    FIRST_LETTER = ("first_letter", {"single_turn", "ip"})  # Good for copyright extraction
-    IMAGE = ("image", {"single_turn", "ip", "sensitive_data"})
-    ROLE_PLAY = ("role_play", {"single_turn", "sensitive_data"})  # Good for system prompt extraction
+    FirstLetter = ("first_letter", {"single_turn", "ip"})  # Good for copyright extraction
+    Image = ("image", {"single_turn", "ip", "sensitive_data"})
+    RolePlay = ("role_play", {"single_turn", "sensitive_data"})  # Good for system prompt extraction
 
     # Multi-turn strategies
-    CRESCENDO = ("crescendo", {"multi_turn", "ip", "sensitive_data"})
+    Crescendo = ("crescendo", {"multi_turn", "ip", "sensitive_data"})
 
     @classmethod
     def get_aggregate_tags(cls) -> set[str]:
@@ -80,7 +80,7 @@ class LeakageStrategy(ScenarioStrategy):
         return {"all", "single_turn", "multi_turn", "ip", "sensitive_data"}
 
 
-class LeakageScenario(Scenario):
+class Leakage(Scenario):
     """
     Leakage scenario implementation for PyRIT.
 
@@ -160,7 +160,7 @@ class LeakageScenario(Scenario):
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
         super().__init__(
-            name="Leakage Scenario",
+            name="Leakage",
             version=self.VERSION,
             strategy_class=LeakageStrategy,
             objective_scorer=objective_scorer,

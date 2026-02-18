@@ -213,7 +213,7 @@ class Jailbreak(Scenario):
         template_name = Path(jailbreak_template_name).stem
 
         return AtomicAttack(
-            atomic_attack_name=f"jailbreak_{template_name}", attack=attack, seed_groups=self._seed_groups
+            atomic_attack_name=f"jailbreak_{template_name}", attack=attack, seed_groups=self._seed_groups # type: ignore
         )
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:

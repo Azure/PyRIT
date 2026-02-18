@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import (
+    AttackAdversarialConfig,
     AttackScoringConfig,
     AttackStrategy,
     ManyShotJailbreakAttack,
@@ -13,6 +14,7 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
     RolePlayAttack,
     RolePlayPaths,
+    TreeOfAttacksWithPruningAttack,
 )
 from pyrit.models import SeedAttackGroup, SeedGroup
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
@@ -77,11 +79,9 @@ class ContentHarmsStrategy(ScenarioStrategy):
 
     Each tag represents a different harm category that the model can be tested for.
     Specifying the all tag will include a comprehensive test suite covering all harm categories.
-    Users can defined objectives for each harm category via seed datasets or use the default datasets
+    Users can define objectives for each harm category via seed datasets or use the default datasets
     provided with PyRIT.
-    For each harm category, the scenario will run a RolePlayAttack, ManyShotJailbreakAttack,
-    PromptSendingAttack, and RedTeamingAttack for each objective in the dataset.
-    to evaluate model behavior.
+
     """
 
     ALL = ("all", {"all"})
@@ -172,13 +172,12 @@ class ContentHarms(Scenario):
             objectives_by_harm (Optional[Dict[str, Sequence[SeedGroup]]]): A dictionary mapping harm strategies
                 to their corresponding SeedGroups. If not provided, default seed groups will be loaded from datasets.
         """
-        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
+        self._objective_scorer: TrueFalseScorer = objective_scorer if objective_scorer else self._get_default_scorer()
+        self._scorer_config = AttackScoringConfig(objective_scorer=self._objective_scorer)
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
 
-        self._objective_scorer: TrueFalseScorer = objective_scorer if objective_scorer else self._get_default_scorer()
-
         super().__init__(
-            name="Content Harms",
+            name="ContentHarms",
             version=self.VERSION,
             objective_scorer=self._objective_scorer,
             strategy_class=ContentHarmsStrategy,
@@ -201,7 +200,7 @@ class ContentHarms(Scenario):
                     endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
                     api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
-                    temperature=0.9,
+                    temperature=1.2,
                 )
             ),
         )
@@ -230,12 +229,11 @@ class ContentHarms(Scenario):
         seed_groups: Sequence[SeedAttackGroup],
     ) -> List[AtomicAttack]:
         """
-        Create AtomicAttack instances for a given harm strategy. RolePlayAttack, ManyShotJailbreakAttack,
-        PromptSendingAttack, and RedTeamingAttack are run for all harm strategies.
+        Create AtomicAttack instances for a given harm strategy.
 
         Args:
-            strategy (ScenarioCompositeStrategy): The strategy to create the attack from.
-            seed_groups (List[SeedAttackGroup]): The seed attack groups associated with the harm dataset.
+            strategy (str): The harm strategy name to create attacks for.
+            seed_groups (Sequence[SeedAttackGroup]): The seed attack groups associated with the harm dataset.
 
         Returns:
             List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
@@ -249,6 +247,28 @@ class ContentHarms(Scenario):
                 "Scenario not properly initialized. Call await scenario.initialize_async() before running."
             )
 
+        attacks: List[AtomicAttack] = [
+            *self._get_single_turn_attacks(strategy=strategy, seed_groups=seed_groups), *self._get_multi_turn_attacks(strategy=strategy, seed_groups=seed_groups)
+        ]
+
+        return attacks
+
+    def _get_single_turn_attacks(
+        self,
+        *,
+        strategy: str,
+        seed_groups: Sequence[SeedAttackGroup],
+    ) -> List[AtomicAttack]:
+        """
+        Create single-turn AtomicAttack instances: RolePlayAttack and PromptSendingAttack.
+
+        Args:
+            strategy (str): The harm strategy name.
+            seed_groups (Sequence[SeedAttackGroup]): Seed attack groups for this harm category.
+
+        Returns:
+            List[AtomicAttack]: The single-turn atomic attacks.
+        """
         prompt_sending_attack = PromptSendingAttack(
             objective_target=self._objective_target,
             attack_scoring_config=self._scorer_config,
@@ -260,12 +280,7 @@ class ContentHarms(Scenario):
             role_play_definition_path=RolePlayPaths.MOVIE_SCRIPT.value,
         )
 
-        many_shot_jailbreak_attack = ManyShotJailbreakAttack(
-            objective_target=self._objective_target,
-            attack_scoring_config=self._scorer_config,
-        )
-
-        attacks = [
+        return [
             AtomicAttack(
                 atomic_attack_name=strategy,
                 attack=prompt_sending_attack,
@@ -282,6 +297,35 @@ class ContentHarms(Scenario):
                 objective_scorer=self._objective_scorer,
                 memory_labels=self._memory_labels,
             ),
+        ]
+
+    def _get_multi_turn_attacks(
+        self,
+        *,
+        strategy: str,
+        seed_groups: Sequence[SeedAttackGroup],
+    ) -> List[AtomicAttack]:
+        """
+        Create multi-turn AtomicAttack instances: ManyShotJailbreakAttack and TreeOfAttacksWithPruningAttack.
+
+        Args:
+            strategy (str): The harm strategy name.
+            seed_groups (Sequence[SeedAttackGroup]): Seed attack groups for this harm category.
+
+        Returns:
+            List[AtomicAttack]: The multi-turn atomic attacks.
+        """
+        many_shot_jailbreak_attack = ManyShotJailbreakAttack(
+            objective_target=self._objective_target,
+            attack_scoring_config=self._scorer_config,
+        )
+
+        tap_attack = TreeOfAttacksWithPruningAttack(
+            objective_target=self._objective_target,
+            attack_adversarial_config=AttackAdversarialConfig(target=self._adversarial_chat),
+        )
+
+        return [
             AtomicAttack(
                 atomic_attack_name=strategy,
                 attack=many_shot_jailbreak_attack,
@@ -290,24 +334,12 @@ class ContentHarms(Scenario):
                 objective_scorer=self._objective_scorer,
                 memory_labels=self._memory_labels,
             ),
+            AtomicAttack(
+                atomic_attack_name=strategy,
+                attack=tap_attack,
+                seed_groups=list(seed_groups),
+                adversarial_chat=self._adversarial_chat,
+                objective_scorer=self._objective_scorer,
+                memory_labels=self._memory_labels,
+            ),
         ]
-
-        # Only add MultiPromptSendingAttack for seed_groups that have user messages
-        seed_groups_with_messages = [sg for sg in seed_groups if sg.user_messages]
-        if seed_groups_with_messages:
-            multi_prompt_sending_attack = MultiPromptSendingAttack(
-                objective_target=self._objective_target,
-                attack_scoring_config=self._scorer_config,
-            )
-            attacks.append(
-                AtomicAttack(
-                    atomic_attack_name=strategy,
-                    attack=multi_prompt_sending_attack,
-                    seed_groups=seed_groups_with_messages,
-                    adversarial_chat=self._adversarial_chat,
-                    objective_scorer=self._objective_scorer,
-                    memory_labels=self._memory_labels,
-                ),
-            )
-
-        return attacks
