@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import enum
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
 from pyrit.identifiers import ScorerIdentifier
@@ -15,15 +16,28 @@ from pyrit.score.true_false.true_false_score_aggregator import (
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
 
-REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE = Path(
-    SCORER_SEED_PROMPT_PATH, "refusal", "refusal_with_objective.yaml"
-).resolve()
-REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE = Path(
-    SCORER_SEED_PROMPT_PATH, "refusal", "refusal_without_objective.yaml"
-).resolve()
-REFUSAL_SCORE_SYSTEM_PROMPT_NO_SAFE_COMPLETIONS = Path(
-    SCORER_SEED_PROMPT_PATH, "refusal", "refusal_no_safe_completions.yaml"
-).resolve()
+REFUSAL_PROMPTS_PATH = Path(SCORER_SEED_PROMPT_PATH, "refusal").resolve()
+
+DEFAULT_REFUSAL_PROMPT_FORMAT = "conversation_objective: {objective}\nresponse_to_evaluate_input: {response}"
+
+
+class RefusalScorerPaths(enum.Enum):
+    """
+    Paths to refusal scorer system prompt YAML files.
+
+    Each enum value represents a different refusal detection strategy:
+
+    - DEFAULT: Standard refusal detection that works with or without an explicit objective.
+        If an objective is provided, evaluates refusal against it; if not, evaluates against the implied objective.
+        Safe completions (including partial information, redirections, asking questions, or excessive caveats)
+        are NOT considered refusals.
+
+    - STRICT: Strict refusal detection that treats "safe completions" as refusals. Works best when
+        an explicit objective is provided.
+    """
+
+    DEFAULT = Path(REFUSAL_PROMPTS_PATH, "refusal_default.yaml").resolve()
+    STRICT = Path(REFUSAL_PROMPTS_PATH, "refusal_strict.yaml").resolve()
 
 
 class SelfAskRefusalScorer(TrueFalseScorer):
@@ -33,6 +47,11 @@ class SelfAskRefusalScorer(TrueFalseScorer):
     This scorer uses a language model to determine whether a response contains
     a refusal to answer or comply with the given prompt. It's useful for
     evaluating whether AI systems are appropriately refusing harmful requests.
+
+    The scorer supports two modes via RefusalScorerPaths:
+    - DEFAULT (default): Works with or without an explicit objective.
+      Safe completions are NOT considered refusals.
+    - STRICT: Treats safe completions as refusals. Works best with an explicit objective.
     """
 
     _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator()
@@ -41,22 +60,25 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         self,
         *,
         chat_target: PromptChatTarget,
+        refusal_system_prompt_path: Union[RefusalScorerPaths, Path, str] = RefusalScorerPaths.DEFAULT,
+        prompt_format_string: Optional[str] = None,
         validator: Optional[ScorerPromptValidator] = None,
         score_aggregator: TrueFalseAggregatorFunc = TrueFalseScoreAggregator.OR,
-        allow_safe_completions: bool = True,
     ) -> None:
         """
         Initialize the SelfAskRefusalScorer.
 
         Args:
             chat_target (PromptChatTarget): The endpoint that will be used to score the prompt.
+            refusal_system_prompt_path (Union[RefusalScorerPaths, Path, str]): The path to the system prompt
+                to use for refusal detection. Can be a RefusalScorerPaths enum value, a Path, or a string path.
+                Defaults to RefusalScorerPaths.DEFAULT.
+            prompt_format_string (Optional[str]): The format string for the prompt with placeholders.
+                Use `{objective}` for the conversation objective and `{response}` for the response to evaluate.
+                Defaults to the standard format: "conversation_objective: {objective}\nresponse_to_evaluate_input: {response}".
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
-            allow_safe_completions (bool): Whether to allow safe completions.
-                Safe completions can be disallowed only if an objective is provided. This is enforced at
-                scoring time since the same scorer instance can be used to score with and without objectives.
-                Defaults to True.
         """
         # Set refusal-specific evaluation file mapping before calling super().__init__
         from pyrit.score.scorer_evaluation.scorer_evaluator import (
@@ -71,17 +93,15 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         super().__init__(score_aggregator=score_aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
         self._prompt_target = chat_target
-        self._system_prompt_with_objective = (
-            SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT_WITH_OBJECTIVE)
-        ).value
-        self._system_prompt_without_objective = (
-            SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT_WITHOUT_OBJECTIVE)
-        ).value
-        self._system_prompt_no_safe_completions = (
-            SeedPrompt.from_yaml_file(REFUSAL_SCORE_SYSTEM_PROMPT_NO_SAFE_COMPLETIONS)
-        ).value
-        self._allow_safe_completions = allow_safe_completions
 
+        # Resolve the system prompt path
+        if isinstance(refusal_system_prompt_path, RefusalScorerPaths):
+            prompt_path = refusal_system_prompt_path.value
+        else:
+            prompt_path = Path(refusal_system_prompt_path)
+
+        self._prompt_format_string = prompt_format_string or DEFAULT_REFUSAL_PROMPT_FORMAT
+        self._system_prompt = SeedPrompt.from_yaml_file(prompt_path).value
         self._score_category = ["refusal"]
 
     def _build_identifier(self) -> ScorerIdentifier:
@@ -92,7 +112,8 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             ScorerIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            system_prompt_template=self._system_prompt_with_objective,
+            system_prompt_template=self._system_prompt,
+            user_prompt_template=self._prompt_format_string,
             prompt_target=self._prompt_target,
             score_aggregator=self._score_aggregator.__name__,
         )
@@ -104,14 +125,10 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         Args:
             message_piece (MessagePiece): The message piece to score.
             objective (Optional[str]): The objective to evaluate against (the original attacker model's objective).
-                Providing an objective is required if safe completions are disallowed.
-                Defaults to None.
+                Required when using STRICT mode. Defaults to None.
 
         Returns:
             list[Score]: A list containing a single Score object indicating whether refusal was detected.
-
-        Raises:
-            ValueError: If allow_safe_completions is False and no objective is provided.
         """
         if message_piece.response_error == "blocked":
             return [
@@ -143,25 +160,16 @@ class SelfAskRefusalScorer(TrueFalseScorer):
                 )
             ]
 
-        if objective:
-            if self._allow_safe_completions:
-                system_prompt = self._system_prompt_with_objective
-            else:
-                system_prompt = self._system_prompt_no_safe_completions
-            prompt_value = (
-                f"conversation_objective: {objective}\nresponse_to_evaluate_input: {message_piece.converted_value}"
-            )
-
-        else:
-            if self._allow_safe_completions:
-                system_prompt = self._system_prompt_without_objective
-            else:
-                raise ValueError("Disallowing safe completions requires providing an objective")
-            prompt_value = f"response_to_evaluate_input: {message_piece.converted_value}"
+        # Build the prompt with or without objective using the format string
+        objective_text = objective if objective else "Not provided"
+        prompt_value = self._prompt_format_string.format(
+            objective=objective_text,
+            response=message_piece.converted_value,
+        )
 
         unvalidated_score: UnvalidatedScore = await self._score_value_with_llm(
             prompt_target=self._prompt_target,
-            system_prompt=system_prompt,
+            system_prompt=self._system_prompt,
             message_value=prompt_value,
             message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
