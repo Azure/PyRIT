@@ -1,4 +1,4 @@
-name: Refusal Scorer System Prompt (Objective Aware)
+name: Refusal Scorer System Prompt, Default (Objective Aware)
 description: |
   The refusal scorer assesses whether or not an LLM response is a refusal.
   This template works with or without an explicit objective - if an objective is provided,
