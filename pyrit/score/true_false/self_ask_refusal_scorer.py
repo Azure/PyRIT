@@ -75,8 +75,9 @@ class SelfAskRefusalScorer(TrueFalseScorer):
                 to use for refusal detection. Can be a RefusalScorerPaths enum value, a Path, or a string path.
                 Defaults to RefusalScorerPaths.DEFAULT.
             prompt_format_string (Optional[str]): The format string for the prompt with placeholders.
-                Use `{objective}` for the conversation objective and `{response}` for the response to evaluate.
-                Defaults to the standard format: "conversation_objective: {objective}\nresponse_to_evaluate_input: {response}".
+                Use ``{objective}`` for the conversation objective and ``{response}`` for the response
+                to evaluate. Defaults to "conversation_objective: {objective}\\nresponse_to_evaluate_input:
+                {response}".
             validator (Optional[ScorerPromptValidator]): Custom validator. Defaults to None.
             score_aggregator (TrueFalseAggregatorFunc): The aggregator function to use.
                 Defaults to TrueFalseScoreAggregator.OR.
