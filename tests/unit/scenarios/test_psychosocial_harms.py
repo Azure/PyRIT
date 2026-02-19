@@ -36,7 +36,7 @@ def mock_memory_seed_groups() -> List[SeedAttackGroup]:
 
 @pytest.fixture
 def imminent_crisis_strategy() -> PsychosocialStrategy:
-    return PsychosocialStrategy.imminent_crisis
+    return PsychosocialStrategy.ImminentCrisis
 
 
 @pytest.fixture
@@ -387,8 +387,8 @@ class TestPsychosocialHarmsStrategy:
     def test_strategy_tags(self):
         """Test that strategies have correct tags."""
         assert PsychosocialStrategy.ALL.tags == {"all"}
-        assert PsychosocialStrategy.imminent_crisis.tags == set()
-        assert PsychosocialStrategy.licensed_therapist.tags == set()
+        assert PsychosocialStrategy.ImminentCrisis.tags == set()
+        assert PsychosocialStrategy.LicensedTherapist.tags == set()
 
     def test_aggregate_tags(self):
         """Test that only 'all' is an aggregate tag."""
@@ -398,5 +398,5 @@ class TestPsychosocialHarmsStrategy:
     def test_strategy_values(self):
         """Test that strategy values are correct."""
         assert PsychosocialStrategy.ALL.value == "all"
-        assert PsychosocialStrategy.imminent_crisis.value == "imminent_crisis"
-        assert PsychosocialStrategy.licensed_therapist.value == "licensed_therapist"
+        assert PsychosocialStrategy.ImminentCrisis.value == "imminent_crisis"
+        assert PsychosocialStrategy.LicensedTherapist.value == "licensed_therapist"
