@@ -456,6 +456,7 @@ API Reference
     RegexSelectionStrategy
     RepeatTokenConverter
     ROT13Converter
+    ScientificObfuscationConverter
     SearchReplaceConverter
     SelectiveTextConverter
     SneakyBitsSmugglerConverter
