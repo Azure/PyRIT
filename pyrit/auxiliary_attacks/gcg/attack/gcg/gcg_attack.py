@@ -69,9 +69,6 @@ def token_gradients(
 class GCGAttackPrompt(AttackPrompt):
     """GCG-specific attack prompt that computes token gradients."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
     def grad(self, model: Any) -> torch.Tensor:
         """
         Compute token gradients for this prompt.
@@ -89,9 +86,6 @@ class GCGAttackPrompt(AttackPrompt):
 
 class GCGPromptManager(PromptManager):
     """GCG-specific prompt manager that implements control token sampling."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
 
     def sample_control(
         self,
@@ -131,9 +125,6 @@ class GCGPromptManager(PromptManager):
 
 class GCGMultiPromptAttack(MultiPromptAttack):
     """GCG-specific multi-prompt attack that implements the GCG optimization step."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
 
     def step(
         self,

@@ -44,10 +44,9 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
     Raises:
         ValueError: If model_name is not supported or HUGGINGFACE_TOKEN is not set.
     """
-    if model_name not in _MODEL_NAMES:
-        raise ValueError(
-            "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
-        )
+    if model_name not in _MODEL_NAMES and model_name != _ALL_MODELS:
+        supported_models: str = "', '".join(_MODEL_NAMES + [_ALL_MODELS])
+        raise ValueError(f"Model name not supported. Currently supports '{supported_models}'")
 
     _load_environment_files(env_files=None)
     hf_token = os.environ.get("HUGGINGFACE_TOKEN")

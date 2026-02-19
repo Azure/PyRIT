@@ -1,23 +1,17 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import sys
-from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
-# Mock heavy dependencies that may not be installed in test environments
-if "fastchat" not in sys.modules:
-    sys.modules["fastchat"] = MagicMock()
-    sys.modules["fastchat.conversation"] = MagicMock()
-    sys.modules["fastchat.model"] = MagicMock()
-
-from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import (
-    IndividualPromptAttack,
-    MultiPromptAttack,
-    ProgressiveMultiPromptAttack,
+attack_manager_mod = pytest.importorskip(
+    "pyrit.auxiliary_attacks.gcg.attack.base.attack_manager",
+    reason="GCG optional dependencies (torch, mlflow, etc.) not installed",
 )
+IndividualPromptAttack = attack_manager_mod.IndividualPromptAttack
+MultiPromptAttack = attack_manager_mod.MultiPromptAttack
+ProgressiveMultiPromptAttack = attack_manager_mod.ProgressiveMultiPromptAttack
 
 
 class TestFilterMpaKwargs:

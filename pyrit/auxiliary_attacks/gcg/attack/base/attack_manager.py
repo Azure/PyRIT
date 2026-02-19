@@ -1760,7 +1760,9 @@ def get_goals_and_targets(params: Any) -> tuple[list[str], list[str], list[str],
                 test_goals = [""] * len(test_targets)
 
     if len(train_goals) != len(train_targets):
-        raise ValueError(f"Length of train_goals ({len(train_goals)}) and train_targets ({len(train_targets)}) must match")
+        raise ValueError(
+            f"Length of train_goals ({len(train_goals)}) and train_targets ({len(train_targets)}) must match"
+        )
     if len(test_goals) != len(test_targets):
         raise ValueError(f"Length of test_goals ({len(test_goals)}) and test_targets ({len(test_targets)}) must match")
     logger.info("Loaded {} train goals".format(len(train_goals)))

@@ -2,22 +2,17 @@
 # Licensed under the MIT license.
 
 import json
-import sys
 from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
-# Mock heavy dependencies that may not be installed in test environments
-if "fastchat" not in sys.modules:
-    sys.modules["fastchat"] = MagicMock()
-    sys.modules["fastchat.conversation"] = MagicMock()
-    sys.modules["fastchat.model"] = MagicMock()
-
-from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import (
-    NpEncoder,
-    get_nonascii_toks,
+attack_manager_mod = pytest.importorskip(
+    "pyrit.auxiliary_attacks.gcg.attack.base.attack_manager",
+    reason="GCG optional dependencies (torch, mlflow, etc.) not installed",
 )
+NpEncoder = attack_manager_mod.NpEncoder
+get_nonascii_toks = attack_manager_mod.get_nonascii_toks
 
 
 class TestNpEncoder:

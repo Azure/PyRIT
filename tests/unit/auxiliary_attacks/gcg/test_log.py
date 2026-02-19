@@ -5,12 +5,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.auxiliary_attacks.gcg.experiments.log import (
-    log_loss,
-    log_params,
-    log_table_summary,
-    log_train_goals,
+log_mod = pytest.importorskip(
+    "pyrit.auxiliary_attacks.gcg.experiments.log",
+    reason="GCG optional dependencies (mlflow, etc.) not installed",
 )
+log_loss = log_mod.log_loss
+log_params = log_mod.log_params
+log_table_summary = log_mod.log_table_summary
+log_train_goals = log_mod.log_train_goals
 
 
 class TestLogParams:

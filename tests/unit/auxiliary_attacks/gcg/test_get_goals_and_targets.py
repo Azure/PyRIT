@@ -2,21 +2,16 @@
 # Licensed under the MIT license.
 
 import os
-import sys
 import tempfile
 from unittest.mock import MagicMock
 
 import pytest
 
-# Mock heavy dependencies that may not be installed in test environments
-if "fastchat" not in sys.modules:
-    sys.modules["fastchat"] = MagicMock()
-    sys.modules["fastchat.conversation"] = MagicMock()
-    sys.modules["fastchat.model"] = MagicMock()
-
-from pyrit.auxiliary_attacks.gcg.attack.base.attack_manager import (
-    get_goals_and_targets,
+attack_manager_mod = pytest.importorskip(
+    "pyrit.auxiliary_attacks.gcg.attack.base.attack_manager",
+    reason="GCG optional dependencies (torch, mlflow, etc.) not installed",
 )
+get_goals_and_targets = attack_manager_mod.get_goals_and_targets
 
 
 class TestGetGoalsAndTargets:
