@@ -810,6 +810,10 @@ class TestVideoTargetEdgeCases:
             ) as mock_download,
             patch("pyrit.prompt_target.openai.openai_video_target.data_serializer_factory") as mock_factory,
             patch("pyrit.prompt_target.openai.openai_video_target.DataTypeSerializer.get_mime_type") as mock_mime,
+            patch(
+                "pyrit.prompt_target.openai.openai_video_target.guess_type",
+                return_value=("image/webp", None),
+            ),
         ):
             mock_factory.side_effect = [mock_image_serializer, mock_serializer]
             mock_create.return_value = mock_video
