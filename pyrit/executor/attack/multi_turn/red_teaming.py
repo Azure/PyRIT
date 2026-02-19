@@ -7,7 +7,7 @@ import enum
 import logging
 import uuid
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
@@ -357,41 +357,20 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         # Generate prompt using adversarial chat
         logger.debug(f"Generating prompt for turn {context.executed_turns + 1}")
 
-        # Prepare prompt for the adversarial chat
-        attack_message = await self._build_adversarial_prompt(context)
+        # Build the message for the adversarial chat
+        prompt_message = await self._build_adversarial_prompt(context)
 
-        # Build the message for the adversarial chat.
-        # For file/media responses, construct a multimodal message with both
-        # the textual feedback and the actual media (image/video) so the
-        # adversarial chat (e.g. GPT-4o) can see what the target generated.
-        if isinstance(prompt_result, tuple):
-            feedback_text, media_piece = prompt_result
-            # Use a shared conversation_id so Message validation passes
-            shared_conversation_id = str(uuid.uuid4())
-            pieces = [
-                MessagePiece(
-                    original_value=feedback_text,
-                    role="user",
-                    conversation_id=shared_conversation_id,
-                )
-            ]
-            if media_piece is not None:
-                pieces.append(
-                    MessagePiece(
-                        original_value=media_piece.converted_value,
-                        role="user",
-                        original_value_data_type=media_piece.converted_value_data_type,
-                        conversation_id=shared_conversation_id,
-                    )
-                )
-            prompt_message = Message(message_pieces=pieces)
+        # Log the message being sent
+        if prompt_message.is_multimodal():
+            text_piece = prompt_message.get_first_piece_by_data_type("text")
+            media_pieces = [p for p in prompt_message.message_pieces if p.converted_value_data_type != "text"]
+            feedback_text = text_piece.converted_value if text_piece else "No text content"
+            media_info = f"{len(media_pieces)} media piece(s)" if media_pieces else "no media"
             logger.debug(
-                f"Sending multimodal prompt to adversarial chat: {feedback_text[:50]}... "
-                f"+ {media_piece.converted_value_data_type if media_piece else 'no'} media"
+                f"Sending multimodal prompt to adversarial chat: {feedback_text[:50]}... + {media_info}"
             )
         else:
-            prompt_text = prompt_result
-            prompt_message = Message.from_prompt(prompt=prompt_text, role="user")
+            prompt_text = prompt_message.get_first_piece().converted_value
             logger.debug(f"Sending prompt to adversarial chat: {prompt_text[:50]}...")
 
         with execution_context(
@@ -420,33 +399,35 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
     async def _build_adversarial_prompt(
         self,
         context: MultiTurnAttackContext[Any],
-    ) -> Union[str, tuple[str, Optional[MessagePiece]]]:
+    ) -> Message:
         """
-        Build a prompt for the adversarial chat based on the last response.
+        Build a prompt message for the adversarial chat based on the last response.
 
-        For text responses, returns a plain string. For file/media responses (images, video, etc.),
-        returns a tuple of (feedback_text, media_piece) so the caller can construct a multimodal
-        message that includes the actual generated media alongside the textual feedback.
+        For text responses, creates a simple text message. For file/media responses (images, video, etc.),
+        creates a multimodal message that includes both the textual feedback and the actual generated 
+        media so the adversarial chat can see what the target produced.
 
         Args:
             context (MultiTurnAttackContext): The attack context containing the current state and configuration.
 
         Returns:
-            Union[str, tuple[str, Optional[MessagePiece]]]: Either a plain text prompt string,
-                or a tuple of (feedback_text, media_piece) when the target returned media content.
+            Message: A message ready to be sent to the adversarial chat.
         """
         # If no last response, return the seed prompt (rendered with objective if template exists)
         if not context.last_response:
-            return self._adversarial_chat_seed_prompt.render_template_value_silent(objective=context.objective)
+            prompt_text = self._adversarial_chat_seed_prompt.render_template_value_silent(objective=context.objective)
+            return Message.from_prompt(prompt=prompt_text, role="user")
 
         # Get the last assistant piece from the response
         response_piece = context.last_response.get_piece()
 
-        # Text/error responses return str; file responses return tuple[str, Optional[MessagePiece]]
+        # Build message based on response type (text vs file/media)
         if response_piece.converted_value_data_type in ("text", "error"):
-            return self._handle_adversarial_text_response(context=context)
-
-        return self._handle_adversarial_file_response(context=context)
+            feedback_text = self._handle_adversarial_text_response(context=context)
+            return self._build_text_message(feedback_text)
+        else:
+            feedback_text, media_piece = self._handle_adversarial_file_response(context=context)
+            return self._build_multimodal_message(feedback_text, media_piece)
 
     def _handle_adversarial_text_response(self, *, context: MultiTurnAttackContext[Any]) -> str:
         """
@@ -537,6 +518,49 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             )
 
         return (feedback, response_piece)
+
+    def _build_text_message(self, feedback_text: str) -> Message:
+        """
+        Build a simple text message for the adversarial chat.
+
+        Args:
+            feedback_text (str): The text content for the message.
+
+        Returns:
+            Message: A text message ready to be sent to the adversarial chat.
+        """
+        return Message.from_prompt(prompt=feedback_text, role="user")
+
+    def _build_multimodal_message(self, feedback_text: str, media_piece: Optional[MessagePiece]) -> Message:
+        """
+        Build a multimodal message for the adversarial chat containing both text and media.
+
+        Args:
+            feedback_text (str): The textual feedback to include.
+            media_piece (Optional[MessagePiece]): The media piece from the target response, if any.
+
+        Returns:
+            Message: A multimodal message ready to be sent to the adversarial chat.
+        """
+        # Use a shared conversation_id so Message validation passes
+        shared_conversation_id = str(uuid.uuid4())
+        pieces = [
+            MessagePiece(
+                original_value=feedback_text,
+                role="user",
+                conversation_id=shared_conversation_id,
+            )
+        ]
+        if media_piece is not None:
+            pieces.append(
+                MessagePiece(
+                    original_value=media_piece.converted_value,
+                    role="user",
+                    original_value_data_type=media_piece.converted_value_data_type,
+                    conversation_id=shared_conversation_id,
+                )
+            )
+        return Message(message_pieces=pieces)
 
     async def _send_prompt_to_objective_target_async(
         self,
