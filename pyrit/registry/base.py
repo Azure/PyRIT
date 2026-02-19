@@ -8,10 +8,41 @@ This module contains types shared between class registries (which store Type[T])
 and instance registries (which store T instances).
 """
 
+from dataclasses import dataclass
 from typing import Any, Dict, Iterator, List, Optional, Protocol, TypeVar, runtime_checkable
+
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 
 # Type variable for metadata (invariant for Protocol compatibility)
 MetadataT = TypeVar("MetadataT")
+
+
+@dataclass(frozen=True)
+class ClassRegistryEntry:
+    """
+    Minimal base for class-level registry metadata.
+
+    Provides the common fields every registry metadata type needs for display,
+    lookup, and filtering in class registries.
+
+    Attributes:
+        class_name (str): Python class name (e.g., "ContentHarmsScenario").
+        class_module (str): Full module path (e.g., "pyrit.scenario.scenarios.content_harms").
+        class_description (str): Human-readable description, typically from the class docstring.
+    """
+
+    class_name: str
+    class_module: str
+    class_description: str = ""
+
+    @property
+    def snake_class_name(self) -> str:
+        """
+        Snake_case version of class_name (e.g., "content_harms_scenario").
+
+        Used by CLI formatting and as registry display keys.
+        """
+        return class_name_to_snake_case(self.class_name)
 
 
 @runtime_checkable

@@ -69,7 +69,6 @@ def sample_attack_result():
     result = AttackResult(
         conversation_id="test-conversation-id",
         objective="Test objective",
-        attack_identifier={"name": "test_attack"},
         outcome=AttackOutcome.SUCCESS,
         outcome_reason="Test successful",
         execution_time_ms=0,
@@ -112,7 +111,6 @@ def mock_attack_strategy():
             result = AttackResult(
                 conversation_id="test-conversation-id",
                 objective="Test objective",
-                attack_identifier={"name": "test_attack"},
                 outcome=AttackOutcome.SUCCESS,
                 outcome_reason="Test successful",
                 execution_time_ms=0,
@@ -144,7 +142,6 @@ class TestAttackStrategyInitialization:
                 return AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     execution_time_ms=0,
@@ -176,7 +173,6 @@ class TestAttackStrategyInitialization:
                 return AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     execution_time_ms=0,
@@ -208,7 +204,6 @@ class TestAttackStrategyInitialization:
                     return AttackResult(
                         conversation_id="test-conversation-id",
                         objective="Test objective",
-                        attack_identifier={"name": "test_attack"},
                         outcome=AttackOutcome.SUCCESS,
                         outcome_reason="Test successful",
                         execution_time_ms=0,
@@ -497,7 +492,6 @@ class TestAttackStrategyIntegration:
                 result = AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     executed_turns=1,
@@ -542,7 +536,6 @@ class TestAttackStrategyIntegration:
                 result = AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     execution_time_ms=0,

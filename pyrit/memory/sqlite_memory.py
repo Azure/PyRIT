@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import and_, create_engine, func, or_, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker
@@ -163,7 +163,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         Returns:
             Any: A SQLAlchemy text condition with bound parameters.
         """
-        return text("JSON_EXTRACT(attack_identifier, '$.id') = :attack_id").bindparams(attack_id=str(attack_id))
+        return text("JSON_EXTRACT(attack_identifier, '$.hash') = :attack_id").bindparams(attack_id=str(attack_id))
 
     def _get_seed_metadata_conditions(self, *, metadata: dict[str, Union[str, int]]) -> Any:
         """
@@ -503,6 +503,87 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             )
         )
         return labels_subquery
+
+    def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
+        """
+        SQLite implementation for filtering AttackResults by attack type.
+        Uses json_extract() to match class_name in the attack_identifier JSON column.
+
+        Returns:
+            Any: A SQLAlchemy condition for filtering by attack type.
+        """
+        return func.json_extract(AttackResultEntry.attack_identifier, "$.class_name") == attack_class
+
+    def _get_attack_result_converter_condition(self, *, converter_classes: Sequence[str]) -> Any:
+        """
+        SQLite implementation for filtering AttackResults by converter classes.
+
+        When converter_classes is empty, matches attacks with no converters
+        (request_converter_identifiers is absent or null in the JSON).
+        When non-empty, uses json_each() to check all specified classes are present
+        (AND logic, case-insensitive).
+
+        Returns:
+            Any: A SQLAlchemy condition for filtering by converter classes.
+        """
+        if len(converter_classes) == 0:
+            # Explicitly "no converters": match attacks where the converter list
+            # is absent, null, or empty in the stored JSON.
+            converter_json = func.json_extract(AttackResultEntry.attack_identifier, "$.request_converter_identifiers")
+            return or_(
+                AttackResultEntry.attack_identifier.is_(None),
+                AttackResultEntry.attack_identifier == "{}",
+                converter_json.is_(None),
+                converter_json == "[]",
+            )
+
+        conditions = []
+        for i, cls in enumerate(converter_classes):
+            param_name = f"conv_cls_{i}"
+            conditions.append(
+                text(
+                    f"""EXISTS(SELECT 1 FROM json_each(
+                        json_extract("AttackResultEntries".attack_identifier, '$.request_converter_identifiers'))
+                        WHERE LOWER(json_extract(value, '$.class_name')) = :{param_name})"""
+                ).bindparams(**{param_name: cls.lower()})
+            )
+        return and_(*conditions)
+
+    def get_unique_attack_class_names(self) -> list[str]:
+        """
+        SQLite implementation: extract unique class_name values from attack_identifier JSON.
+
+        Returns:
+            Sorted list of unique attack class name strings.
+        """
+        with closing(self.get_session()) as session:
+            rows = (
+                session.query(func.json_extract(AttackResultEntry.attack_identifier, "$.class_name"))
+                .filter(func.json_extract(AttackResultEntry.attack_identifier, "$.class_name").isnot(None))
+                .distinct()
+                .all()
+            )
+        return sorted(row[0] for row in rows)
+
+    def get_unique_converter_class_names(self) -> list[str]:
+        """
+        SQLite implementation: extract unique converter class_name values
+        from the request_converter_identifiers array in attack_identifier JSON.
+
+        Returns:
+            Sorted list of unique converter class name strings.
+        """
+        with closing(self.get_session()) as session:
+            rows = session.execute(
+                text(
+                    """SELECT DISTINCT json_extract(j.value, '$.class_name') AS cls
+                    FROM "AttackResultEntries",
+                    json_each(json_extract("AttackResultEntries".attack_identifier,
+                        '$.request_converter_identifiers')) AS j
+                    WHERE cls IS NOT NULL"""
+                )
+            ).fetchall()
+        return sorted(row[0] for row in rows)
 
     def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """

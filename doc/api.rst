@@ -272,6 +272,7 @@ API Reference
     :toctree: _autosummary/
 
     class_name_to_snake_case
+    AttackIdentifier
     ConverterIdentifier
     Identifiable
     Identifier
@@ -587,6 +588,7 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RefusalScorerPaths
     RegistryUpdateBehavior
     Scorer
     ScorerEvalDatasetFiles

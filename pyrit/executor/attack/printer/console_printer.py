@@ -258,10 +258,8 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
         # Extract attack type name from attack_identifier
         attack_type = "Unknown"
-        if isinstance(result.attack_identifier, dict) and "__type__" in result.attack_identifier:
-            attack_type = result.attack_identifier["__type__"]
-        elif isinstance(result.attack_identifier, str):
-            attack_type = result.attack_identifier
+        if result.attack_identifier:
+            attack_type = result.attack_identifier.class_name
 
         self._print_colored(f"{self._indent * 2}• Attack Type: {attack_type}", Fore.CYAN)
         self._print_colored(f"{self._indent * 2}• Conversation ID: {result.conversation_id}", Fore.CYAN)

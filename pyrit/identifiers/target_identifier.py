@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, cast
+from typing import Any, Dict, Optional, Type
 
 from pyrit.identifiers.identifier import Identifier
 
@@ -54,5 +54,4 @@ class TargetIdentifier(Identifier):
             TargetIdentifier: A new TargetIdentifier instance.
         """
         # Delegate to parent class for standard processing
-        result = Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]
-        return cast(TargetIdentifier, result)
+        return super().from_dict(data)
