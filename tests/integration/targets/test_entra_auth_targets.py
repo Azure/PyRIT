@@ -262,11 +262,11 @@ async def test_openai_realtime_target_entra_auth(sqlite_instance, endpoint, mode
 @pytest.mark.asyncio
 async def test_video_target_entra_auth(sqlite_instance):
     # Takes a long time and sometimes encounters retry errors.
-    # Note: OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
-    endpoint = os.environ["OPENAI_VIDEO2_ENDPOINT"]
+    # Note: AZURE_OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
+    endpoint = os.environ["AZURE_OPENAI_VIDEO_ENDPOINT"]
     target = OpenAIVideoTarget(
         endpoint=endpoint,
-        model_name=os.environ["OPENAI_VIDEO2_MODEL"],
+        model_name=os.environ["AZURE_OPENAI_VIDEO_MODEL"],
         api_key=get_azure_openai_auth(endpoint),
     )
     attack = PromptSendingAttack(objective_target=target)
