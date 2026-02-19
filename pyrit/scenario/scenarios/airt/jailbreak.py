@@ -124,7 +124,7 @@ class Jailbreak(Scenario):
         scenario_result_id: Optional[str] = None,
         num_templates: Optional[int] = None,
         num_attempts: int = 1,
-        jailbreak_names: Optional[List[str]] = None,
+        jailbreak_names: List[str] = [],
         max_dataset_size: int = 4,
     ) -> None:
         """
@@ -166,13 +166,12 @@ class Jailbreak(Scenario):
 
         all_templates = TextJailBreak.get_jailbreak_templates(num_templates=self._num_templates)
 
-        if jailbreak_names:
-            # Example: if jailbreak_names is {'a', 'b', 'c'}, and all_templates is {'b', 'c', 'd'},
-            # then diff = {'a'}, which raises the error as 'a' was not discovered in all_templates.
-            diff = set(jailbreak_names) - set(all_templates)
-            if len(diff) > 0:
-                raise ValueError(f"Error: could not find templates `{diff}`!")
-            self._jailbreaks = jailbreak_names
+        # Example: if jailbreak_names is {'a', 'b', 'c'}, and all_templates is {'b', 'c', 'd'},
+        # then diff = {'a'}, which raises the error as 'a' was not discovered in all_templates.
+        diff = set(jailbreak_names) - set(all_templates)
+        if len(diff) > 0:
+            raise ValueError(f"Error: could not find templates `{diff}`!")
+        self._jailbreaks = jailbreak_names if jailbreak_names else all_templates
 
         super().__init__(
             name="Jailbreak",
