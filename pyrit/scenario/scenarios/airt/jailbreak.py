@@ -38,7 +38,10 @@ class JailbreakStrategy(ScenarioStrategy):
     expose an obvious way of using this scenario without worrying about additional tweaks and changes
     to the prompt.
 
-    COMPLEX strategies
+    COMPLEX strategies use additional techniques to enhance the jailbreak like modifying the
+    system prompt or probing the target model for an additional vulnerability (e.g. the SkeletonKeyAttack).
+    They are meant to provide a sense of how well a jailbreak generalizes to slight changes in the delivery
+    method.
     """
 
     # Aggregate members (special markers that expand to strategies with matching tags)
@@ -119,9 +122,10 @@ class Jailbreak(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = False,
         scenario_result_id: Optional[str] = None,
-        k_jailbreaks: Optional[int] = None,
-        num_tries: int = 1,
+        num_templates: Optional[int] = None,
+        num_attempts: int = 1,
         jailbreak_names: Optional[List[str]] = None,
+        max_dataset_size: int = 4,
     ) -> None:
         """
         Initialize the jailbreak scenario.
@@ -132,29 +136,34 @@ class Jailbreak(Scenario):
             include_baseline (bool): Whether to include a baseline atomic attack that sends all
                 objectives without modifications. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
-            k_jailbreaks (Optional[int]): Choose k random jailbreaks rather than using all of them.
-            num_tries (Optional[int]): Number of times to try each jailbreak.
+            num_templates (Optional[int]): Choose num_templates random jailbreaks rather than using all of them.
+            num_attempts (Optional[int]): Number of times to try each jailbreak.
             jailbreak_names (Optional[List[str]]): List of jailbreak names from the template list under datasets.
                 to use.
+            max_dataset_size (Optional[int]): Maximum number of SeedGroups to pull from the dataset (passed to 
+                DatasetConfiguration).
 
         Raises:
-            ValueError: If both jailbreak_names and k_jailbreaks are provided, as random selection
+            ValueError: If both jailbreak_names and num_templates are provided, as random selection
                 is incompatible with a predetermined list.
             ValueError: If the jailbreak_names list contains a jailbreak that isn't in the listed
                 templates.
 
         """
-        if jailbreak_names and k_jailbreaks:
+        if jailbreak_names and num_templates:
             raise ValueError(
-                "Please provide only one of `k_jailbreaks` (random selection) or `jailbreaks` (specific selection)."
+                "Please provide only one of `num_templates` (random selection) or `jailbreaks` (specific selection)."
             )
+            
+        self._max_dataset_size = max_dataset_size
 
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(
+            objective_scorer=objective_scorer)
 
-        self._k = k_jailbreaks
-        self._n = num_tries
+        self._num_templates = num_templates
+        self._num_attempts = num_attempts
 
         all_templates = TextJailBreak.get_jailbreak_templates()
 
@@ -164,7 +173,8 @@ class Jailbreak(Scenario):
                 raise ValueError(f"Error: could not find templates `{diff}`!")
             self._jailbreaks = jailbreak_names
         else:
-            self._jailbreaks = TextJailBreak.get_jailbreak_templates(k=self._k)
+            self._jailbreaks = TextJailBreak.get_jailbreak_templates(
+                k=self._num_templates)
 
         super().__init__(
             name="Jailbreak",
@@ -192,9 +202,12 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -253,15 +266,18 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(
+                template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(
+                converters=[jailbreak_converter])
         )
 
-        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, RolePlayAttack, SkeletonKeyAttack]] = None
+        attack: Optional[Union[ManyShotJailbreakAttack,
+                               PromptSendingAttack, RolePlayAttack, SkeletonKeyAttack]] = None
         args = {
             "objective_target": self._objective_target,
             "attack_scoring_config": self._scorer_config,
@@ -276,9 +292,12 @@ class Jailbreak(Scenario):
                 attack = SkeletonKeyAttack(**args)
             case "role_play":
                 args["adversarial_chat"] = OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get(
+                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                     temperature=1.2,
                 )
                 args["role_play_definition_path"] = RolePlayPaths.PERSUASION_SCRIPT.value
@@ -316,7 +335,7 @@ class Jailbreak(Scenario):
 
         for strategy in strategies:
             for template_name in self._jailbreaks:
-                for _ in range(0, self._n):
+                for _ in range(0, self._num_attempts):
                     atomic_attack = await self._get_atomic_attack_from_strategy_async(
                         strategy=strategy, jailbreak_template_name=template_name
                     )
