@@ -358,7 +358,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         logger.debug(f"Generating prompt for turn {context.executed_turns + 1}")
 
         # Prepare prompt for the adversarial chat
-        prompt_result = await self._build_adversarial_prompt(context)
+        attack_message = await self._build_adversarial_prompt(context)
 
         # Build the message for the adversarial chat.
         # For file/media responses, construct a multimodal message with both
