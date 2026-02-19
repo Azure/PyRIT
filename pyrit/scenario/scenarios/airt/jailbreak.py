@@ -140,7 +140,7 @@ class Jailbreak(Scenario):
             num_attempts (Optional[int]): Number of times to try each jailbreak.
             jailbreak_names (Optional[List[str]]): List of jailbreak names from the template list under datasets.
                 to use.
-            max_dataset_size (Optional[int]): Maximum number of SeedGroups to pull from the dataset (passed to 
+            max_dataset_size (Optional[int]): Maximum number of SeedGroups to pull from the dataset (passed to
                 DatasetConfiguration).
 
         Raises:
@@ -154,27 +154,25 @@ class Jailbreak(Scenario):
             raise ValueError(
                 "Please provide only one of `num_templates` (random selection) or `jailbreaks` (specific selection)."
             )
-            
+
         self._max_dataset_size = max_dataset_size
 
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
-        self._scorer_config = AttackScoringConfig(
-            objective_scorer=objective_scorer)
+        self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
         self._num_templates = num_templates
         self._num_attempts = num_attempts
 
-        all_templates = TextJailBreak.get_jailbreak_templates()
+        all_templates = TextJailBreak.get_jailbreak_templates(num_templates=self._num_templates)
 
         if jailbreak_names:
+            # Example: if jailbreak_names is {'a', 'b', 'c'}, and all_templates is {'b', 'c', 'd'},
+            # then diff = {'a'}, which raises the error as 'a' was not discovered in all_templates.
             diff = set(jailbreak_names) - set(all_templates)
             if len(diff) > 0:
                 raise ValueError(f"Error: could not find templates `{diff}`!")
             self._jailbreaks = jailbreak_names
-        else:
-            self._jailbreaks = TextJailBreak.get_jailbreak_templates(
-                k=self._num_templates)
 
         super().__init__(
             name="Jailbreak",
@@ -202,12 +200,9 @@ class Jailbreak(Scenario):
         refusal_scorer = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
         )
@@ -266,18 +261,15 @@ class Jailbreak(Scenario):
 
         # Create the jailbreak converter
         jailbreak_converter = TextJailbreakConverter(
-            jailbreak_template=TextJailBreak(
-                template_file_name=jailbreak_template_name)
+            jailbreak_template=TextJailBreak(template_file_name=jailbreak_template_name)
         )
 
         # Create converter configuration
         converter_config = AttackConverterConfig(
-            request_converters=PromptConverterConfiguration.from_converters(
-                converters=[jailbreak_converter])
+            request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
-        attack: Optional[Union[ManyShotJailbreakAttack,
-                               PromptSendingAttack, RolePlayAttack, SkeletonKeyAttack]] = None
+        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, RolePlayAttack, SkeletonKeyAttack]] = None
         args = {
             "objective_target": self._objective_target,
             "attack_scoring_config": self._scorer_config,
@@ -291,15 +283,7 @@ class Jailbreak(Scenario):
             case "skeleton":
                 attack = SkeletonKeyAttack(**args)
             case "role_play":
-                args["adversarial_chat"] = OpenAIChatTarget(
-                    endpoint=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
-                    model_name=os.environ.get(
-                        "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
-                    temperature=1.2,
-                )
+                args["adversarial_chat"] = self._get_default_adversarial_target()
                 args["role_play_definition_path"] = RolePlayPaths.PERSUASION_SCRIPT.value
                 attack = RolePlayAttack(**args)
             case _:
