@@ -587,6 +587,7 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RefusalScorerPaths
     RegistryUpdateBehavior
     Scorer
     ScorerEvalDatasetFiles
