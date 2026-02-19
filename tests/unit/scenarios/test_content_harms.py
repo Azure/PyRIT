@@ -1012,9 +1012,7 @@ class TestContentHarmsTurnGroups:
         with pytest.raises(ValueError, match="Scenario not properly initialized"):
             scenario._get_strategy_attacks(strategy="hate", seed_groups=seed_groups)
 
-    def test_resolve_turn_groups_no_composites_returns_both(
-        self, mock_adversarial_target, mock_objective_scorer
-    ):
+    def test_resolve_turn_groups_no_composites_returns_both(self, mock_adversarial_target, mock_objective_scorer):
         """Test that _resolve_turn_groups returns (True, True) when no composites are set."""
         scenario = ContentHarms(
             adversarial_chat=mock_adversarial_target,

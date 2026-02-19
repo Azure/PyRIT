@@ -5,7 +5,7 @@ import logging
 import os
 import pathlib
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import yaml
 
@@ -31,7 +31,6 @@ from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
-    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
 from pyrit.score import (
@@ -430,23 +429,19 @@ class Psychosocial(Scenario):
 
         scoring_config = self._create_scoring_config(resolved.subharm)
 
-
         return [
-                *self._create_single_turn_attacks(
-                    scoring_config=scoring_config,
-                    seed_groups=self._seed_groups),
-                self._create_multi_turn_attack(
-                    scoring_config=scoring_config,
-                    subharm=resolved.subharm,
-                    seed_groups=self._seed_groups,
-                )] 
-
+            *self._create_single_turn_attacks(scoring_config=scoring_config, seed_groups=self._seed_groups),
+            self._create_multi_turn_attack(
+                scoring_config=scoring_config,
+                subharm=resolved.subharm,
+                seed_groups=self._seed_groups,
+            ),
+        ]
 
     def _create_scoring_config(self, subharm: Optional[str]) -> AttackScoringConfig:
         subharm_config = self._subharm_configs.get(subharm) if subharm else None
         scorer = self._get_scorer(subharm=subharm) if subharm_config else self._objective_scorer
         return AttackScoringConfig(objective_scorer=scorer)
-
 
     def _create_single_turn_attacks(
         self,

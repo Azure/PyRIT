@@ -10,7 +10,6 @@ from pyrit.executor.attack import (
     AttackScoringConfig,
     AttackStrategy,
     ManyShotJailbreakAttack,
-    MultiPromptSendingAttack,
     PromptSendingAttack,
     RolePlayAttack,
     RolePlayPaths,
@@ -248,7 +247,8 @@ class ContentHarms(Scenario):
             )
 
         attacks: List[AtomicAttack] = [
-            *self._get_single_turn_attacks(strategy=strategy, seed_groups=seed_groups), *self._get_multi_turn_attacks(strategy=strategy, seed_groups=seed_groups)
+            *self._get_single_turn_attacks(strategy=strategy, seed_groups=seed_groups),
+            *self._get_multi_turn_attacks(strategy=strategy, seed_groups=seed_groups),
         ]
 
         return attacks

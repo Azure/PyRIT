@@ -157,9 +157,7 @@ class TestLeakageInitialization:
 
     def test_init_with_default_scorer(self, mock_memory_seeds):
         """Test initialization with default scorer."""
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage()
             assert scenario._objective_scorer_identifier
 
@@ -171,17 +169,13 @@ class TestLeakageInitialization:
     def test_init_with_custom_scorer(self, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with custom scorer."""
         scorer = MagicMock(TrueFalseCompositeScorer)
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage(objective_scorer=scorer)
             assert isinstance(scenario._scorer_config, AttackScoringConfig)
 
     def test_init_default_adversarial_chat(self, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with default adversarial chat."""
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage(
                 objective_scorer=mock_objective_scorer,
             )
@@ -194,9 +188,7 @@ class TestLeakageInitialization:
         adversarial_chat = MagicMock(OpenAIChatTarget)
         adversarial_chat.get_identifier.return_value = _mock_target_id("CustomAdversary")
 
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage(
                 adversarial_chat=adversarial_chat,
                 objective_scorer=mock_objective_scorer,
@@ -237,9 +229,7 @@ class TestLeakageAttackGeneration:
         self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
@@ -390,9 +380,7 @@ class TestLeakageLifecycle:
         self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test initialization with custom max_concurrency."""
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage(objective_scorer=mock_objective_scorer)
             await scenario.initialize_async(
                 objective_target=mock_objective_target, max_concurrency=20, dataset_config=mock_dataset_config
@@ -406,9 +394,7 @@ class TestLeakageLifecycle:
         """Test initialization with memory labels."""
         memory_labels = {"test": "leakage", "category": "scenario"}
 
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage(
                 objective_scorer=mock_objective_scorer,
             )
@@ -451,9 +437,7 @@ class TestLeakageProperties:
     @pytest.mark.asyncio
     async def test_no_target_duplication(self, mock_objective_target, mock_memory_seeds, mock_dataset_config):
         """Test that all three targets (adversarial, object, scorer) are distinct."""
-        with patch.object(
-            Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
-        ):
+        with patch.object(Leakage, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]):
             scenario = Leakage()
             await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
 
