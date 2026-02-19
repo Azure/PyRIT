@@ -67,7 +67,7 @@ class ScamStrategy(ScenarioStrategy):
     SINGLE_TURN = ("single_turn", {"single_turn"})
     MULTI_TURN = ("multi_turn", {"multi_turn"})
 
-    CONTEXT_COM = ("context_compliance", {"single_turn"})
+    ContextCompliance = ("context_compliance", {"single_turn"})
     RolePlay = ("role_play", {"single_turn"})
     PersuasiveRedTeamingAttack = ("persuasive_rta", {"multi_turn"})
 
