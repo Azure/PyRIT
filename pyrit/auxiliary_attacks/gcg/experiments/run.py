@@ -10,16 +10,23 @@ from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 
 from pyrit.setup.initialization import _load_environment_files
 
+_MODEL_NAMES: list[str] = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
+_ALL_MODELS: str = "all_models"
+
 
 def _load_yaml_to_dict(config_path: str) -> dict[str, Any]:
+    """
+    Load a YAML config file and return its contents as a dictionary.
+
+    Args:
+        config_path (str): Path to the YAML configuration file.
+
+    Returns:
+        dict[str, Any]: The parsed configuration dictionary.
+    """
     with open(config_path, "r") as f:
         data: dict[str, Any] = yaml.safe_load(f)
     return data
-
-
-MODEL_NAMES = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
-ALL_MODELS = "all_models"
-MODEL_PARAM_OPTIONS = MODEL_NAMES + [ALL_MODELS]
 
 
 def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parameters: Any) -> None:
@@ -29,12 +36,15 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
     Args:
         model_name (str): The name of the model, currently supports:
             "mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini", "all_models"
-        setup (str): Identifier for the setup, currently supporst
+        setup (str): Identifier for the setup, currently supports
             - "single": one prompt one model
             - "multiple": multiple prompts one model or multiple prompts multiple models
+        **extra_config_parameters: Additional parameters to override config values.
 
+    Raises:
+        ValueError: If model_name is not supported or HUGGINGFACE_TOKEN is not set.
     """
-    if model_name not in MODEL_NAMES:
+    if model_name not in _MODEL_NAMES:
         raise ValueError(
             "Model name not supported. Currently supports 'mistral', 'llama_2', 'llama_3', 'vicuna', and 'phi_3_mini'"
         )
@@ -70,7 +80,13 @@ def run_trainer(*, model_name: str, setup: str = "single", **extra_config_parame
     trainer.generate_suffix(**config)
 
 
-def parse_arguments() -> argparse.Namespace:
+def _parse_arguments() -> argparse.Namespace:
+    """
+    Parse command-line arguments for the adversarial suffix trainer.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
     parser = argparse.ArgumentParser(description="Script to run the adversarial suffix trainer")
     parser.add_argument("--model_name", type=str, help="The name of the model")
     parser.add_argument(
@@ -90,10 +106,10 @@ def parse_arguments() -> argparse.Namespace:
 
 
 if __name__ == "__main__":
-    args = parse_arguments()
+    args = _parse_arguments()
     run_trainer(
         model_name=args.model_name,
-        num_train_models=len(MODEL_NAMES) if args.model_name == ALL_MODELS else 1,
+        num_train_models=len(_MODEL_NAMES) if args.model_name == _ALL_MODELS else 1,
         setup=args.setup,
         n_train_data=args.n_train_data,
         n_test_data=args.n_test_data,
