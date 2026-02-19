@@ -6,8 +6,8 @@ import os
 from typing import Any, Dict, Union
 
 import yaml
-from train import GreedyCoordinateGradientAdversarialSuffixGenerator
 
+from pyrit.auxiliary_attacks.gcg.experiments.train import GreedyCoordinateGradientAdversarialSuffixGenerator
 from pyrit.setup.initialization import _load_environment_files
 
 _MODEL_NAMES: list[str] = ["mistral", "llama_2", "llama_3", "vicuna", "phi_3_mini"]
