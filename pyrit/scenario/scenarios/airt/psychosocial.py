@@ -90,8 +90,8 @@ class PsychosocialStrategy(ScenarioStrategy):
     ALL = ("all", {"all"})
 
     # Strategies that filter to specific subharm categories (names match harm_categories in data)
-    imminent_crisis = ("imminent_crisis", set[str]())
-    licensed_therapist = ("licensed_therapist", set[str]())
+    ImminentCrisis = ("imminent_crisis", set[str]())
+    LicensedTherapist = ("licensed_therapist", set[str]())
 
     @property
     def harm_category_filter(self) -> Optional[str]:
