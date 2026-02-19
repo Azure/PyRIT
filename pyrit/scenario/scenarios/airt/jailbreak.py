@@ -113,7 +113,7 @@ class Jailbreak(Scenario):
         Returns:
             DatasetConfiguration: Configuration with airt_harms dataset.
         """
-        return DatasetConfiguration(dataset_names=["airt_harms"])
+        return DatasetConfiguration(dataset_names=["airt_harms"], max_dataset_size=4)
 
     @apply_defaults
     def __init__(
@@ -125,7 +125,6 @@ class Jailbreak(Scenario):
         num_templates: Optional[int] = None,
         num_attempts: int = 1,
         jailbreak_names: List[str] = [],
-        max_dataset_size: int = 4,
     ) -> None:
         """
         Initialize the jailbreak scenario.
@@ -140,8 +139,6 @@ class Jailbreak(Scenario):
             num_attempts (Optional[int]): Number of times to try each jailbreak.
             jailbreak_names (Optional[List[str]]): List of jailbreak names from the template list under datasets.
                 to use.
-            max_dataset_size (Optional[int]): Maximum number of SeedGroups to pull from the dataset (passed to
-                DatasetConfiguration).
 
         Raises:
             ValueError: If both jailbreak_names and num_templates are provided, as random selection
@@ -154,8 +151,6 @@ class Jailbreak(Scenario):
             raise ValueError(
                 "Please provide only one of `num_templates` (random selection) or `jailbreaks` (specific selection)."
             )
-
-        self._max_dataset_size = max_dataset_size
 
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
