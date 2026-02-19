@@ -60,8 +60,7 @@ def mock_memory_seed_groups() -> List[SeedGroup]:
 def mock_objective_target() -> PromptTarget:
     """Create a mock objective target for testing."""
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = TargetIdentifier(
-        class_name="MockObjectiveTarget", class_module="test")
+    mock.get_identifier.return_value = TargetIdentifier(class_name="MockObjectiveTarget", class_module="test")
     return mock
 
 
@@ -69,8 +68,7 @@ def mock_objective_target() -> PromptTarget:
 def mock_objective_scorer() -> TrueFalseInverterScorer:
     """Create a mock scorer for testing."""
     mock = MagicMock(spec=TrueFalseInverterScorer)
-    mock.get_identifier.return_value = ScorerIdentifier(
-        class_name="MockObjectiveScorer", class_module="test")
+    mock.get_identifier.return_value = ScorerIdentifier(class_name="MockObjectiveScorer", class_module="test")
     return mock
 
 
@@ -166,8 +164,7 @@ class TestJailbreakInitialization:
         """Test failure on providing mutually exclusive arguments."""
 
         with pytest.raises(ValueError):
-            Jailbreak(num_templates=mock_random_num_templates,
-                      jailbreak_names=mock_templates)
+            Jailbreak(num_templates=mock_random_num_templates, jailbreak_names=mock_templates)
 
     @pytest.mark.asyncio
     async def test_init_raises_exception_when_no_datasets_available(self, mock_objective_target, mock_objective_scorer):
@@ -207,8 +204,7 @@ class TestJailbreakAttackGeneration:
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[
-                    simple_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[simple_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -223,8 +219,7 @@ class TestJailbreakAttackGeneration:
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[
-                    complex_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[complex_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -243,8 +238,7 @@ class TestJailbreakAttackGeneration:
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[
-                    manyshot_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[manyshot_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -259,8 +253,7 @@ class TestJailbreakAttackGeneration:
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[
-                    promptsending_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[promptsending_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -275,8 +268,7 @@ class TestJailbreakAttackGeneration:
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[
-                    skeleton_jailbreak_attack]
+                objective_target=mock_objective_target, scenario_strategies=[skeleton_jailbreak_attack]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -291,8 +283,7 @@ class TestJailbreakAttackGeneration:
             scenario = Jailbreak(objective_scorer=mock_objective_scorer)
 
             await scenario.initialize_async(
-                objective_target=mock_objective_target, scenario_strategies=[
-                    roleplay_jailbreak_strategy]
+                objective_target=mock_objective_target, scenario_strategies=[roleplay_jailbreak_strategy]
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
@@ -348,8 +339,7 @@ class TestJailbreakAttackGeneration:
     ):
         """Test that random jailbreak template selection works."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
-            scenario = Jailbreak(
-                objective_scorer=mock_objective_scorer, num_templates=mock_random_num_templates)
+            scenario = Jailbreak(objective_scorer=mock_objective_scorer, num_templates=mock_random_num_templates)
             await scenario.initialize_async(objective_target=mock_objective_target)
             assert len(scenario._jailbreaks) == mock_random_num_templates
 
@@ -363,13 +353,11 @@ class TestJailbreakAttackGeneration:
             await base_scenario.initialize_async(objective_target=mock_objective_target)
             atomic_attacks_1 = await base_scenario._get_atomic_attacks_async()
 
-            mult_scenario = Jailbreak(
-                objective_scorer=mock_objective_scorer, num_attempts=mock_random_num_attempts)
+            mult_scenario = Jailbreak(objective_scorer=mock_objective_scorer, num_attempts=mock_random_num_attempts)
             await mult_scenario.initialize_async(objective_target=mock_objective_target)
             atomic_attacks_n = await mult_scenario._get_atomic_attacks_async()
 
-            assert len(atomic_attacks_1) * \
-                mock_random_num_attempts == len(atomic_attacks_n)
+            assert len(atomic_attacks_1) * mock_random_num_attempts == len(atomic_attacks_n)
 
 
 @pytest.mark.usefixtures(*FIXTURES)
