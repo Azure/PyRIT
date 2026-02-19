@@ -587,7 +587,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 ):
                     continue
 
-                if message_piece.converted_value_data_type == "text":
+                if message_piece.converted_value_data_type in ("text", "error"):
                     entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
                 elif message_piece.converted_value_data_type == "image_path":
