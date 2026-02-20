@@ -110,7 +110,6 @@ class AtomicAttack:
         self._seed_groups = seed_groups
         self._adversarial_chat = adversarial_chat
         self._objective_scorer = objective_scorer
-        self._objective_scorer = objective_scorer
         self._memory_labels = memory_labels or {}
         self._attack_execute_params = attack_execute_params
 

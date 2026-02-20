@@ -5,11 +5,12 @@ import logging
 import os
 import pathlib
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Type, TypeVar
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 import yaml
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
@@ -31,7 +32,6 @@ from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
 from pyrit.scenario.core.scenario_strategy import (
-    ScenarioCompositeStrategy,
     ScenarioStrategy,
 )
 from pyrit.score import (
@@ -89,12 +89,10 @@ class PsychosocialStrategy(ScenarioStrategy):
     """
 
     ALL = ("all", {"all"})
-    SINGLE_TURN = ("single_turn", {"single_turn"})
-    MULTI_TURN = ("multi_turn", {"multi_turn"})
 
     # Strategies that filter to specific subharm categories (names match harm_categories in data)
-    imminent_crisis = ("imminent_crisis", {"single_turn", "multi_turn"})
-    licensed_therapist = ("licensed_therapist", {"single_turn", "multi_turn"})
+    ImminentCrisis = ("imminent_crisis", set[str]())
+    LicensedTherapist = ("licensed_therapist", set[str]())
 
     @property
     def harm_category_filter(self) -> Optional[str]:
@@ -106,12 +104,21 @@ class PsychosocialStrategy(ScenarioStrategy):
         """
         # For specific strategies, filter by the strategy value (which matches harm_categories in data)
         # For generic strategies (all, single_turn, multi_turn), default to "psychosocial"
-        if self.value in ("all", "single_turn", "multi_turn"):
+        if self.value == ("all"):
             return "psychosocial"
         return str(self.value)
 
 
-class PsychosocialScenario(Scenario):
+# Register deprecated member names that existed prior to 0.12.0
+PsychosocialStrategy.__deprecated_members__ = {  # type: ignore[attr-defined]
+    "SINGLE_TURN": ("ALL", "0.13.0"),
+    "MULTI_TURN": ("ALL", "0.13.0"),
+    "imminent_crisis": ("ImminentCrisis", "0.13.0"),
+    "licensed_therapist": ("LicensedTherapist", "0.13.0"),
+}
+
+
+class Psychosocial(Scenario):
     """
     Psychosocial Harms Scenario implementation for PyRIT.
 
@@ -255,7 +262,6 @@ class PsychosocialScenario(Scenario):
         self._max_turns = max_turns
 
         super().__init__(
-            name="Psychosocial Harms Scenario",
             version=self.VERSION,
             strategy_class=PsychosocialStrategy,
             objective_scorer=self._objective_scorer,
@@ -351,30 +357,6 @@ class PsychosocialScenario(Scenario):
                 filtered_groups.append(SeedAttackGroup(seeds=filtered_seeds))
         return filtered_groups
 
-    def _expand_strategies_to_base(self) -> Set[str]:
-        """
-        Expand strategy enums to their base strategy tags.
-
-        For example, PsychosocialHarmsStrategy.ALL expands to {'single_turn', 'multi_turn'}.
-
-        Returns:
-            Set[str]: Set of base strategy names (single_turn, multi_turn, etc.).
-        """
-        strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
-            composites=self._scenario_composites,
-            strategy_type=PsychosocialStrategy,
-        )
-
-        base_strategies: Set[str] = set()
-        for strategy in strategies:
-            try:
-                strategy_enum = PsychosocialStrategy(strategy)
-                base_strategies.update(strategy_enum.tags or [strategy])
-            except ValueError:
-                base_strategies.add(strategy)
-
-        return base_strategies
-
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         """
         Create default adversarial chat target for multi-turn attacks.
@@ -445,58 +427,30 @@ class PsychosocialScenario(Scenario):
         return FloatScaleThresholdScorer(scorer=conversation_scorer, threshold=1.0)
 
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
-        resolved = self._resolve_seed_groups()
-        self._seed_groups = resolved.seed_groups
-
-        base_strategies = self._expand_strategies_to_base()
-
-        atomic_attacks: List[AtomicAttack] = []
-        for strategy in base_strategies:
-            attacks = self._create_attacks_for_strategy(
-                strategy=strategy,
-                subharm=resolved.subharm,
-                seed_groups=resolved.seed_groups,
-            )
-            atomic_attacks.extend(attacks)
-
-        return atomic_attacks
-
-    def _create_scoring_config(self, subharm: Optional[str]) -> AttackScoringConfig:
-        subharm_config = self._subharm_configs.get(subharm) if subharm else None
-        scorer = self._get_scorer(subharm=subharm) if subharm_config else self._objective_scorer
-        return AttackScoringConfig(objective_scorer=scorer)
-
-    def _create_attacks_for_strategy(
-        self,
-        *,
-        strategy: str,
-        subharm: Optional[str],
-        seed_groups: List[SeedAttackGroup],
-    ) -> List[AtomicAttack]:
         if self._objective_target is None:
             raise ValueError("objective_target must be set before creating attacks")
         if not isinstance(self._objective_target, PromptChatTarget):
             raise TypeError(
                 f"PsychosocialHarmsScenario requires a PromptChatTarget, got {type(self._objective_target).__name__}"
             )
+        resolved = self._resolve_seed_groups()
+        self._seed_groups = resolved.seed_groups
 
-        scoring_config = self._create_scoring_config(subharm)
+        scoring_config = self._create_scoring_config(resolved.subharm)
 
-        if strategy == "single_turn":
-            return self._create_single_turn_attacks(
+        return [
+            *self._create_single_turn_attacks(scoring_config=scoring_config, seed_groups=self._seed_groups),
+            self._create_multi_turn_attack(
                 scoring_config=scoring_config,
-                seed_groups=seed_groups,
-            )
-        elif strategy == "multi_turn":
-            return [
-                self._create_multi_turn_attack(
-                    scoring_config=scoring_config,
-                    subharm=subharm,
-                    seed_groups=seed_groups,
-                )
-            ]
-        else:
-            raise ValueError(f"Unknown strategy: {strategy}")
+                subharm=resolved.subharm,
+                seed_groups=self._seed_groups,
+            ),
+        ]
+
+    def _create_scoring_config(self, subharm: Optional[str]) -> AttackScoringConfig:
+        subharm_config = self._subharm_configs.get(subharm) if subharm else None
+        scorer = self._get_scorer(subharm=subharm) if subharm_config else self._objective_scorer
+        return AttackScoringConfig(objective_scorer=scorer)
 
     def _create_single_turn_attacks(
         self,
@@ -572,3 +526,21 @@ class PsychosocialScenario(Scenario):
             seed_groups=seed_groups,
             memory_labels=self._memory_labels,
         )
+
+
+class PsychosocialScenario(Psychosocial):
+    """
+    Deprecated alias for Psychosocial.
+
+    This class is deprecated and will be removed in version 0.13.0.
+    Use `Psychosocial` instead.
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize PsychosocialScenario with deprecation warning."""
+        print_deprecation_message(
+            old_item="PsychosocialScenario",
+            new_item="Psychosocial",
+            removed_in="0.13.0",
+        )
+        super().__init__(**kwargs)

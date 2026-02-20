@@ -3,11 +3,12 @@
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from PIL import Image
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
@@ -61,12 +62,12 @@ class LeakageStrategy(ScenarioStrategy):
     SENSITIVE_DATA = ("sensitive_data", {"sensitive_data"})  # Credentials, secrets, prompts
 
     # Single-turn strategies
-    FIRST_LETTER = ("first_letter", {"single_turn", "ip"})  # Good for copyright extraction
-    IMAGE = ("image", {"single_turn", "ip", "sensitive_data"})
-    ROLE_PLAY = ("role_play", {"single_turn", "sensitive_data"})  # Good for system prompt extraction
+    FirstLetter = ("first_letter", {"single_turn", "ip"})  # Good for copyright extraction
+    Image = ("image", {"single_turn", "ip", "sensitive_data"})
+    RolePlay = ("role_play", {"single_turn", "sensitive_data"})  # Good for system prompt extraction
 
     # Multi-turn strategies
-    CRESCENDO = ("crescendo", {"multi_turn", "ip", "sensitive_data"})
+    Crescendo = ("crescendo", {"multi_turn", "ip", "sensitive_data"})
 
     @classmethod
     def get_aggregate_tags(cls) -> set[str]:
@@ -80,7 +81,16 @@ class LeakageStrategy(ScenarioStrategy):
         return {"all", "single_turn", "multi_turn", "ip", "sensitive_data"}
 
 
-class LeakageScenario(Scenario):
+# Register deprecated ALL_CAPS member names that existed prior to 0.12.0
+LeakageStrategy.__deprecated_members__ = {  # type: ignore[attr-defined]
+    "FIRST_LETTER": ("FirstLetter", "0.13.0"),
+    "IMAGE": ("Image", "0.13.0"),
+    "ROLE_PLAY": ("RolePlay", "0.13.0"),
+    "CRESCENDO": ("Crescendo", "0.13.0"),
+}
+
+
+class Leakage(Scenario):
     """
     Leakage scenario implementation for PyRIT.
 
@@ -160,7 +170,6 @@ class LeakageScenario(Scenario):
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
         super().__init__(
-            name="Leakage Scenario",
             version=self.VERSION,
             strategy_class=LeakageStrategy,
             objective_scorer=objective_scorer,
@@ -381,3 +390,21 @@ class LeakageScenario(Scenario):
         for strategy in strategies:
             atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
         return atomic_attacks
+
+
+class LeakageScenario(Leakage):
+    """
+    Deprecated alias for Leakage.
+
+    This class is deprecated and will be removed in version 0.13.0.
+    Use `Leakage` instead.
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        """Initialize LeakageScenario with deprecation warning."""
+        print_deprecation_message(
+            old_item="LeakageScenario",
+            new_item="Leakage",
+            removed_in="0.13.0",
+        )
+        super().__init__(**kwargs)

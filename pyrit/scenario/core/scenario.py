@@ -52,7 +52,7 @@ class Scenario(ABC):
     def __init__(
         self,
         *,
-        name: str,
+        name: str = "",
         version: int,
         strategy_class: Type[ScenarioStrategy],
         objective_scorer: Scorer,
@@ -103,7 +103,7 @@ class Scenario(ABC):
         self._objective_scorer = objective_scorer
         self._objective_scorer_identifier = objective_scorer.get_identifier()
 
-        self._name = name
+        self._name = name if name else type(self).__name__
         self._memory = CentralMemory.get_memory_instance()
         self._atomic_attacks: List[AtomicAttack] = []
         self._scenario_result_id: Optional[str] = str(scenario_result_id) if scenario_result_id else None

@@ -296,7 +296,6 @@ class RedTeamAgent(Scenario):
 
         # Call super().__init__() first to initialize self._memory
         super().__init__(
-            name="RedTeamAgent",
             version=self.VERSION,
             strategy_class=FoundryStrategy,
             objective_scorer=objective_scorer,

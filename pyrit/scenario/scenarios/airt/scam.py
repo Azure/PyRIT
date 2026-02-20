@@ -166,7 +166,6 @@ class Scam(Scenario):
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
         super().__init__(
-            name="Scam",
             version=self.VERSION,
             strategy_class=ScamStrategy,
             objective_scorer=objective_scorer,
@@ -260,7 +259,7 @@ class Scam(Scenario):
         Translate the strategies into actual AtomicAttacks.
 
         Args:
-            strategy (ScenarioCompositeStrategy): The strategy to create the attack from.
+            strategy (str): The strategy to create the attack from.
 
         Returns:
             AtomicAttack: Configured for the specified strategy.

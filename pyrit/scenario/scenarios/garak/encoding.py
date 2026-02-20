@@ -208,7 +208,6 @@ class Encoding(Scenario):
         self._encoding_templates = encoding_templates or AskToDecodeConverter.garak_templates
 
         super().__init__(
-            name="Encoding",
             version=self.VERSION,
             strategy_class=EncodingStrategy,
             objective_scorer=objective_scorer,
