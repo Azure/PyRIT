@@ -40,6 +40,9 @@ class TargetIdentifier(Identifier):
     target_specific_params: Optional[Dict[str, Any]] = None
     """Additional target-specific parameters."""
 
+    supports_conversation_history: bool = True
+    """Whether the target supports maintaining conversation history."""
+
     @classmethod
     def from_dict(cls: Type["TargetIdentifier"], data: dict[str, Any]) -> "TargetIdentifier":
         """

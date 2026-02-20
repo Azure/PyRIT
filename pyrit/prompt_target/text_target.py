@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 import csv
 import json
 import sys
@@ -8,6 +10,7 @@ from pathlib import Path
 from typing import IO
 
 from pyrit.models import Message, MessagePiece
+from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 
@@ -19,6 +22,16 @@ class TextTarget(PromptTarget):
     This can be useful in various situations, for example, if operators want to generate prompts
     but enter them manually.
     """
+
+    #: TextTarget supports only text input and output
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset({"text"})
+    }
+
+    #: TextTarget produces only text outputs
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset({"text"})
+    }
 
     def __init__(
         self,

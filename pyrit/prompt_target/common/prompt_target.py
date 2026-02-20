@@ -8,6 +8,7 @@ from typing import Any, List, Optional
 from pyrit.identifiers import Identifiable, TargetIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Message
+from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,16 @@ class PromptTarget(Identifiable[TargetIdentifier]):
     #: A list of PromptConverters that are supported by the prompt target.
     #: An empty list implies that the prompt target supports all converters.
     supported_converters: List[Any]
+
+    #: Set of supported input modality combinations. Each frozenset represents a valid
+    #: combination of modalities that can be sent together in a single request.
+    #: Example: {frozenset({"text"}), frozenset({"text", "image_path"})} means supports text-only OR text+image
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset({"text"})}
+
+    #: Set of supported output modality combinations. Each frozenset represents a valid
+    #: combination of modalities that can be returned together in a single response.
+    #: Example: {frozenset({"text"})} means produces text-only outputs
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset({"text"})}
 
     _identifier: Optional[TargetIdentifier] = None
 
@@ -152,3 +163,49 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             TargetIdentifier: The identifier for this prompt target.
         """
         return self._create_identifier()
+
+    def input_modality_supported(self, modalities: set[PromptDataType]) -> bool:
+        """
+        Check if a specific combination of input modalities is supported by this target.
+
+        Args:
+            modalities: The set of modalities to check together (e.g., {"text", "image_path"}).
+
+        Returns:
+            bool: True if the exact combination is supported, False otherwise.
+        """
+        modality_frozenset = frozenset(modalities)
+        supported_modalities = self.SUPPORTED_INPUT_MODALITIES  # Works with both class attr and property
+        return modality_frozenset in supported_modalities
+
+    def output_modality_supported(self, modalities: set[PromptDataType]) -> bool:
+        """
+        Check if a specific combination of output modalities is supported by this target.
+
+        Args:
+            modalities: The set of modalities to check together (e.g., {"text", "image_url"}).
+
+        Returns:
+            bool: True if the exact combination is supported, False otherwise.
+        """
+        return frozenset(modalities) in self.SUPPORTED_OUTPUT_MODALITIES
+
+    @property
+    def supported_input_modalities(self) -> set[PromptDataType]:
+        """
+        Get all individual input modalities supported by this target across all combinations.
+
+        Returns:
+            set[PromptDataType]: Set of all individual modalities that appear in any supported combination.
+        """
+        return set.union(*self.SUPPORTED_INPUT_MODALITIES) if self.SUPPORTED_INPUT_MODALITIES else set()
+
+    @property
+    def supported_output_modalities(self) -> set[PromptDataType]:
+        """
+        Get all individual output modalities supported by this target across all combinations.
+
+        Returns:
+            set[PromptDataType]: Set of all individual modalities that appear in any supported combination.
+        """
+        return set.union(*self.SUPPORTED_OUTPUT_MODALITIES) if self.SUPPORTED_OUTPUT_MODALITIES else set()

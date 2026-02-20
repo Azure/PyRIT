@@ -1,7 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
+import asyncio
 import base64
+import concurrent.futures
 import json
 import logging
 from typing import Any, Dict, MutableSequence, Optional
@@ -22,6 +26,7 @@ from pyrit.models import (
     data_serializer_factory,
 )
 from pyrit.models.json_response_config import _JsonResponseConfig
+from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
 from pyrit.prompt_target.openai.openai_chat_audio_config import OpenAIChatAudioConfig
@@ -61,6 +66,96 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         extra_body_parameters (dict): Additional parameters to send in the request body
 
     """
+
+    @property
+    def SUPPORTED_INPUT_MODALITIES(self) -> set[frozenset[PromptDataType]]:
+        """
+        Get supported input modalities based on the OpenAI model.
+        
+        Uses intelligent pattern matching with fallback verification for unknown models.
+        For explicit verification, use verify_capabilities() method.
+        """
+        model_lower = self.model_name.lower()
+        
+        # Text-only patterns (explicit)
+        if any(pattern in model_lower for pattern in [
+            "gpt-3.5", "davinci", "curie", "babbage", "ada"
+        ]):
+            return {frozenset({"text"})}
+        
+        # Multimodal indicators (vision/image support)
+        multimodal_indicators = [
+            "vision",       # gpt-4-vision-preview, etc.
+            "gpt-4o",       # gpt-4o, gpt-4o-mini, gpt-4o-2024-*, etc.  
+            "gpt-4-turbo",  # Often has vision
+            "gpt-5",        # Future models likely multimodal
+            "gpt-4.5",      # Hypothetical intermediate 
+            "multimodal",   # Explicit in name
+            "omni",         # Omni-modal models
+        ]
+        
+        if any(indicator in model_lower for indicator in multimodal_indicators):
+            return {
+                frozenset({"text"}),
+                frozenset({"text", "image_path"})
+            }
+        
+        # For unknown GPT-4+ models, assume multimodal (safer for newer models)
+        if "gpt-4" in model_lower and not any(old_pattern in model_lower for old_pattern in ["gpt-4-0314", "gpt-4-32k"]):
+            return {
+                frozenset({"text"}),
+                frozenset({"text", "image_path"})
+            }
+            
+        # Conservative default for completely unknown models
+        return {frozenset({"text"})}
+    
+    @property 
+    def SUPPORTED_OUTPUT_MODALITIES(self) -> set[frozenset[PromptDataType]]:
+        """OpenAI models currently only produce text outputs."""
+        return {frozenset({"text"})}
+
+    def verify_capabilities(self, use_as_fallback: bool = False) -> dict[str, bool]:
+        """
+        Optional verification of actual capabilities via runtime testing.
+        
+        Args:
+            use_as_fallback: If True, updates SUPPORTED_INPUT_MODALITIES cache based on results
+            
+        Returns:
+            Dict mapping modality names to actual support status
+        """
+        from pyrit.common.modality_discovery import verify_target_capabilities
+        capabilities = verify_target_capabilities(self)
+        
+        # Optional: Cache verified capabilities for unknown models
+        if use_as_fallback and not hasattr(self, '_verified_modalities'):
+            self._verified_modalities = capabilities
+            
+        return capabilities
+
+    def get_verified_input_modalities(self) -> set[frozenset[PromptDataType]]:
+        """
+        Get input modalities using runtime verification as fallback for unknown models.
+        More accurate but slower than static SUPPORTED_INPUT_MODALITIES.
+        """
+        # Use cached verification if available
+        if hasattr(self, '_verified_modalities'):
+            capabilities = self._verified_modalities
+        else:
+            capabilities = self.verify_capabilities(use_as_fallback=True)
+        
+        # Convert capabilities to modality sets
+        modalities = {frozenset({"text"})}  # Always support text
+        
+        if capabilities.get("image", False):
+            modalities.add(frozenset({"text", "image_path"}))
+        if capabilities.get("audio", False):
+            modalities.add(frozenset({"text", "audio_path"}))
+        if capabilities.get("video", False):
+            modalities.add(frozenset({"text", "video_path"}))
+            
+        return modalities
 
     def __init__(
         self,
