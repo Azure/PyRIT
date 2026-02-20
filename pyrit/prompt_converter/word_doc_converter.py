@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
-from dataclasses import dataclass
 import ast
 import hashlib
+
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from docx import Document  # type: ignore[import-untyped]
+from docx import Document
 
 from pyrit.common.logger import logger
 from pyrit.identifiers import ConverterIdentifier
@@ -28,7 +28,8 @@ class _WordDocInjectionConfig:
 
 
 class WordDocConverter(PromptConverter):
-    """Convert a text prompt into a Word (.docx) document.
+    """
+    Convert a text prompt into a Word (.docx) document.
 
     This converter supports two main modes:
 
@@ -66,7 +67,8 @@ class WordDocConverter(PromptConverter):
         existing_docx: Optional[Path] = None,
         placeholder: str = "{{INJECTION_PLACEHOLDER}}",
     ) -> None:
-        """Initialize the Word document converter.
+        """
+        Initialize the Word document converter.
 
         Args:
             prompt_template: Optional ``SeedPrompt`` template used to render the
@@ -101,7 +103,12 @@ class WordDocConverter(PromptConverter):
         )
 
     def _build_identifier(self) -> ConverterIdentifier:
-        """Build identifier with template and document parameters."""
+        """
+        Build identifier with template and document parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier with converter-specific parameters.
+        """
         template_hash: Optional[str] = None
         if self._prompt_template:
             template_hash = hashlib.sha256(str(self._prompt_template.value).encode("utf-8")).hexdigest()[:16]
@@ -119,7 +126,8 @@ class WordDocConverter(PromptConverter):
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
-        """Convert the given prompt into a Word document (.docx).
+        """
+        Convert the given prompt into a Word document (.docx).
 
         If ``prompt_template`` is provided, the prompt is first used to render the
         template via ``SeedPrompt.render_template_value``. Otherwise, the raw
@@ -156,20 +164,23 @@ class WordDocConverter(PromptConverter):
         return ConverterResult(output_text=serializer.value, output_type="binary_path")
 
     def _prepare_content(self, prompt: str) -> str:
-        """Prepare the content to be injected or written to the document.
+        """
+        Prepare the content to be injected or written to the document.
 
         If a ``SeedPrompt`` template is provided, the ``prompt`` is parsed (if
         necessary) as a dictionary and used to render the template. Otherwise,
         the raw prompt string is used.
+
+        Returns:
+            str: The rendered or raw content string.
+
+        Raises:
+            ValueError: If the prompt cannot be parsed or rendered with the template.
         """
         if self._prompt_template:
             logger.debug(f"Preparing Word content with template: {self._prompt_template.value}")
             try:
-                dynamic_data: Dict[str, Any]
-                if isinstance(prompt, str):
-                    dynamic_data = ast.literal_eval(prompt)
-                else:
-                    dynamic_data = prompt  # type: ignore[assignment]
+                dynamic_data: Dict[str, Any] = ast.literal_eval(prompt)
 
                 if not isinstance(dynamic_data, dict):
                     raise ValueError("Prompt must be a dictionary-compatible object after parsing.")
@@ -181,14 +192,16 @@ class WordDocConverter(PromptConverter):
                 logger.error("Error rendering Word template content: %s", exc)
                 raise ValueError(f"Failed to render the prompt for Word document: {exc}") from exc
 
-        if isinstance(prompt, str):
-            logger.debug("No template provided for Word document. Using raw prompt content.")
-            return prompt
-
-        raise ValueError("Prompt must be a string when no template is provided.")
+        logger.debug("No template provided for Word document. Using raw prompt content.")
+        return prompt
 
     def _generate_new_docx(self, content: str) -> bytes:
-        """Generate a new `.docx` document containing the given content."""
+        """
+        Generate a new `.docx` document containing the given content.
+
+        Returns:
+            bytes: The serialized `.docx` document bytes.
+        """
         document = Document()
         document.add_paragraph(content)
 
@@ -198,17 +211,24 @@ class WordDocConverter(PromptConverter):
         return buffer.getvalue()
 
     def _inject_into_existing_docx(self, content: str) -> bytes:
-        """Inject content into an existing document by replacing the placeholder.
+        """
+        Inject content into an existing document by replacing the placeholder.
 
         The placeholder must appear fully inside a single run; if it only exists
         across multiple runs, it will not be replaced.
+
+        Returns:
+            bytes: The serialized `.docx` document bytes.
+
+        Raises:
+            ValueError: If no existing_docx path was provided.
         """
         if self._injection_config.existing_docx is None:
             raise ValueError(
                 "Cannot inject into an existing Word document because no 'existing_docx' "
                 "path was provided in the injection configuration."
             )
-        document = Document(self._injection_config.existing_docx)
+        document = Document(str(self._injection_config.existing_docx))
 
         placeholder = self._injection_config.placeholder
         replaced_any = False
@@ -234,7 +254,8 @@ class WordDocConverter(PromptConverter):
 
     @staticmethod
     def _replace_placeholder_in_paragraph(paragraph: Any, placeholder: str, content: str) -> bool:
-        """Replace a placeholder inside a single run of a paragraph.
+        """
+        Replace a placeholder inside a single run of a paragraph.
 
         This function searches all runs of a paragraph and performs a string
         replacement in the first run whose text contains the placeholder. It
@@ -250,7 +271,12 @@ class WordDocConverter(PromptConverter):
         return False
 
     async def _serialize_docx_async(self, docx_bytes: bytes) -> DataTypeSerializer:
-        """Serialize the generated document using a data serializer."""
+        """
+        Serialize the generated document using a data serializer.
+
+        Returns:
+            DataTypeSerializer: The serializer containing the saved document path.
+        """
         extension = "docx"
 
         serializer = data_serializer_factory(
@@ -260,4 +286,3 @@ class WordDocConverter(PromptConverter):
         )
         await serializer.save_data(docx_bytes)
         return serializer
-
