@@ -68,7 +68,17 @@ def token_gradients(
 
     loss.backward()
 
-    return one_hot.grad.clone()
+    # Clone and detach the gradient to break the computation graph
+    grad = one_hot.grad.clone().detach()
+
+    # Explicitly clear references to free memory
+    del one_hot, input_embeds, embeds, full_embeds, logits, targets, loss
+
+    # Clear CUDA cache to release GPU memory
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    return grad
 
 
 class GCGAttackPrompt(AttackPrompt):
@@ -144,9 +154,11 @@ class GCGMultiPromptAttack(MultiPromptAttack):
                             j - 1, control_cand, filter_cand=filter_cand, curr_control=self.control_str
                         )
                     )
+                del grad  # Explicitly delete old grad before reassignment
                 grad = new_grad
             else:
                 grad += new_grad
+            del new_grad  # Clean up new_grad after use
 
         with torch.no_grad():
             control_cand = self.prompts[j].sample_control(grad, batch_size, topk, temp, allow_non_ascii)
@@ -155,6 +167,8 @@ class GCGMultiPromptAttack(MultiPromptAttack):
             )
         del grad, control_cand
         gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         # Search
         loss = torch.zeros(len(control_cands) * batch_size).to(main_device)
@@ -191,6 +205,10 @@ class GCGMultiPromptAttack(MultiPromptAttack):
                         progress.set_description(  # type: ignore[union-attr]
                             f"loss={loss[j * batch_size : (j + 1) * batch_size].min().item() / (i + 1):.4f}"  # type: ignore[operator]
                         )
+
+                # Periodically clear CUDA cache during search to prevent memory buildup
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
             min_idx = loss.argmin()
             model_idx = min_idx // batch_size
