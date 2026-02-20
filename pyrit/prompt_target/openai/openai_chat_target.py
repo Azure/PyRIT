@@ -18,6 +18,7 @@ from pyrit.models import (
     DataTypeSerializer,
     Message,
     MessagePiece,
+    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -61,6 +62,25 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         extra_body_parameters (dict): Additional parameters to send in the request body
 
     """
+
+    @property
+    def SUPPORTED_INPUT_MODALITIES(self) -> set[frozenset[PromptDataType]]:
+        """
+        Determine supported input modalities based on the model name.
+        Uses future-proof pattern matching for new models.
+        """
+        model_name = self.model_name.lower() if self.model_name else ""
+        
+        # Vision-capable models support text + image
+        vision_indicators = ["vision", "gpt-4o", "gpt-5", "gpt-4.5", "multimodal", "omni"]
+        if any(indicator in model_name for indicator in vision_indicators):
+            return {
+                frozenset(["text"]),
+                frozenset(["text", "image_path"])
+            }
+        
+        # Default to text-only for other models
+        return {frozenset(["text"])}
 
     def __init__(
         self,
