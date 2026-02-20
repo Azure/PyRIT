@@ -116,6 +116,8 @@ class SeedSimulatedConversation(Seed):
         # Compute value and pass to parent
         # Remove 'value' from kwargs if present since we compute it
         kwargs.pop("value", None)
+        # Default is_general_strategy to True for simulated conversations
+        kwargs.setdefault("is_general_strategy", True)
         super().__init__(value=self._compute_value(), **kwargs)
 
     def _compute_value(self) -> str:
