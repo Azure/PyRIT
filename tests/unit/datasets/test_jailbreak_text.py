@@ -197,7 +197,7 @@ def test_all_jailbreak_yaml_templates_have_is_general_strategy(jailbreak_dir):
     missing = []
     for yaml_file in yaml_files:
         seed = SeedPrompt.from_yaml_file(yaml_file)
-        if not seed.is_general_strategy:
+        if seed.is_general_strategy is not True:
             missing.append(str(yaml_file.relative_to(jailbreak_dir)))
 
     if missing:
