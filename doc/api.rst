@@ -483,6 +483,7 @@ API Reference
     UrlConverter
     VariationConverter
     VariationSelectorSmugglerConverter
+    WordDocConverter
     WordIndexSelectionStrategy
     WordKeywordSelectionStrategy
     WordPositionSelectionStrategy
