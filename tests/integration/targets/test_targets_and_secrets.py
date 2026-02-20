@@ -2,10 +2,12 @@
 # Licensed under the MIT license.
 
 import os
+import tempfile
 import uuid
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from pyrit.common.path import HOME_PATH
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
@@ -460,7 +462,7 @@ async def test_connect_tts(sqlite_instance, endpoint, api_key, model_name):
 @pytest.mark.parametrize(
     ("endpoint", "api_key", "model_name"),
     [
-        ("OPENAI_VIDEO2_ENDPOINT", "OPENAI_VIDEO2_KEY", "OPENAI_VIDEO2_MODEL"),
+        ("AZURE_OPENAI_VIDEO_ENDPOINT", "AZURE_OPENAI_VIDEO_KEY", "AZURE_OPENAI_VIDEO_MODEL"),
         # OpenAI Platform endpoint returns HTTP 401 "Missing scopes: api.videos.write" for all requests
         # ("PLATFORM_OPENAI_VIDEO_ENDPOINT", "PLATFORM_OPENAI_VIDEO_KEY", "PLATFORM_OPENAI_VIDEO_MODEL"),
     ],
@@ -491,9 +493,9 @@ async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
     This verifies that each video generation creates a unique file based on
     the video ID mechanism.
     """
-    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
-    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
-    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
+    endpoint_value = _get_required_env_var("AZURE_OPENAI_VIDEO_ENDPOINT")
+    api_key_value = _get_required_env_var("AZURE_OPENAI_VIDEO_KEY")
+    model_name_value = _get_required_env_var("AZURE_OPENAI_VIDEO_MODEL")
 
     target = OpenAIVideoTarget(
         endpoint=endpoint_value,
@@ -549,6 +551,102 @@ async def test_video_multiple_prompts_create_separate_files(sqlite_instance):
     assert video_path1.exists(), (
         f"First video file was overridden or deleted. File 1: {video_path1}, File 2: {video_path2}"
     )
+
+
+@pytest.mark.asyncio
+async def test_video_remix_chain(sqlite_instance):
+    """Test text-to-video followed by remix using the returned video_id."""
+    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
+    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
+
+    target = OpenAIVideoTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+        resolution_dimensions="1280x720",
+        n_seconds=4,
+    )
+
+    # Step 1: Generate initial video
+    text_piece = MessagePiece(
+        role="user",
+        original_value="A cat sitting on a windowsill",
+        converted_value="A cat sitting on a windowsill",
+    )
+    result = await target.send_prompt_async(message=Message([text_piece]))
+    assert len(result) == 1
+    response_piece = result[0].message_pieces[0]
+    assert response_piece.response_error == "none"
+    assert response_piece.prompt_metadata is not None
+    video_id = response_piece.prompt_metadata.get("video_id")
+    assert video_id, "Response must include video_id in prompt_metadata for chaining"
+
+    # Step 2: Remix using the returned video_id
+    remix_piece = MessagePiece(
+        role="user",
+        original_value="Make it a watercolor painting style",
+        converted_value="Make it a watercolor painting style",
+        prompt_metadata={"video_id": video_id},
+    )
+    remix_result = await target.send_prompt_async(message=Message([remix_piece]))
+    assert len(remix_result) == 1
+    remix_response = remix_result[0].message_pieces[0]
+    assert remix_response.response_error == "none"
+
+    remix_path = Path(remix_response.converted_value)
+    assert remix_path.exists(), f"Remixed video file not found: {remix_path}"
+    assert remix_path.is_file()
+
+
+@pytest.mark.asyncio
+async def test_video_image_to_video(sqlite_instance):
+    """Test image-to-video mode using an image as the first frame."""
+    endpoint_value = _get_required_env_var("OPENAI_VIDEO2_ENDPOINT")
+    api_key_value = _get_required_env_var("OPENAI_VIDEO2_KEY")
+    model_name_value = _get_required_env_var("OPENAI_VIDEO2_MODEL")
+
+    target = OpenAIVideoTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+        resolution_dimensions="1280x720",
+        n_seconds=4,
+    )
+
+    # Prepare an image matching the video resolution (API requires exact match).
+    # Resize a sample image to 1280x720 and save as a temporary JPEG.
+    sample_image = HOME_PATH / "assets" / "pyrit_architecture.png"
+    resized = Image.open(sample_image).resize((1280, 720)).convert("RGB")
+
+    tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+    resized.save(tmp, format="JPEG")
+    tmp.close()
+    image_path = tmp.name
+
+    # Use the image for image-to-video
+    conversation_id = str(uuid.uuid4())
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Animate this image with gentle motion",
+        converted_value="Animate this image with gentle motion",
+        conversation_id=conversation_id,
+    )
+    image_piece = MessagePiece(
+        role="user",
+        original_value=image_path,
+        converted_value=image_path,
+        converted_value_data_type="image_path",
+        conversation_id=conversation_id,
+    )
+    result = await target.send_prompt_async(message=Message([text_piece, image_piece]))
+    assert len(result) == 1
+    response_piece = result[0].message_pieces[0]
+    assert response_piece.response_error == "none", f"Image-to-video failed: {response_piece.converted_value}"
+
+    video_path = Path(response_piece.converted_value)
+    assert video_path.exists(), f"Video file not found: {video_path}"
+    assert video_path.is_file()
 
 
 ##################################################

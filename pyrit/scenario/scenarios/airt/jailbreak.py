@@ -3,7 +3,7 @@
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pyrit.common import apply_defaults
 from pyrit.datasets import TextJailBreak
@@ -11,7 +11,10 @@ from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
+from pyrit.executor.attack.single_turn.many_shot_jailbreak import ManyShotJailbreakAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.executor.attack.single_turn.role_play import RolePlayAttack, RolePlayPaths
+from pyrit.executor.attack.single_turn.skeleton_key import SkeletonKeyAttack
 from pyrit.models import SeedAttackGroup
 from pyrit.prompt_converter import TextJailbreakConverter
 from pyrit.prompt_normalizer import PromptConverterConfiguration
@@ -19,9 +22,7 @@ from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
 from pyrit.scenario.core.dataset_configuration import DatasetConfiguration
 from pyrit.scenario.core.scenario import Scenario
-from pyrit.scenario.core.scenario_strategy import (
-    ScenarioStrategy,
-)
+from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy, ScenarioStrategy
 from pyrit.score import (
     SelfAskRefusalScorer,
     TrueFalseInverterScorer,
@@ -31,13 +32,41 @@ from pyrit.score import (
 
 class JailbreakStrategy(ScenarioStrategy):
     """
-    Strategy for single-turn jailbreak attacks.
+    Strategy for jailbreak attacks.
 
-    There is currently only one, running all jailbreaks.
+    The SIMPLE strategy just sends the jailbroken prompt and records the response. It is meant to
+    expose an obvious way of using this scenario without worrying about additional tweaks and changes
+    to the prompt.
+
+    COMPLEX strategies use additional techniques to enhance the jailbreak like modifying the
+    system prompt or probing the target model for an additional vulnerability (e.g. the SkeletonKeyAttack).
+    They are meant to provide a sense of how well a jailbreak generalizes to slight changes in the delivery
+    method.
     """
 
+    # Aggregate members (special markers that expand to strategies with matching tags)
     ALL = ("all", {"all"})
-    PYRIT = ("pyrit", {"pyrit"})
+    SIMPLE = ("simple", {"simple"})
+    COMPLEX = ("complex", {"complex"})
+
+    # Simple strategies
+    PromptSending = ("prompt_sending", {"simple"})
+
+    # Complex strategies
+    ManyShot = ("many_shot", {"complex"})
+    SkeletonKey = ("skeleton", {"complex"})
+    RolePlay = ("role_play", {"complex"})
+
+    @classmethod
+    def get_aggregate_tags(cls) -> set[str]:
+        """
+        Get the set of tags that represent aggregate categories.
+
+        Returns:
+            set[str]: Set of tags that are aggregate markers.
+        """
+        # Include base class aggregates ("all") and add scenario-specific ones
+        return super().get_aggregate_tags() | {"simple", "complex"}
 
 
 class Jailbreak(Scenario):
@@ -67,9 +96,9 @@ class Jailbreak(Scenario):
         Get the default strategy used when no strategies are specified.
 
         Returns:
-            ScenarioStrategy: JailbreakStrategy.ALL.
+            ScenarioStrategy: JailbreakStrategy.PromptSending.
         """
-        return JailbreakStrategy.ALL
+        return JailbreakStrategy.SIMPLE
 
     @classmethod
     def required_datasets(cls) -> list[str]:
@@ -93,7 +122,9 @@ class Jailbreak(Scenario):
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = False,
         scenario_result_id: Optional[str] = None,
-        n_jailbreaks: Optional[int] = 3,
+        num_templates: Optional[int] = None,
+        num_attempts: int = 1,
+        jailbreak_names: List[str] = [],
     ) -> None:
         """
         Initialize the jailbreak scenario.
@@ -104,13 +135,45 @@ class Jailbreak(Scenario):
             include_baseline (bool): Whether to include a baseline atomic attack that sends all
                 objectives without modifications. Defaults to True.
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
-            n_jailbreaks (Optional[int]): Choose n random jailbreaks rather than using all of them.
+            num_templates (Optional[int]): Choose num_templates random jailbreaks rather than using all of them.
+            num_attempts (Optional[int]): Number of times to try each jailbreak.
+            jailbreak_names (Optional[List[str]]): List of jailbreak names from the template list under datasets.
+                to use.
+
+        Raises:
+            ValueError: If both jailbreak_names and num_templates are provided, as random selection
+                is incompatible with a predetermined list.
+            ValueError: If the jailbreak_names list contains a jailbreak that isn't in the listed
+                templates.
+
         """
+        if jailbreak_names and num_templates:
+            raise ValueError(
+                "Please provide only one of `num_templates` (random selection) or `jailbreak_names` (specific selection)."
+            )
+
         if not objective_scorer:
             objective_scorer = self._get_default_objective_scorer()
         self._scorer_config = AttackScoringConfig(objective_scorer=objective_scorer)
 
-        self._n = n_jailbreaks
+        self._num_templates = num_templates
+        self._num_attempts = num_attempts
+
+        # Note that num_templates and jailbreak_names are mutually exclusive.
+        # If self._num_templates is None, then this returns all discoverable jailbreak templates.
+        # If self._num_templates has some value, then all_templates is a subset of all available
+        # templates, but jailbreak_names is guaranteed to be [], so diff = {}.
+        all_templates = TextJailBreak.get_jailbreak_templates(num_templates=self._num_templates)
+
+        # Example: if jailbreak_names is {'a', 'b', 'c'}, and all_templates is {'b', 'c', 'd'},
+        # then diff = {'a'}, which raises the error as 'a' was not discovered in all_templates.
+        diff = set(jailbreak_names) - set(all_templates)
+        if len(diff) > 0:
+            raise ValueError(f"Error: could not find templates `{diff}`!")
+
+        # If jailbreak_names has some value, then `if jailbreak_names` passes, and self._jailbreaks
+        # is set to jailbreak_names. Otherwise we use all_templates.
+        self._jailbreaks = jailbreak_names if jailbreak_names else all_templates
 
         super().__init__(
             name="Jailbreak",
@@ -146,6 +209,20 @@ class Jailbreak(Scenario):
         )
         return refusal_scorer
 
+    def _get_default_adversarial_target(self) -> OpenAIChatTarget:
+        """
+        Create and retrieve the default adversarial target.
+
+        Returns:
+            OpenAIChatTarget: Default adversarial target using an unfiltered endpoint.
+        """
+        return OpenAIChatTarget(
+            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
+            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
+            temperature=1.2,
+        )
+
     def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
         """
         Resolve seed groups from dataset configuration.
@@ -161,23 +238,14 @@ class Jailbreak(Scenario):
 
         return list(seed_groups)
 
-    def _get_all_jailbreak_templates(self) -> List[str]:
-        """
-        Retrieve all available jailbreak templates.
-
-        Returns:
-            List[str]: List of jailbreak template file names.
-        """
-        if not self._n:
-            return TextJailBreak.get_all_jailbreak_templates()
-        else:
-            return TextJailBreak.get_all_jailbreak_templates(n=self._n)
-
-    async def _get_atomic_attack_from_jailbreak_async(self, *, jailbreak_template_name: str) -> AtomicAttack:
+    async def _get_atomic_attack_from_strategy_async(
+        self, *, strategy: str, jailbreak_template_name: str
+    ) -> AtomicAttack:
         """
         Create an atomic attack for a specific jailbreak template.
 
         Args:
+            strategy (str): JailbreakStrategy to use.
             jailbreak_template_name (str): Name of the jailbreak template file.
 
         Returns:
@@ -202,12 +270,28 @@ class Jailbreak(Scenario):
             request_converters=PromptConverterConfiguration.from_converters(converters=[jailbreak_converter])
         )
 
-        # Create the attack
-        attack = PromptSendingAttack(
-            objective_target=self._objective_target,
-            attack_scoring_config=self._scorer_config,
-            attack_converter_config=converter_config,
-        )
+        attack: Optional[Union[ManyShotJailbreakAttack, PromptSendingAttack, RolePlayAttack, SkeletonKeyAttack]] = None
+        args = {
+            "objective_target": self._objective_target,
+            "attack_scoring_config": self._scorer_config,
+            "attack_converter_config": converter_config,
+        }
+        match strategy:
+            case "many_shot":
+                attack = ManyShotJailbreakAttack(**args)
+            case "prompt_sending":
+                attack = PromptSendingAttack(**args)
+            case "skeleton":
+                attack = SkeletonKeyAttack(**args)
+            case "role_play":
+                args["adversarial_chat"] = self._get_default_adversarial_target()
+                args["role_play_definition_path"] = RolePlayPaths.PERSUASION_SCRIPT.value
+                attack = RolePlayAttack(**args)
+            case _:
+                raise ValueError(f"Unknown JailbreakStrategy `{strategy}`.")
+
+        if not attack:
+            raise ValueError(f"Attack cannot be None!")
 
         # Extract template name without extension for the atomic attack name
         template_name = Path(jailbreak_template_name).stem
@@ -230,11 +314,16 @@ class Jailbreak(Scenario):
         # Retrieve seed prompts based on selected strategies
         self._seed_groups = self._resolve_seed_groups()
 
-        # Get all jailbreak template names
-        jailbreak_template_names = self._get_all_jailbreak_templates()
+        strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
+            composites=self._scenario_composites, strategy_type=JailbreakStrategy
+        )
 
-        for template_name in jailbreak_template_names:
-            atomic_attack = await self._get_atomic_attack_from_jailbreak_async(jailbreak_template_name=template_name)
-            atomic_attacks.append(atomic_attack)
+        for strategy in strategies:
+            for template_name in self._jailbreaks:
+                for _ in range(0, self._num_attempts):
+                    atomic_attack = await self._get_atomic_attack_from_strategy_async(
+                        strategy=strategy, jailbreak_template_name=template_name
+                    )
+                    atomic_attacks.append(atomic_attack)
 
         return atomic_attacks
