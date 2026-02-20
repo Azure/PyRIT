@@ -262,17 +262,51 @@ async def test_openai_realtime_target_entra_auth(sqlite_instance, endpoint, mode
 @pytest.mark.asyncio
 async def test_video_target_entra_auth(sqlite_instance):
     # Takes a long time and sometimes encounters retry errors.
-    # Note: OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
-    endpoint = os.environ["OPENAI_VIDEO2_ENDPOINT"]
+    # Note: AZURE_OPENAI_VIDEO_ENDPOINT should be configured for Sora v2 API
+    endpoint = os.environ["AZURE_OPENAI_VIDEO_ENDPOINT"]
     target = OpenAIVideoTarget(
         endpoint=endpoint,
-        model_name=os.environ["OPENAI_VIDEO2_MODEL"],
+        model_name=os.environ["AZURE_OPENAI_VIDEO_MODEL"],
         api_key=get_azure_openai_auth(endpoint),
     )
     attack = PromptSendingAttack(objective_target=target)
     result = await attack.execute_async(objective="test")
     assert result is not None
     assert result.last_response is not None
+
+
+@pytest.mark.asyncio
+async def test_video_target_remix_entra_auth(sqlite_instance):
+    """Test video remix mode with Entra authentication."""
+    endpoint = os.environ["OPENAI_VIDEO2_ENDPOINT"]
+    target = OpenAIVideoTarget(
+        endpoint=endpoint,
+        model_name=os.environ["OPENAI_VIDEO2_MODEL"],
+        api_key=get_azure_openai_auth(endpoint),
+        n_seconds=4,
+    )
+
+    # Generate initial video
+    text_piece = MessagePiece(
+        role="user",
+        original_value="A bird flying over a lake",
+        converted_value="A bird flying over a lake",
+    )
+    result = await target.send_prompt_async(message=Message([text_piece]))
+    response_piece = result[0].message_pieces[0]
+    assert response_piece.response_error == "none"
+    video_id = response_piece.prompt_metadata.get("video_id")
+    assert video_id
+
+    # Remix
+    remix_piece = MessagePiece(
+        role="user",
+        original_value="Add a sunset",
+        converted_value="Add a sunset",
+        prompt_metadata={"video_id": video_id},
+    )
+    remix_result = await target.send_prompt_async(message=Message([remix_piece]))
+    assert remix_result[0].message_pieces[0].response_error == "none"
 
 
 @pytest.mark.asyncio
