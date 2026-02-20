@@ -176,7 +176,6 @@ class Jailbreak(Scenario):
         self._jailbreaks = jailbreak_names if jailbreak_names else all_templates
 
         super().__init__(
-            name="Jailbreak",
             version=self.VERSION,
             strategy_class=JailbreakStrategy,
             objective_scorer=objective_scorer,

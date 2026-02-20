@@ -262,7 +262,6 @@ class Psychosocial(Scenario):
         self._max_turns = max_turns
 
         super().__init__(
-            name="Psychosocial",
             version=self.VERSION,
             strategy_class=PsychosocialStrategy,
             objective_scorer=self._objective_scorer,

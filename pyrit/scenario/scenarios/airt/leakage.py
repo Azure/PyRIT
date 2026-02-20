@@ -170,7 +170,6 @@ class Leakage(Scenario):
         self._adversarial_config = AttackAdversarialConfig(target=self._adversarial_chat)
 
         super().__init__(
-            name="Leakage",
             version=self.VERSION,
             strategy_class=LeakageStrategy,
             objective_scorer=objective_scorer,

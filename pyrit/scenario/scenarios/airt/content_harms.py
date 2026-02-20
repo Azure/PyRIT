@@ -188,7 +188,6 @@ class ContentHarms(Scenario):
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
 
         super().__init__(
-            name="ContentHarms",
             version=self.VERSION,
             objective_scorer=self._objective_scorer,
             strategy_class=ContentHarmsStrategy,
