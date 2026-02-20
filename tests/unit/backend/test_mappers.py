@@ -9,6 +9,7 @@ without any database or service dependencies.
 """
 
 import dataclasses
+import uuid
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
@@ -128,8 +129,8 @@ class TestAttackResultToSummary:
         assert summary.message_count == 2
         # Attack metadata should be extracted into explicit fields
         assert summary.attack_type == "My Attack"
-        assert summary.target_type == "TextTarget"
-        assert summary.target_unique_name is not None
+        assert summary.target is not None
+        assert summary.target.target_type == "TextTarget"
 
     def test_empty_pieces_gives_zero_messages(self) -> None:
         """Test mapping with no message pieces."""
@@ -176,8 +177,7 @@ class TestAttackResultToSummary:
 
         summary = attack_result_to_summary(ar, pieces=[])
 
-        assert summary.target_unique_name is None
-        assert summary.target_type is None
+        assert summary.target is None
 
     def test_attack_specific_params_passed_through(self) -> None:
         """Test that attack_specific_params are extracted from identifier."""
@@ -478,8 +478,6 @@ class TestRequestPieceToPyritMessagePiece:
             sequence=0,
         )
 
-        import uuid
-
         assert result.original_prompt_id == uuid.UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
         # New piece should have its own id, different from original_prompt_id
         assert result.id != result.original_prompt_id
@@ -597,7 +595,7 @@ class TestTargetObjectToInstance:
 
         result = target_object_to_instance("t-1", target_obj)
 
-        assert result.target_unique_name == "t-1"
+        assert result.target_registry_name == "t-1"
         assert result.target_type == "OpenAIChatTarget"
         assert result.endpoint == "http://test"
         assert result.model_name == "gpt-4"
@@ -728,8 +726,6 @@ class TestDomainModelFieldsExist:
         ],
     )
     def test_attack_identifier_has_field(self, field_name: str) -> None:
-        from pyrit.identifiers.attack_identifier import AttackIdentifier
-
         field_names = {f.name for f in dataclasses.fields(AttackIdentifier)}
         assert field_name in field_names, (
             f"AttackIdentifier is missing '{field_name}' – attack_mappers.py depends on this field"
@@ -751,8 +747,6 @@ class TestDomainModelFieldsExist:
         ],
     )
     def test_target_identifier_has_field(self, field_name: str) -> None:
-        from pyrit.identifiers.target_identifier import TargetIdentifier
-
         field_names = {f.name for f in dataclasses.fields(TargetIdentifier)}
         assert field_name in field_names, (
             f"TargetIdentifier is missing '{field_name}' – target_mappers.py depends on this field"
@@ -770,8 +764,6 @@ class TestDomainModelFieldsExist:
         ],
     )
     def test_converter_identifier_has_field(self, field_name: str) -> None:
-        from pyrit.identifiers.converter_identifier import ConverterIdentifier
-
         field_names = {f.name for f in dataclasses.fields(ConverterIdentifier)}
         assert field_name in field_names, (
             f"ConverterIdentifier is missing '{field_name}' – converter_mappers.py depends on this field"

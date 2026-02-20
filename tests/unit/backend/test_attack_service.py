@@ -7,6 +7,7 @@ Tests for attack service.
 The attack service uses PyRIT memory with AttackResult as the source of truth.
 """
 
+import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -23,7 +24,7 @@ from pyrit.backend.services.attack_service import (
     AttackService,
     get_attack_service,
 )
-from pyrit.identifiers import AttackIdentifier, TargetIdentifier
+from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, TargetIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 
 
@@ -212,8 +213,6 @@ class TestListAttacks:
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_converter_classes_and_logic(self, attack_service, mock_memory) -> None:
         """Test that list_attacks passes converter_classes to memory layer."""
-        from pyrit.identifiers import ConverterIdentifier
-
         ar1 = make_attack_result(conversation_id="attack-1", name="Attack One")
         ar1.attack_identifier = AttackIdentifier(
             class_name="Attack One",
@@ -453,7 +452,9 @@ class TestCreateAttack:
             mock_get_target_service.return_value = mock_target_service
 
             with pytest.raises(ValueError, match="not found"):
-                await attack_service.create_attack_async(request=CreateAttackRequest(target_unique_name="nonexistent"))
+                await attack_service.create_attack_async(
+                    request=CreateAttackRequest(target_registry_name="nonexistent")
+                )
 
     @pytest.mark.asyncio
     async def test_create_attack_stores_attack_result(self, attack_service, mock_memory) -> None:
@@ -469,7 +470,7 @@ class TestCreateAttack:
             mock_get_target_service.return_value = mock_target_service
 
             result = await attack_service.create_attack_async(
-                request=CreateAttackRequest(target_unique_name="target-1", name="My Attack")
+                request=CreateAttackRequest(target_registry_name="target-1", name="My Attack")
             )
 
             assert result.conversation_id is not None
@@ -497,7 +498,7 @@ class TestCreateAttack:
             ]
 
             result = await attack_service.create_attack_async(
-                request=CreateAttackRequest(target_unique_name="target-1", prepended_conversation=prepended)
+                request=CreateAttackRequest(target_registry_name="target-1", prepended_conversation=prepended)
             )
 
             assert result.conversation_id is not None
@@ -520,7 +521,7 @@ class TestCreateAttack:
 
             await attack_service.create_attack_async(
                 request=CreateAttackRequest(
-                    target_unique_name="target-1",
+                    target_registry_name="target-1",
                     name="Labeled Attack",
                     labels={"env": "prod", "team": "red"},
                 )
@@ -552,7 +553,7 @@ class TestCreateAttack:
 
             await attack_service.create_attack_async(
                 request=CreateAttackRequest(
-                    target_unique_name="target-1",
+                    target_registry_name="target-1",
                     labels={"env": "prod"},
                     prepended_conversation=prepended,
                 )
@@ -605,7 +606,7 @@ class TestCreateAttack:
             ]
 
             await attack_service.create_attack_async(
-                request=CreateAttackRequest(target_unique_name="target-1", prepended_conversation=prepended)
+                request=CreateAttackRequest(target_registry_name="target-1", prepended_conversation=prepended)
             )
 
             # Each message stored separately with incrementing sequence
@@ -618,8 +619,6 @@ class TestCreateAttack:
             assert roles == ["system", "user", "assistant"]
 
             # original_prompt_id preserved for lineage tracking
-            import uuid
-
             stored_pieces = [call[1]["message_pieces"][0] for call in calls]
             assert stored_pieces[0].original_prompt_id == uuid.UUID(original_id_1)
             assert stored_pieces[1].original_prompt_id == uuid.UUID(original_id_2)
@@ -651,7 +650,7 @@ class TestCreateAttack:
 
             await attack_service.create_attack_async(
                 request=CreateAttackRequest(
-                    target_unique_name="target-1",
+                    target_registry_name="target-1",
                     labels={"source": "api-test"},
                     prepended_conversation=prepended,
                 )
@@ -673,7 +672,7 @@ class TestCreateAttack:
             mock_target_service.get_target_object.return_value = mock_target_obj
             mock_get_target_service.return_value = mock_target_service
 
-            await attack_service.create_attack_async(request=CreateAttackRequest(target_unique_name="target-1"))
+            await attack_service.create_attack_async(request=CreateAttackRequest(target_registry_name="target-1"))
 
             call_args = mock_memory.add_attack_results_to_memory.call_args
             stored_ar = call_args[1]["attack_results"][0]
@@ -829,6 +828,7 @@ class TestAddMessage:
             request = AddMessageRequest(
                 pieces=[MessagePieceRequest(original_value="Hello")],
                 send=True,
+                target_registry_name="test-target",
             )
 
             await attack_service.add_message_async(conversation_id="test-id", request=request)
@@ -837,20 +837,38 @@ class TestAddMessage:
             assert call_kwargs["labels"] == {"env": "staging"}
 
     @pytest.mark.asyncio
-    async def test_add_message_raises_when_no_target_id(self, attack_service, mock_memory) -> None:
-        """Test that add_message raises ValueError when attack has no target configured."""
-        ar = make_attack_result(conversation_id="test-id", has_target=False)
+    async def test_add_message_raises_when_send_without_registry_name(self, attack_service, mock_memory) -> None:
+        """Test that add_message raises ValueError when send=True but target_registry_name missing."""
+        ar = make_attack_result(conversation_id="test-id")
         mock_memory.get_attack_results.return_value = [ar]
 
         request = AddMessageRequest(
             pieces=[MessagePieceRequest(original_value="Hello")],
+            send=True,
         )
 
-        with pytest.raises(ValueError, match="has no target configured"):
+        with pytest.raises(ValueError, match="target_registry_name is required when send=True"):
             await attack_service.add_message_async(conversation_id="test-id", request=request)
 
     @pytest.mark.asyncio
-    async def test_add_message_with_send_calls_normalizer(self, attack_service, mock_memory) -> None:
+    async def test_add_message_send_false_without_registry_name_succeeds(self, attack_service, mock_memory) -> None:
+        """Test that add_message with send=False does not require target_registry_name."""
+        ar = make_attack_result(conversation_id="test-id")
+        mock_memory.get_attack_results.return_value = [ar]
+        mock_memory.get_message_pieces.return_value = []
+        mock_memory.get_conversation.return_value = []
+
+        request = AddMessageRequest(
+            role="system",
+            pieces=[MessagePieceRequest(original_value="Hello")],
+            send=False,
+        )
+
+        result = await attack_service.add_message_async(conversation_id="test-id", request=request)
+        assert result.attack is not None
+
+    @pytest.mark.asyncio
+    async def test_add_message_with_send_sends_via_normalizer(self, attack_service, mock_memory) -> None:
         """Test that add_message with send=True sends message via normalizer."""
         ar = make_attack_result(conversation_id="test-id")
         mock_memory.get_attack_results.return_value = [ar]
@@ -872,6 +890,7 @@ class TestAddMessage:
             request = AddMessageRequest(
                 pieces=[MessagePieceRequest(original_value="Hello")],
                 send=True,
+                target_registry_name="test-target",
             )
 
             result = await attack_service.add_message_async(conversation_id="test-id", request=request)
@@ -894,6 +913,7 @@ class TestAddMessage:
             request = AddMessageRequest(
                 pieces=[MessagePieceRequest(original_value="Hello")],
                 send=True,
+                target_registry_name="test-target",
             )
 
             with pytest.raises(ValueError, match="Target object .* not found"):
@@ -931,6 +951,7 @@ class TestAddMessage:
                 pieces=[MessagePieceRequest(original_value="Hello")],
                 send=True,
                 converter_ids=["conv-1"],
+                target_registry_name="test-target",
             )
 
             await attack_service.add_message_async(conversation_id="test-id", request=request)
@@ -1001,6 +1022,7 @@ class TestAddMessage:
                 pieces=[MessagePieceRequest(original_value="Hello", converted_value="SGVsbG8=")],
                 send=True,
                 converter_ids=["conv-1"],
+                target_registry_name="test-target",
             )
 
             await attack_service.add_message_async(conversation_id="test-id", request=request)

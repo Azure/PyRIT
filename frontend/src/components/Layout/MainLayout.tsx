@@ -6,7 +6,7 @@ import {
   Tooltip,
 } from '@fluentui/react-components'
 import { versionApi } from '../../services/api'
-import Navigation from '../Sidebar/Navigation'
+import Navigation, { type ViewName } from '../Sidebar/Navigation'
 
 const useStyles = makeStyles({
   root: {
@@ -62,12 +62,16 @@ const useStyles = makeStyles({
 
 interface MainLayoutProps {
   children: React.ReactNode
+  currentView: ViewName
+  onNavigate: (view: ViewName) => void
   onToggleTheme: () => void
   isDarkMode: boolean
 }
 
 export default function MainLayout({
   children,
+  currentView,
+  onNavigate,
   onToggleTheme,
   isDarkMode,
 }: MainLayoutProps) {
@@ -96,6 +100,8 @@ export default function MainLayout({
       <div className={styles.contentArea}>
         <aside className={styles.sidebar}>
           <Navigation
+            currentView={currentView}
+            onNavigate={onNavigate}
             onToggleTheme={onToggleTheme}
             isDarkMode={isDarkMode}
           />

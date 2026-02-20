@@ -117,7 +117,7 @@ class TestAttackRoutes:
 
             response = client.post(
                 "/api/attacks",
-                json={"target_unique_name": "target-1", "name": "Test Attack"},
+                json={"target_registry_name": "target-1", "name": "Test Attack"},
             )
 
             assert response.status_code == status.HTTP_201_CREATED
@@ -133,7 +133,7 @@ class TestAttackRoutes:
 
             response = client.post(
                 "/api/attacks",
-                json={"target_unique_name": "nonexistent"},
+                json={"target_registry_name": "nonexistent"},
             )
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -538,7 +538,7 @@ class TestTargetRoutes:
             mock_service = MagicMock()
             mock_service.create_target_async = AsyncMock(
                 return_value=TargetInstance(
-                    target_unique_name="target-1",
+                    target_registry_name="target-1",
                     target_type="TextTarget",
                 )
             )
@@ -551,7 +551,7 @@ class TestTargetRoutes:
 
             assert response.status_code == status.HTTP_201_CREATED
             data = response.json()
-            assert data["target_unique_name"] == "target-1"
+            assert data["target_registry_name"] == "target-1"
 
     def test_create_target_invalid_type(self, client: TestClient) -> None:
         """Test target creation with invalid type."""
@@ -587,7 +587,7 @@ class TestTargetRoutes:
             mock_service = MagicMock()
             mock_service.get_target_async = AsyncMock(
                 return_value=TargetInstance(
-                    target_unique_name="target-1",
+                    target_registry_name="target-1",
                     target_type="TextTarget",
                 )
             )
@@ -597,7 +597,7 @@ class TestTargetRoutes:
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["target_unique_name"] == "target-1"
+            assert data["target_registry_name"] == "target-1"
 
     def test_get_target_not_found(self, client: TestClient) -> None:
         """Test getting a non-existent target."""

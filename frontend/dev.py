@@ -82,12 +82,11 @@ def stop_servers():
     print("✅ Servers stopped")
 
 
-def start_backend(initializers: list[str] | None = None):
+def start_backend():
     """Start the FastAPI backend using pyrit_backend CLI.
 
-    Args:
-        initializers: Optional list of initializer names to run at startup.
-            If not specified, no initializers are run.
+    Configuration (initializers, database, env files) is read automatically
+    from ~/.pyrit/.pyrit_conf by the pyrit_backend CLI via ConfigurationLoader.
     """
     print("🚀 Starting backend on port 8000...")
 
@@ -98,11 +97,6 @@ def start_backend(initializers: list[str] | None = None):
     env = os.environ.copy()
     env["PYRIT_DEV_MODE"] = "true"
 
-    # Default to no initializers
-    if initializers is None:
-        initializers = []
-
-    # Build command using pyrit_backend CLI
     cmd = [
         sys.executable,
         "-m",
@@ -115,11 +109,6 @@ def start_backend(initializers: list[str] | None = None):
         "info",
     ]
 
-    # Add initializers if specified
-    if initializers:
-        cmd.extend(["--initializers"] + initializers)
-
-    # Start backend
     backend = subprocess.Popen(cmd, env=env)
 
     return backend

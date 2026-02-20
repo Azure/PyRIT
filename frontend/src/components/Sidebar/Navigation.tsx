@@ -5,6 +5,7 @@ import {
 } from '@fluentui/react-components'
 import {
   ChatRegular,
+  SettingsRegular,
   WeatherMoonRegular,
   WeatherSunnyRegular,
 } from '@fluentui/react-icons'
@@ -27,27 +28,50 @@ const useStyles = makeStyles({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  activeButton: {
+    width: '44px',
+    height: '44px',
+    minWidth: '44px',
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: tokens.colorBrandBackground2,
+    borderRadius: tokens.borderRadiusMedium,
+  },
   spacer: {
     flex: 1,
   },
 })
 
+export type ViewName = 'chat' | 'config'
+
 interface NavigationProps {
+  currentView: ViewName
+  onNavigate: (view: ViewName) => void
   onToggleTheme: () => void
   isDarkMode: boolean
 }
 
-export default function Navigation({ onToggleTheme, isDarkMode }: NavigationProps) {
+export default function Navigation({ currentView, onNavigate, onToggleTheme, isDarkMode }: NavigationProps) {
   const styles = useStyles()
 
   return (
     <div className={styles.root}>
       <Button
-        className={styles.iconButton}
+        className={currentView === 'chat' ? styles.activeButton : styles.iconButton}
         appearance="subtle"
         icon={<ChatRegular />}
         title="Chat"
-        disabled
+        onClick={() => onNavigate('chat')}
+      />
+
+      <Button
+        className={currentView === 'config' ? styles.activeButton : styles.iconButton}
+        appearance="subtle"
+        icon={<SettingsRegular />}
+        title="Configuration"
+        onClick={() => onNavigate('config')}
       />
 
       <div className={styles.spacer} />

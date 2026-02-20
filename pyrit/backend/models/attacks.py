@@ -69,14 +69,21 @@ class Message(BaseModel):
 # ============================================================================
 
 
+class TargetInfo(BaseModel):
+    """Target information extracted from the stored TargetIdentifier."""
+
+    target_type: str = Field(..., description="Target class name (e.g., 'OpenAIChatTarget')")
+    endpoint: Optional[str] = Field(None, description="Target endpoint URL")
+    model_name: Optional[str] = Field(None, description="Model or deployment name")
+
+
 class AttackSummary(BaseModel):
     """Summary view of an attack (for list views, omits full message content)."""
 
     conversation_id: str = Field(..., description="Unique attack identifier")
     attack_type: str = Field(..., description="Attack class name (e.g., 'CrescendoAttack', 'ManualAttack')")
     attack_specific_params: Optional[Dict[str, Any]] = Field(None, description="Additional attack-specific parameters")
-    target_unique_name: Optional[str] = Field(None, description="Unique name of the objective target")
-    target_type: Optional[str] = Field(None, description="Target class name (e.g., 'OpenAIChatTarget')")
+    target: Optional[TargetInfo] = Field(None, description="Target information from the stored identifier")
     converters: List[str] = Field(
         default_factory=list, description="Request converter class names applied in this attack"
     )
@@ -167,7 +174,7 @@ class CreateAttackRequest(BaseModel):
     """Request to create a new attack."""
 
     name: Optional[str] = Field(None, description="Attack name/label")
-    target_unique_name: str = Field(..., description="Target instance ID to attack")
+    target_registry_name: str = Field(..., description="Target registry name to attack")
     prepended_conversation: Optional[List[PrependedMessageRequest]] = Field(
         None, description="Messages to prepend (system prompts, branching context)", max_length=200
     )
@@ -211,6 +218,10 @@ class AddMessageRequest(BaseModel):
     send: bool = Field(
         default=True,
         description="If True, send to target and wait for response. If False, just store in memory.",
+    )
+    target_registry_name: Optional[str] = Field(
+        None,
+        description="Target registry name. Required when send=True so the backend knows which target to use.",
     )
     converter_ids: Optional[List[str]] = Field(
         None, description="Converter instance IDs to apply (overrides attack-level)"
