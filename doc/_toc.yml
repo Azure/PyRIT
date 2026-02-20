@@ -60,6 +60,9 @@ chapters:
           sections:
           - file: code/executor/workflow/1_xpia_website
           - file: code/executor/workflow/2_xpia_ai_recruiter
+        - file: code/executor/agent_security/0_agent_security
+          sections:
+          - file: code/executor/agent_security/sensitive_data_access_attack
         - file: code/executor/benchmark/0_benchmark
           sections:
           - file: code/executor/benchmark/1_qa_benchmark

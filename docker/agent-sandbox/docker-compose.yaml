@@ -1,0 +1,37 @@
+services:
+  # Simple vulnerable agent (for basic testing)
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - simple
+
+  # LangChain agent with Azure OpenAI 
+  langchain-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.langchain
+    ports:
+      - "5000:5000"
+  # LangChain agent with Azure OpenAI 
+  # Set your Azure OpenAI credentials as environment variables
+    environment:
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - INTERNAL_API_TOKEN=PYRITe4c2xK9mVnW3qRtY # canary
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    profiles:
+      - langchain
