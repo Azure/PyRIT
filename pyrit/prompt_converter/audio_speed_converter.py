@@ -3,7 +3,7 @@
 
 import io
 import logging
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from scipy.interpolate import interp1d
@@ -54,7 +54,7 @@ class AudioSpeedConverter(PromptConverter):
         self._output_format = output_format
         self._speed_factor = speed_factor
 
-    def _resample_channel(self, channel_data: np.ndarray, new_num_samples: int) -> np.ndarray:
+    def _resample_channel(self, channel_data: np.ndarray[Any, Any], new_num_samples: int) -> np.ndarray[Any, Any]:
         """
         Resample a single channel of audio data using linear interpolation.
 
@@ -71,7 +71,7 @@ class AudioSpeedConverter(PromptConverter):
         interpolator = interp1d(original_indices, channel_data.astype(np.float64), kind="linear")
         return np.asarray(interpolator(new_indices))
 
-    def _resample_audio(self, data: np.ndarray) -> np.ndarray:
+    def _resample_audio(self, data: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
         """
         Resample audio data (mono or multi-channel) according to the speed factor.
 
