@@ -98,7 +98,7 @@ class Jailbreak(Scenario):
         Returns:
             ScenarioStrategy: JailbreakStrategy.PromptSending.
         """
-        return JailbreakStrategy.PromptSending
+        return JailbreakStrategy.SIMPLE
 
     @classmethod
     def required_datasets(cls) -> list[str]:
@@ -149,7 +149,7 @@ class Jailbreak(Scenario):
         """
         if jailbreak_names and num_templates:
             raise ValueError(
-                "Please provide only one of `num_templates` (random selection) or `jailbreaks` (specific selection)."
+                "Please provide only one of `num_templates` (random selection) or `jailbreak_names` (specific selection)."
             )
 
         if not objective_scorer:
@@ -159,6 +159,10 @@ class Jailbreak(Scenario):
         self._num_templates = num_templates
         self._num_attempts = num_attempts
 
+        # Note that num_templates and jailbreak_names are mutually exclusive.
+        # If self._num_templates is None, then this returns all discoverable jailbreak templates.
+        # If self._num_templates has some value, then all_templates is a subset of all available
+        # templates, but jailbreak_names is guaranteed to be [], so diff = {}.
         all_templates = TextJailBreak.get_jailbreak_templates(num_templates=self._num_templates)
 
         # Example: if jailbreak_names is {'a', 'b', 'c'}, and all_templates is {'b', 'c', 'd'},
@@ -166,6 +170,9 @@ class Jailbreak(Scenario):
         diff = set(jailbreak_names) - set(all_templates)
         if len(diff) > 0:
             raise ValueError(f"Error: could not find templates `{diff}`!")
+
+        # If jailbreak_names has some value, then `if jailbreak_names` passes, and self._jailbreaks
+        # is set to jailbreak_names. Otherwise we use all_templates.
         self._jailbreaks = jailbreak_names if jailbreak_names else all_templates
 
         super().__init__(
