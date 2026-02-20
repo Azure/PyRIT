@@ -11,14 +11,43 @@ and automatically expanded during scenario initialization.
 It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
-from enum import Enum
-from typing import List, Sequence, Set, TypeVar
+from enum import Enum, EnumType
+from typing import Any, List, Sequence, Set, TypeVar
+
+from pyrit.common.deprecation import print_deprecation_message
 
 # TypeVar for the enum subclass itself
 T = TypeVar("T", bound="ScenarioStrategy")
 
 
-class ScenarioStrategy(Enum):
+class _DeprecatedEnumMeta(EnumType):
+    """
+    Custom Enum metaclass that supports deprecated member aliases.
+
+    Subclasses of ScenarioStrategy can define deprecated member name mappings
+    by setting ``__deprecated_members__`` on the class after definition.
+    Each entry maps the old name to a ``(new_name, removed_in)`` tuple::
+
+        MyStrategy.__deprecated_members__ = {"OLD_NAME": ("NewName", "0.13.0")}
+
+    Accessing ``MyStrategy.OLD_NAME`` will emit a DeprecationWarning and return
+    the same enum member as ``MyStrategy.NewName``.
+    """
+
+    def __getattr__(cls, name: str) -> Any:
+        deprecated = cls.__dict__.get("__deprecated_members__")
+        if deprecated and name in deprecated:
+            new_name, removed_in = deprecated[name]
+            print_deprecation_message(
+                old_item=f"{cls.__name__}.{name}",
+                new_item=f"{cls.__name__}.{new_name}",
+                removed_in=removed_in,
+            )
+            return cls[new_name]
+        raise AttributeError(name)
+
+
+class ScenarioStrategy(Enum, metaclass=_DeprecatedEnumMeta):
     """
     Base class for attack strategies with tag-based categorization and aggregation.
 

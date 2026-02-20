@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import logging
 import os
 from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar
 
 from pyrit.common import apply_defaults
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -25,6 +27,8 @@ from pyrit.scenario.core.scenario_strategy import (
     ScenarioStrategy,
 )
 from pyrit.score import SelfAskRefusalScorer, TrueFalseInverterScorer, TrueFalseScorer
+
+logger = logging.getLogger(__name__)
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound="AttackStrategy[Any, Any]")
 
@@ -168,9 +172,17 @@ class ContentHarms(Scenario):
                 This will be used to retrieve the appropriate seed groups from CentralMemory. If not provided,
                 defaults to "content_harm".
             scenario_result_id (Optional[str]): Optional ID of an existing scenario result to resume.
-            objectives_by_harm (Optional[Dict[str, Sequence[SeedGroup]]]): A dictionary mapping harm strategies
-                to their corresponding SeedGroups. If not provided, default seed groups will be loaded from datasets.
+            objectives_by_harm (Optional[Dict[str, Sequence[SeedGroup]]]): DEPRECATED - Use dataset_config
+                in initialize_async instead. A dictionary mapping harm strategies to their corresponding
+                SeedGroups. If not provided, default seed groups will be loaded from datasets.
         """
+        if objectives_by_harm is not None:
+            print_deprecation_message(
+                old_item="objectives_by_harm parameter",
+                new_item="dataset_config in initialize_async",
+                removed_in="0.13.0",
+            )
+
         self._objective_scorer: TrueFalseScorer = objective_scorer if objective_scorer else self._get_default_scorer()
         self._scorer_config = AttackScoringConfig(objective_scorer=self._objective_scorer)
         self._adversarial_chat = adversarial_chat if adversarial_chat else self._get_default_adversarial_target()
@@ -204,6 +216,33 @@ class ContentHarms(Scenario):
             ),
         )
 
+    def _resolve_seed_groups_by_harm(self) -> Dict[str, List[SeedAttackGroup]]:
+        """
+        Resolve seed groups from deprecated objectives_by_harm or dataset configuration.
+
+        Returns:
+            Dict[str, List[SeedAttackGroup]]: Dictionary mapping content harm strategy names to their
+                seed attack groups.
+
+        Raises:
+            ValueError: If both objectives_by_harm and dataset_config are specified.
+        """
+        if self._objectives_by_harm is not None and self._dataset_config_provided:
+            raise ValueError(
+                "Cannot specify both 'objectives_by_harm' parameter and 'dataset_config'. "
+                "Please use only 'dataset_config' in initialize_async."
+            )
+
+        if self._objectives_by_harm is not None:
+            return {
+                harm: [SeedAttackGroup(seeds=list(sg.seeds)) for sg in groups]
+                for harm, groups in self._objectives_by_harm.items()
+            }
+
+        # Set scenario_composites on the config so get_seed_attack_groups can filter by strategy
+        self._dataset_config._scenario_composites = self._scenario_composites
+        return self._dataset_config.get_seed_attack_groups()
+
     async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances for harm strategies.
@@ -211,11 +250,7 @@ class ContentHarms(Scenario):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances for harm strategies.
         """
-        # Set scenario_composites on the config so get_seed_attack_groups can filter by strategy
-        self._dataset_config._scenario_composites = self._scenario_composites
-
-        # Get seed attack groups by harm strategy, already filtered by scenario_composites
-        seed_groups_by_harm = self._dataset_config.get_seed_attack_groups()
+        seed_groups_by_harm = self._resolve_seed_groups_by_harm()
 
         atomic_attacks: List[AtomicAttack] = []
         for strategy, seed_groups in seed_groups_by_harm.items():
