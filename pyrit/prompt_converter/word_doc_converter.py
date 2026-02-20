@@ -1,10 +1,10 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from __future__ import annotations
 
 import ast
 import hashlib
-
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
