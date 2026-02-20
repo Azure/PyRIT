@@ -66,7 +66,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
         tokenizer_kwargs: Optional[list[dict[str, Any]]] = None,
         n_test_data: int = 0,
         test_data: str = "",
-        lr: float = 0.01,
+        learning_rate: float = 0.01,
         topk: int = 256,
         temp: int = 1,
         filter_cand: bool = True,
@@ -106,7 +106,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
             tokenizer_kwargs (Optional[list[dict[str, Any]]]): Additional kwargs per tokenizer.
             n_test_data (int): Number of test examples. Defaults to 0.
             test_data (str): URL or path to test data CSV. Defaults to "".
-            lr (float): Learning rate. Defaults to 0.01.
+            learning_rate (float): Learning rate. Defaults to 0.01.
             topk (int): Number of top candidates to consider. Defaults to 256.
             temp (int): Temperature for sampling. Defaults to 1.
             filter_cand (bool): Whether to filter invalid candidates. Defaults to True.
@@ -156,7 +156,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
             tokenizer_kwargs=tokenizer_kwargs,
             n_test_data=n_test_data,
             test_data=test_data,
-            lr=lr,
+            learning_rate=learning_rate,
             topk=topk,
             temp=temp,
             filter_cand=filter_cand,
@@ -301,7 +301,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
                 test_targets=test_targets,
                 test_workers=test_workers,
                 mpa_deterministic=params.gbda_deterministic,
-                mpa_lr=params.lr,
+                mpa_lr=params.learning_rate,
                 mpa_batch_size=params.batch_size,
                 mpa_n_steps=params.n_steps,
             )
@@ -317,7 +317,7 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
                 test_targets=getattr(params, "test_targets", []),
                 test_workers=test_workers,
                 mpa_deterministic=params.gbda_deterministic,
-                mpa_lr=params.lr,
+                mpa_lr=params.learning_rate,
                 mpa_batch_size=params.batch_size,
                 mpa_n_steps=params.n_steps,
             )
