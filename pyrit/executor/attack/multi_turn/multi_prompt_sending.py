@@ -251,7 +251,16 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
                 response = response_message
                 context.last_response = response
                 context.executed_turns += 1
-                self._logger.debug(f"Successfully sent message {message_index + 1}")
+
+                blocked = [p for p in response_message.message_pieces if p.response_error == "blocked"]
+                error = [p for p in response_message.message_pieces if p.converted_value_data_type == "error"]
+                if len(blocked) == 0 and len(error) == 0:
+                    self._logger.debug(f"Successfully sent message {message_index + 1}")
+                else:
+                    self._logger.debug(
+                        f"Successfully sent message {message_index + 1}, received blocked/error response, terminating"
+                    )
+                    break
             else:
                 response = None
                 self._logger.warning(f"Failed to send message {message_index + 1}, terminating")
