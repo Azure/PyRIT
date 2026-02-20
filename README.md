@@ -37,4 +37,3 @@ If you use PyRIT in your research, please cite our preprint paper as follows:
 ```
 
 Additionally, please cite the tool itself following the `CITATION.cff` file in the root of this repository.
-# PR REFRESH TRIGGER
