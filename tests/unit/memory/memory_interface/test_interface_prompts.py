@@ -9,8 +9,10 @@ from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from unit.mocks import get_mock_target
 
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
     Message,
@@ -18,6 +20,16 @@ from pyrit.models import (
     Score,
     SeedPrompt,
 )
+
+
+def _test_scorer_id(name: str = "TestScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="tests.unit.memory",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 def assert_original_value_in_list(original_value: str, message_pieces: Sequence[MessagePiece]):
@@ -99,8 +111,8 @@ def test_get_message_pieces_uuid_and_string_ids(sqlite_instance: MemoryInterface
 
 
 def test_duplicate_memory(sqlite_instance: MemoryInterface):
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
-    attack2 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
+    attack2 = PromptSendingAttack(objective_target=get_mock_target("Target2"))
     conversation_id_1 = "11111"
     conversation_id_2 = "22222"
     conversation_id_3 = "33333"
@@ -156,8 +168,8 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
     all_pieces = sqlite_instance.get_message_pieces()
     assert len(all_pieces) == 9
     # Attack IDs are preserved (not changed) when duplicating
-    assert len([p for p in all_pieces if p.attack_identifier["id"] == attack1.get_identifier()["id"]]) == 8
-    assert len([p for p in all_pieces if p.attack_identifier["id"] == attack2.get_identifier()["id"]]) == 1
+    assert len([p for p in all_pieces if p.attack_identifier.hash == attack1.get_identifier().hash]) == 8
+    assert len([p for p in all_pieces if p.attack_identifier.hash == attack2.get_identifier().hash]) == 1
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_2]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
@@ -170,7 +182,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
     conversation_id = str(uuid4())
     prompt_id_1 = uuid4()
     prompt_id_2 = uuid4()
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
     memory_labels = {"sample": "label"}
     pieces = [
         MessagePiece(
@@ -205,7 +217,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             score_category=["test"],
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
-            scorer_class_identifier={"__type__": "TestScorer1"},
+            scorer_class_identifier=_test_scorer_id("TestScorer1"),
             message_piece_id=prompt_id_1,
         ),
         Score(
@@ -215,7 +227,7 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
             score_category=["test"],
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
-            scorer_class_identifier={"__type__": "TestScorer2"},
+            scorer_class_identifier=_test_scorer_id("TestScorer2"),
             message_piece_id=prompt_id_2,
         ),
     ]
@@ -234,15 +246,15 @@ def test_duplicate_conversation_pieces_not_score(sqlite_instance: MemoryInterfac
         assert piece.id not in (prompt_id_1, prompt_id_2)
     assert len(sqlite_instance.get_prompt_scores(labels=memory_labels)) == 2
     # Attack ID is preserved, so both original and duplicated pieces have the same attack ID
-    assert len(sqlite_instance.get_prompt_scores(attack_id=attack1.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_prompt_scores(attack_id=attack1.get_identifier().hash)) == 2
 
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert len(sqlite_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
 
 
 def test_duplicate_conversation_excluding_last_turn(sqlite_instance: MemoryInterface):
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
-    attack2 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
+    attack2 = PromptSendingAttack(objective_target=get_mock_target())
     conversation_id_1 = "11111"
     conversation_id_2 = "22222"
     pieces = [
@@ -306,7 +318,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
     conversation_id = str(uuid4())
     prompt_id_1 = uuid4()
     prompt_id_2 = uuid4()
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
     memory_labels = {"sample": "label"}
     pieces = [
         MessagePiece(
@@ -359,7 +371,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             score_category=["test"],
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
-            scorer_class_identifier={"__type__": "TestScorer1"},
+            scorer_class_identifier=_test_scorer_id("TestScorer1"),
             message_piece_id=prompt_id_1,
         ),
         Score(
@@ -369,7 +381,7 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
             score_category=["test"],
             score_rationale="Test score",
             score_metadata={"test": "metadata"},
-            scorer_class_identifier={"__type__": "TestScorer2"},
+            scorer_class_identifier=_test_scorer_id("TestScorer2"),
             message_piece_id=prompt_id_2,
         ),
     ]
@@ -388,13 +400,13 @@ def test_duplicate_conversation_excluding_last_turn_not_score(sqlite_instance: M
     assert new_pieces[1].id != prompt_id_2
     assert len(sqlite_instance.get_prompt_scores(labels=memory_labels)) == 2
     # Attack ID is preserved
-    assert len(sqlite_instance.get_prompt_scores(attack_id=attack1.get_identifier()["id"])) == 2
+    assert len(sqlite_instance.get_prompt_scores(attack_id=attack1.get_identifier().hash)) == 2
     # The duplicate prompts ids should not have scores so only two scores are returned
     assert len(sqlite_instance.get_prompt_scores(prompt_ids=[str(prompt_id_1), str(prompt_id_2)] + new_pieces_ids)) == 2
 
 
 def test_duplicate_conversation_excluding_last_turn_same_attack(sqlite_instance: MemoryInterface):
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
     conversation_id_1 = "11111"
     pieces = [
         MessagePiece(
@@ -444,7 +456,7 @@ def test_duplicate_conversation_excluding_last_turn_same_attack(sqlite_instance:
 
 
 def test_duplicate_memory_preserves_attack_id(sqlite_instance: MemoryInterface):
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
     conversation_id = "11111"
     pieces = [
         MessagePiece(
@@ -470,14 +482,14 @@ def test_duplicate_memory_preserves_attack_id(sqlite_instance: MemoryInterface):
     assert new_conversation_id != conversation_id
 
     # Both pieces should have the same attack ID
-    attack_ids = {p.attack_identifier["id"] for p in all_pieces}
+    attack_ids = {p.attack_identifier.hash for p in all_pieces}
     assert len(attack_ids) == 1
-    assert attack1.get_identifier()["id"] in attack_ids
+    assert attack1.get_identifier().hash in attack_ids
 
 
 def test_duplicate_conversation_creates_new_ids(sqlite_instance: MemoryInterface):
     """Test that duplicated conversation has new piece IDs."""
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
     conversation_id = "test-conv-123"
     original_piece = MessagePiece(
         role="user",
@@ -509,7 +521,7 @@ def test_duplicate_conversation_creates_new_ids(sqlite_instance: MemoryInterface
 
 def test_duplicate_conversation_preserves_original_prompt_id(sqlite_instance: MemoryInterface):
     """Test that duplicated conversation preserves original_prompt_id for tracing."""
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
     conversation_id = "test-conv-456"
     original_piece = MessagePiece(
         role="user",
@@ -533,7 +545,7 @@ def test_duplicate_conversation_preserves_original_prompt_id(sqlite_instance: Me
 
 def test_duplicate_conversation_with_multiple_pieces(sqlite_instance: MemoryInterface):
     """Test that duplicating a multi-piece conversation works correctly."""
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
     conversation_id = "multi-piece-conv"
 
     pieces = [
@@ -778,8 +790,8 @@ def test_get_message_pieces_id(sqlite_instance: MemoryInterface):
 
 
 def test_get_message_pieces_attack(sqlite_instance: MemoryInterface):
-    attack1 = PromptSendingAttack(objective_target=MagicMock())
-    attack2 = PromptSendingAttack(objective_target=MagicMock())
+    attack1 = PromptSendingAttack(objective_target=get_mock_target())
+    attack2 = PromptSendingAttack(objective_target=get_mock_target("Target2"))
 
     entries = [
         PromptMemoryEntry(
@@ -807,7 +819,7 @@ def test_get_message_pieces_attack(sqlite_instance: MemoryInterface):
 
     sqlite_instance._insert_entries(entries=entries)
 
-    attack1_entries = sqlite_instance.get_message_pieces(attack_id=attack1.get_identifier()["id"])
+    attack1_entries = sqlite_instance.get_message_pieces(attack_id=attack1.get_identifier().hash)
 
     assert len(attack1_entries) == 2
     assert_original_value_in_list("Hello 1", attack1_entries)
@@ -939,7 +951,7 @@ def test_get_message_pieces_by_hash(sqlite_instance: MemoryInterface):
 
 
 def test_get_message_pieces_with_non_matching_memory_labels(sqlite_instance: MemoryInterface):
-    attack = PromptSendingAttack(objective_target=MagicMock())
+    attack = PromptSendingAttack(objective_target=get_mock_target())
     labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
@@ -1030,6 +1042,7 @@ def test_message_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):
         score_rationale="Sample rationale",
         score_metadata={"sample": "metadata"},
         message_piece_id=original_id,
+        scorer_class_identifier=_test_scorer_id(),
     )
     sqlite_instance.add_scores_to_memory(scores=[score])
 

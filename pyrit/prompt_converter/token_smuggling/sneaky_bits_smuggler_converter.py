@@ -4,6 +4,7 @@
 import logging
 from typing import Literal, Optional, Tuple
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.prompt_converter.token_smuggling.base import SmugglerConverter
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,18 @@ class SneakyBitsSmugglerConverter(SmugglerConverter):
         super().__init__(action=action)
         self.zero_char = zero_char if zero_char is not None else "\u2062"  # Invisible Times
         self.one_char = one_char if one_char is not None else "\u2064"  # Invisible Plus
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """
+        Build identifier with sneaky bits parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        base_params = super()._build_identifier().converter_specific_params or {}
+        base_params["zero_char_codepoint"] = hex(ord(self.zero_char))
+        base_params["one_char_codepoint"] = hex(ord(self.one_char))
+        return self._create_identifier(converter_specific_params=base_params)
 
     def encode_message(self, message: str) -> Tuple[str, str]:
         """

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 from pyrit.auth.azure_auth import get_speech_config
 from pyrit.common import default_values
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -92,6 +93,21 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
         self._synthesis_language = synthesis_language
         self._synthesis_voice_name = synthesis_voice_name
         self._output_format = output_format
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """
+        Build identifier with speech synthesis parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._create_identifier(
+            converter_specific_params={
+                "synthesis_language": self._synthesis_language,
+                "synthesis_voice_name": self._synthesis_voice_name,
+                "output_format": self._output_format,
+            }
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

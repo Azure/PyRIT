@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 from pyrit.datasets import TextJailBreak
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -22,6 +23,19 @@ class TextJailbreakConverter(PromptConverter):
             jailbreak_template (TextJailBreak): The jailbreak template to use for conversion.
         """
         self.jail_break_template = jailbreak_template
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """
+        Build identifier with jailbreak template path.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._create_identifier(
+            converter_specific_params={
+                "jailbreak_template_path": self.jail_break_template.template_source,
+            }
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

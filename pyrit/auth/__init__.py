@@ -15,11 +15,15 @@ from pyrit.auth.azure_auth import (
     get_default_azure_scope,
 )
 from pyrit.auth.azure_storage_auth import AzureStorageAuth
+from pyrit.auth.copilot_authenticator import CopilotAuthenticator
+from pyrit.auth.manual_copilot_authenticator import ManualCopilotAuthenticator
 
 __all__ = [
     "Authenticator",
     "AzureAuth",
     "AzureStorageAuth",
+    "CopilotAuthenticator",
+    "ManualCopilotAuthenticator",
     "TokenProviderCredential",
     "get_azure_token_provider",
     "get_azure_async_token_provider",

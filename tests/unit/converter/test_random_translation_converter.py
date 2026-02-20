@@ -4,6 +4,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from unit.mocks import get_mock_target_identifier
 
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import RandomTranslationConverter
@@ -27,6 +28,7 @@ def mock_target() -> PromptTarget:
         ]
     )
     target.send_prompt_async = AsyncMock(return_value=[response])
+    target.get_identifier.return_value = get_mock_target_identifier("MockTranslationTarget")
     return target
 
 

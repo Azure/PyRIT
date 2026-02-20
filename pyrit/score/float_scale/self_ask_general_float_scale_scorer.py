@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from pyrit.identifiers import ScorerIdentifier
 from pyrit.models import MessagePiece, Score, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -17,7 +18,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
     system prompt and prompt format. The final score is normalized to [0, 1].
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         is_objective_required=True,
     )
@@ -68,7 +69,7 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
             ValueError: If system_prompt_format_string is not provided or empty.
             ValueError: If min_value is greater than max_value.
         """
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
         self._prompt_target = chat_target
         if not system_prompt_format_string:
             raise ValueError("system_prompt_format_string must be provided and non-empty.")
@@ -87,9 +88,14 @@ class SelfAskGeneralFloatScaleScorer(FloatScaleScorer):
         self._metadata_output_key = metadata_output_key
         self._category_output_key = category_output_key
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
+    def _build_identifier(self) -> ScorerIdentifier:
+        """
+        Build the scorer evaluation identifier for this scorer.
+
+        Returns:
+            ScorerIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
             system_prompt_template=self._system_prompt_format_string,
             user_prompt_template=self._prompt_format_string,
             prompt_target=self._prompt_target,

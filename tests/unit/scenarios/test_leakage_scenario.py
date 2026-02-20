@@ -12,10 +12,32 @@ import pytest
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import CrescendoAttack, PromptSendingAttack, RolePlayAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.models import SeedDataset, SeedObjective
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.models import SeedAttackGroup, SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
+from pyrit.scenario import DatasetConfiguration
 from pyrit.scenario.airt import LeakageScenario, LeakageStrategy
 from pyrit.score import TrueFalseCompositeScorer
+
+
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
+    """Helper to create ScorerIdentifier for tests."""
+    return ScorerIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
+    """Helper to create TargetIdentifier for tests."""
+    return TargetIdentifier(
+        class_name=name,
+        class_module="test",
+        class_description="",
+        identifier_type="instance",
+    )
 
 
 @pytest.fixture
@@ -23,6 +45,17 @@ def mock_memory_seeds():
     leakage_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
     seed_prompts = list(SeedDataset.from_yaml_file(leakage_path / "leakage.prompt").get_values())
     return [SeedObjective(value=prompt) for prompt in seed_prompts]
+
+
+@pytest.fixture
+def mock_dataset_config(mock_memory_seeds):
+    """Create a mock dataset config that returns the seed groups."""
+    seed_groups = [SeedAttackGroup(seeds=[seed]) for seed in mock_memory_seeds]
+    mock_config = MagicMock(spec=DatasetConfiguration)
+    mock_config.get_all_seed_attack_groups.return_value = seed_groups
+    mock_config.get_default_dataset_names.return_value = ["airt_leakage"]
+    mock_config.has_data_source.return_value = True
+    return mock_config
 
 
 @pytest.fixture
@@ -72,21 +105,21 @@ def mock_runtime_env():
 @pytest.fixture
 def mock_objective_target():
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockObjectiveTarget")
     return mock
 
 
 @pytest.fixture
 def mock_objective_scorer():
     mock = MagicMock(spec=TrueFalseCompositeScorer)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_scorer_id("MockObjectiveScorer")
     return mock
 
 
 @pytest.fixture
 def mock_adversarial_target():
     mock = MagicMock(spec=PromptChatTarget)
-    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockAdversarialTarget")
     return mock
 
 
@@ -111,7 +144,7 @@ class TestLeakageScenarioInitialization:
 
         assert len(scenario._objectives) == len(sample_objectives)
         assert scenario.name == "Leakage Scenario"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_objectives(self, mock_objective_scorer, leakage_prompts, mock_memory_seeds):
         """Test initialization with default objectives."""
@@ -120,7 +153,7 @@ class TestLeakageScenarioInitialization:
 
             assert scenario._objectives == leakage_prompts
             assert scenario.name == "Leakage Scenario"
-            assert scenario.version == 1
+            assert scenario.VERSION == 1
 
     def test_init_with_default_scorer(self, mock_memory_seeds):
         """Test initialization with default scorer."""
@@ -159,7 +192,7 @@ class TestLeakageScenarioInitialization:
     def test_init_with_adversarial_chat(self, mock_objective_scorer, mock_memory_seeds):
         """Test initialization with adversarial chat (for multi-turn attack variations)."""
         adversarial_chat = MagicMock(OpenAIChatTarget)
-        adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
+        adversarial_chat.get_identifier.return_value = _mock_target_id("CustomAdversary")
 
         with patch.object(
             LeakageScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
@@ -200,14 +233,16 @@ class TestLeakageScenarioAttackGeneration:
     """Tests for LeakageScenario attack generation."""
 
     @pytest.mark.asyncio
-    async def test_attack_generation_for_all(self, mock_objective_target, mock_objective_scorer, mock_memory_seeds):
+    async def test_attack_generation_for_all(
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
+    ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         with patch.object(
             LeakageScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
         ):
             scenario = LeakageScenario(objective_scorer=mock_objective_scorer)
 
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
             atomic_attacks = await scenario._get_atomic_attacks_async()
 
             assert len(atomic_attacks) > 0
@@ -215,7 +250,12 @@ class TestLeakageScenarioAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_first_letter(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, first_letter_strategy
+        self,
+        mock_objective_target,
+        mock_objective_scorer,
+        sample_objectives,
+        first_letter_strategy,
+        mock_dataset_config,
     ):
         """Test that the first letter attack generation works."""
         scenario = LeakageScenario(
@@ -224,7 +264,9 @@ class TestLeakageScenarioAttackGeneration:
         )
 
         await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[first_letter_strategy]
+            objective_target=mock_objective_target,
+            scenario_strategies=[first_letter_strategy],
+            dataset_config=mock_dataset_config,
         )
         atomic_attacks = await scenario._get_atomic_attacks_async()
         for run in atomic_attacks:
@@ -232,7 +274,7 @@ class TestLeakageScenarioAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_crescendo(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, crescendo_strategy
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, crescendo_strategy, mock_dataset_config
     ):
         """Test that the crescendo attack generation works."""
         scenario = LeakageScenario(
@@ -241,7 +283,9 @@ class TestLeakageScenarioAttackGeneration:
         )
 
         await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[crescendo_strategy]
+            objective_target=mock_objective_target,
+            scenario_strategies=[crescendo_strategy],
+            dataset_config=mock_dataset_config,
         )
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
@@ -250,7 +294,7 @@ class TestLeakageScenarioAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_image(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, image_strategy
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, image_strategy, mock_dataset_config
     ):
         """Test that the image attack generation works."""
         scenario = LeakageScenario(
@@ -258,14 +302,18 @@ class TestLeakageScenarioAttackGeneration:
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=[image_strategy])
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[image_strategy],
+            dataset_config=mock_dataset_config,
+        )
         atomic_attacks = await scenario._get_atomic_attacks_async()
         for run in atomic_attacks:
             assert isinstance(run._attack, PromptSendingAttack)
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_role_play(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, role_play_strategy
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, role_play_strategy, mock_dataset_config
     ):
         """Test that the role play attack generation works."""
         scenario = LeakageScenario(
@@ -274,7 +322,9 @@ class TestLeakageScenarioAttackGeneration:
         )
 
         await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[role_play_strategy]
+            objective_target=mock_objective_target,
+            scenario_strategies=[role_play_strategy],
+            dataset_config=mock_dataset_config,
         )
         atomic_attacks = await scenario._get_atomic_attacks_async()
         for run in atomic_attacks:
@@ -282,7 +332,7 @@ class TestLeakageScenarioAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_attack_runs_include_objectives(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, mock_dataset_config
     ):
         """Test that attack runs include objectives for each seed prompt."""
         scenario = LeakageScenario(
@@ -290,7 +340,7 @@ class TestLeakageScenarioAttackGeneration:
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
+        await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         # Check that objectives are created for each seed prompt
@@ -301,7 +351,7 @@ class TestLeakageScenarioAttackGeneration:
 
     @pytest.mark.asyncio
     async def test_get_atomic_attacks_async_returns_attacks(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, mock_dataset_config
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = LeakageScenario(
@@ -309,21 +359,21 @@ class TestLeakageScenarioAttackGeneration:
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target)
+        await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
         atomic_attacks = await scenario._get_atomic_attacks_async()
         assert len(atomic_attacks) > 0
         assert all(hasattr(run, "_attack") for run in atomic_attacks)
 
     @pytest.mark.asyncio
     async def test_unknown_strategy_raises_value_error(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, mock_dataset_config
     ):
         """Test that an unknown strategy raises ValueError."""
         scenario = LeakageScenario(
             objectives=sample_objectives,
             objective_scorer=mock_objective_scorer,
         )
-        await scenario.initialize_async(objective_target=mock_objective_target)
+        await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
 
         with pytest.raises(ValueError, match="Unknown LeakageStrategy"):
             await scenario._get_atomic_attack_from_strategy_async("unknown_strategy")
@@ -337,19 +387,21 @@ class TestLeakageScenarioLifecycle:
 
     @pytest.mark.asyncio
     async def test_initialize_async_with_max_concurrency(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test initialization with custom max_concurrency."""
         with patch.object(
             LeakageScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
         ):
             scenario = LeakageScenario(objective_scorer=mock_objective_scorer)
-            await scenario.initialize_async(objective_target=mock_objective_target, max_concurrency=20)
+            await scenario.initialize_async(
+                objective_target=mock_objective_target, max_concurrency=20, dataset_config=mock_dataset_config
+            )
             assert scenario._max_concurrency == 20
 
     @pytest.mark.asyncio
     async def test_initialize_async_with_memory_labels(
-        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds
+        self, mock_objective_target, mock_objective_scorer, mock_memory_seeds, mock_dataset_config
     ):
         """Test initialization with memory labels."""
         memory_labels = {"test": "leakage", "category": "scenario"}
@@ -363,6 +415,7 @@ class TestLeakageScenarioLifecycle:
             await scenario.initialize_async(
                 memory_labels=memory_labels,
                 objective_target=mock_objective_target,
+                dataset_config=mock_dataset_config,
             )
 
             assert scenario._memory_labels == memory_labels
@@ -381,7 +434,7 @@ class TestLeakageScenarioProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_get_strategy_class_returns_leakage_strategy(self):
         """Test that get_strategy_class returns LeakageStrategy."""
@@ -396,13 +449,13 @@ class TestLeakageScenarioProperties:
         assert LeakageScenario.required_datasets() == ["airt_leakage"]
 
     @pytest.mark.asyncio
-    async def test_no_target_duplication(self, mock_objective_target, mock_memory_seeds):
+    async def test_no_target_duplication(self, mock_objective_target, mock_memory_seeds, mock_dataset_config):
         """Test that all three targets (adversarial, object, scorer) are distinct."""
         with patch.object(
             LeakageScenario, "_get_default_objectives", return_value=[seed.value for seed in mock_memory_seeds]
         ):
             scenario = LeakageScenario()
-            await scenario.initialize_async(objective_target=mock_objective_target)
+            await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
 
             objective_target = scenario._objective_target
 
@@ -554,7 +607,7 @@ class TestLeakageScenarioImageStrategy:
 
     @pytest.mark.asyncio
     async def test_image_strategy_uses_add_image_text_converter(
-        self, mock_objective_target, mock_objective_scorer, sample_objectives, image_strategy
+        self, mock_objective_target, mock_objective_scorer, sample_objectives, image_strategy, mock_dataset_config
     ):
         """Test that the image strategy uses AddImageTextConverter (not AddTextImageConverter)."""
         from pyrit.prompt_converter import AddImageTextConverter
@@ -564,7 +617,11 @@ class TestLeakageScenarioImageStrategy:
             objective_scorer=mock_objective_scorer,
         )
 
-        await scenario.initialize_async(objective_target=mock_objective_target, scenario_strategies=[image_strategy])
+        await scenario.initialize_async(
+            objective_target=mock_objective_target,
+            scenario_strategies=[image_strategy],
+            dataset_config=mock_dataset_config,
+        )
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         # Verify the attack uses AddImageTextConverter

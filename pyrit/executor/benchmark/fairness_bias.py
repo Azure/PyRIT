@@ -17,6 +17,7 @@ from pyrit.executor.attack.single_turn import (
     PromptSendingAttack,
 )
 from pyrit.executor.core import Strategy, StrategyContext
+from pyrit.identifiers import AttackIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -195,7 +196,10 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 conversation_id=str(uuid.UUID(int=0)),
                 objective=context.generated_objective,
                 outcome=AttackOutcome.FAILURE,
-                attack_identifier=self.get_identifier(),
+                attack_identifier=AttackIdentifier(
+                    class_name=self.__class__.__name__,
+                    class_module=self.__class__.__module__,
+                ),
             )
 
         return last_attack_result

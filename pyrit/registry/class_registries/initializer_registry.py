@@ -12,11 +12,11 @@ from __future__ import annotations
 
 import importlib.util
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional
 
-from pyrit.models.identifiers import Identifier
+from pyrit.registry.base import ClassRegistryEntry
 from pyrit.registry.class_registries.base_class_registry import (
     BaseClassRegistry,
     ClassEntry,
@@ -34,16 +34,21 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class InitializerMetadata(Identifier):
+class InitializerMetadata(ClassRegistryEntry):
     """
     Metadata describing a registered PyRITInitializer class.
 
     Use get_class() to get the actual class.
     """
 
-    display_name: str
-    required_env_vars: tuple[str, ...]
-    execution_order: int
+    # Human-readable display name (e.g., "Objective Target Setup").
+    display_name: str = field(kw_only=True)
+
+    # Environment variables required by the initializer.
+    required_env_vars: tuple[str, ...] = field(kw_only=True)
+
+    # Execution order priority (lower = earlier).
+    execution_order: int = field(kw_only=True)
 
 
 class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetadata]):
@@ -58,7 +63,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
     """
 
     @classmethod
-    def get_registry_singleton(cls) -> "InitializerRegistry":
+    def get_registry_singleton(cls) -> InitializerRegistry:
         """
         Get the singleton instance of the InitializerRegistry.
 
@@ -164,7 +169,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         *,
         short_name: str,
         file_path: Path,
-        initializer_class: "type[PyRITInitializer]",
+        initializer_class: type[PyRITInitializer],
     ) -> None:
         """
         Register an initializer class.
@@ -208,8 +213,6 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         try:
             instance = initializer_class()
             return InitializerMetadata(
-                identifier_type="class",
-                name=name,
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,
                 class_description=instance.description,
@@ -220,8 +223,6 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         except Exception as e:
             logger.warning(f"Failed to get metadata for {name}: {e}")
             return InitializerMetadata(
-                identifier_type="class",
-                name=name,
                 class_name=initializer_class.__name__,
                 class_module=initializer_class.__module__,
                 class_description="Error loading initializer metadata",

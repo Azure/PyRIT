@@ -214,7 +214,7 @@ class RedTeamAgent(Scenario):
     providing a consistent PyRIT contract for their integration.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> Type[ScenarioStrategy]:
@@ -297,7 +297,7 @@ class RedTeamAgent(Scenario):
         # Call super().__init__() first to initialize self._memory
         super().__init__(
             name="RedTeamAgent",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=FoundryStrategy,
             objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,

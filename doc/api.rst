@@ -30,6 +30,8 @@ API Reference
     Authenticator
     AzureAuth
     AzureStorageAuth
+    CopilotAuthenticator
+    ManualCopilotAuthenticator
 
 :py:mod:`pyrit.auxiliary_attacks`
 =================================
@@ -258,6 +260,28 @@ API Reference
     XPIAProcessingCallback
     XPIAStatus
 
+:py:mod:`pyrit.identifiers`
+===========================
+
+.. automodule:: pyrit.identifiers
+    :no-members:
+    :no-inherited-members:
+
+.. autosummary::
+    :nosignatures:
+    :toctree: _autosummary/
+
+    class_name_to_snake_case
+    AttackIdentifier
+    ConverterIdentifier
+    Identifiable
+    Identifier
+    IdentifierT
+    IdentifierType
+    ScorerIdentifier
+    snake_case_to_class_name
+    TargetIdentifier
+
 :py:mod:`pyrit.memory`
 ======================
 
@@ -332,9 +356,6 @@ API Reference
     group_conversation_message_pieces_by_sequence
     group_message_pieces_into_conversations
     HarmDefinition
-    Identifiable
-    Identifier
-    IdentifierType
     ImagePathDataTypeSerializer
     AllowedCategories
     AttackOutcome
@@ -413,6 +434,7 @@ API Reference
     ImageCompressionConverter
     IndexSelectionStrategy
     InsertPunctuationConverter
+    JsonStringConverter
     KeywordSelectionStrategy
     LeetspeakConverter
     LLMGenericTextConverter
@@ -456,6 +478,7 @@ API Reference
     UrlConverter
     VariationConverter
     VariationSelectorSmugglerConverter
+    WordDocConverter
     WordIndexSelectionStrategy
     WordKeywordSelectionStrategy
     WordPositionSelectionStrategy
@@ -519,6 +542,7 @@ API Reference
     PromptTarget
     RealtimeTarget
     TextTarget
+    WebSocketCopilotTarget
 
 :py:mod:`pyrit.score`
 =====================
@@ -531,6 +555,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    AudioFloatScaleScorer
+    AudioTrueFalseScorer
     AzureContentFilterScorer
     BatchScorer
     ConsoleScorerPrinter
@@ -562,11 +588,11 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RefusalScorerPaths
     RegistryUpdateBehavior
     Scorer
     ScorerEvalDatasetFiles
     ScorerEvaluator
-    ScorerIdentifier
     ScorerMetrics
     ScorerMetricsWithIdentity
     ScorerPrinter
@@ -683,6 +709,7 @@ API Reference
 
     PyRITInitializer
     AIRTInitializer
+    AIRTTargetInitializer
     SimpleInitializer
     LoadDefaultDatasets
     ScenarioObjectiveListInitializer

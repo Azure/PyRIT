@@ -36,6 +36,7 @@ from pyrit.prompt_target.playwright_copilot_target import CopilotType, Playwrigh
 from pyrit.prompt_target.playwright_target import PlaywrightTarget
 from pyrit.prompt_target.prompt_shield_target import PromptShieldTarget
 from pyrit.prompt_target.text_target import TextTarget
+from pyrit.prompt_target.websocket_copilot_target import WebSocketCopilotTarget
 
 __all__ = [
     "AzureBlobStorageTarget",
@@ -66,4 +67,5 @@ __all__ = [
     "PromptTarget",
     "RealtimeTarget",
     "TextTarget",
+    "WebSocketCopilotTarget",
 ]

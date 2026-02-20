@@ -411,3 +411,107 @@ class TestDatasetConfigurationHasDataSource:
         config = DatasetConfiguration(seed_groups=[])
 
         assert config.has_data_source() is True
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestDatasetConfigurationGetAllSeeds:
+    """Tests for DatasetConfiguration.get_all_seeds method."""
+
+    def test_get_all_seeds_raises_when_no_dataset_names(self) -> None:
+        """Test that get_all_seeds raises ValueError when no dataset_names are configured."""
+        config = DatasetConfiguration()
+
+        with pytest.raises(ValueError, match="No dataset names configured"):
+            config.get_all_seeds()
+
+    def test_get_all_seeds_raises_when_seed_groups_configured(self, sample_seed_groups: list) -> None:
+        """Test that get_all_seeds raises ValueError when seed_groups are configured instead of dataset_names."""
+        config = DatasetConfiguration(seed_groups=sample_seed_groups)
+
+        with pytest.raises(ValueError, match="No dataset names configured"):
+            config.get_all_seeds()
+
+    def test_get_all_seeds_returns_seeds_from_memory(self) -> None:
+        """Test that get_all_seeds returns SeedPrompt objects from memory."""
+        mock_seeds = [
+            SeedPrompt(value="seed1", data_type="text"),
+            SeedPrompt(value="seed2", data_type="text"),
+        ]
+
+        with patch("pyrit.scenario.core.dataset_configuration.CentralMemory") as mock_memory_class:
+            mock_memory = MagicMock()
+            mock_memory.get_seeds.return_value = mock_seeds
+            mock_memory_class.get_memory_instance.return_value = mock_memory
+
+            config = DatasetConfiguration(dataset_names=["test_dataset"])
+            result = config.get_all_seeds()
+
+            assert len(result) == 2
+            assert result[0].value == "seed1"
+            assert result[1].value == "seed2"
+            mock_memory.get_seeds.assert_called_once_with(dataset_name="test_dataset")
+
+    def test_get_all_seeds_aggregates_from_multiple_datasets(self) -> None:
+        """Test that get_all_seeds aggregates seeds from all configured datasets."""
+        seeds_dataset1 = [SeedPrompt(value="ds1_seed1", data_type="text")]
+        seeds_dataset2 = [
+            SeedPrompt(value="ds2_seed1", data_type="text"),
+            SeedPrompt(value="ds2_seed2", data_type="text"),
+        ]
+
+        with patch("pyrit.scenario.core.dataset_configuration.CentralMemory") as mock_memory_class:
+            mock_memory = MagicMock()
+            mock_memory.get_seeds.side_effect = [seeds_dataset1, seeds_dataset2]
+            mock_memory_class.get_memory_instance.return_value = mock_memory
+
+            config = DatasetConfiguration(dataset_names=["dataset1", "dataset2"])
+            result = config.get_all_seeds()
+
+            assert len(result) == 3
+            assert result[0].value == "ds1_seed1"
+            assert result[1].value == "ds2_seed1"
+            assert result[2].value == "ds2_seed2"
+            assert mock_memory.get_seeds.call_count == 2
+
+    def test_get_all_seeds_applies_max_dataset_size_per_dataset(self) -> None:
+        """Test that get_all_seeds applies max_dataset_size sampling per dataset."""
+        seeds = [SeedPrompt(value=f"seed{i}", data_type="text") for i in range(10)]
+
+        with patch("pyrit.scenario.core.dataset_configuration.CentralMemory") as mock_memory_class:
+            mock_memory = MagicMock()
+            mock_memory.get_seeds.return_value = seeds
+            mock_memory_class.get_memory_instance.return_value = mock_memory
+
+            config = DatasetConfiguration(dataset_names=["dataset1"], max_dataset_size=3)
+            result = config.get_all_seeds()
+
+            assert len(result) == 3
+            # All returned seeds should be from the original list
+            for seed in result:
+                assert seed in seeds
+
+    def test_get_all_seeds_returns_all_when_under_max_size(self) -> None:
+        """Test that get_all_seeds returns all seeds when count is under max_dataset_size."""
+        seeds = [SeedPrompt(value=f"seed{i}", data_type="text") for i in range(3)]
+
+        with patch("pyrit.scenario.core.dataset_configuration.CentralMemory") as mock_memory_class:
+            mock_memory = MagicMock()
+            mock_memory.get_seeds.return_value = seeds
+            mock_memory_class.get_memory_instance.return_value = mock_memory
+
+            config = DatasetConfiguration(dataset_names=["dataset1"], max_dataset_size=10)
+            result = config.get_all_seeds()
+
+            assert len(result) == 3
+
+    def test_get_all_seeds_returns_empty_list_when_no_seeds_in_memory(self) -> None:
+        """Test that get_all_seeds returns empty list when memory has no seeds."""
+        with patch("pyrit.scenario.core.dataset_configuration.CentralMemory") as mock_memory_class:
+            mock_memory = MagicMock()
+            mock_memory.get_seeds.return_value = []
+            mock_memory_class.get_memory_instance.return_value = mock_memory
+
+            config = DatasetConfiguration(dataset_names=["empty_dataset"])
+            result = config.get_all_seeds()
+
+            assert result == []

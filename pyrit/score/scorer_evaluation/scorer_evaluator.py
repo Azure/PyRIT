@@ -273,7 +273,7 @@ class ScorerEvaluator(abc.ABC):
                 - (False, None) if should run evaluation
         """
         try:
-            scorer_hash = self.scorer.scorer_identifier.compute_hash()
+            scorer_hash = self.scorer.get_identifier().hash
 
             # Determine if this is a harm or objective evaluation
             metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
@@ -484,7 +484,7 @@ class ScorerEvaluator(abc.ABC):
         try:
             replace_evaluation_results(
                 file_path=result_file_path,
-                scorer_identifier=self.scorer.scorer_identifier,
+                scorer_identifier=self.scorer.get_identifier(),
                 metrics=metrics,
             )
         except Exception as e:

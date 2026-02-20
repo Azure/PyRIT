@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
 
+from pyrit.identifiers import AttackIdentifier
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.message_piece import MessagePiece
 from pyrit.models.score import Score
@@ -15,9 +16,12 @@ from pyrit.models.strategy_result import StrategyResult
 AttackResultT = TypeVar("AttackResultT", bound="AttackResult")
 
 
-class AttackOutcome(Enum):
+class AttackOutcome(str, Enum):
     """
     Enum representing the possible outcomes of an attack.
+
+    Inherits from ``str`` so that values serialize naturally in Pydantic
+    models and REST responses without a dedicated mapping function.
     """
 
     # The attack was successful in achieving its objective
@@ -41,8 +45,8 @@ class AttackResult(StrategyResult):
     # Natural-language description of the attacker's objective
     objective: str
 
-    # Identifier of the attack (e.g., name, module)
-    attack_identifier: dict[str, str]
+    # Identifier of the attack strategy that produced this result
+    attack_identifier: Optional[AttackIdentifier] = None
 
     # Evidence
     # Model response generated in the final turn of the attack

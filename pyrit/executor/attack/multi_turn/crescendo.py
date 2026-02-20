@@ -10,7 +10,9 @@ from typing import Any, Callable, Optional, Union, cast
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.exceptions import (
+    ComponentRole,
     InvalidJsonException,
+    execution_context,
     pyrit_json_retry,
     remove_markdown_json,
 )
@@ -506,13 +508,21 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             prompt_metadata=prompt_metadata,
         )
 
-        response = await self._prompt_normalizer.send_prompt_async(
-            message=message,
-            conversation_id=context.session.adversarial_chat_conversation_id,
-            target=self._adversarial_chat,
+        with execution_context(
+            component_role=ComponentRole.ADVERSARIAL_CHAT,
+            attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-            labels=context.memory_labels,
-        )
+            component_identifier=self._adversarial_chat.get_identifier(),
+            objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
+        ):
+            response = await self._prompt_normalizer.send_prompt_async(
+                message=message,
+                conversation_id=context.session.adversarial_chat_conversation_id,
+                target=self._adversarial_chat,
+                attack_identifier=self.get_identifier(),
+                labels=context.memory_labels,
+            )
 
         if not response:
             raise ValueError("No response received from adversarial chat")
@@ -576,21 +586,29 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         Raises:
             ValueError: If no response is received from the objective target.
         """
-        objective_target_type = self._objective_target.get_identifier()["__type__"]
+        objective_target_type = self._objective_target.get_identifier().class_name
 
         # Send the generated prompt to the objective target
         prompt_preview = attack_message.get_value()[:100] if attack_message.get_value() else ""
         self._logger.debug(f"Sending prompt to {objective_target_type}: {prompt_preview}...")
 
-        response = await self._prompt_normalizer.send_prompt_async(
-            message=attack_message,
-            target=self._objective_target,
-            conversation_id=context.session.conversation_id,
-            request_converter_configurations=self._request_converters,
-            response_converter_configurations=self._response_converters,
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_TARGET,
+            attack_strategy_name=self.__class__.__name__,
             attack_identifier=self.get_identifier(),
-            labels=context.memory_labels,
-        )
+            component_identifier=self._objective_target.get_identifier(),
+            objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
+        ):
+            response = await self._prompt_normalizer.send_prompt_async(
+                message=attack_message,
+                target=self._objective_target,
+                conversation_id=context.session.conversation_id,
+                request_converter_configurations=self._request_converters,
+                response_converter_configurations=self._response_converters,
+                attack_identifier=self.get_identifier(),
+                labels=context.memory_labels,
+            )
 
         if not response:
             raise ValueError("No response received from objective target")
@@ -614,9 +632,17 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to check for refusal")
 
-        scores = await self._refusal_scorer.score_async(
-            message=context.last_response, objective=objective, skip_on_error_result=False
-        )
+        with execution_context(
+            component_role=ComponentRole.REFUSAL_SCORER,
+            attack_strategy_name=self.__class__.__name__,
+            attack_identifier=self.get_identifier(),
+            component_identifier=self._refusal_scorer.get_identifier(),
+            objective_target_conversation_id=context.session.conversation_id,
+            objective=context.objective,
+        ):
+            scores = await self._refusal_scorer.score_async(
+                message=context.last_response, objective=objective, skip_on_error_result=False
+            )
         return scores[0]
 
     async def _score_response_async(self, *, context: CrescendoAttackContext) -> Score:
@@ -636,14 +662,22 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         if not context.last_response:
             raise ValueError("No response available in context to score")
 
-        scoring_results = await Scorer.score_response_async(
-            response=context.last_response,
-            objective_scorer=self._objective_scorer,
-            auxiliary_scorers=self._auxiliary_scorers,
-            role_filter="assistant",
+        with execution_context(
+            component_role=ComponentRole.OBJECTIVE_SCORER,
+            attack_strategy_name=self.__class__.__name__,
+            attack_identifier=self.get_identifier(),
+            component_identifier=self._objective_scorer.get_identifier(),
+            objective_target_conversation_id=context.session.conversation_id,
             objective=context.objective,
-            skip_on_error_result=False,
-        )
+        ):
+            scoring_results = await Scorer.score_response_async(
+                response=context.last_response,
+                objective_scorer=self._objective_scorer,
+                auxiliary_scorers=self._auxiliary_scorers,
+                role_filter="assistant",
+                objective=context.objective,
+                skip_on_error_result=False,
+            )
 
         objective_score = scoring_results["objective_scores"]
         if not objective_score:

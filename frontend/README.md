@@ -13,6 +13,14 @@ python dev.py start
 # OR use npm script
 npm run start
 
+# Start backend only (with airt initializer by default)
+python dev.py backend
+
+# Start frontend only (backend must be started separately)
+python dev.py frontend
+# OR
+npm run dev
+
 # Restart both servers
 python dev.py restart
 # OR
@@ -23,14 +31,32 @@ python dev.py stop
 # OR
 npm run stop
 
-# Run Vite dev server only (backend must be started separately)
-npm run dev
-
 # Build for production
 npm run build
 
 # Preview production build
 npm run preview
+```
+
+### Backend CLI
+
+The backend uses `pyrit_backend` CLI which supports initializers:
+
+```bash
+# Start with default airt initializer (loads targets from env vars)
+pyrit_backend --initializers airt
+
+# Start without initializers
+pyrit_backend
+
+# Start with custom initialization script
+pyrit_backend --initialization-scripts ./my_targets.py
+
+# List available initializers
+pyrit_backend --list-initializers
+
+# Custom host/port
+pyrit_backend --host 127.0.0.1 --port 8080
 ```
 
 **Development Mode**: The `dev.py` script sets `PYRIT_DEV_MODE=true` so the backend expects the frontend to run separately on port 3000.
@@ -44,6 +70,24 @@ npm run preview
 - **Fluent UI v9** - Microsoft design system
 - **Vite** - Fast build tool
 - **Axios** - HTTP client
+
+## Testing
+
+```bash
+# Unit & Integration Tests (Jest + React Testing Library)
+npm test              # Run all tests
+npm run test:watch    # Watch mode for development
+npm run test:coverage # Run with coverage report (85%+ threshold)
+
+# End-to-End Tests (Playwright)
+npm run test:e2e          # Run headless (auto-starts frontend + backend via dev.py)
+npm run test:e2e:headed   # Run with visible browser windows (requires display)
+npm run test:e2e:ui       # Interactive UI mode (requires display)
+```
+
+E2E tests use `dev.py` to automatically start both frontend and backend servers. If servers are already running, they will be reused.
+
+> **Note**: `test:e2e:ui` and `test:e2e:headed` require a graphical display and won't work in headless environments like devcontainers. Use `npm run test:e2e` for CI/headless testing.
 
 ## Configuration
 

@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -21,6 +22,19 @@ class UnicodeSubstitutionConverter(PromptConverter):
             start_value (int): The unicode starting point to use for encoding.
         """
         self.startValue = start_value
+
+    def _build_identifier(self) -> ConverterIdentifier:
+        """
+        Build identifier with unicode substitution parameters.
+
+        Returns:
+            ConverterIdentifier: The identifier for this converter.
+        """
+        return self._create_identifier(
+            converter_specific_params={
+                "start_value": self.startValue,
+            }
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

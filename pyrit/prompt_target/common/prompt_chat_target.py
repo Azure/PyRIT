@@ -4,6 +4,7 @@
 import abc
 from typing import Optional
 
+from pyrit.identifiers import AttackIdentifier
 from pyrit.models import MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -51,7 +52,7 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
@@ -121,7 +122,7 @@ class PromptChatTarget(PromptTarget):
         config = _JsonResponseConfig.from_metadata(metadata=message_piece.prompt_metadata)
 
         if config.enabled and not self.is_json_response_supported():
-            target_name = self.get_identifier()["__type__"]
+            target_name = self.get_identifier().class_name
             raise ValueError(f"This target {target_name} does not support JSON response format.")
 
         return config
