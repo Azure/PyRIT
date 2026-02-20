@@ -245,6 +245,7 @@ from pyrit.prompt_converter import (
     DenylistConverter,
     MaliciousQuestionGeneratorConverter,
     MathPromptConverter,
+    MultiLanguageTranslationConverter,
     NoiseConverter,
     PersuasionConverter,
     RandomTranslationConverter,
@@ -279,11 +280,19 @@ print("Tone (angry):", await tone_converter.convert_async(prompt=prompt))  # typ
 translation_converter = TranslationConverter(converter_target=attack_llm, language="French")
 print("Translation (French):", await translation_converter.convert_async(prompt=prompt))  # type: ignore
 
-# Random translation through multiple languages
+# Random translation translates each word to a random language
 random_translation_converter = RandomTranslationConverter(
     converter_target=attack_llm, languages=["French", "German", "Spanish", "English"]
 )
 print("Random Translation:", await random_translation_converter.convert_async(prompt=prompt))  # type: ignore
+
+# Multi-language translation splits the prompt into segments and translates each to a different language.
+# Unlike RandomTranslationConverter (word-level, random), this operates on contiguous multi-word segments
+# with deterministic language assignment — segment i maps to languages[i].
+multi_lang_converter = MultiLanguageTranslationConverter(
+    converter_target=attack_llm, languages=["French", "Spanish", "Italian"]
+)
+print("Multi-Language Translation:", await multi_lang_converter.convert_async(prompt=prompt))  # type: ignore
 
 # Tense changes verb tense
 tense_converter = TenseConverter(converter_target=attack_llm, tense="far future")

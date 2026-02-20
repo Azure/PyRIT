@@ -23,7 +23,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
     https://learn.microsoft.com/en-us/azure/ai-services/speech-service/text-to-speech
     """
 
-    SUPPORTED_INPUT_TYPES = ("text",)
+    SUPPORTED_INPUT_TYPES = ("text", "audio_path")
     SUPPORTED_OUTPUT_TYPES = ("audio_path",)
 
     #: The name of the Azure region.
@@ -125,6 +125,13 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
             RuntimeError: If there is an error during the speech synthesis process.
             ValueError: If the input type is not supported or if the prompt is empty.
         """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
+
+        # If the input is already an audio path, pass it through unchanged.
+        if input_type == "audio_path":
+            return ConverterResult(output_text=prompt, output_type="audio_path")
+
         try:
             import azure.cognitiveservices.speech as speechsdk  # noqa: F811
         except ModuleNotFoundError as e:
@@ -133,9 +140,6 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                 + "You may need to install it via 'pip install pyrit[speech]'"
             )
             raise e
-
-        if not self.input_supported(input_type):
-            raise ValueError("Input type not supported")
 
         if prompt.strip() == "":
             raise ValueError("Prompt was empty. Please provide valid input prompt.")
