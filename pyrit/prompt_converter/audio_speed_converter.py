@@ -54,6 +54,43 @@ class AudioSpeedConverter(PromptConverter):
         self._output_format = output_format
         self._speed_factor = speed_factor
 
+    def _resample_channel(self, channel_data: np.ndarray, new_num_samples: int) -> np.ndarray:
+        """
+        Resample a single channel of audio data using linear interpolation.
+
+        Args:
+            channel_data: 1-D array of audio samples for one channel.
+            new_num_samples: Target number of samples after resampling.
+
+        Returns:
+            Resampled audio data as a 1-D float64 array.
+        """
+        num_samples = len(channel_data)
+        original_indices = np.arange(num_samples)
+        new_indices = np.linspace(0, num_samples - 1, new_num_samples)
+        interpolator = interp1d(original_indices, channel_data.astype(np.float64), kind="linear")
+        return np.asarray(interpolator(new_indices))
+
+    def _resample_audio(self, data: np.ndarray) -> np.ndarray:
+        """
+        Resample audio data (mono or multi-channel) according to the speed factor.
+
+        Args:
+            data: Audio sample array (1-D for mono, 2-D for multi-channel).
+
+        Returns:
+            Resampled audio data with the original dtype preserved.
+        """
+        original_dtype = data.dtype
+        num_samples = len(data) if data.ndim == 1 else data.shape[0]
+        new_num_samples = int(num_samples / self._speed_factor)
+
+        if data.ndim == 1:
+            return self._resample_channel(data, new_num_samples).astype(original_dtype)
+
+        channels = [self._resample_channel(data[:, ch], new_num_samples) for ch in range(data.shape[1])]
+        return np.column_stack(channels).astype(original_dtype)
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "audio_path") -> ConverterResult:
         """
         Convert the given audio file by changing its playback speed.
@@ -76,49 +113,18 @@ class AudioSpeedConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
         try:
-            # Create serializer to read audio data
             audio_serializer = data_serializer_factory(
                 category="prompt-memory-entries", data_type="audio_path", extension=self._output_format, value=prompt
             )
             audio_bytes = await audio_serializer.read_data()
 
-            # Read the audio file bytes and process the data
-            bytes_io = io.BytesIO(audio_bytes)
-            sample_rate, data = wavfile.read(bytes_io)
-            original_dtype = data.dtype
+            sample_rate, data = wavfile.read(io.BytesIO(audio_bytes))
+            resampled_data = self._resample_audio(data)
 
-            # Handle both mono and multi-channel audio
-            if data.ndim == 1:
-                # Mono audio
-                num_samples = len(data)
-                new_num_samples = int(num_samples / self._speed_factor)
-
-                # Create interpolation function and resample
-                original_indices = np.arange(num_samples)
-                new_indices = np.linspace(0, num_samples - 1, new_num_samples)
-                interpolator = interp1d(original_indices, data.astype(np.float64), kind="linear")
-                resampled_data = interpolator(new_indices).astype(original_dtype)
-            else:
-                # Multi-channel audio (e.g., stereo)
-                num_samples = data.shape[0]
-                new_num_samples = int(num_samples / self._speed_factor)
-
-                original_indices = np.arange(num_samples)
-                new_indices = np.linspace(0, num_samples - 1, new_num_samples)
-
-                channels = []
-                for ch in range(data.shape[1]):
-                    interpolator = interp1d(original_indices, data[:, ch].astype(np.float64), kind="linear")
-                    channels.append(interpolator(new_indices))
-                resampled_data = np.column_stack(channels).astype(original_dtype)
-
-            # Write the resampled data as a new WAV file
             output_bytes_io = io.BytesIO()
             wavfile.write(output_bytes_io, sample_rate, resampled_data)
 
-            # Save the converted bytes using the serializer
-            converted_bytes = output_bytes_io.getvalue()
-            await audio_serializer.save_data(data=converted_bytes)
+            await audio_serializer.save_data(data=output_bytes_io.getvalue())
             audio_serializer_file = str(audio_serializer.value)
             logger.info(
                 "Audio speed changed by factor %.2f for [%s], and the audio was saved to [%s]",
