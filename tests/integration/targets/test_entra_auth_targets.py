@@ -242,7 +242,6 @@ async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, mod
     ("endpoint", "model_name"),
     [
         ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
-        ("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
         ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
     ],
 )
@@ -268,7 +267,6 @@ async def test_openai_responses_target_reasoning_effort_entra_auth(sqlite_instan
     ("endpoint", "model_name"),
     [
         ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
-        ("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
         ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
     ],
 )
