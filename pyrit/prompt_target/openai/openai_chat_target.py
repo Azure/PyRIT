@@ -63,31 +63,17 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
     """
 
-    @property
-    def SUPPORTED_INPUT_MODALITIES(self) -> set[frozenset[PromptDataType]]:
-        """
-        Determine supported input modalities based on the model name.
-        Uses future-proof pattern matching for new models.
-        """
-        model_name = self.model_name.lower() if self.model_name else ""
-        
-        # Vision-capable models support text + image
-        vision_indicators = ["vision", "gpt-4o", "gpt-5", "gpt-4.5", "multimodal", "omni"]
-        if any(indicator in model_name for indicator in vision_indicators):
-            return {
-                frozenset(["text"]),
-                frozenset(["text", "image_path"])
-            }
-        
-        # Default to text-only for other models
-        return {frozenset(["text"])}
+    #: OpenAI Chat API supports these input modality combinations
+    #: This represents what the API can handle, not what specific models support
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),           # All models support text-only
+        frozenset(["text", "image_path"])  # API supports vision when model does
+    }
     
-    @property
-    def SUPPORTED_OUTPUT_MODALITIES(self) -> set[frozenset[PromptDataType]]:
-        """
-        OpenAI chat models typically only support text output.
-        """
-        return {frozenset(["text"])}
+    #: OpenAI Chat API output modalities
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"])  # Currently only text output
+    }
 
     def __init__(
         self,
