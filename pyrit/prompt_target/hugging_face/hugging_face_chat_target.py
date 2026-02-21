@@ -35,6 +35,9 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
     #: HuggingFace targets typically only support text input for now
     SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    
+    #: HuggingFace targets typically only support text output for now
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     # Class-level cache for model and tokenizer
     _cached_model = None

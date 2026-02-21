@@ -22,6 +22,9 @@ class TextTarget(PromptTarget):
 
     #: Text targets only support text input
     SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    
+    #: Text targets only support text output
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     def __init__(
         self,

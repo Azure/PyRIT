@@ -130,7 +130,7 @@ class TestModalitySupport:
         assert target.input_modality_supported({"text", "image_path"})
 
     def test_output_modality_support(self):
-        """Test output modality support (most targets only support text output)."""
+        """Test output modality support using SUPPORTED_OUTPUT_MODALITIES variable."""
         target = TextTarget()
         
         # Should support text output
@@ -139,6 +139,10 @@ class TestModalitySupport:
         # Should not support other output types
         assert not target.output_modality_supported({"image_path"})
         assert not target.output_modality_supported({"text", "image_path"})
+        
+        # Test that it uses the SUPPORTED_OUTPUT_MODALITIES variable
+        expected_output = {frozenset(["text"])}
+        assert target.SUPPORTED_OUTPUT_MODALITIES == expected_output
 
     def test_modality_type_validation(self):
         """Test that modality checking works with PromptDataType literals."""

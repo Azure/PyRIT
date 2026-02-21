@@ -32,6 +32,11 @@ class PromptTarget(Identifiable[TargetIdentifier]):
     #: means the target supports either text-only OR text+image combinations.
     SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
+    #: Set of supported output modality combinations.
+    #: Each frozenset represents a valid combination of modalities that can be returned.
+    #: Most targets currently only support text output.
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+
     _identifier: Optional[TargetIdentifier] = None
 
     def __init__(
@@ -108,8 +113,8 @@ class PromptTarget(Identifiable[TargetIdentifier]):
         Returns:
             True if this exact combination is supported, False otherwise
         """
-        # Most targets only support text output for now
-        return modalities == {"text"}
+        modalities_frozen = frozenset(modalities)
+        return modalities_frozen in self.SUPPORTED_OUTPUT_MODALITIES
 
     def set_model_name(self, *, model_name: str) -> None:
         """

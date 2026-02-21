@@ -81,6 +81,13 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         
         # Default to text-only for other models
         return {frozenset(["text"])}
+    
+    @property
+    def SUPPORTED_OUTPUT_MODALITIES(self) -> set[frozenset[PromptDataType]]:
+        """
+        OpenAI chat models typically only support text output.
+        """
+        return {frozenset(["text"])}
 
     def __init__(
         self,
