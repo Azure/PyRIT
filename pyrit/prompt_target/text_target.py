@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import IO
 
-from pyrit.models import Message, MessagePiece
+from pyrit.models import Message, MessagePiece, PromptDataType
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 
@@ -19,6 +19,12 @@ class TextTarget(PromptTarget):
     This can be useful in various situations, for example, if operators want to generate prompts
     but enter them manually.
     """
+
+    #: Text targets only support text input
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    
+    #: Text targets only support text output
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     def __init__(
         self,

@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 
 from pyrit.identifiers import Identifiable, TargetIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
-from pyrit.models import Message
+from pyrit.models import Message, PromptDataType
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,17 @@ class PromptTarget(Identifiable[TargetIdentifier]):
     #: A list of PromptConverters that are supported by the prompt target.
     #: An empty list implies that the prompt target supports all converters.
     supported_converters: List[Any]
+
+    #: Set of supported input modality combinations.
+    #: Each frozenset represents a valid combination of modalities that can be sent together.
+    #: For example: {frozenset(["text"]), frozenset(["text", "image_path"])}
+    #: means the target supports either text-only OR text+image combinations.
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+
+    #: Set of supported output modality combinations.
+    #: Each frozenset represents a valid combination of modalities that can be returned.
+    #: Most targets currently only support text output.
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     _identifier: Optional[TargetIdentifier] = None
 
@@ -77,6 +88,51 @@ class PromptTarget(Identifiable[TargetIdentifier]):
         Args:
             message: The message to validate.
         """
+
+    def input_modality_supported(self, modalities: set[PromptDataType]) -> bool:
+        """
+        Check if a specific combination of input modalities is supported.
+        
+        Args:
+            modalities: Set of modality types to check (e.g., {"text", "image_path"})
+            
+        Returns:
+            True if this exact combination is supported, False otherwise
+        """
+        modalities_frozen = frozenset(modalities)
+        return modalities_frozen in self.SUPPORTED_INPUT_MODALITIES
+
+    def output_modality_supported(self, modalities: set[PromptDataType]) -> bool:
+        """
+        Check if a specific combination of output modalities is supported.
+        Most targets only support text output currently.
+        
+        Args:
+            modalities: Set of modality types to check
+            
+        Returns:
+            True if this exact combination is supported, False otherwise
+        """
+        modalities_frozen = frozenset(modalities)
+        return modalities_frozen in self.SUPPORTED_OUTPUT_MODALITIES
+
+    async def verify_actual_modalities(self) -> set[frozenset[PromptDataType]]:
+        """
+        Verify what modalities this target actually supports at runtime.
+        
+        This optional verification tests the target with minimal requests to determine
+        actual capabilities, which may be a subset of the static API declarations.
+        
+        Returns:
+            Set of actually supported input modality combinations
+            
+        Example:
+            # Check what a specific OpenAI model actually supports
+            actual = await target.verify_actual_modalities()
+            # Returns: {frozenset(["text"])} or {frozenset(["text"]), frozenset(["text", "image_path"])}
+        """
+        from pyrit.prompt_target.modality_verification import verify_target_modalities
+        return await verify_target_modalities(self)
 
     def set_model_name(self, *, model_name: str) -> None:
         """

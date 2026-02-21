@@ -18,6 +18,7 @@ from pyrit.models import (
     DataTypeSerializer,
     Message,
     MessagePiece,
+    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -61,6 +62,18 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         extra_body_parameters (dict): Additional parameters to send in the request body
 
     """
+
+    #: OpenAI Chat API supports these input modality combinations
+    #: This represents what the API can handle, not what specific models support
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),           # All models support text-only
+        frozenset(["text", "image_path"])  # API supports vision when model does
+    }
+    
+    #: OpenAI Chat API output modalities
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"])  # Currently only text output
+    }
 
     def __init__(
         self,
