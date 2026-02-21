@@ -47,6 +47,32 @@ result = await attack.execute_async(objective="Tell me a joke")  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
 
 # %% [markdown]
+# ## Reasoning Configuration
+#
+# Reasoning models (e.g., o1, o3, o4-mini, GPT-5) support a `reasoning` parameter that controls how much internal reasoning the model performs before responding. You can configure this with two parameters:
+#
+# - **`reasoning_effort`**: Controls the depth of reasoning. Accepts `"minimal"`, `"low"`, `"medium"`, or `"high"`. Lower effort favors speed and lower cost; higher effort favors thoroughness. The default (when not set) is typically `"medium"`.
+# - **`reasoning_summary`**: Controls whether a summary of the model's internal reasoning is included in the response. Accepts `"auto"`, `"concise"`, or `"detailed"`. By default, no summary is included.
+#
+# For more information, see the [OpenAI reasoning guide](https://developers.openai.com/api/docs/guides/reasoning).
+
+# %%
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.prompt_target import OpenAIResponseTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+
+target = OpenAIResponseTarget(
+    reasoning_effort="low",
+    reasoning_summary="auto",
+)
+
+attack = PromptSendingAttack(objective_target=target)
+result = await attack.execute_async(objective="What are the first 5 prime numbers?")  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+
+# %% [markdown]
 # ## JSON Generation
 #
 # We can use the OpenAI `Responses API` with a JSON schema to produce structured JSON output. In this example, we define a simple JSON schema that describes a person with `name` and `age` properties.
