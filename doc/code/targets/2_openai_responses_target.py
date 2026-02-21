@@ -196,7 +196,7 @@ response = await target.send_prompt_async(message=message)  # type: ignore
 
 for response_msg in response:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")
 
 # %% [markdown]
 # ## Using the Built-in Web Search Tool
@@ -242,7 +242,7 @@ response = await target.send_prompt_async(message=message)  # type: ignore
 
 for response_msg in response:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")
 
 # %% [markdown]
 # ## Grammar-Constrained Generation
@@ -304,11 +304,11 @@ result = await target.send_prompt_async(message=message)  # type: ignore
 print("Unconstrained Response:")
 for response_msg in unconstrained_result:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")
 
 print()
 
 print("Constrained Response:")
 for response_msg in result:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")
