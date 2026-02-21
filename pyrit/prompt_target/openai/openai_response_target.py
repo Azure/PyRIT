@@ -608,13 +608,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         elif section_type == MessagePieceType.REASONING:
             # Store reasoning in memory for debugging/logging, but won't be sent back to API
             piece_value = json.dumps(
-                {
-                    "id": section.id,
-                    "type": section.type,
-                    "summary": section.summary,
-                    "content": section.content,
-                    "encrypted_content": section.encrypted_content,
-                },
+                section.model_dump(),
                 separators=(",", ":"),
             )
             piece_type = "reasoning"
@@ -722,12 +716,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             The tool-call section dict, or None if not found.
         """
         for piece in reversed(reply.message_pieces):
-            if piece.api_role == "assistant":
+            if piece.api_role == "assistant" and piece.original_value_data_type == "function_call":
                 try:
                     section = json.loads(piece.original_value)
                 except Exception:
                     continue
-                if section.get("type") == "function_call":
+                if isinstance(section, dict) and section.get("type") == "function_call":
                     # Do NOT skip function_call even if status == "completed" — we still need to emit the output.
                     return cast(dict[str, Any], section)
         return None
