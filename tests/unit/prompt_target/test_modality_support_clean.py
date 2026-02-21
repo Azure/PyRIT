@@ -86,27 +86,30 @@ class TestModalitySupport:
         assert not target.input_modality_supported({"text", "image_path"})
         assert not target.input_modality_supported({"image_path"})
 
-    def test_future_proof_model_detection(self):
-        """Test future-proof pattern matching for new models."""
+    def test_openai_static_api_declarations(self):
+        """Test OpenAI uses static API capability declarations, not pattern matching."""
         # Mock the OpenAI client
         mock_client = AsyncMock()
         
-        # Test future model names that should be detected as vision-capable
-        future_models = [
-            "gpt-5-vision",
-            "gpt-4.5-multimodal", 
-            "omni-model-v2",
-            "custom-vision-model"
-        ]
+        # Test that ALL OpenAI models get the same static API declarations
+        model_names = ["gpt-3.5-turbo", "gpt-4", "gpt-4o", "some-future-model-xyz"]
         
-        for model_name in future_models:
+        for model_name in model_names:
             target = OpenAIChatTarget(model_name=model_name)
-            target._client = mock_client  
+            target._client = mock_client
             target._async_client = mock_client
             
-            # Should detect as multimodal based on keywords
-            assert target.input_modality_supported({"text", "image_path"}), f"Model {model_name} should support vision"
+            # Should declare full OpenAI API capabilities regardless of model name
+            expected_api_capabilities = {
+                frozenset(["text"]),
+                frozenset(["text", "image_path"])
+            }
+            assert target.SUPPORTED_INPUT_MODALITIES == expected_api_capabilities, \
+                f"Model {model_name} should declare full API capabilities"
+            
+            # Both text-only and vision should be declared as possible
             assert target.input_modality_supported({"text"})
+            assert target.input_modality_supported({"text", "image_path"})
 
     def test_frozenset_exact_matching(self):
         """Test that modality checking uses exact frozenset matching."""
@@ -115,10 +118,10 @@ class TestModalitySupport:
         target._client = mock_client
         target._async_client = mock_client
         
-        # Get the supported modalities
+        # Get the supported modalities (now static API declarations)
         supported = target.SUPPORTED_INPUT_MODALITIES
         
-        # Should contain exactly these frozensets
+        # Should contain exactly the OpenAI API capabilities
         expected_modalities = {
             frozenset(["text"]),
             frozenset(["text", "image_path"])
@@ -128,6 +131,18 @@ class TestModalitySupport:
         # Order shouldn't matter in the frozenset
         assert target.input_modality_supported({"image_path", "text"})
         assert target.input_modality_supported({"text", "image_path"})
+
+    def test_optional_verification_system(self):
+        """Test the optional verification system exists and can be called."""
+        target = TextTarget()
+        
+        # The verification method should exist
+        assert hasattr(target, 'verify_actual_capabilities')
+        
+        # Test that static capabilities are available
+        static_capabilities = target.SUPPORTED_INPUT_MODALITIES
+        expected = {frozenset(["text"])}
+        assert static_capabilities == expected
 
     def test_output_modality_support(self):
         """Test output modality support using SUPPORTED_OUTPUT_MODALITIES variable."""

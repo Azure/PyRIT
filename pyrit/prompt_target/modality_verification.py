@@ -8,26 +8,27 @@ This module provides runtime capability discovery to determine what modalities
 a specific target actually supports, beyond what the API declares as possible.
 
 Usage:
-    from pyrit.common.modality_verification import verify_target_capabilities
+    from pyrit.prompt_target.modality_verification import verify_target_modalities
     
     # Get static API capabilities
     api_capabilities = target.SUPPORTED_INPUT_MODALITIES
     
     # Optionally verify actual model capabilities  
-    actual_capabilities = await verify_target_capabilities(target)
+    actual_capabilities = await verify_target_modalities(target)
 """
 
 import logging
-from typing import Any, Optional, set as Set
+from typing import Optional, set as Set
 import asyncio
 
 from pyrit.models import PromptDataType, Message, MessagePiece
+from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
 
 
-async def verify_target_capabilities(
-    target: Any,
+async def verify_target_modalities(
+    target: PromptTarget,
     test_modalities: Optional[Set[frozenset[PromptDataType]]] = None
 ) -> Set[frozenset[PromptDataType]]:
     """

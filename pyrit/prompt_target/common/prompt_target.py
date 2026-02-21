@@ -131,8 +131,8 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             actual = await target.verify_actual_capabilities()
             # Returns: {frozenset(["text"])} or {frozenset(["text"]), frozenset(["text", "image_path"])}
         """
-        from pyrit.common.modality_verification import verify_target_capabilities
-        return await verify_target_capabilities(self)
+        from pyrit.prompt_target.modality_verification import verify_target_modalities
+        return await verify_target_modalities(self)
 
     def set_model_name(self, *, model_name: str) -> None:
         """
