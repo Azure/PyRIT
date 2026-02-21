@@ -101,11 +101,11 @@ async def _test_modality_combination(
         ]
         
         if any(pattern in error_msg for pattern in unsupported_patterns):
-            logger.debug(f"Modality {modalities} not supported: {e}")
+            logger.info(f"Modality {modalities} not supported: {e}")
             return False
         
         # Other errors might be temporary, so we're conservative and assume supported
-        logger.warning(f"Unclear error testing {modalities}: {e}")
+        logger.info(f"Unclear error testing {modalities}: {e}")
         return True
 
 
