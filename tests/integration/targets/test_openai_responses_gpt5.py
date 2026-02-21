@@ -143,3 +143,41 @@ async def test_openai_responses_gpt5_json_object(sqlite_instance, gpt5_args):
     assert response_piece.role == "assistant"
     _ = json.loads(response_piece.converted_value)
     # Can't assert more, since the failure could be due to a bad generation by the model
+
+
+@pytest.mark.asyncio
+async def test_openai_responses_gpt5_reasoning_effort(sqlite_instance, gpt5_args):
+    target = OpenAIResponseTarget(**gpt5_args, reasoning_effort="low")
+
+    conv_id = str(uuid.uuid4())
+
+    user_piece = MessagePiece(
+        role="user",
+        original_value="What is 2 + 2?",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+
+    result = await target.send_prompt_async(message=user_piece.to_message())
+    assert result is not None
+    assert len(result) == 1
+    assert any(p.converted_value_data_type == "text" for p in result[0].message_pieces)
+
+
+@pytest.mark.asyncio
+async def test_openai_responses_gpt5_reasoning_summary(sqlite_instance, gpt5_args):
+    target = OpenAIResponseTarget(**gpt5_args, reasoning_effort="low", reasoning_summary="auto")
+
+    conv_id = str(uuid.uuid4())
+
+    user_piece = MessagePiece(
+        role="user",
+        original_value="What is 2 + 2?",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+
+    result = await target.send_prompt_async(message=user_piece.to_message())
+    assert result is not None
+    assert len(result) == 1
+    assert any(p.converted_value_data_type == "text" for p in result[0].message_pieces)
