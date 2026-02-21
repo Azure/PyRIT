@@ -125,16 +125,21 @@ def _create_test_message(modalities: frozenset[PromptDataType]) -> Message:
         pieces.append(MessagePiece(data_type="text", value="test"))
     
     if "image_path" in modalities:
-        # Use a minimal test image data URL (1x1 transparent pixel)
-        test_image_data = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-        pieces.append(MessagePiece(data_type="image_path", value=test_image_data))
+        # Use an existing test image from the assets directory
+        import os
+        # Get path relative to package root
+        package_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        test_image_path = os.path.join(package_root, "assets", "seed_prompt.png")
+        pieces.append(MessagePiece(data_type="image_path", value=test_image_path))
     
     if "audio_path" in modalities:
-        # Use minimal test audio data if needed
-        pieces.append(MessagePiece(data_type="audio_path", value="test_audio_data"))
+        # Use an existing test audio file from the assets directory
+        test_audio_path = os.path.join(package_root, "assets", "molotov.wav")
+        pieces.append(MessagePiece(data_type="audio_path", value=test_audio_path))
         
     if "video_path" in modalities:
-        # Use minimal test video data if needed  
-        pieces.append(MessagePiece(data_type="video_path", value="test_video_data"))
+        # Use an existing test video file from the assets directory
+        test_video_path = os.path.join(package_root, "assets", "sample_video.mp4")
+        pieces.append(MessagePiece(data_type="video_path", value=test_video_path))
     
     return Message(conversation_id="verification_test", pieces=pieces)
