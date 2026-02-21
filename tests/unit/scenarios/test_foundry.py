@@ -732,7 +732,7 @@ class TestFoundryProperties:
             attack_scoring_config=AttackScoringConfig(objective_scorer=mock_objective_scorer),
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     @patch.dict(
         "os.environ",

@@ -14,6 +14,7 @@ from pyrit.executor.attack import (
     PromptSendingAttack,
     RolePlayAttack,
 )
+from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
 from pyrit.models import SeedDataset, SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.scenarios.airt import (
@@ -72,21 +73,21 @@ def mock_runtime_env():
 @pytest.fixture
 def mock_objective_target() -> PromptChatTarget:
     mock = MagicMock(spec=PromptChatTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = TargetIdentifier(class_name="MockObjectiveTarget", class_module="test")
     return mock
 
 
 @pytest.fixture
 def mock_objective_scorer() -> FloatScaleThresholdScorer:
     mock = MagicMock(spec=FloatScaleThresholdScorer)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = ScorerIdentifier(class_name="MockObjectiveScorer", class_module="test")
     return mock
 
 
 @pytest.fixture
 def mock_adversarial_target() -> PromptChatTarget:
     mock = MagicMock(spec=PromptChatTarget)
-    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+    mock.get_identifier.return_value = TargetIdentifier(class_name="MockAdversarialTarget", class_module="test")
     return mock
 
 
@@ -173,7 +174,9 @@ class TestPsychosocialScenarioInitialization:
 
     def test_init_with_adversarial_chat(self, *, mock_objective_scorer: FloatScaleThresholdScorer) -> None:
         adversarial_chat = MagicMock(OpenAIChatTarget)
-        adversarial_chat.get_identifier.return_value = {"type": "CustomAdversary"}
+        adversarial_chat.get_identifier.return_value = TargetIdentifier(
+            class_name="CustomAdversary", class_module="test"
+        )
 
         scenario = PsychosocialScenario(
             adversarial_chat=adversarial_chat,

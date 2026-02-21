@@ -153,7 +153,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -170,7 +170,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
             likert_scale (LikertScalePaths): The Likert scale configuration to use for scoring.
             validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
         """
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
 
         self._prompt_target = chat_target
         self._likert_scale = likert_scale
@@ -280,6 +280,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
             message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
             category=self._score_category,
+            attack_identifier=message_piece.attack_identifier,
             objective=objective,
         )
 

@@ -272,6 +272,7 @@ API Reference
     :toctree: _autosummary/
 
     class_name_to_snake_case
+    AttackIdentifier
     ConverterIdentifier
     Identifiable
     Identifier
@@ -433,6 +434,7 @@ API Reference
     ImageCompressionConverter
     IndexSelectionStrategy
     InsertPunctuationConverter
+    JsonStringConverter
     KeywordSelectionStrategy
     LeetspeakConverter
     LLMGenericTextConverter
@@ -476,6 +478,7 @@ API Reference
     UrlConverter
     VariationConverter
     VariationSelectorSmugglerConverter
+    WordDocConverter
     WordIndexSelectionStrategy
     WordKeywordSelectionStrategy
     WordPositionSelectionStrategy
@@ -552,6 +555,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    AudioFloatScaleScorer
+    AudioTrueFalseScorer
     AzureContentFilterScorer
     BatchScorer
     ConsoleScorerPrinter
@@ -583,6 +588,7 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RefusalScorerPaths
     RegistryUpdateBehavior
     Scorer
     ScorerEvalDatasetFiles
@@ -703,6 +709,7 @@ API Reference
 
     PyRITInitializer
     AIRTInitializer
+    AIRTTargetInitializer
     SimpleInitializer
     LoadDefaultDatasets
     ScenarioObjectiveListInitializer

@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
 from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -9,6 +8,7 @@ import pytest
 from unit.mocks import get_sample_conversations, openai_chat_response_json_dict
 
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.identifiers import AttackIdentifier
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -39,11 +39,10 @@ def mock_attack_strategy():
     strategy = MagicMock(spec=AttackStrategy)
     strategy.execute_async = AsyncMock()
     strategy.execute_with_context_async = AsyncMock()
-    strategy.get_identifier.return_value = {
-        "__type__": "TestAttack",
-        "__module__": "pyrit.executor.attack.test_attack",
-        "id": str(uuid.uuid4()),
-    }
+    strategy.get_identifier.return_value = AttackIdentifier(
+        class_name="TestAttack",
+        class_module="pyrit.executor.attack.test_attack",
+    )
     return strategy
 
 

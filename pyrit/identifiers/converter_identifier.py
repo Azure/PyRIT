@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Type, cast
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from pyrit.identifiers.identifier import Identifier
 
@@ -73,5 +73,4 @@ class ConverterIdentifier(Identifier):
             data["supported_output_types"] = ()
 
         # Delegate to parent class for standard processing
-        result = Identifier.from_dict.__func__(cls, data)  # type: ignore[attr-defined]
-        return cast(ConverterIdentifier, result)
+        return super().from_dict(data)
