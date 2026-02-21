@@ -202,15 +202,14 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
             # Now print all pieces in this message
             for piece in message.message_pieces:
-                # Reasoning pieces: show summary if available, show raw trace only if explicitly requested
+                # Reasoning pieces: show summary when include_reasoning_trace is set
                 if piece.original_value_data_type == "reasoning":
-                    summary_text = self._extract_reasoning_summary(piece.original_value)
-                    if summary_text:
-                        self._print_colored(f"{self._indent}💭 Reasoning Summary:", Style.DIM, Fore.CYAN)
-                        self._print_wrapped_text(summary_text, Fore.CYAN)
-                    elif include_reasoning_trace:
-                        self._print_colored(f"{self._indent}💭 Reasoning Trace:", Style.DIM, Fore.CYAN)
-                        self._print_wrapped_text(piece.original_value, Fore.CYAN)
+                    if include_reasoning_trace:
+                        summary_text = self._extract_reasoning_summary(piece.original_value)
+                        if summary_text:
+                            self._print_colored(f"{self._indent}💭 Reasoning Summary:", Style.DIM, Fore.CYAN)
+                            self._print_wrapped_text(summary_text, Fore.CYAN)
+                            print()
                     continue
 
                 # Handle converted values for user and assistant messages

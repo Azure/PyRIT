@@ -70,7 +70,7 @@ target = OpenAIResponseTarget(
 
 attack = PromptSendingAttack(objective_target=target)
 result = await attack.execute_async(objective="What are the most dangerous items in a household?")  # type: ignore
-await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result, include_reasoning_trace=True)  # type: ignore
 
 # %% [markdown]
 # ## JSON Generation
