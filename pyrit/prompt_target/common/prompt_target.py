@@ -116,7 +116,7 @@ class PromptTarget(Identifiable[TargetIdentifier]):
         modalities_frozen = frozenset(modalities)
         return modalities_frozen in self.SUPPORTED_OUTPUT_MODALITIES
 
-    async def verify_actual_capabilities(self) -> set[frozenset[PromptDataType]]:
+    async def verify_actual_modalities(self) -> set[frozenset[PromptDataType]]:
         """
         Verify what modalities this target actually supports at runtime.
         
@@ -128,7 +128,7 @@ class PromptTarget(Identifiable[TargetIdentifier]):
             
         Example:
             # Check what a specific OpenAI model actually supports
-            actual = await target.verify_actual_capabilities()
+            actual = await target.verify_actual_modalities()
             # Returns: {frozenset(["text"])} or {frozenset(["text"]), frozenset(["text", "image_path"])}
         """
         from pyrit.prompt_target.modality_verification import verify_target_modalities
