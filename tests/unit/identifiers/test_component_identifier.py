@@ -316,13 +316,16 @@ class TestComponentIdentifierFromDict:
         data = {
             "class_name": "TestClass",
             "class_module": "test.module",
-            "hash": "ignored_because_recomputed",
+            "hash": "a1b2c3d4e5f6" * 5 + "a1b2",  # 62 chars, pad to 64 below
         }
+        # Pad to a valid 64-char hex string
+        stored_hash = "a1b2c3d4e5f6" * 5 + "a1b2a1b2"
+        data["hash"] = stored_hash
         identifier = ComponentIdentifier.from_dict(data)
         assert identifier.class_name == "TestClass"
         assert identifier.class_module == "test.module"
-        # Hash is recomputed, not taken from stored value
-        assert identifier.hash != "ignored_because_recomputed"
+        # Stored hash is preserved as-is
+        assert identifier.hash == stored_hash
 
     def test_from_dict_with_params(self):
         """Test from_dict with inlined params."""
@@ -409,6 +412,78 @@ class TestComponentIdentifierFromDict:
         original = dict(data)
         ComponentIdentifier.from_dict(data)
         assert data == original
+
+    def test_from_dict_preserves_stored_hash(self):
+        """Test that from_dict preserves the stored hash rather than recomputing it.
+
+        The stored hash was computed from untruncated data and is the correct identity.
+        Recomputing from potentially truncated DB values would produce a wrong hash.
+        """
+        original = ComponentIdentifier(
+            class_name="Target",
+            class_module="mod",
+            params={"system_prompt": "a" * 200},
+        )
+        original_hash = original.hash
+
+        # Serialize with truncation (simulates DB storage with column limits)
+        truncated_dict = original.to_dict(max_value_length=50)
+        # The stored hash in truncated_dict is the original (correct) hash
+        assert truncated_dict["hash"] == original_hash
+
+        # Deserialize — from_dict should preserve the stored hash
+        reconstructed = ComponentIdentifier.from_dict(truncated_dict)
+        assert reconstructed.hash == original_hash
+
+    def test_from_dict_preserves_stored_hash_with_children(self):
+        """Test that from_dict preserves stored hash when children have truncated params."""
+        child = ComponentIdentifier(
+            class_name="Child",
+            class_module="mod.child",
+            params={"endpoint": "x" * 300},
+        )
+        parent = ComponentIdentifier(
+            class_name="Parent",
+            class_module="mod.parent",
+            children={"target": child},
+        )
+        original_parent_hash = parent.hash
+        original_child_hash = child.hash
+
+        truncated_dict = parent.to_dict(max_value_length=50)
+        reconstructed = ComponentIdentifier.from_dict(truncated_dict)
+
+        # Both parent and child should preserve their stored hashes
+        assert reconstructed.hash == original_parent_hash
+        child_recon = reconstructed.children["target"]
+        assert isinstance(child_recon, ComponentIdentifier)
+        assert child_recon.hash == original_child_hash
+
+    def test_from_dict_preserves_explicit_stored_hash(self):
+        """Test that from_dict uses the stored hash value exactly as provided."""
+        known_hash = "abc123def456" * 5 + "abcd"  # 64 chars
+        data = {
+            "class_name": "Test",
+            "class_module": "mod",
+            "hash": known_hash,
+            "param": "value",
+        }
+        identifier = ComponentIdentifier.from_dict(data)
+        assert identifier.hash == known_hash
+
+    def test_from_dict_computes_hash_when_no_stored_hash(self):
+        """Test that from_dict computes a hash when none is stored."""
+        data = {
+            "class_name": "Test",
+            "class_module": "mod",
+            "param": "value",
+        }
+        identifier = ComponentIdentifier.from_dict(data)
+        # Should have a valid computed hash
+        assert len(identifier.hash) == 64
+        # And it should match a freshly constructed identifier
+        fresh = ComponentIdentifier(class_name="Test", class_module="mod", params={"param": "value"})
+        assert identifier.hash == fresh.hash
 
 
 class TestComponentIdentifierRoundtrip:

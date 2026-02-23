@@ -28,7 +28,7 @@
 # Every scorer has a unique **identity hash** computed from its complete configuration:
 # - Scorer type (e.g., `SelfAskRefusalScorer`)
 # - System and user prompt templates
-# - Target model information (endpoint, model name)
+# - Target model information (model name)
 # - Temperature and other generation parameters
 # - Any scorer-specific configuration
 #

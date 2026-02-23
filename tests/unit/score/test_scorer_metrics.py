@@ -644,7 +644,7 @@ class TestBuildEvalDict:
         assert "optional_field" not in result
 
     def test_children_hashed_with_behavioral_params_only(self):
-        """Test that children are projected to behavioral params only."""
+        """Test that target children are projected to behavioral params only."""
         child = ComponentIdentifier(
             class_name="ChildTarget",
             class_module="pyrit.target",
@@ -659,16 +659,16 @@ class TestBuildEvalDict:
         identifier = ComponentIdentifier(
             class_name="ParentScorer",
             class_module="pyrit.score",
-            children={"target": child},
+            children={"prompt_target": child},
         )
         result = _build_eval_dict(identifier)
 
         assert "children" in result
         # The child hash should be a string (hashed), not the full child dict
-        assert isinstance(result["children"]["target"], str)
+        assert isinstance(result["children"]["prompt_target"], str)
 
     def test_children_with_different_operational_params_produce_same_hash(self):
-        """Test that children differing only in operational params produce the same child hash."""
+        """Test that target children differing only in operational params produce the same child hash."""
         child1 = ComponentIdentifier(
             class_name="ChildTarget",
             class_module="pyrit.target",
@@ -692,20 +692,20 @@ class TestBuildEvalDict:
         id1 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child1},
+            children={"prompt_target": child1},
         )
         id2 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child2},
+            children={"prompt_target": child2},
         )
         result1 = _build_eval_dict(id1)
         result2 = _build_eval_dict(id2)
 
-        assert result1["children"]["target"] == result2["children"]["target"]
+        assert result1["children"]["prompt_target"] == result2["children"]["prompt_target"]
 
     def test_children_with_different_behavioral_params_produce_different_hash(self):
-        """Test that children differing in behavioral params produce different child hashes."""
+        """Test that target children differing in behavioral params produce different child hashes."""
         child1 = ComponentIdentifier(
             class_name="ChildTarget",
             class_module="pyrit.target",
@@ -719,17 +719,17 @@ class TestBuildEvalDict:
         id1 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child1},
+            children={"prompt_target": child1},
         )
         id2 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child2},
+            children={"prompt_target": child2},
         )
         result1 = _build_eval_dict(id1)
         result2 = _build_eval_dict(id2)
 
-        assert result1["children"]["target"] != result2["children"]["target"]
+        assert result1["children"]["prompt_target"] != result2["children"]["prompt_target"]
 
     def test_multiple_children_as_list(self):
         """Test that list-valued children produce a list of hashes."""
@@ -782,6 +782,122 @@ class TestBuildEvalDict:
 
         assert "children" not in result
 
+    def test_non_target_children_include_all_params(self):
+        """Test that non-target children (e.g., sub-scorers) include all params, not just behavioral ones."""
+        child = ComponentIdentifier(
+            class_name="SubScorer",
+            class_module="pyrit.score",
+            params={
+                "model_name": "gpt-4",
+                "temperature": 0.7,
+                "system_prompt_template": "custom_prompt",
+                "threshold": 0.8,
+            },
+        )
+        identifier = ComponentIdentifier(
+            class_name="ParentScorer",
+            class_module="pyrit.score",
+            children={"sub_scorer": child},
+        )
+        result = _build_eval_dict(identifier)
+
+        assert "children" in result
+        assert isinstance(result["children"]["sub_scorer"], str)
+
+    def test_non_target_children_with_different_params_produce_different_hash(self):
+        """Test that non-target children differing in any param produce different hashes."""
+        child1 = ComponentIdentifier(
+            class_name="SubScorer",
+            class_module="pyrit.score",
+            params={"system_prompt_template": "prompt_a", "endpoint": "https://a.com"},
+        )
+        child2 = ComponentIdentifier(
+            class_name="SubScorer",
+            class_module="pyrit.score",
+            params={"system_prompt_template": "prompt_a", "endpoint": "https://b.com"},
+        )
+        id1 = ComponentIdentifier(
+            class_name="Scorer",
+            class_module="pyrit.score",
+            children={"sub_scorer": child1},
+        )
+        id2 = ComponentIdentifier(
+            class_name="Scorer",
+            class_module="pyrit.score",
+            children={"sub_scorer": child2},
+        )
+        result1 = _build_eval_dict(id1)
+        result2 = _build_eval_dict(id2)
+
+        # Non-target children use full eval treatment, so all params matter
+        assert result1["children"]["sub_scorer"] != result2["children"]["sub_scorer"]
+
+    def test_target_vs_non_target_children_handled_differently(self):
+        """Test that target children filter params while non-target children keep all params."""
+        child = ComponentIdentifier(
+            class_name="SomeComponent",
+            class_module="pyrit.target",
+            params={
+                "model_name": "gpt-4",
+                "endpoint": "https://example.com",
+            },
+        )
+
+        # Same child as a target child (behavioral filtering applies)
+        id_as_target = ComponentIdentifier(
+            class_name="Scorer",
+            class_module="pyrit.score",
+            children={"prompt_target": child},
+        )
+        # Same child as a non-target child (full eval treatment)
+        id_as_non_target = ComponentIdentifier(
+            class_name="Scorer",
+            class_module="pyrit.score",
+            children={"sub_scorer": child},
+        )
+
+        result_target = _build_eval_dict(id_as_target)
+        result_non_target = _build_eval_dict(id_as_non_target)
+
+        # The child hashes should differ because target filtering drops "endpoint"
+        assert result_target["children"]["prompt_target"] != result_non_target["children"]["sub_scorer"]
+
+    def test_converter_target_children_filtered_like_prompt_target(self):
+        """Test that converter_target children are also filtered to behavioral params only."""
+        child1 = ComponentIdentifier(
+            class_name="ConverterTarget",
+            class_module="pyrit.target",
+            params={
+                "model_name": "gpt-4",
+                "temperature": 0.7,
+                "endpoint": "https://endpoint-a.com",
+            },
+        )
+        child2 = ComponentIdentifier(
+            class_name="ConverterTarget",
+            class_module="pyrit.target",
+            params={
+                "model_name": "gpt-4",
+                "temperature": 0.7,
+                "endpoint": "https://endpoint-b.com",
+            },
+        )
+        id1 = ComponentIdentifier(
+            class_name="Scorer",
+            class_module="pyrit.score",
+            children={"converter_target": child1},
+        )
+        id2 = ComponentIdentifier(
+            class_name="Scorer",
+            class_module="pyrit.score",
+            children={"converter_target": child2},
+        )
+        result1 = _build_eval_dict(id1)
+        result2 = _build_eval_dict(id2)
+
+        # Operational param "endpoint" should be filtered, so hashes match
+        assert result1["children"]["converter_target"] == result2["children"]["converter_target"]
+
 
 class TestComputeEvalHash:
     """Tests for the compute_eval_hash function."""
@@ -833,7 +949,7 @@ class TestComputeEvalHash:
         assert compute_eval_hash(id1) != compute_eval_hash(id2)
 
     def test_eval_hash_differs_from_component_hash(self):
-        """Test that eval hash differs from the ComponentIdentifier.hash for children with operational params."""
+        """Test that eval hash differs from the ComponentIdentifier.hash for target children with operational params."""
         child = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
@@ -845,17 +961,17 @@ class TestComputeEvalHash:
         identifier = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child},
+            children={"prompt_target": child},
         )
 
         eval_hash = compute_eval_hash(identifier)
         component_hash = identifier.hash
 
-        # They should differ because eval hash filters operational params from children
+        # They should differ because eval hash filters operational params from target children
         assert eval_hash != component_hash
 
     def test_operational_child_params_ignored_in_eval_hash(self):
-        """Test that operational params on children don't affect eval hash."""
+        """Test that operational params on target children don't affect eval hash."""
         child1 = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
@@ -879,18 +995,18 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child1},
+            children={"prompt_target": child1},
         )
         id2 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child2},
+            children={"prompt_target": child2},
         )
 
         assert compute_eval_hash(id1) == compute_eval_hash(id2)
 
     def test_behavioral_child_params_affect_eval_hash(self):
-        """Test that behavioral params on children do affect eval hash."""
+        """Test that behavioral params on target children do affect eval hash."""
         child1 = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
@@ -904,12 +1020,12 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child1},
+            children={"prompt_target": child1},
         )
         id2 = ComponentIdentifier(
             class_name="Scorer",
             class_module="pyrit.score",
-            children={"target": child2},
+            children={"prompt_target": child2},
         )
 
         assert compute_eval_hash(id1) != compute_eval_hash(id2)

@@ -36,6 +36,7 @@ M = TypeVar("M", bound=ScorerMetrics)
 # Operational params (endpoint, max_requests_per_minute, etc.) are excluded
 # so that the same model on different deployments shares cached eval results.
 _BEHAVIORAL_CHILD_PARAMS = frozenset({"model_name", "temperature", "top_p"})
+_TARGET_CHILD_KEYS = frozenset({"prompt_target"})
 
 
 def _build_eval_dict(
@@ -46,14 +47,20 @@ def _build_eval_dict(
     """
     Build a dictionary for eval hashing.
 
+    This function creates a filtered representation of a component's configuration,
+    including only behavioral parameters. For child components that are targets,
+    only behavioral params are included. For non-target children, full evaluation
+    treatment is applied recursively.
+
     Args:
         identifier (ComponentIdentifier): The component identity to process.
         param_allowlist (Optional[frozenset[str]]): If provided, only include
             params whose keys are in the allowlist. If None, include all params.
-            Children are always filtered to _BEHAVIORAL_CHILD_PARAMS.
+            Target children are filtered to _BEHAVIORAL_CHILD_PARAMS, while
+            non-target children receive full eval treatment without param filtering.
 
     Returns:
-        Dict[str, Any]: The filtered dictionary for hashing.
+        Dict[str, Any]: The filtered dictionary suitable for hashing.
     """
     eval_dict: Dict[str, Any] = {
         ComponentIdentifier.KEY_CLASS_NAME: identifier.class_name,
@@ -68,7 +75,14 @@ def _build_eval_dict(
         eval_children: Dict[str, Any] = {}
         for name in sorted(identifier.children):
             child_list = identifier.get_child_list(name)
-            hashes = [config_hash(_build_eval_dict(c, param_allowlist=_BEHAVIORAL_CHILD_PARAMS)) for c in child_list]
+            if name in _TARGET_CHILD_KEYS:
+                # Targets: filter to behavioral params only
+                hashes = [
+                    config_hash(_build_eval_dict(c, param_allowlist=_BEHAVIORAL_CHILD_PARAMS)) for c in child_list
+                ]
+            else:
+                # Non-targets (e.g., sub-scorers): full eval treatment, recurse without param filtering
+                hashes = [config_hash(_build_eval_dict(c)) for c in child_list]
             eval_children[name] = hashes[0] if len(hashes) == 1 else hashes
         if eval_children:
             eval_dict["children"] = eval_children
@@ -422,7 +436,7 @@ def replace_evaluation_results(
             replaced = len(existing_entries) != len(filtered_entries)
             action = "Replaced" if replaced else "Added"
             logger.info(
-                f"{action} metrics for {scorer_identifier.class_name} (hash={eval_hash[:8]}...) in {file_path.name}"
+                f"{action} metrics for {scorer_identifier.class_name} (eval_hash={eval_hash[:8]}...) in {file_path.name}"
             )
 
         except Exception as e:

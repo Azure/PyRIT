@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pyrit
+from pyrit.common.deprecation import print_deprecation_message
 
 logger = logging.getLogger(__name__)
 
@@ -224,6 +225,11 @@ class ComponentIdentifier:
         if isinstance(value, cls):
             return value
         if isinstance(value, dict):
+            print_deprecation_message(
+                old_item="dict for ComponentIdentifier",
+                new_item="ComponentIdentifier",
+                removed_in="0.14.0",
+            )
             return cls.from_dict(value)
         raise TypeError(f"Expected ComponentIdentifier or dict, got {type(value).__name__}")
 
@@ -330,11 +336,11 @@ class ComponentIdentifier:
             pyrit_version=pyrit_version,
         )
 
-        if stored_hash and identifier.hash != stored_hash:
-            logger.warning(
-                f"Hash mismatch for {class_name}: stored={stored_hash[:8]}, "
-                f"computed={identifier.short_hash}. Schema may have changed."
-            )
+        # Preserve stored hash if available — the stored hash was computed from
+        # untruncated data and is the correct identity. Recomputing from
+        # potentially truncated DB values would produce a wrong hash.
+        if stored_hash:
+            object.__setattr__(identifier, "hash", stored_hash)
 
         return identifier
 
@@ -378,23 +384,23 @@ class ComponentIdentifier:
 
     @classmethod
     def _reconstruct_children(
-        cls, raw_children: Optional[Dict[str, Any]]
+        cls, children_dict: Optional[Dict[str, Any]]
     ) -> Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]:
         """
         Reconstruct child identifiers from raw dictionary data.
 
         Args:
-            raw_children (Optional[Dict[str, Any]]): Raw children dict from storage,
+            children_dict (Optional[Dict[str, Any]]): Raw children dict from storage,
                 or None if no children were stored.
 
         Returns:
             Dict mapping child names to reconstructed ComponentIdentifier instances or lists thereof.
         """
         children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {}
-        if not raw_children or not isinstance(raw_children, dict):
+        if not children_dict or not isinstance(children_dict, dict):
             return children
 
-        for name, child_data in raw_children.items():
+        for name, child_data in children_dict.items():
             if isinstance(child_data, dict):
                 children[name] = cls.from_dict(child_data)
             elif isinstance(child_data, list):
