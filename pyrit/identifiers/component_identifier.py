@@ -302,16 +302,22 @@ class ComponentIdentifier:
         format (``__type__``/``__module__``) for backward compatibility with
         older database records.
 
-        The hash is always recomputed from the reconstructed params and children.
-        If the stored hash differs from the computed hash, a warning is logged
-        indicating possible schema drift.
+        Note:
+            This reconstruction is lossy. If ``to_dict()`` was called with a
+            ``max_value_length`` limit, param values may have been truncated
+            before storage. The original untruncated values cannot be recovered.
+            To preserve correct identity, the stored hash (computed from the
+            original untruncated data) is kept as-is rather than recomputed
+            from the potentially truncated params.
 
         Args:
             data (Dict[str, Any]): Dictionary from DB/JSONL storage. The original
                 dict is not mutated; a copy is made internally.
 
         Returns:
-            ComponentIdentifier: Reconstructed identifier with freshly computed hash.
+            ComponentIdentifier: Reconstructed identifier with the stored hash
+                preserved (if available) to maintain correct identity despite
+                potential param truncation.
         """
         data = dict(data)  # Don't mutate the input
 
