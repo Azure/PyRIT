@@ -36,7 +36,7 @@ M = TypeVar("M", bound=ScorerMetrics)
 # Operational params (endpoint, max_requests_per_minute, etc.) are excluded
 # so that the same model on different deployments shares cached eval results.
 _BEHAVIORAL_CHILD_PARAMS = frozenset({"model_name", "temperature", "top_p"})
-_TARGET_CHILD_KEYS = frozenset({"prompt_target"})
+_TARGET_CHILD_KEYS = frozenset({"prompt_target", "converter_target"})
 
 
 def _build_eval_dict(
