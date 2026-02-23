@@ -105,7 +105,7 @@ class SelectiveTextConverter(PromptConverter):
                 "end_token": self._end_token,
             },
             children={
-                self.CHILD_KEY_SUB_CONVERTERS: [self._converter.get_identifier()],
+                "sub_converters": [self._converter.get_identifier()],
             },
         )
 

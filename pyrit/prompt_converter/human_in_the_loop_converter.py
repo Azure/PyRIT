@@ -43,7 +43,7 @@ class HumanInTheLoopConverter(PromptConverter):
         """
         return self._create_identifier(
             children={
-                self.CHILD_KEY_SUB_CONVERTERS: [converter.get_identifier() for converter in self._converters],
+                "sub_converters": [converter.get_identifier() for converter in self._converters],
             },
         )
 

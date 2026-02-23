@@ -76,5 +76,5 @@ class NoiseConverter(LLMGenericTextConverter):
                 "noise": self._noise,
                 "number_errors": self._number_errors,
             },
-            children={self.CHILD_KEY_CONVERTER_TARGET: self._converter_target.get_identifier()},
+            children={"converter_target": self._converter_target.get_identifier()},
         )

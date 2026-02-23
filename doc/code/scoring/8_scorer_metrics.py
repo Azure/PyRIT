@@ -52,7 +52,7 @@ print("Scorer Identity:")
 print(f"  Type: {scorer_identity.class_name}")
 system_prompt = scorer_identity.params.get("system_prompt_template")
 print(f"  System Prompt: {system_prompt[:50] if system_prompt else 'None'}...")
-prompt_target = scorer_identity.children.get("prompt_target")
+prompt_target = scorer_identity.get_child("prompt_target")
 print(f"  Target Info: {prompt_target}")
 print(f"  Identity Hash: {scorer_identity.hash}")
 

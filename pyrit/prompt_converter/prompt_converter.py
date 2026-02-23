@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import re
 from dataclasses import dataclass
-from typing import Any, ClassVar, Dict, List, Optional, Union, get_args
+from typing import Any, Dict, List, Optional, Union, get_args
 
 from pyrit import prompt_converter
 from pyrit.identifiers import ComponentIdentifier, Identifiable
@@ -42,9 +42,6 @@ class PromptConverter(Identifiable):
 
     These attributes are enforced at class definition time for all non-abstract subclasses.
     """
-
-    CHILD_KEY_CONVERTER_TARGET: ClassVar[str] = "converter_target"
-    CHILD_KEY_SUB_CONVERTERS: ClassVar[str] = "sub_converters"
 
     #: Tuple of input modalities supported by this converter. Subclasses must override this.
     SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ()

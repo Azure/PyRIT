@@ -5,7 +5,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, ClassVar, Dict, List, Optional, Protocol, Union, overload
+from typing import Any, Dict, List, Optional, Protocol, Union, overload
 
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.core import StrategyConverterConfig
@@ -141,9 +141,6 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable):
     allowing for various attack techniques and evaluation methods.
     """
 
-    CHILD_KEY_ATTACK_SETUP_TARGET: ClassVar[str] = "attack_setup_target"
-    CHILD_KEY_OBJECTIVE_SCORER: ClassVar[str] = "objective_scorer"
-
     def __init__(
         self,
         *,
@@ -196,10 +193,10 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable):
             ComponentIdentifier: The identifier for this XPIA workflow.
         """
         all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
-            self.CHILD_KEY_ATTACK_SETUP_TARGET: self._attack_setup_target.get_identifier(),
+            "attack_setup_target": self._attack_setup_target.get_identifier(),
         }
         if self._scorer:
-            all_children[self.CHILD_KEY_OBJECTIVE_SCORER] = self._scorer.get_identifier()
+            all_children["objective_scorer"] = self._scorer.get_identifier()
         if children:
             all_children.update(children)
         return ComponentIdentifier.of(self, params=params, children=all_children)

@@ -8,7 +8,7 @@ import logging
 import time
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, Generic, List, Optional, Type, TypeVar, Union, overload
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union, overload
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
@@ -231,11 +231,6 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
     Defines the interface for executing attacks and handling results.
     """
 
-    CHILD_KEY_OBJECTIVE_TARGET: ClassVar[str] = "objective_target"
-    CHILD_KEY_OBJECTIVE_SCORER: ClassVar[str] = "objective_scorer"
-    CHILD_KEY_REQUEST_CONVERTERS: ClassVar[str] = "request_converters"
-    CHILD_KEY_RESPONSE_CONVERTERS: ClassVar[str] = "response_converters"
-
     def __init__(
         self,
         *,
@@ -293,23 +288,23 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
             ComponentIdentifier: The identifier for this attack strategy.
         """
         all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
-            self.CHILD_KEY_OBJECTIVE_TARGET: self.get_objective_target().get_identifier(),
+            "objective_target": self.get_objective_target().get_identifier(),
         }
 
         # Add scorer if present
         scoring_config = self.get_attack_scoring_config()
         if scoring_config and scoring_config.objective_scorer:
-            all_children[self.CHILD_KEY_OBJECTIVE_SCORER] = scoring_config.objective_scorer.get_identifier()
+            all_children["objective_scorer"] = scoring_config.objective_scorer.get_identifier()
 
         # Add request converter identifiers if present
         if self._request_converters:
-            all_children[self.CHILD_KEY_REQUEST_CONVERTERS] = [
+            all_children["request_converters"] = [
                 converter.get_identifier() for config in self._request_converters for converter in config.converters
             ]
 
         # Add response converter identifiers if present
         if self._response_converters:
-            all_children[self.CHILD_KEY_RESPONSE_CONVERTERS] = [
+            all_children["response_converters"] = [
                 converter.get_identifier() for config in self._response_converters for converter in config.converters
             ]
 

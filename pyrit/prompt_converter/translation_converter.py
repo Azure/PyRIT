@@ -93,7 +93,7 @@ class TranslationConverter(PromptConverter):
             params={
                 "language": self.language,
             },
-            children={self.CHILD_KEY_CONVERTER_TARGET: self.converter_target.get_identifier()},
+            children={"converter_target": self.converter_target.get_identifier()},
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

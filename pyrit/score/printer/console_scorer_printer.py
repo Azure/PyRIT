@@ -159,15 +159,15 @@ class ConsoleScorerPrinter(ScorerPrinter):
                 self._print_colored(f"{indent}• {key}: {value}", Fore.CYAN)
 
         # Print target summary if available
-        prompt_target = scorer_identifier.children.get("prompt_target")
-        if isinstance(prompt_target, ComponentIdentifier):
+        prompt_target = scorer_identifier.get_child("prompt_target")
+        if prompt_target:
             for key, value in prompt_target.params.items():
                 if key in self._TARGET_DISPLAY_PARAMS and value is not None:
                     self._print_colored(f"{indent}• {key}: {value}", Fore.CYAN)
 
         # Print sub-scorers recursively
-        sub_scorers = scorer_identifier.children.get("sub_scorers")
-        if isinstance(sub_scorers, list):
+        sub_scorers = scorer_identifier.get_child_list("sub_scorers")
+        if sub_scorers:
             self._print_colored(f"{indent}  └─ Composite of {len(sub_scorers)} scorer(s):", Fore.CYAN)
             for sub_scorer_id in sub_scorers:
                 self._print_scorer_info(sub_scorer_id, indent_level=indent_level + 3)

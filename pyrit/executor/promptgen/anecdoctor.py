@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Union, overload
+from typing import Any, Dict, List, Optional, Union, overload
 
 import yaml
 
@@ -96,7 +96,6 @@ class AnecdoctorGenerator(
     _ANECDOCTOR_USE_KG_YAML = "anecdoctor_use_knowledge_graph.yaml"
     _ANECDOCTOR_USE_FEWSHOT_YAML = "anecdoctor_use_fewshot.yaml"
     _ANECDOCTOR_PROMPT_PATH = Path("anecdoctor")
-    CHILD_KEY_OBJECTIVE_TARGET: ClassVar[str] = "objective_target"
 
     def __init__(
         self,
@@ -154,7 +153,7 @@ class AnecdoctorGenerator(
             ComponentIdentifier: The identifier for this prompt generator.
         """
         all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
-            self.CHILD_KEY_OBJECTIVE_TARGET: self._objective_target.get_identifier(),
+            "objective_target": self._objective_target.get_identifier(),
         }
         if children:
             all_children.update(children)

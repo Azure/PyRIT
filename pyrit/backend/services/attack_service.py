@@ -39,7 +39,6 @@ from pyrit.backend.models.attacks import (
 from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
-from pyrit.executor.attack import AttackStrategy
 from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
@@ -221,7 +220,7 @@ class AttackService:
             attack_identifier=ComponentIdentifier(
                 class_name=request.name or "ManualAttack",
                 class_module="pyrit.backend",
-                children={AttackStrategy.CHILD_KEY_OBJECTIVE_TARGET: target_identifier} if target_identifier else {},
+                children={"objective_target": target_identifier} if target_identifier else {},
             ),
             outcome=AttackOutcome.UNDETERMINED,
             metadata={
@@ -297,11 +296,9 @@ class AttackService:
 
         ar = results[0]
         aid = ar.attack_identifier
-        objective_target = aid.children.get(AttackStrategy.CHILD_KEY_OBJECTIVE_TARGET) if aid else None
+        objective_target = aid.get_child("objective_target") if aid else None
         if not aid or not objective_target:
             raise ValueError(f"Attack '{conversation_id}' has no target configured")
-        if isinstance(objective_target, list):
-            objective_target = objective_target[0]
         target_unique_name = objective_target.unique_name
 
         # Get existing messages to determine sequence.

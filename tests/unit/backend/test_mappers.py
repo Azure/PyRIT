@@ -22,7 +22,6 @@ from pyrit.backend.mappers.attack_mappers import (
 )
 from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.backend.mappers.target_mappers import target_object_to_instance
-from pyrit.executor.attack import AttackStrategy
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 
@@ -52,7 +51,7 @@ def _make_attack_result(
 
     children = {}
     if target_identifier:
-        children[AttackStrategy.CHILD_KEY_OBJECTIVE_TARGET] = target_identifier
+        children["objective_target"] = target_identifier
 
     return AttackResult(
         conversation_id=conversation_id,
@@ -199,7 +198,7 @@ class TestAttackResultToSummary:
                 class_name="TestAttack",
                 class_module="pyrit.backend",
                 children={
-                    AttackStrategy.CHILD_KEY_REQUEST_CONVERTERS: [
+                    "request_converters": [
                         ComponentIdentifier(
                             class_name="Base64Converter",
                             class_module="pyrit.converters",

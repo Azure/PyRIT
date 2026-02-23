@@ -23,7 +23,6 @@ from pyrit.backend.models.attacks import (
     MessagePieceRequest,
     Score,
 )
-from pyrit.executor.attack import AttackStrategy
 from pyrit.models import AttackResult, ChatMessageRole, PromptDataType
 from pyrit.models import Message as PyritMessage
 from pyrit.models import MessagePiece as PyritMessagePiece
@@ -63,12 +62,8 @@ def attack_result_to_summary(
     aid = ar.attack_identifier
 
     # Extract only frontend-relevant fields from ComponentIdentifier
-    target_id = aid.children.get(AttackStrategy.CHILD_KEY_OBJECTIVE_TARGET) if aid else None
-    if isinstance(target_id, list):
-        target_id = target_id[0] if target_id else None
-    converter_ids = aid.children.get(AttackStrategy.CHILD_KEY_REQUEST_CONVERTERS) if aid else None
-    if converter_ids is not None and not isinstance(converter_ids, list):
-        converter_ids = [converter_ids]
+    target_id = aid.get_child("objective_target") if aid else None
+    converter_ids = aid.get_child_list("request_converters") if aid else []
 
     return AttackSummary(
         conversation_id=ar.conversation_id,

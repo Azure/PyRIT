@@ -23,7 +23,6 @@ from pyrit.backend.services.attack_service import (
     AttackService,
     get_attack_service,
 )
-from pyrit.executor.attack import AttackStrategy
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 
@@ -77,7 +76,7 @@ def make_attack_result(
         attack_identifier=ComponentIdentifier(
             class_name=name,
             class_module="pyrit.backend",
-            children={AttackStrategy.CHILD_KEY_OBJECTIVE_TARGET: target_identifier} if target_identifier else {},
+            children={"objective_target": target_identifier} if target_identifier else {},
         ),
         outcome=outcome,
         metadata={
@@ -218,7 +217,7 @@ class TestListAttacks:
             class_name="Attack One",
             class_module="pyrit.backend",
             children={
-                AttackStrategy.CHILD_KEY_REQUEST_CONVERTERS: [
+                "request_converters": [
                     ComponentIdentifier(
                         class_name="Base64Converter",
                         class_module="pyrit.converters",

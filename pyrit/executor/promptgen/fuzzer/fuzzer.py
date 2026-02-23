@@ -8,7 +8,7 @@ import random
 import textwrap
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union, overload
+from typing import Any, Dict, List, Optional, Tuple, Union, overload
 
 import numpy as np
 from colorama import Fore, Style
@@ -531,7 +531,6 @@ class FuzzerGenerator(
     _DEFAULT_BATCH_SIZE = 10
     _DEFAULT_TARGET_JAILBREAK_COUNT = 1
     _DEFAULT_QUERY_LIMIT_MULTIPLIER = 10
-    CHILD_KEY_OBJECTIVE_TARGET: ClassVar[str] = "objective_target"
 
     @staticmethod
     def with_default_scorer(
@@ -698,7 +697,7 @@ class FuzzerGenerator(
             ComponentIdentifier: The identifier for this prompt generator.
         """
         all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
-            self.CHILD_KEY_OBJECTIVE_TARGET: self._objective_target.get_identifier(),
+            "objective_target": self._objective_target.get_identifier(),
         }
         if children:
             all_children.update(children)

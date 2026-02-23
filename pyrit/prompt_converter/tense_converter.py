@@ -64,5 +64,5 @@ class TenseConverter(LLMGenericTextConverter):
             params={
                 "tense": self._tense,
             },
-            children={self.CHILD_KEY_CONVERTER_TARGET: self._converter_target.get_identifier()},
+            children={"converter_target": self._converter_target.get_identifier()},
         )
