@@ -53,4 +53,4 @@ def show_registry_contents(registry: RegistryProtocol) -> None:
 ## See Also
 
 - [Class Registries](1_class_registry.ipynb) - ScenarioRegistry, InitializerRegistry
-- [Instance Registries](2_instance_registry.ipynb) - ScorerRegistry, TargetRegistry
+- [Instance Registries](2_instance_registry.ipynb) - ConverterRegistry, ScorerRegistry, TargetRegistry

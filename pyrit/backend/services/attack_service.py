@@ -39,7 +39,7 @@ from pyrit.backend.models.attacks import (
 from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
-from pyrit.identifiers.component_identifier import ComponentIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
