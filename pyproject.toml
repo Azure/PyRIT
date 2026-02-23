@@ -246,6 +246,7 @@ fixable = [
     "YTT",
 ]
 select = [
+    "B",  # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     "CPY001",  # missing-copyright-notice
     "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
     "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
@@ -253,6 +254,7 @@ select = [
     "I",  # isort
 ]
 ignore = [
+    "B903",  # class-as-data-structure (test helper classes use @apply_defaults pattern)
     "D100",  # Missing docstring in public module
     "D200",  # One-line docstring should fit on one line
     "D205",  # 1 blank line required between summary line and description
@@ -284,8 +286,10 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 # TODO: Remove these ignores once the issues are fixed
 "pyrit/{auxiliary_attacks,exceptions,models,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501"]
 # Backend API routes raise HTTPException handled by FastAPI, not true exceptions
-"pyrit/backend/**/*.py" = ["DOC501"]
+"pyrit/backend/**/*.py" = ["DOC501", "B008"]
 "pyrit/__init__.py" = ["D104"]
+# Allow broad pytest.raises(Exception) in tests
+"tests/**/*.py" = ["B017"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

@@ -69,7 +69,7 @@ async def evaluate_candidate_selection(final_result: str, expected_candidate: st
         # Get the scored response asynchronously from the scorer.
         scored_response = (await true_false_classifier.score_text_async(text=prompt))[0]
     except PyritException as e:
-        raise PyritException(message=f"Error during candidate evaluation: {e}")
+        raise PyritException(message=f"Error during candidate evaluation: {e}") from e
 
     return scored_response.get_value() is True
 

@@ -1133,13 +1133,17 @@ class _TreeOfAttacksNode:
             red_teaming_response_dict = json.loads(red_teaming_response)
         except json.JSONDecodeError:
             logger.error(f"The response from the red teaming chat is not in JSON format: {red_teaming_response}")
-            raise InvalidJsonException(message="The response from the red teaming chat is not in JSON format.")
+            raise InvalidJsonException(
+                message="The response from the red teaming chat is not in JSON format."
+            ) from None
 
         try:
             return cast(str, red_teaming_response_dict["prompt"])
         except KeyError:
             logger.error(f"The response from the red teaming chat does not contain a prompt: {red_teaming_response}")
-            raise InvalidJsonException(message="The response from the red teaming chat does not contain a prompt.")
+            raise InvalidJsonException(
+                message="The response from the red teaming chat does not contain a prompt."
+            ) from None
 
     def __str__(self) -> str:
         """

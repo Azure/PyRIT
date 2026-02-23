@@ -180,7 +180,7 @@ class AzureMLChatTarget(PromptChatTarget):
                 # Handle Bad Request
                 response_entry = handle_bad_request_exception(response_text=hse.response.text, request=request)
             elif hse.response.status_code == 429:
-                raise RateLimitException()
+                raise RateLimitException() from hse
             else:
                 raise hse
 
@@ -218,11 +218,11 @@ class AzureMLChatTarget(PromptChatTarget):
             return str(response.json()["output"])
         except Exception as e:
             if response.json() == {}:
-                raise EmptyResponseException(message="The chat returned an empty response.")
+                raise EmptyResponseException(message="The chat returned an empty response.") from e
             raise e(
                 f"Exception obtaining response from the target. Returned response: {response.json()}. "
                 + f"Exception: {str(e)}"  # type: ignore
-            )
+            ) from e
 
     async def _construct_http_body_async(
         self,

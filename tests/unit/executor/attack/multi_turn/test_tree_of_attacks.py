@@ -398,7 +398,7 @@ class TestHelpers:
     @staticmethod
     def add_nodes_to_tree(context: TAPAttackContext, nodes: List[_TreeOfAttacksNode], parent: str = "root"):
         """Add nodes to the context's tree visualization."""
-        for i, node in enumerate(nodes):
+        for _i, node in enumerate(nodes):
             score_str = ""
             if node.objective_score:
                 score_str = f": Score {node.objective_score.get_value()}"

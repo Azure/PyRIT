@@ -123,7 +123,7 @@ def discover_in_package(
 
             # For non-package modules, find and yield subclasses
             if not is_pkg:
-                for name, obj in inspect.getmembers(module, inspect.isclass):
+                for _name, obj in inspect.getmembers(module, inspect.isclass):
                     if issubclass(obj, base_class) and obj is not base_class:
                         if not inspect.isabstract(obj):
                             # Build the registry name including any prefix
@@ -183,7 +183,7 @@ def discover_subclasses_in_loaded_modules(
         if any(module_name.startswith(prefix) for prefix in exclude_module_prefixes):
             continue
 
-        for name, obj in inspect.getmembers(module, inspect.isclass):
+        for _name, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, base_class) and obj is not base_class:
                 if not inspect.isabstract(obj):
                     yield (module_name, obj)

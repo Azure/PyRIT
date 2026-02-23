@@ -87,7 +87,7 @@ def find_files(directory, file_extension):
         dir_path = os.path.join(directory, included_dir)
         if not os.path.exists(dir_path):
             continue
-        for root, dirs, files in os.walk(dir_path):
+        for root, _dirs, files in os.walk(dir_path):
             for file in files:
                 if file.endswith("_helpers.py"):
                     continue

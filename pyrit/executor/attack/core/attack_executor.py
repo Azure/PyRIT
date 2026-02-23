@@ -335,7 +335,7 @@ class AttackExecutor:
         completed: List[AttackStrategyResultT] = []
         incomplete: List[tuple[str, BaseException]] = []
 
-        for objective, result in zip(objectives, results_or_exceptions):
+        for objective, result in zip(objectives, results_or_exceptions, strict=False):
             if isinstance(result, BaseException):
                 incomplete.append((objective, result))
             else:

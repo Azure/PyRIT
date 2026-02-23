@@ -34,7 +34,7 @@ async def test_translation_converter_exponential_backoff_timing(sqlite_instance)
 
     start_time = time.time()
     with patch.object(prompt_target, "send_prompt_async", mock_send_prompt):
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017
             await translation_converter.convert_async(prompt="hello")
     elapsed_time = time.time() - start_time
 

@@ -195,7 +195,7 @@ sorted_by_f1 = sorted(all_scorers, key=lambda x: x.metrics.f1_score, reverse=Tru
 
 print("Top 5 configurations by F1 Score:")
 print("-" * 80)
-for i, entry in enumerate(sorted_by_f1[:5], 1):
+for _i, entry in enumerate(sorted_by_f1[:5], 1):
     printer = ConsoleScorerPrinter()
     printer.print_objective_scorer(scorer_identifier=entry.scorer_identifier)
 
@@ -227,7 +227,7 @@ sorted_by_mae = sorted(all_harm_scorers, key=lambda x: x.metrics.mean_absolute_e
 
 print("Top configurations by Mean Absolute Error:")
 print("-" * 80)
-for i, e in enumerate(sorted_by_mae[:5], 1):
+for _i, e in enumerate(sorted_by_mae[:5], 1):
     printer = ConsoleScorerPrinter()
     printer.print_harm_scorer(scorer_identifier=e.scorer_identifier, harm_category="violence")
 

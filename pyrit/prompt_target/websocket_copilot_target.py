@@ -364,7 +364,7 @@ class WebSocketCopilotTarget(PromptTarget):
         text_parts: list[str] = []
         message_annotations: list[dict[str, Any]] = []
 
-        for idx, piece in enumerate(message_pieces):
+        for _idx, piece in enumerate(message_pieces):
             if piece.converted_value_data_type == "text":
                 text_parts.append(piece.converted_value)
 
@@ -527,7 +527,7 @@ class WebSocketCopilotTarget(PromptTarget):
                     except asyncio.TimeoutError:
                         raise TimeoutError(
                             f"Timed out waiting for Copilot response after {self._response_timeout_seconds} seconds."
-                        )
+                        ) from None
 
                     if raw_message is None:
                         raise RuntimeError(

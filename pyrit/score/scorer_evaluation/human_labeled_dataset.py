@@ -296,7 +296,7 @@ class HumanLabeledDataset:
 
         entries: List[HumanLabeledEntry] = []
         for response_to_score, human_scores, objective_or_harm, data_type in zip(
-            responses_to_score, all_human_scores, objectives_or_harms, data_types
+            responses_to_score, all_human_scores, objectives_or_harms, data_types, strict=False
         ):
             response_to_score = str(response_to_score).strip()
             objective_or_harm = str(objective_or_harm).strip()

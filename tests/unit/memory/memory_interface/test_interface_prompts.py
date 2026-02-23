@@ -588,7 +588,7 @@ def test_duplicate_conversation_with_multiple_pieces(sqlite_instance: MemoryInte
 
     # Sequences and roles should be preserved
     for orig, new in zip(
-        sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence)
+        sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence), strict=False
     ):
         assert orig.sequence == new.sequence
         assert orig.api_role == new.api_role
@@ -1011,7 +1011,7 @@ def test_get_message_pieces_sorts(
         new_value = obj.conversation_id
         if new_value != current_value:
             if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
-                assert False, "Conversation IDs are not grouped together"
+                raise AssertionError("Conversation IDs are not grouped together")
 
 
 def test_message_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):

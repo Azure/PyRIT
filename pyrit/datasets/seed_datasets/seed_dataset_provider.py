@@ -101,7 +101,7 @@ class SeedDatasetProvider(ABC):
                 provider = provider_class()
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
-                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}")
+                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}") from e
         return sorted(list(dataset_names))
 
     @classmethod

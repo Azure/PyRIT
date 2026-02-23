@@ -103,5 +103,5 @@ class FloatScaleScorer(Scorer):
             score_value = score.raw_score_value if score else "None"
             raise InvalidJsonException(
                 message=(f"Invalid JSON response, score_value should be a float not this: {score_value}")
-            )
+            ) from None
         return score

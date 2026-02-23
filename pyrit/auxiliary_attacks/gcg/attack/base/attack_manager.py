@@ -499,7 +499,7 @@ class PromptManager:
 
         self._prompts = [
             managers["AP"](goal, target, tokenizer, conv_template, control_init, test_prefixes)
-            for goal, target in zip(goals, targets)
+            for goal, target in zip(goals, targets, strict=False)
         ]
 
         self._nonascii_toks = get_nonascii_toks(tokenizer, device="cpu")
@@ -534,7 +534,7 @@ class PromptManager:
         return torch.cat(
             [
                 prompt.target_loss(logit, id).mean(dim=1).unsqueeze(1)
-                for prompt, logit, id in zip(self._prompts, logits, ids)
+                for prompt, logit, id in zip(self._prompts, logits, ids, strict=False)
             ],
             dim=1,
         ).mean(dim=1)
@@ -543,7 +543,7 @@ class PromptManager:
         return torch.cat(
             [
                 prompt.control_loss(logit, id).mean(dim=1).unsqueeze(1)
-                for prompt, logit, id in zip(self._prompts, logits, ids)
+                for prompt, logit, id in zip(self._prompts, logits, ids, strict=False)
             ],
             dim=1,
         ).mean(dim=1)
@@ -874,7 +874,7 @@ class MultiPromptAttack:
         n_em = self.parse_results(prompt_tests_mb)
         n_loss = self.parse_results(model_tests_loss)
         total_tests = self.parse_results(np.ones(prompt_tests_jb.shape, dtype=int))
-        n_loss = [lo / t if t > 0 else 0 for lo, t in zip(n_loss, total_tests)]  # type: ignore[assignment, unused-ignore]
+        n_loss = [lo / t if t > 0 else 0 for lo, t in zip(n_loss, total_tests, strict=False)]  # type: ignore[assignment, unused-ignore]
 
         tests["n_passed"] = n_passed
         tests["n_em"] = n_em
@@ -1519,7 +1519,7 @@ class EvaluateAttack:
         prev_control = "haha"
         for step, control in enumerate(controls):
             for mode, goals, targets in zip(
-                *[("Train", "Test"), (self.goals, self.test_goals), (self.targets, self.test_targets)]
+                *[("Train", "Test"), (self.goals, self.test_goals), (self.targets, self.test_targets)], strict=False
             ):
                 if control != prev_control and len(goals) > 0:
                     attack = self.managers["MPA"](
@@ -1563,7 +1563,7 @@ class EvaluateAttack:
                         torch.cuda.empty_cache()
 
                     curr_jb, curr_em = [], []
-                    for gen_str, target in zip(all_outputs, targets):
+                    for gen_str, target in zip(all_outputs, targets, strict=False):
                         jailbroken = not any([prefix in gen_str for prefix in self.test_prefixes])
                         em = target in gen_str
                         curr_jb.append(jailbroken)

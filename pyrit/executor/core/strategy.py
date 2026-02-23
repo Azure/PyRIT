@@ -23,7 +23,7 @@ StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
 
 @dataclass
-class StrategyContext(ABC):
+class StrategyContext(ABC):  # noqa: B024
     """Base class for all strategy contexts."""
 
     def duplicate(self: StrategyContextT) -> StrategyContextT:

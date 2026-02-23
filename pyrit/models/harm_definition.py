@@ -138,7 +138,7 @@ class HarmDefinition:
             with open(resolved_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            raise ValueError(f"Invalid YAML in harm definition file {resolved_path}: {e}")
+            raise ValueError(f"Invalid YAML in harm definition file {resolved_path}: {e}") from e
 
         if not isinstance(data, dict):
             raise ValueError(f"Harm definition file {resolved_path} must contain a YAML mapping/dictionary.")

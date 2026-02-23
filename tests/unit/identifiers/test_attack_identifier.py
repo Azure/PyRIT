@@ -103,8 +103,8 @@ class TestAttackIdentifierCreation:
             class_module="pyrit.executor.attack.single_turn.prompt_sending",
         )
         # Should not raise
-        {identifier}
-        {identifier: 1}
+        {identifier}  # noqa: B018
+        {identifier: 1}  # noqa: B018
 
 
 class TestAttackIdentifierFromDict:
