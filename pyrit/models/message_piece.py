@@ -82,6 +82,10 @@ class MessagePiece:
             timestamp: The timestamp of the memory entry. Defaults to None (auto-generated).
             scores: The scores associated with the prompt. Defaults to None.
             targeted_harm_categories: The harm categories associated with the prompt. Defaults to None.
+
+        Raises:
+            ValueError: If role, data types, or response error are invalid.
+
         """
         self.id = id if id else uuid4()
 
@@ -160,7 +164,7 @@ class MessagePiece:
 
     async def set_sha256_values_async(self) -> None:
         """
-        This method computes the SHA256 hash values asynchronously.
+        Compute SHA256 hash values for original and converted payloads.
         It should be called after object creation if `original_value` and `converted_value` are set.
 
         Note, this method is async due to the blob retrieval. And because of that, we opted
@@ -211,6 +215,7 @@ class MessagePiece:
 
         Returns:
             The actual role stored (may be simulated_assistant).
+
         """
         return self._role
 
@@ -242,6 +247,7 @@ class MessagePiece:
 
         Raises:
             ValueError: If the role is not a valid ChatMessageRole.
+
         """
         if value not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {value} is not a valid role.")
@@ -255,12 +261,20 @@ class MessagePiece:
     def has_error(self) -> bool:
         """
         Check if the message piece has an error.
+
+        Returns:
+            bool: True when the response_error is not "none".
+
         """
         return self.response_error != "none"
 
     def is_blocked(self) -> bool:
         """
         Check if the message piece is blocked.
+
+        Returns:
+            bool: True when the response_error is "blocked".
+
         """
         return self.response_error == "blocked"
 
@@ -273,6 +287,13 @@ class MessagePiece:
         self.id = None
 
     def to_dict(self) -> dict[str, object]:
+        """
+        Convert this message piece to a dictionary representation.
+
+        Returns:
+            dict[str, object]: Dictionary representation suitable for serialization.
+
+        """
         return {
             "id": str(self.id),
             "role": self._role,
@@ -301,12 +322,29 @@ class MessagePiece:
         }
 
     def __str__(self) -> str:
+        """
+        Return a concise string representation of this message piece.
+
+        Returns:
+            str: Target, role, and converted value summary.
+
+        """
         target_str = self.prompt_target_identifier.class_name if self.prompt_target_identifier else "Unknown"
         return f"{target_str}: {self._role}: {self.converted_value}"
 
     __repr__ = __str__
 
     def __eq__(self, other: object) -> bool:
+        """
+        Compare this message piece with another for semantic equality.
+
+        Args:
+            other (object): Object to compare.
+
+        Returns:
+            bool: True when all relevant message fields match.
+
+        """
         if not isinstance(other, MessagePiece):
             return NotImplemented
         return (
@@ -328,6 +366,13 @@ def sort_message_pieces(message_pieces: list[MessagePiece]) -> list[MessagePiece
     Group by conversation_id.
     Order conversations by the earliest timestamp within each conversation_id.
     Within each conversation, order messages by sequence.
+
+    Args:
+        message_pieces (list[MessagePiece]): Message pieces to sort.
+
+    Returns:
+        list[MessagePiece]: Sorted message pieces.
+
     """
     earliest_timestamps = {
         convo_id: min(x.timestamp for x in message_pieces if x.conversation_id == convo_id)

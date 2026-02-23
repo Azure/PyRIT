@@ -84,8 +84,16 @@ class AttackResult(StrategyResult):
 
         Returns:
             list: A list of related conversations matching the specified type.
+
         """
         return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
 
     def __str__(self) -> str:
+        """
+        Return a concise string representation of this attack result.
+
+        Returns:
+            str: Summary containing conversation ID, outcome, and objective preview.
+
+        """
         return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."
