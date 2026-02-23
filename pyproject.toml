@@ -251,6 +251,7 @@ select = [
     "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
     "F401",  # unused-import
     "I",  # isort
+    "W",  # https://docs.astral.sh/ruff/rules/#pycodestyle-w
 ]
 ignore = [
     "D100",  # Missing docstring in public module
