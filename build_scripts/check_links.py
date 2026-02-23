@@ -89,8 +89,7 @@ def check_url(url, retries=2, delay=2):
         or any(url.endswith(reference) for reference in custom_myst_references)
         or os.path.isfile(url)
         or os.path.isdir(url)
-        or url.startswith("mailto:")
-        or url.startswith("attachment:")
+        or url.startswith(("mailto:", "attachment:"))
     ):
         return url, True
 

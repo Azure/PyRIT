@@ -26,14 +26,10 @@ WorkflowResultT = TypeVar("WorkflowResultT", bound="WorkflowResult")
 class WorkflowContext(StrategyContext, ABC):
     """Base class for all workflow contexts."""
 
-    pass
-
 
 @dataclass
 class WorkflowResult(StrategyResult, ABC):
     """Base class for all workflow results."""
-
-    pass
 
 
 class _DefaultWorkflowEventHandler(StrategyEventHandler[WorkflowContextT, WorkflowResultT]):

@@ -86,7 +86,6 @@ class PromptChatTarget(PromptTarget):
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """
-        pass
 
     def is_response_format_json(self, message_piece: MessagePiece) -> bool:
         """

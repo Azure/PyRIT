@@ -400,7 +400,6 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable[Attac
             context (XPIAContext): The context for the workflow.
         """
         # No specific teardown operations required for base XPIA workflow
-        pass
 
     @overload
     async def execute_async(

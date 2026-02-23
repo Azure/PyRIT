@@ -92,4 +92,3 @@ class TextTarget(PromptTarget):
 
     async def cleanup_target(self) -> None:
         """Target does not require cleanup."""
-        pass

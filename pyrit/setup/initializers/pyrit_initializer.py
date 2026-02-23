@@ -31,7 +31,6 @@ class PyRITInitializer(ABC):
 
     def __init__(self) -> None:
         """Initialize the PyRIT initializer with no parameters."""
-        pass
 
     @property
     @abstractmethod
@@ -42,7 +41,6 @@ class PyRITInitializer(ABC):
         Returns:
             str: A clear, descriptive name for this initializer.
         """
-        pass
 
     @property
     def description(self) -> str:
@@ -99,7 +97,6 @@ class PyRITInitializer(ABC):
         calls to set_default_value() and set_global_variable() as needed.
         All initializers must implement this as an async method.
         """
-        pass
 
     def validate(self) -> None:
         """

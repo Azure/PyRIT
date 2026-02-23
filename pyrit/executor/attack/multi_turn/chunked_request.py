@@ -375,4 +375,3 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         Args:
             context (ChunkedRequestAttackContext): The attack context containing conversation session.
         """
-        pass

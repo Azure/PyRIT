@@ -28,7 +28,6 @@ class ScorerPrinter(ABC):
         Args:
             scorer_identifier (ScorerIdentifier): The scorer identifier to print information for.
         """
-        pass
 
     @abstractmethod
     def print_harm_scorer(self, scorer_identifier: ScorerIdentifier, *, harm_category: str) -> None:
@@ -44,4 +43,3 @@ class ScorerPrinter(ABC):
             scorer_identifier (ScorerIdentifier): The scorer identifier to print information for.
             harm_category (str): The harm category for looking up metrics (e.g., "hate_speech", "violence").
         """
-        pass

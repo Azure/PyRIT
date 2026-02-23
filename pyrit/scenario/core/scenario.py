@@ -141,7 +141,6 @@ class Scenario(ABC):
         Returns:
             Type[ScenarioStrategy]: The strategy enum class (e.g., FoundryStrategy, EncodingStrategy).
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -156,7 +155,6 @@ class Scenario(ABC):
         Returns:
             ScenarioStrategy: The default aggregate strategy (e.g., FoundryStrategy.EASY, EncodingStrategy.ALL).
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -171,7 +169,6 @@ class Scenario(ABC):
         Returns:
             DatasetConfiguration: The default dataset configuration.
         """
-        pass
 
     @apply_defaults
     async def initialize_async(
@@ -518,7 +515,6 @@ class Scenario(ABC):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
-        pass
 
     async def run_async(self) -> ScenarioResult:
         """
