@@ -157,7 +157,7 @@ class TestScorerRegistryRegisterInstance:
         # Name should be derived from class name with hash suffix
         names = self.registry.get_names()
         assert len(names) == 1
-        assert names[0].startswith("mock_true_false_")
+        assert names[0].startswith("MockTrueFalseScorer::")
 
     def test_register_instance_multiple_scorers_unique_names(self):
         """Test registering multiple scorers generates unique names."""
@@ -228,7 +228,7 @@ class TestScorerRegistryBuildMetadata:
         assert metadata[0].params["scorer_type"] == "true_false"
         assert metadata[0].class_name == "MockTrueFalseScorer"
         # unique_name is auto-computed from class_name, not the registry key
-        assert "mock_true_false_scorer" in metadata[0].unique_name
+        assert "MockTrueFalseScorer::" in metadata[0].unique_name
 
     def test_build_metadata_float_scale_scorer(self):
         """Test that metadata correctly identifies FloatScaleScorer type."""

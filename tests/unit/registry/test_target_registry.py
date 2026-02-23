@@ -119,7 +119,7 @@ class TestTargetRegistryRegisterInstance:
         # Name should be derived from class name with hash suffix
         names = self.registry.get_names()
         assert len(names) == 1
-        assert names[0].startswith("mock_prompt_")
+        assert names[0].startswith("MockPromptTarget::")
 
     def test_register_instance_multiple_targets_unique_names(self):
         """Test registering multiple targets generates unique names."""

@@ -12,10 +12,6 @@ Design principles:
     2. Hash is content-addressed from behavioral params only.
     3. Children carry their own hashes.
     4. Adding optional params with None default is backward-compatible (None values excluded).
-
-ComponentIdentifier also satisfies the registry metadata contract (has class_name, class_module,
-snake_class_name), so it can be used directly as metadata in instance registries like
-ScorerRegistry without a separate wrapper.
 """
 
 from __future__ import annotations
@@ -28,7 +24,6 @@ from dataclasses import dataclass, field
 from typing import Any, ClassVar, Dict, List, Optional, Union
 
 import pyrit
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 
 logger = logging.getLogger(__name__)
 
@@ -158,23 +153,16 @@ class ComponentIdentifier:
         return self.hash[:8]
 
     @property
-    def snake_class_name(self) -> str:
-        """
-        Snake_case version of class_name (e.g., "self_ask_scale_scorer").
-
-        Used by registries for key derivation and CLI formatting.
-        """
-        return class_name_to_snake_case(self.class_name)
-
-    @property
     def unique_name(self) -> str:
         """
-        Globally unique display name: ``snake_class_name::short_hash``.
+        Globally unique display name: ``class_name::short_hash``.
 
-        Used as the default registration key in instance registries
-        (e.g., "self_ask_scale_scorer::a1b2c3d4").
+        Used as the default registration key in instance registries (e.g., "SelfAskScaleScorer::a1b2c3d4").
+
+        Returns:
+            str: Unique name combining class name and short hash.
         """
-        return f"{self.snake_class_name}::{self.short_hash}"
+        return f"{self.class_name}::{self.short_hash}"
 
     @classmethod
     def of(
