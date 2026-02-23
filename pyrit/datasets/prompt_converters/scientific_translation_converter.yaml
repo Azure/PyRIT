@@ -1,4 +1,4 @@
-name: scientific_obfuscation_converter
+name: scientific_translation_converter
 description: |
   Converts prompts into scientific or technical language.
   Supports multiple modes: academic (homework/academic question framing), technical (jargon),

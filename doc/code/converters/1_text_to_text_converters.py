@@ -244,7 +244,7 @@ from pyrit.prompt_converter import (
     NoiseConverter,
     PersuasionConverter,
     RandomTranslationConverter,
-    ScientificObfuscationConverter,
+    ScientificTranslationConverter,
     TenseConverter,
     ToneConverter,
     ToxicSentenceGeneratorConverter,
@@ -307,5 +307,5 @@ math_prompt_converter = MathPromptConverter(converter_target=attack_llm)
 print("Math Prompt:", await math_prompt_converter.convert_async(prompt=prompt))  # type: ignore
 
 # Scientific converter translates into scientific language
-scientific_obfuscation_converter = ScientificObfuscationConverter(converter_target=attack_llm, mode="academic")
-print("Scientific Obfuscation:", await scientific_obfuscation_converter.convert_async(prompt=prompt))  # type: ignore
+scientific_translation_converter = ScientificTranslationConverter(converter_target=attack_llm, mode="academic")
+print("Scientific Translation:", await scientific_translation_converter.convert_async(prompt=prompt))  # type: ignore

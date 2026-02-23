@@ -15,15 +15,15 @@ from pyrit.prompt_target import PromptChatTarget
 logger = logging.getLogger(__name__)
 
 # Supported obfuscation modes
-ObfuscationMode = Literal["academic", "technical", "smiles", "research", "reaction", "combined"]
+TranslationMode = Literal["academic", "technical", "smiles", "research", "reaction", "combined"]
 
 
-class ScientificObfuscationConverter(LLMGenericTextConverter):
+class ScientificTranslationConverter(LLMGenericTextConverter):
     """
     Uses an LLM to transform simple or direct prompts into
     scientifically-framed versions using technical terminology, chemical notation,
     or academic phrasing. This can be useful for red-teaming scenarios to test
-    whether safety filters can be bypassed through scientific obfuscation.
+    whether safety filters can be bypassed through scientific translation.
 
     Supports multiple modes:
         - ``academic``: Frame as scholarly, homework style questions
@@ -40,16 +40,16 @@ class ScientificObfuscationConverter(LLMGenericTextConverter):
         self,
         *,
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
-        mode: ObfuscationMode = "combined",
+        mode: TranslationMode = "combined",
         prompt_template: Optional[SeedPrompt] = None,
     ) -> None:
         """
-        Initialize the scientific obfuscation converter.
+        Initialize the scientific translation converter.
 
         Args:
             converter_target (PromptChatTarget): The LLM target to perform the conversion.
                 Can be omitted if a default has been configured via PyRIT initialization.
-            mode (ObfuscationMode): The obfuscation mode to use. Options are:
+            mode (TranslationMode): The translation mode to use. Options are:
                 - ``academic``: Use academic/scholarly framing
                 - ``technical``: Use technical jargon and terminology
                 - ``smiles``: Use SMILES notation and chemical nomenclature
@@ -57,7 +57,7 @@ class ScientificObfuscationConverter(LLMGenericTextConverter):
                 - ``reaction``: Frame as a step-by-step chemistry mechanism problem
                 - ``combined``: Use all techniques together (default)
             prompt_template (SeedPrompt, Optional): Custom prompt template. If not provided,
-                the default scientific_obfuscation_converter.yaml template will be used.
+                the default scientific_translation_converter.yaml template will be used.
 
         Raises:
             ValueError: If an invalid mode is provided.
@@ -71,7 +71,7 @@ class ScientificObfuscationConverter(LLMGenericTextConverter):
             prompt_template
             if prompt_template
             else SeedPrompt.from_yaml_file(
-                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "scientific_obfuscation_converter.yaml"
+                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "scientific_translation_converter.yaml"
             )
         )
 
