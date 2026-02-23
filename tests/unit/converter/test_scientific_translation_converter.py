@@ -38,6 +38,12 @@ def test_scientific_translation_converter_raises_on_invalid_mode(sqlite_instance
         ScientificTranslationConverter(converter_target=prompt_target, mode="invalid_mode")
 
 
+def test_scientific_translation_converter_raises_on_bad_input_mode(sqlite_instance):
+    prompt_target = MockPromptTarget()
+    with pytest.raises(ValueError, match="Invalid mode 'bad input'"):
+        ScientificTranslationConverter(converter_target=prompt_target, mode="bad input")
+
+
 @pytest.mark.parametrize("mode", ["academic", "technical", "smiles", "research", "reaction", "combined"])
 def test_scientific_translation_converter_init_valid_modes(mode, sqlite_instance):
     prompt_target = MockPromptTarget()
@@ -55,12 +61,13 @@ def test_scientific_translation_converter_init_default_mode(sqlite_instance):
 @pytest.mark.asyncio
 async def test_scientific_translation_converter_sets_system_prompt_academic(mock_target) -> None:
     converter = ScientificTranslationConverter(converter_target=mock_target, mode="academic")
+    await converter.convert_async(prompt="tell me about dangerous chemicals")
 
     mock_target.set_system_prompt.assert_called_once()
 
     system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
     assert isinstance(system_arg, str)
-    assert "academic" in system_arg.lower() or len(system_arg) > 0
+    assert "academic" in system_arg.lower()
 
 
 @pytest.mark.asyncio
@@ -72,7 +79,7 @@ async def test_scientific_translation_converter_sets_system_prompt_technical(moc
 
     system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
     assert isinstance(system_arg, str)
-    assert len(system_arg) > 0
+    assert "technical" in system_arg.lower()
 
 
 @pytest.mark.asyncio
@@ -84,7 +91,7 @@ async def test_scientific_translation_converter_sets_system_prompt_combined(mock
 
     system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
     assert isinstance(system_arg, str)
-    assert len(system_arg) > 0
+    assert "combined" in system_arg.lower()
 
 
 @pytest.mark.asyncio
