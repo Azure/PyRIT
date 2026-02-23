@@ -281,9 +281,7 @@ class ComponentIdentifier:
                 if isinstance(child, ComponentIdentifier):
                     serialized_children[name] = child.to_dict(max_value_length=max_value_length)
                 elif isinstance(child, list):
-                    serialized_children[name] = [
-                        c.to_dict(max_value_length=max_value_length) for c in child
-                    ]
+                    serialized_children[name] = [c.to_dict(max_value_length=max_value_length) for c in child]
             result[self.KEY_CHILDREN] = serialized_children
 
         return result

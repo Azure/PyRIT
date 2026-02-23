@@ -115,13 +115,13 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         """
         return self._create_identifier(
             params={
-                "system_prompt_template": self._system_prompt_with_objective,
+                "system_prompt_template": self._system_prompt,
                 "user_prompt_template": self._prompt_format_string,
                 "score_aggregator": self._score_aggregator.__name__,
             },
             children={
                 "prompt_target": self._prompt_target.get_identifier(),
-            }
+            },
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
