@@ -79,7 +79,7 @@ class PromptNormalizer:
             Message: The response received from the target.
         """
         # Validates that the MessagePieces in the Message are part of the same sequence
-        if len(set(piece.sequence for piece in message.message_pieces)) > 1:
+        if len({piece.sequence for piece in message.message_pieces}) > 1:
             raise ValueError("All MessagePieces in the Message must have the same sequence.")
 
         # Prepare the request by updating conversation ID, labels, and attack identifier
