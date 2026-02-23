@@ -151,15 +151,10 @@ class TestComponentIdentifierProperties:
         assert identifier.short_hash == identifier.hash[:8]
         assert len(identifier.short_hash) == 8
 
-    def test_snake_class_name(self):
-        """Test snake_class_name conversion."""
-        identifier = ComponentIdentifier(class_name="SelfAskScaleScorer", class_module="mod")
-        assert identifier.snake_class_name == "self_ask_scale_scorer"
-
     def test_unique_name(self):
-        """Test unique_name format: snake_class_name::short_hash."""
+        """Test unique_name format: class_name::short_hash."""
         identifier = ComponentIdentifier(class_name="TestTarget", class_module="mod")
-        expected = f"test_target::{identifier.short_hash}"
+        expected = f"TestTarget::{identifier.short_hash}"
         assert identifier.unique_name == expected
 
 
