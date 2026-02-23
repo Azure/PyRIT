@@ -114,18 +114,6 @@ class ComponentIdentifier:
     The hash is content-addressed: two ComponentIdentifiers with the same class, params,
     and children produce the same hash. This enables deterministic metrics lookup,
     DB deduplication, and registry keying.
-
-    Also usable as registry metadata for instance registries (e.g., ScorerRegistry)
-    because it exposes ``class_name``, ``snake_class_name``, and ``unique_name``.
-
-    Attributes:
-        class_name (str): Python class name (e.g., "SelfAskScaleScorer").
-        class_module (str): Full module path (e.g., "pyrit.score.self_ask_scale_scorer").
-        params (Dict[str, Any]): Behavioral parameters that affect output.
-        children (Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]): Named
-            child identifiers for compositional identity (e.g., a scorer's target).
-        hash (str): Content-addressed SHA256 hash computed from class, params, and children.
-        pyrit_version (str): Version tag for storage. Not included in hash.
     """
 
     KEY_CLASS_NAME: ClassVar[str] = "class_name"
@@ -136,11 +124,17 @@ class ComponentIdentifier:
     LEGACY_KEY_TYPE: ClassVar[str] = "__type__"
     LEGACY_KEY_MODULE: ClassVar[str] = "__module__"
 
+    #: Python class name (e.g., "SelfAskScaleScorer").
     class_name: str
+    #: Full module path (e.g., "pyrit.score.self_ask_scale_scorer").
     class_module: str
+    #: Behavioral parameters that affect output.
     params: Dict[str, Any] = field(default_factory=dict)
+    #: Named child identifiers for compositional identity (e.g., a scorer's target).
     children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = field(default_factory=dict)
+    #: Content-addressed SHA256 hash computed from class, params, and children.
     hash: str = field(init=False, compare=False)
+    #: Version tag for storage. Not included in hash.
     pyrit_version: str = field(default_factory=lambda: pyrit.__version__, compare=False)
 
     def __post_init__(self) -> None:
