@@ -368,13 +368,12 @@ class HumanLabeledDataset:
             harm_def = self.get_harm_definition()
 
             # Validate that harm_definition_version matches the actual YAML file version
-            if self.harm_definition_version and harm_def:
-                if harm_def.version != self.harm_definition_version:
-                    raise ValueError(
-                        f"harm_definition_version mismatch: CSV specifies '{self.harm_definition_version}' "
-                        f"but '{self.harm_definition}' has version '{harm_def.version}'. "
-                        f"Please update the CSV or YAML to match."
-                    )
+            if self.harm_definition_version and harm_def and harm_def.version != self.harm_definition_version:
+                raise ValueError(
+                    f"harm_definition_version mismatch: CSV specifies '{self.harm_definition_version}' "
+                    f"but '{self.harm_definition}' has version '{harm_def.version}'. "
+                    f"Please update the CSV or YAML to match."
+                )
 
             harm_categories = set()
             for index, entry in enumerate(self.entries):

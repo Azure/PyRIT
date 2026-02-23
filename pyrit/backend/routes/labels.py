@@ -48,10 +48,6 @@ async def get_label_options(
     """
     memory = CentralMemory.get_memory_instance()
 
-    if source == "attacks":
-        labels = memory.get_unique_attack_labels()
-    else:
-        # Future: add support for other sources
-        labels = {}
+    labels = memory.get_unique_attack_labels() if source == "attacks" else {}
 
     return LabelOptionsResponse(source=source, labels=labels)

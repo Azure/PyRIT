@@ -113,10 +113,7 @@ class WordLevelConverter(PromptConverter):
 
         self.validate_input(prompt=prompt)
 
-        if self._word_split_separator is None:
-            words = prompt.split()  # if no specified separator, split by all whitespace
-        else:
-            words = prompt.split(self._word_split_separator)
+        words = prompt.split() if self._word_split_separator is None else prompt.split(self._word_split_separator)
 
         selected_indices = self._word_selection_strategy.select_words(words=words)
 

@@ -4,6 +4,7 @@
 import asyncio
 import logging
 import time
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, List, Tuple, Union
@@ -813,10 +814,8 @@ class PlaywrightCopilotTarget(PromptTarget):
         add_content_button = self._page.locator(selector)
 
         # First, wait for the button to potentially appear
-        try:
+        with suppress(Exception):
             await add_content_button.wait_for(state="attached", timeout=3000)
-        except Exception:
-            pass  # Continue with retry logic if wait fails
 
         # Retry mechanism: check button count up to 5 times with 500ms delays
         button_found = False

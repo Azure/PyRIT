@@ -64,7 +64,7 @@ class NpEncoder(json.JSONEncoder):
 
 
 def get_embedding_layer(model: Any) -> Any:
-    if isinstance(model, GPTJForCausalLM) or isinstance(model, GPT2LMHeadModel):
+    if isinstance(model, (GPTJForCausalLM, GPT2LMHeadModel)):
         return model.transformer.wte
     elif isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens
@@ -77,30 +77,26 @@ def get_embedding_layer(model: Any) -> Any:
 
 
 def get_embedding_matrix(model: Any) -> Any:
-    if isinstance(model, GPTJForCausalLM) or isinstance(model, GPT2LMHeadModel):
+    if isinstance(model, (GPTJForCausalLM, GPT2LMHeadModel)):
         return model.transformer.wte.weight
     elif isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens.weight
     elif isinstance(model, GPTNeoXForCausalLM):
         return model.base_model.embed_in.weight  # type: ignore[union-attr, unused-ignore]
-    elif isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
-        return model.model.embed_tokens.weight
-    elif isinstance(model, Phi3ForCausalLM):
+    elif isinstance(model, (MixtralForCausalLM, MistralForCausalLM, Phi3ForCausalLM)):
         return model.model.embed_tokens.weight
     else:
         raise ValueError(f"Unknown model type: {type(model)}")
 
 
 def get_embeddings(model: Any, input_ids: torch.Tensor) -> Any:
-    if isinstance(model, GPTJForCausalLM) or isinstance(model, GPT2LMHeadModel):
+    if isinstance(model, (GPTJForCausalLM, GPT2LMHeadModel)):
         return model.transformer.wte(input_ids).half()
     elif isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens(input_ids)
     elif isinstance(model, GPTNeoXForCausalLM):
         return model.base_model.embed_in(input_ids).half()  # type: ignore[operator, unused-ignore]
-    elif isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
-        return model.model.embed_tokens(input_ids)
-    elif isinstance(model, Phi3ForCausalLM):
+    elif isinstance(model, (MixtralForCausalLM, MistralForCausalLM, Phi3ForCausalLM)):
         return model.model.embed_tokens(input_ids)
     else:
         raise ValueError(f"Unknown model type: {type(model)}")
@@ -355,10 +351,7 @@ class AttackPrompt:
         ids = torch.scatter(
             self.input_ids.unsqueeze(0).repeat(test_ids.shape[0], 1).to(model.device), 1, locs, test_ids
         )
-        if pad_tok >= 0:
-            attn_mask = (ids != pad_tok).type(ids.dtype)
-        else:
-            attn_mask = None
+        attn_mask = (ids != pad_tok).type(ids.dtype) if pad_tok >= 0 else None
 
         if return_ids:
             del locs, test_ids
@@ -1031,7 +1024,7 @@ class ProgressiveMultiPromptAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs
@@ -1271,7 +1264,7 @@ class IndividualPromptAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs
@@ -1486,7 +1479,7 @@ class EvaluateAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs

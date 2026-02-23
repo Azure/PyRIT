@@ -372,8 +372,7 @@ class AttackService:
         labels: Optional[Dict[str, str]] = None,
     ) -> None:
         """Store prepended conversation messages in memory."""
-        seq = 0
-        for msg in prepended:
+        for seq, msg in enumerate(prepended):
             for p in msg.pieces:
                 piece = request_piece_to_pyrit_message_piece(
                     piece=p,
@@ -383,7 +382,6 @@ class AttackService:
                     labels=labels,
                 )
                 self._memory.add_message_pieces_to_memory(message_pieces=[piece])
-            seq += 1
 
     async def _send_and_store_message(
         self,

@@ -169,12 +169,10 @@ class ConsoleScorerPrinter(ScorerPrinter):
 
         # Check for sub_identifier (nested scorers)
         sub_identifier = scorer_identifier.sub_identifier
-        if sub_identifier:
-            # Handle list of sub-scorers (composite scorer)
-            if isinstance(sub_identifier, list):
-                self._print_colored(f"{indent}  └─ Composite of {len(sub_identifier)} scorer(s):", Fore.CYAN)
-                for sub_scorer_id in sub_identifier:
-                    self._print_scorer_info(sub_scorer_id, indent_level=indent_level + 3)
+        if sub_identifier and isinstance(sub_identifier, list):
+            self._print_colored(f"{indent}  └─ Composite of {len(sub_identifier)} scorer(s):", Fore.CYAN)
+            for sub_scorer_id in sub_identifier:
+                self._print_scorer_info(sub_scorer_id, indent_level=indent_level + 3)
 
     def _print_objective_metrics(self, metrics: Optional["ObjectiveScorerMetrics"]) -> None:
         """

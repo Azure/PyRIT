@@ -109,13 +109,13 @@ class _AyaRedteamingDataset(_RemoteDatasetLoader):
             categories = ast.literal_eval(example["harm_category"])
 
             # Apply filters
-            if self.harm_categories_filter is not None:
-                if not any(cat in categories for cat in self.harm_categories_filter):
-                    continue
+            if self.harm_categories_filter is not None and not any(
+                cat in categories for cat in self.harm_categories_filter
+            ):
+                continue
 
-            if self.harm_scope is not None:
-                if example["global_or_local"] != self.harm_scope:
-                    continue
+            if self.harm_scope is not None and example["global_or_local"] != self.harm_scope:
+                continue
 
             seed_prompts.append(
                 SeedPrompt(

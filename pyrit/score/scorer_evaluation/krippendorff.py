@@ -50,10 +50,7 @@ def _validate_and_prepare_data(
         missing = np.nan
 
     # Identify valid (non-missing) values
-    if np.isnan(missing):
-        valid_mask = ~np.isnan(data)
-    else:
-        valid_mask = data != missing
+    valid_mask = ~np.isnan(data) if np.isnan(missing) else data != missing
 
     # Get sorted unique categories
     valid_ratings = data[valid_mask]

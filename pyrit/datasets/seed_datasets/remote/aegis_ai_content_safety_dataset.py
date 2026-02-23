@@ -140,7 +140,7 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
 
         seed_prompts = []
 
-        for split_name in hf_dataset.keys():
+        for split_name in hf_dataset:
             for example in hf_dataset[split_name]:
                 # Skip safe prompts
                 prompt_label = example.get("prompt_label", "")
@@ -161,11 +161,11 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
                     prompt_harm_categories = categories
 
                 # Filter by harm_categories if specified
-                if self.harm_categories_filter is not None:
-                    if not prompt_harm_categories or not any(
-                        cat in prompt_harm_categories for cat in self.harm_categories_filter
-                    ):
-                        continue
+                if self.harm_categories_filter is not None and (
+                    not prompt_harm_categories
+                    or not any(cat in prompt_harm_categories for cat in self.harm_categories_filter)
+                ):
+                    continue
 
                 # Escape Jinja2 template syntax by wrapping the entire prompt in raw tags
                 # This tells Jinja2 to treat everything inside as literal text

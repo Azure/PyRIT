@@ -160,10 +160,9 @@ class SeedDatasetProvider(ABC):
             provider = provider_class()
 
             # Apply dataset name filter if specified
-            if dataset_names is not None:
-                if provider.dataset_name not in dataset_names:
-                    logger.debug(f"Skipping {provider_name} - not in filter list")
-                    return None
+            if dataset_names is not None and provider.dataset_name not in dataset_names:
+                logger.debug(f"Skipping {provider_name} - not in filter list")
+                return None
 
             dataset = await provider.fetch_dataset(cache=cache)
             return (provider.dataset_name, dataset)

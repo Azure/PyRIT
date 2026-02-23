@@ -153,13 +153,17 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
 
             for attr_name in dir(module):
                 attr = getattr(module, attr_name)
-                if inspect.isclass(attr) and issubclass(attr, base_class) and attr is not base_class:
-                    if not inspect.isabstract(attr):
-                        self._register_initializer(
-                            short_name=short_name,
-                            file_path=file_path,
-                            initializer_class=attr,  # type: ignore[arg-type]
-                        )
+                if (
+                    inspect.isclass(attr)
+                    and issubclass(attr, base_class)
+                    and attr is not base_class
+                    and not inspect.isabstract(attr)
+                ):
+                    self._register_initializer(
+                        short_name=short_name,
+                        file_path=file_path,
+                        initializer_class=attr,  # type: ignore[arg-type]
+                    )
 
         except Exception as e:
             logger.warning(f"Failed to load initializer module {short_name}: {e}")

@@ -110,7 +110,7 @@ class TestPlaywrightTarget:
         target = PlaywrightTarget(interaction_func=mock_interaction_func, page=mock_page)
 
         assert hasattr(target, "SUPPORTED_DATA_TYPES")
-        assert target.SUPPORTED_DATA_TYPES == {"text", "image_path"}
+        assert {"text", "image_path"} == target.SUPPORTED_DATA_TYPES
 
     def test_validate_request_unsupported_type(self, mock_interaction_func, mock_page):
         """Test validation with unsupported data type."""
