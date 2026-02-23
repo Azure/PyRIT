@@ -3,10 +3,9 @@
 
 from __future__ import annotations
 
-import logging
 from abc import ABC
 from dataclasses import dataclass
-from typing import Optional, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 from pyrit.common.logger import logger
 from pyrit.executor.core.strategy import (
@@ -16,6 +15,9 @@ from pyrit.executor.core.strategy import (
     StrategyEventHandler,
 )
 from pyrit.models import StrategyResult
+
+if TYPE_CHECKING:
+    import logging
 
 PromptGeneratorStrategyContextT = TypeVar("PromptGeneratorStrategyContextT", bound="PromptGeneratorStrategyContext")
 PromptGeneratorStrategyResultT = TypeVar("PromptGeneratorStrategyResultT", bound="PromptGeneratorStrategyResult")

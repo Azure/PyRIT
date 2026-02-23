@@ -15,13 +15,16 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Sequence, TypeVar, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.literals import PromptDataType
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
 

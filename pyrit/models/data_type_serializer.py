@@ -17,11 +17,11 @@ from urllib.parse import urlparse
 import aiofiles
 
 from pyrit.common.path import DB_DATA_PATH
-from pyrit.models.literals import PromptDataType
 from pyrit.models.storage_io import DiskStorageIO, StorageIO
 
 if TYPE_CHECKING:
     from pyrit.memory import MemoryInterface
+    from pyrit.models.literals import PromptDataType
 
 # Define allowed categories for validation
 AllowedCategories = Literal["seed-prompt-entries", "prompt-memory-entries"]

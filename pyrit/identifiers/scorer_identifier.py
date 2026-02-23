@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from pyrit.identifiers.identifier import _MAX_STORAGE_LENGTH, Identifier
-from pyrit.models.score import ScoreType
+
+if TYPE_CHECKING:
+    from pyrit.models.score import ScoreType
 
 
 @dataclass(frozen=True)

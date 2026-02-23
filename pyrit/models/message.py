@@ -7,11 +7,13 @@ import copy
 import uuid
 import warnings
 from datetime import datetime
-from typing import Dict, MutableSequence, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Dict, MutableSequence, Optional, Sequence, Union
 
 from pyrit.common.utils import combine_dict
-from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.message_piece import MessagePiece
+
+if TYPE_CHECKING:
+    from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 
 
 class Message:

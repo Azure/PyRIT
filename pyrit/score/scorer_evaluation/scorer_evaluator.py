@@ -7,15 +7,12 @@ import abc
 import logging
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 import numpy as np
 from scipy.stats import ttest_1samp
 
 from pyrit.common.path import SCORER_EVALS_PATH
-from pyrit.models import Message
-from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -37,6 +34,12 @@ from pyrit.score.scorer_evaluation.scorer_metrics_io import (
     replace_evaluation_results,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from pyrit.models import Message
+    from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 

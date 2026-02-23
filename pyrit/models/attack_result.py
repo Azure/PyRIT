@@ -5,13 +5,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar
 
-from pyrit.identifiers import AttackIdentifier
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
-from pyrit.models.message_piece import MessagePiece
-from pyrit.models.score import Score
 from pyrit.models.strategy_result import StrategyResult
+
+if TYPE_CHECKING:
+    from pyrit.identifiers import AttackIdentifier
+    from pyrit.models.conversation_reference import ConversationReference, ConversationType
+    from pyrit.models.message_piece import MessagePiece
+    from pyrit.models.score import Score
 
 AttackResultT = TypeVar("AttackResultT", bound="AttackResult")
 

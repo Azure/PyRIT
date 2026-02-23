@@ -3,17 +3,20 @@
 
 from __future__ import annotations
 
-import logging
 import uuid
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Type, Union
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.attack.core.attack_strategy import AttackContext, AttackStrategy
 from pyrit.models import AttackResult
-from pyrit.prompt_target import PromptTarget
+
+if TYPE_CHECKING:
+    import logging
+
+    from pyrit.prompt_target import PromptTarget
 
 
 @dataclass

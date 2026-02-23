@@ -129,10 +129,12 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         if response.status_code == 200:
             if file_type in FILE_TYPE_HANDLERS:
                 if file_type == "json":
-                    return cast(List[Dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text)))
+                    return cast(
+                        "List[Dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text))
+                    )
                 else:
                     return cast(
-                        List[Dict[str, str]],
+                        "List[Dict[str, str]]",
                         FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines()))),
                     )
             else:

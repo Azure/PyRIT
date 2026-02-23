@@ -15,9 +15,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Sequence
 
 from pyrit.memory import CentralMemory
 from pyrit.models import SeedAttackGroup, SeedGroup
-from pyrit.models.seeds.seed import Seed
 
 if TYPE_CHECKING:
+    from pyrit.models.seeds.seed import Seed
     from pyrit.scenario.core.scenario_strategy import ScenarioCompositeStrategy
 
 # Key used when seed_groups are provided directly (not from a named dataset)

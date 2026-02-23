@@ -5,12 +5,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union, get_args
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
 from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
-from pyrit.models.score import Score
+
+if TYPE_CHECKING:
+    from pyrit.models.score import Score
 
 Originator = Literal["attack", "converter", "undefined", "scorer"]
 
