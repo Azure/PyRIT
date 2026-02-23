@@ -51,6 +51,57 @@ class Message:
 
         return self.message_pieces[n]
 
+    def get_pieces_by_type(
+        self,
+        *,
+        data_type: Optional[PromptDataType] = None,
+        original_value_data_type: Optional[PromptDataType] = None,
+        converted_value_data_type: Optional[PromptDataType] = None,
+    ) -> list[MessagePiece]:
+        """
+        Return all message pieces matching the given data type.
+
+        Args:
+            data_type: Alias for converted_value_data_type (for convenience).
+            original_value_data_type: The original_value_data_type to filter by.
+            converted_value_data_type: The converted_value_data_type to filter by.
+
+        Returns:
+            A list of matching MessagePiece objects (may be empty).
+        """
+        effective_converted = converted_value_data_type or data_type
+        results = self.message_pieces
+        if effective_converted:
+            results = [p for p in results if p.converted_value_data_type == effective_converted]
+        if original_value_data_type:
+            results = [p for p in results if p.original_value_data_type == original_value_data_type]
+        return list(results)
+
+    def get_piece_by_type(
+        self,
+        *,
+        data_type: Optional[PromptDataType] = None,
+        original_value_data_type: Optional[PromptDataType] = None,
+        converted_value_data_type: Optional[PromptDataType] = None,
+    ) -> Optional[MessagePiece]:
+        """
+        Return the first message piece matching the given data type, or None.
+
+        Args:
+            data_type: Alias for converted_value_data_type (for convenience).
+            original_value_data_type: The original_value_data_type to filter by.
+            converted_value_data_type: The converted_value_data_type to filter by.
+
+        Returns:
+            The first matching MessagePiece, or None if no match is found.
+        """
+        pieces = self.get_pieces_by_type(
+            data_type=data_type,
+            original_value_data_type=original_value_data_type,
+            converted_value_data_type=converted_value_data_type,
+        )
+        return pieces[0] if pieces else None
+
     @property
     def api_role(self) -> ChatMessageRole:
         """

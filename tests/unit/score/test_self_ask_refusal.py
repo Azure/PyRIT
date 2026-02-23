@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import tempfile
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -12,7 +13,7 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
-from pyrit.score import SelfAskRefusalScorer
+from pyrit.score import RefusalScorerPaths, SelfAskRefusalScorer
 
 
 @pytest.fixture
@@ -69,7 +70,9 @@ async def test_refusal_scorer_no_task(scorer_true_false_response: Message, patch
     await scorer.score_text_async("true false")
 
     _, kwargs = chat_target.send_prompt_async.call_args
-    assert kwargs["message"].message_pieces[0].original_value == "response_to_evaluate_input: true false"
+    # Without an objective, the scorer uses "Not provided" as the objective placeholder
+    expected = "conversation_objective: Not provided\nresponse_to_evaluate_input: true false"
+    assert kwargs["message"].message_pieces[0].original_value == expected
 
 
 @pytest.mark.asyncio
@@ -176,3 +179,119 @@ async def test_score_async_filtered_response(patch_central_database):
     assert scores[0].score_value_description == "Refusal detected"
     assert scores[0].score_rationale == "Content was filtered, constituting a refusal."
     assert scores[0].scorer_class_identifier.class_name == "SelfAskRefusalScorer"
+
+
+class TestRefusalScorerPaths:
+    """Tests for RefusalScorerPaths enum."""
+
+    def test_refusal_scorer_paths_default_exists(self):
+        """Test that DEFAULT path exists in enum."""
+        assert RefusalScorerPaths.DEFAULT is not None
+        assert isinstance(RefusalScorerPaths.DEFAULT.value, Path)
+        assert "refusal_default.yaml" in str(RefusalScorerPaths.DEFAULT.value)
+
+    def test_refusal_scorer_paths_strict_exists(self):
+        """Test that STRICT path exists in enum."""
+        assert RefusalScorerPaths.STRICT is not None
+        assert isinstance(RefusalScorerPaths.STRICT.value, Path)
+        assert "refusal_strict.yaml" in str(RefusalScorerPaths.STRICT.value)
+
+
+class TestRefusalScorerSystemPromptPath:
+    """Tests for refusal_system_prompt_path parameter."""
+
+    @pytest.mark.asyncio
+    async def test_refusal_scorer_with_strict_mode(self, scorer_true_false_response: Message, patch_central_database):
+        """Test that STRICT mode can be used."""
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
+
+        scorer = SelfAskRefusalScorer(
+            chat_target=chat_target,
+            refusal_system_prompt_path=RefusalScorerPaths.STRICT,
+        )
+
+        score = await scorer.score_text_async("some response")
+        assert len(score) == 1
+
+    @pytest.mark.asyncio
+    async def test_refusal_scorer_with_strict_mode_and_objective(
+        self, scorer_true_false_response: Message, patch_central_database
+    ):
+        """Test STRICT mode with an objective."""
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
+
+        scorer = SelfAskRefusalScorer(
+            chat_target=chat_target,
+            refusal_system_prompt_path=RefusalScorerPaths.STRICT,
+        )
+
+        score = await scorer.score_text_async("some response", objective="generate harmful content")
+        assert len(score) == 1
+        assert score[0].get_value() is True
+
+
+class TestRefusalScorerPromptFormatString:
+    """Tests for prompt_format_string parameter."""
+
+    @pytest.mark.asyncio
+    async def test_refusal_scorer_custom_prompt_format(
+        self, scorer_true_false_response: Message, patch_central_database
+    ):
+        """Test that custom prompt_format_string is used."""
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
+
+        custom_format = "Goal: {objective}\nAI Response: {response}"
+        scorer = SelfAskRefusalScorer(
+            chat_target=chat_target,
+            prompt_format_string=custom_format,
+        )
+
+        await scorer.score_text_async("test response", objective="test objective")
+
+        _, kwargs = chat_target.send_prompt_async.call_args
+        expected = "Goal: test objective\nAI Response: test response"
+        assert kwargs["message"].message_pieces[0].original_value == expected
+
+    @pytest.mark.asyncio
+    async def test_refusal_scorer_custom_prompt_format_no_objective(
+        self, scorer_true_false_response: Message, patch_central_database
+    ):
+        """Test custom prompt_format_string with no objective uses 'Not provided'."""
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
+
+        custom_format = "Goal: {objective}\nAI Response: {response}"
+        scorer = SelfAskRefusalScorer(
+            chat_target=chat_target,
+            prompt_format_string=custom_format,
+        )
+
+        await scorer.score_text_async("test response")
+
+        _, kwargs = chat_target.send_prompt_async.call_args
+        expected = "Goal: Not provided\nAI Response: test response"
+        assert kwargs["message"].message_pieces[0].original_value == expected
+
+    @pytest.mark.asyncio
+    async def test_refusal_scorer_default_prompt_format(
+        self, scorer_true_false_response: Message, patch_central_database
+    ):
+        """Test that default prompt format is used when not specified."""
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+        chat_target.send_prompt_async = AsyncMock(return_value=[scorer_true_false_response])
+
+        scorer = SelfAskRefusalScorer(chat_target=chat_target)
+
+        await scorer.score_text_async("test response", objective="test objective")
+
+        _, kwargs = chat_target.send_prompt_async.call_args
+        expected = "conversation_objective: test objective\nresponse_to_evaluate_input: test response"
+        assert kwargs["message"].message_pieces[0].original_value == expected

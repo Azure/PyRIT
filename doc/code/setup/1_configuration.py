@@ -5,7 +5,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.3
+#       jupytext_version: 1.19.1
 # ---
 
 # %% [markdown]
@@ -19,9 +19,22 @@
 # 2. Pick a database (required)
 # 3. Set initialization scripts and defaults (recommended)
 #
+# Alternatively, you can write a config file (`~/.pyrit/.pyrit_conf`) to parameterize this for you.
+
+# %% [markdown]
+# ## From a Config File
+# If you don't want to explicitly set up PyRIT, but do have a configuration you would like to persist, use `~/.pyrit/.pyrit_conf`. See the [PyRIT Configuration Guide](../../setup/pyrit_conf.md) for more details. Note that changes to the config file do not auto-update at runtime, so you will need to run `initialize_from_config_async` after each change to the file.
+
+# %%
+# You can specify your own path for the config file using config_path
+from pyrit.setup.configuration_loader import initialize_from_config_async
+
+await initialize_from_config_async()  # type: ignore
+
+# %% [markdown]
 # ## Simple Example
 #
-# This section goes into each of these steps. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
+# This section goes into each of the three steps mentioned earlier. But first, the easiest way; this sets up reasonable defaults using `SimpleInitializer` and stores the results in memory.
 
 # %%
 # Set OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY environment variables before running this code
@@ -133,9 +146,9 @@ await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInit
 # Alternative approach - you can pass the path to the initializer class.
 # This is how you provide your own file not part of the repo that defines a PyRITInitializer class
 # This is equivalent to loading the class directly as above
-await initialize_pyrit_async(  # type: ignore
+await initialize_pyrit_async(
     memory_db_type="InMemory", initialization_scripts=[f"{PYRIT_PATH}/setup/initializers/simple.py"]
-)
+)  # type: ignore
 
 
 # SimpleInitializer is a class that initializes sensible defaults for someone who only has OPENAI_CHAT_ENDPOINT, OPENAI_CHAT_MODEL, and OPENAI_CHAT_KEY configured

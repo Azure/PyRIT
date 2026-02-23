@@ -116,3 +116,51 @@ attack_manual = PromptSendingAttack(objective_target=target)
 
 result_manual = await attack_manual.execute_async(objective="Hello! Who are you?")
 await ConsoleAttackResultPrinter().print_conversation_async(result=result_manual)
+
+# %% [markdown]
+# ## Multimodal Support (Text and Images)
+#
+# The `WebSocketCopilotTarget` supports multimodal input, allowing you to send both text and images in a single message. Images are automatically uploaded to Copilot's file service and referenced in the conversation using the same process as the Copilot web interface.
+#
+# Here's an example of sending an image along with a text prompt:
+
+# %%
+from pathlib import Path
+
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import WebSocketCopilotTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY, silent=True)
+
+target = WebSocketCopilotTarget()
+attack = PromptSendingAttack(objective_target=target)
+
+# Replace with the path to your actual image file
+image_path = Path("../converters/benign_cake_question.jpg")
+
+# Create a multimodal message with both text and image pieces
+multimodal_message = Message(
+    message_pieces=[
+        MessagePiece(
+            role="user",
+            original_value="Answer the question from the image",
+            converted_value="Answer the question from the image",
+            conversation_id="test_conversation",
+            original_value_data_type="text",
+            converted_value_data_type="text",
+        ),
+        MessagePiece(
+            role="user",
+            original_value=str(image_path),
+            converted_value=str(image_path),
+            conversation_id="test_conversation",
+            original_value_data_type="image_path",
+            converted_value_data_type="image_path",
+        ),
+    ]
+)
+
+result = await attack.execute_async(objective="Answer the question from the image", next_message=multimodal_message)
+await ConsoleAttackResultPrinter().print_conversation_async(result=result)
