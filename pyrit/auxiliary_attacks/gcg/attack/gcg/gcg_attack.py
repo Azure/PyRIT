@@ -206,17 +206,13 @@ class GCGMultiPromptAttack(MultiPromptAttack):
                         worker(self.prompts[k][i], "logits", worker.model, cand, return_ids=True)
                     logits, ids = zip(*[worker.results.get() for worker in self.workers])
                     loss[j * batch_size : (j + 1) * batch_size] += sum(
-                        [
-                            target_weight * self.prompts[k][i].target_loss(logit, id).mean(dim=-1).to(main_device)
-                            for k, (logit, id) in enumerate(zip(logits, ids))
-                        ]
+                        target_weight * self.prompts[k][i].target_loss(logit, id).mean(dim=-1).to(main_device)
+                        for k, (logit, id) in enumerate(zip(logits, ids))
                     )
                     if control_weight != 0:
                         loss[j * batch_size : (j + 1) * batch_size] += sum(
-                            [
-                                control_weight * self.prompts[k][i].control_loss(logit, id).mean(dim=-1).to(main_device)
-                                for k, (logit, id) in enumerate(zip(logits, ids))
-                            ]
+                            control_weight * self.prompts[k][i].control_loss(logit, id).mean(dim=-1).to(main_device)
+                            for k, (logit, id) in enumerate(zip(logits, ids))
                         )
                     del logits, ids
                     gc.collect()

@@ -62,7 +62,7 @@ class TemplateSegmentConverter(PromptConverter):
         # Validate all parameters exist in the template value by attempting to render with empty values
         try:
             # Create a dict with empty values for all parameters
-            empty_values = {param: "" for param in self.prompt_template.parameters}
+            empty_values = dict.fromkeys(self.prompt_template.parameters, "")
             # This will raise ValueError if any parameter is missing
             self.prompt_template.render_template_value(**empty_values)
         except ValueError as e:

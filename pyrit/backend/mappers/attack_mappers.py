@@ -51,7 +51,7 @@ def attack_result_to_summary(
     Returns:
         AttackSummary DTO ready for the API response.
     """
-    message_count = len(set(p.sequence for p in pieces))
+    message_count = len({p.sequence for p in pieces})
     last_preview = _get_preview_from_pieces(pieces)
 
     created_str = ar.metadata.get("created_at")

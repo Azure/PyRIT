@@ -123,7 +123,7 @@ class PlagiarismScorer(FloatScaleScorer):
         Returns:
             set: Set of n-gram tuples.
         """
-        return set(tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1))
+        return {tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)}
 
     def _plagiarism_score(
         self,

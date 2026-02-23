@@ -70,9 +70,9 @@ class _HarmBenchMultimodalDataset(_RemoteDatasetLoader):
         # Validate categories if provided
         if categories is not None:
             valid_categories = {category.value for category in SemanticCategory}
-            invalid_categories = (
-                set(cat.value if isinstance(cat, SemanticCategory) else cat for cat in categories) - valid_categories
-            )
+            invalid_categories = {
+                cat.value if isinstance(cat, SemanticCategory) else cat for cat in categories
+            } - valid_categories
             if invalid_categories:
                 raise ValueError(f"Invalid semantic categories: {', '.join(invalid_categories)}")
 
