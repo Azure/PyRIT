@@ -576,6 +576,10 @@ API Reference
     HumanInTheLoopScorerGradio
     HumanLabeledDataset
     HumanLabeledEntry
+    JEFAnthraxKeywordScorer
+    JEFFentanylKeywordScorer
+    JEFMethKeywordScorer
+    JEFNerveAgentKeywordScorer
     InsecureCodeScorer
     LikertScaleEvalFiles
     LikertScalePaths
