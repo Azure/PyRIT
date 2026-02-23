@@ -339,5 +339,5 @@ async def test_hugging_face_chat_sets_endpoint_and_rate_limit(patch_central_data
     await target.load_model_and_tokenizer_task
     identifier = target.get_identifier()
     # HuggingFaceChatTarget doesn't set an endpoint (it's local), so it should be empty
-    assert not identifier.endpoint
+    assert not identifier.params.get("endpoint")
     assert target._max_requests_per_minute == 30

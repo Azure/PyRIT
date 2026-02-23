@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-from pyrit.identifiers import AttackIdentifier, Identifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 
 
 class ComponentRole(Enum):
@@ -62,10 +62,10 @@ class ExecutionContext:
     attack_strategy_name: Optional[str] = None
 
     # The identifier for the attack strategy
-    attack_identifier: Optional[AttackIdentifier] = None
+    attack_identifier: Optional[ComponentIdentifier] = None
 
     # The identifier from the component's get_identifier() (target, scorer, etc.)
-    component_identifier: Optional[Identifier] = None
+    component_identifier: Optional[ComponentIdentifier] = None
 
     # The objective target conversation ID if available
     objective_target_conversation_id: Optional[str] = None
@@ -192,8 +192,8 @@ def execution_context(
     *,
     component_role: ComponentRole,
     attack_strategy_name: Optional[str] = None,
-    attack_identifier: Optional[AttackIdentifier] = None,
-    component_identifier: Optional[Identifier] = None,
+    attack_identifier: Optional[ComponentIdentifier] = None,
+    component_identifier: Optional[ComponentIdentifier] = None,
     objective_target_conversation_id: Optional[str] = None,
     objective: Optional[str] = None,
 ) -> ExecutionContextManager:
@@ -215,7 +215,7 @@ def execution_context(
     endpoint = None
     component_name = None
     if component_identifier:
-        endpoint = getattr(component_identifier, "endpoint", None)
+        endpoint = component_identifier.params.get("endpoint")
         component_name = component_identifier.class_name
 
     context = ExecutionContext(

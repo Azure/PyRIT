@@ -7,7 +7,7 @@ import pytest
 from unit.mocks import MockPromptTarget
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
-from pyrit.identifiers import AttackIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import PersuasionConverter
 
@@ -74,8 +74,8 @@ async def test_persuasion_converter_send_prompt_async_bad_json_exception_retries
                     converted_value=converted_value,
                     original_value_data_type="text",
                     converted_value_data_type="text",
-                    prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                    attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                    prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                    attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                     labels={"test": "test"},
                 )
             ]

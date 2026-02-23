@@ -5,7 +5,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, Protocol, overload
+from typing import Any, ClassVar, Dict, List, Optional, Protocol, Union, overload
 
 from pyrit.common.utils import combine_dict, get_kwarg_param
 from pyrit.executor.core import StrategyConverterConfig
@@ -14,7 +14,7 @@ from pyrit.executor.workflow.core import (
     WorkflowResult,
     WorkflowStrategy,
 )
-from pyrit.identifiers import AttackIdentifier, Identifiable
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -128,7 +128,7 @@ class XPIAResult(WorkflowResult):
         return XPIAStatus.SUCCESS if self.success else XPIAStatus.FAILURE
 
 
-class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable[AttackIdentifier]):
+class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable):
     """
     Implementation of Cross-Domain Prompt Injection Attack (XPIA) workflow.
 
@@ -140,6 +140,9 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable[Attac
     The workflow supports customization through prompt converters and scorers,
     allowing for various attack techniques and evaluation methods.
     """
+
+    CHILD_KEY_ATTACK_SETUP_TARGET: ClassVar[str] = "attack_setup_target"
+    CHILD_KEY_OBJECTIVE_SCORER: ClassVar[str] = "objective_scorer"
 
     def __init__(
         self,
@@ -175,25 +178,40 @@ class XPIAWorkflow(WorkflowStrategy[XPIAContext, XPIAResult], Identifiable[Attac
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
         self._memory = CentralMemory.get_memory_instance()
 
-    def _build_identifier(self) -> AttackIdentifier:
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
-        Build the typed identifier for this XPIA workflow.
+        Construct the identifier for this XPIA workflow.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
 
         Returns:
-            AttackIdentifier: The constructed identifier.
+            ComponentIdentifier: The identifier for this XPIA workflow.
         """
-        objective_target_identifier = self._attack_setup_target.get_identifier()
-
-        scorer_identifier = None
+        all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
+            self.CHILD_KEY_ATTACK_SETUP_TARGET: self._attack_setup_target.get_identifier(),
+        }
         if self._scorer:
-            scorer_identifier = self._scorer.get_identifier()
+            all_children[self.CHILD_KEY_OBJECTIVE_SCORER] = self._scorer.get_identifier()
+        if children:
+            all_children.update(children)
+        return ComponentIdentifier.of(self, params=params, children=all_children)
 
-        return AttackIdentifier(
-            class_name=self.__class__.__name__,
-            class_module=self.__class__.__module__,
-            objective_target_identifier=objective_target_identifier,
-            objective_scorer_identifier=scorer_identifier,
-        )
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this XPIA workflow.
+
+        Returns:
+            ComponentIdentifier: The constructed identifier.
+        """
+        return self._create_identifier()
 
     def _validate_context(self, *, context: XPIAContext) -> None:
         """

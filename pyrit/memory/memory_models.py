@@ -32,7 +32,7 @@ from sqlalchemy.types import Uuid
 
 import pyrit
 from pyrit.common.utils import to_sha256
-from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -53,6 +53,10 @@ from pyrit.models import (
 
 # Default pyrit_version for database records created before version tracking was added
 LEGACY_PYRIT_VERSION = "<0.10.0"
+
+# Maximum length for string values in ComponentIdentifier.to_dict() when storing to the database.
+# Longer values are truncated with a "..." suffix.
+MAX_IDENTIFIER_VALUE_LENGTH: int = 80
 
 
 class CustomUUID(TypeDecorator[uuid.UUID]):
@@ -215,12 +219,20 @@ class PromptMemoryEntry(Base):
         self.labels = entry.labels
         self.prompt_metadata = entry.prompt_metadata
         self.targeted_harm_categories = entry.targeted_harm_categories
-        self.converter_identifiers = [conv.to_dict() for conv in entry.converter_identifiers]
+        self.converter_identifiers = [
+            conv.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH) for conv in entry.converter_identifiers
+        ]
         # Normalize prompt_target_identifier and convert to dict for JSON serialization
         self.prompt_target_identifier = (
-            entry.prompt_target_identifier.to_dict() if entry.prompt_target_identifier else {}
+            entry.prompt_target_identifier.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
+            if entry.prompt_target_identifier
+            else {}
         )
-        self.attack_identifier = entry.attack_identifier.to_dict() if entry.attack_identifier else {}
+        self.attack_identifier = (
+            entry.attack_identifier.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
+            if entry.attack_identifier
+            else {}
+        )
 
         self.original_value = entry.original_value
         self.original_value_data_type = entry.original_value_data_type  # type: ignore
@@ -242,24 +254,26 @@ class PromptMemoryEntry(Base):
         Returns:
             MessagePiece: The reconstructed message piece with all its data and scores.
         """
-        # Reconstruct ConverterIdentifiers with the stored pyrit_version
-        converter_ids: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = None
+        # Reconstruct ComponentIdentifiers with the stored pyrit_version
+        converter_ids: Optional[List[Union[ComponentIdentifier, Dict[str, str]]]] = None
         stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
         if self.converter_identifiers:
             converter_ids = [
-                ConverterIdentifier.from_dict({**c, "pyrit_version": stored_version})
+                ComponentIdentifier.from_dict({**c, "pyrit_version": stored_version})
                 for c in self.converter_identifiers
             ]
 
-        # Reconstruct TargetIdentifier with the stored pyrit_version
-        target_id: Optional[TargetIdentifier] = None
+        # Reconstruct ComponentIdentifier with the stored pyrit_version
+        target_id: Optional[ComponentIdentifier] = None
         if self.prompt_target_identifier:
-            target_id = TargetIdentifier.from_dict({**self.prompt_target_identifier, "pyrit_version": stored_version})
+            target_id = ComponentIdentifier.from_dict(
+                {**self.prompt_target_identifier, "pyrit_version": stored_version}
+            )
 
-        # Reconstruct AttackIdentifier with the stored pyrit_version
-        attack_id: Optional[AttackIdentifier] = None
+        # Reconstruct ComponentIdentifier with the stored pyrit_version
+        attack_id: Optional[ComponentIdentifier] = None
         if self.attack_identifier:
-            attack_id = AttackIdentifier.from_dict({**self.attack_identifier, "pyrit_version": stored_version})
+            attack_id = ComponentIdentifier.from_dict({**self.attack_identifier, "pyrit_version": stored_version})
 
         message_piece = MessagePiece(
             role=self.role,
@@ -370,9 +384,9 @@ class ScoreEntry(Base):
         self.score_category = entry.score_category
         self.score_rationale = entry.score_rationale
         self.score_metadata = entry.score_metadata
-        # Normalize to ScorerIdentifier (handles dict with deprecation warning) then convert to dict for JSON storage
-        normalized_scorer = ScorerIdentifier.normalize(entry.scorer_class_identifier)
-        self.scorer_class_identifier = normalized_scorer.to_dict()
+        # Normalize to ComponentIdentifier (handles dict with deprecation warning) then convert to dict for JSON storage
+        normalized_scorer = ComponentIdentifier.normalize(entry.scorer_class_identifier)
+        self.scorer_class_identifier = normalized_scorer.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
         self.prompt_request_response_id = entry.message_piece_id if entry.message_piece_id else None
         self.timestamp = entry.timestamp
         # Store in both columns for backward compatibility
@@ -388,11 +402,11 @@ class ScoreEntry(Base):
         Returns:
             Score: The reconstructed score object with all its data.
         """
-        # Convert dict back to ScorerIdentifier with the stored pyrit_version
+        # Convert dict back to ComponentIdentifier with the stored pyrit_version
         scorer_identifier = None
         stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
         if self.scorer_class_identifier:
-            scorer_identifier = ScorerIdentifier.from_dict(
+            scorer_identifier = ComponentIdentifier.from_dict(
                 {**self.scorer_class_identifier, "pyrit_version": stored_version}
             )
         return Score(
@@ -737,7 +751,11 @@ class AttackResultEntry(Base):
         self.id = uuid.uuid4()
         self.conversation_id = entry.conversation_id
         self.objective = entry.objective
-        self.attack_identifier = entry.attack_identifier.to_dict() if entry.attack_identifier else {}
+        self.attack_identifier = (
+            entry.attack_identifier.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
+            if entry.attack_identifier
+            else {}
+        )
         self.objective_sha256 = to_sha256(entry.objective)
 
         # Use helper method for UUID conversions
@@ -838,7 +856,7 @@ class AttackResultEntry(Base):
         return AttackResult(
             conversation_id=self.conversation_id,
             objective=self.objective,
-            attack_identifier=AttackIdentifier.from_dict(self.attack_identifier) if self.attack_identifier else None,
+            attack_identifier=ComponentIdentifier.from_dict(self.attack_identifier) if self.attack_identifier else None,
             last_response=self.last_response.get_message_piece() if self.last_response else None,
             last_score=self.last_score.get_score() if self.last_score else None,
             executed_turns=self.executed_turns,
@@ -920,11 +938,15 @@ class ScenarioResultEntry(Base):
         self.scenario_version = entry.scenario_identifier.version
         self.pyrit_version = entry.scenario_identifier.pyrit_version
         self.scenario_init_data = entry.scenario_identifier.init_data
-        # Convert TargetIdentifier to dict for JSON storage
-        self.objective_target_identifier = entry.objective_target_identifier.to_dict()
-        # Convert ScorerIdentifier to dict for JSON storage
+        # Convert ComponentIdentifier to dict for JSON storage
+        self.objective_target_identifier = entry.objective_target_identifier.to_dict(
+            max_value_length=MAX_IDENTIFIER_VALUE_LENGTH
+        )
+        # Convert ComponentIdentifier to dict for JSON storage
         self.objective_scorer_identifier = (
-            entry.objective_scorer_identifier.to_dict() if entry.objective_scorer_identifier else None
+            entry.objective_scorer_identifier.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
+            if entry.objective_scorer_identifier
+            else None
         )
         self.scenario_run_state = entry.scenario_run_state
         self.labels = entry.labels
@@ -964,15 +986,15 @@ class ScenarioResultEntry(Base):
         # Return empty attack_results - will be populated by memory_interface
         attack_results: dict[str, list[AttackResult]] = {}
 
-        # Convert dict back to ScorerIdentifier with the stored pyrit_version
+        # Convert dict back to ComponentIdentifier with the stored pyrit_version
         scorer_identifier = None
         if self.objective_scorer_identifier:
-            scorer_identifier = ScorerIdentifier.from_dict(
+            scorer_identifier = ComponentIdentifier.from_dict(
                 {**self.objective_scorer_identifier, "pyrit_version": stored_version}
             )
 
-        # Convert dict back to TargetIdentifier for reconstruction
-        target_identifier = TargetIdentifier.from_dict(self.objective_target_identifier)
+        # Convert dict back to ComponentIdentifier for reconstruction
+        target_identifier = ComponentIdentifier.from_dict(self.objective_target_identifier)
 
         return ScenarioResult(
             id=self.id,

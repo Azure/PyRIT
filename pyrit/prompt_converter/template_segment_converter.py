@@ -8,7 +8,7 @@ import random
 from typing import Optional
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -71,16 +71,16 @@ class TemplateSegmentConverter(PromptConverter):
                 f"Template parameters: {self.prompt_template.parameters}"
             )
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with template parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         template_hash = hashlib.sha256(str(self.prompt_template.value).encode("utf-8")).hexdigest()[:16]
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "template_hash": template_hash,
                 "number_parameters": self._number_parameters,
             }

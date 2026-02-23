@@ -8,7 +8,7 @@ import pytest
 from unit.mocks import get_sample_conversations, openai_chat_response_json_dict
 
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
-from pyrit.identifiers import AttackIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -39,7 +39,7 @@ def mock_attack_strategy():
     strategy = MagicMock(spec=AttackStrategy)
     strategy.execute_async = AsyncMock()
     strategy.execute_with_context_async = AsyncMock()
-    strategy.get_identifier.return_value = AttackIdentifier(
+    strategy.get_identifier.return_value = ComponentIdentifier(
         class_name="TestAttack",
         class_module="pyrit.executor.attack.test_attack",
     )

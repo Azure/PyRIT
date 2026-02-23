@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -56,15 +56,15 @@ class PlagiarismScorer(FloatScaleScorer):
         self.metric = metric
         self.n = n
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            scorer_specific_params={
+            params={
                 "reference_text": self.reference_text,
                 "metric": self.metric.value,
                 "n": self.n,
