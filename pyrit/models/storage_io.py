@@ -137,8 +137,7 @@ class DiskStorageIO(StorageIO):
         """
         Converts the path to a Path object if it's a string.
         """
-        path = Path(path) if isinstance(path, str) else path
-        return path
+        return Path(path) if isinstance(path, str) else path
 
 
 class AzureBlobStorageIO(StorageIO):
@@ -204,9 +203,8 @@ class AzureBlobStorageIO(StorageIO):
                     + "enable delegation-based SAS authentication to connect to the storage account"
                 )
                 raise
-            else:
-                logger.exception(msg=f"An unexpected error occurred: {exc}")
-                raise
+            logger.exception(msg=f"An unexpected error occurred: {exc}")
+            raise
 
     def parse_blob_url(self, file_path: str) -> tuple[str, str]:
         """Parses the blob URL to extract the container name and blob name."""
@@ -215,8 +213,7 @@ class AzureBlobStorageIO(StorageIO):
             container_name = parsed_url.path.split("/")[1]
             blob_name = "/".join(parsed_url.path.split("/")[2:])
             return container_name, blob_name
-        else:
-            raise ValueError("Invalid blob URL")
+        raise ValueError("Invalid blob URL")
 
     async def read_file(self, path: Union[Path, str]) -> bytes:
         """
@@ -254,9 +251,7 @@ class AzureBlobStorageIO(StorageIO):
 
             # Download the blob
             blob_stream = await blob_client.download_blob()
-            file_content = await blob_stream.readall()
-
-            return file_content
+            return await blob_stream.readall()
 
         except Exception as exc:
             logger.exception(f"Failed to read file at {blob_name}: {exc}")

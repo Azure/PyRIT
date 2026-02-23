@@ -56,33 +56,30 @@ def data_serializer_factory(
     if value is not None:
         if data_type in ["text", "reasoning", "function_call", "tool_call", "function_call_output"]:
             return TextDataTypeSerializer(prompt_text=value, data_type=data_type)
-        elif data_type == "image_path":
-            return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
-        elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
-        elif data_type == "video_path":
-            return VideoPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
-        elif data_type == "binary_path":
-            return BinaryPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
-        elif data_type == "error":
-            return ErrorDataTypeSerializer(prompt_text=value)
-        elif data_type == "url":
-            return URLDataTypeSerializer(category=category, prompt_text=value, extension=extension)
-        else:
-            raise ValueError(f"Data type {data_type} not supported")
-    else:
         if data_type == "image_path":
-            return ImagePathDataTypeSerializer(category=category, extension=extension)
-        elif data_type == "audio_path":
-            return AudioPathDataTypeSerializer(category=category, extension=extension)
-        elif data_type == "video_path":
-            return VideoPathDataTypeSerializer(category=category, extension=extension)
-        elif data_type == "binary_path":
-            return BinaryPathDataTypeSerializer(category=category, extension=extension)
-        elif data_type == "error":
-            return ErrorDataTypeSerializer(prompt_text="")
-        else:
-            raise ValueError(f"Data type {data_type} without prompt text not supported")
+            return ImagePathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        if data_type == "audio_path":
+            return AudioPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        if data_type == "video_path":
+            return VideoPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        if data_type == "binary_path":
+            return BinaryPathDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        if data_type == "error":
+            return ErrorDataTypeSerializer(prompt_text=value)
+        if data_type == "url":
+            return URLDataTypeSerializer(category=category, prompt_text=value, extension=extension)
+        raise ValueError(f"Data type {data_type} not supported")
+    if data_type == "image_path":
+        return ImagePathDataTypeSerializer(category=category, extension=extension)
+    if data_type == "audio_path":
+        return AudioPathDataTypeSerializer(category=category, extension=extension)
+    if data_type == "video_path":
+        return VideoPathDataTypeSerializer(category=category, extension=extension)
+    if data_type == "binary_path":
+        return BinaryPathDataTypeSerializer(category=category, extension=extension)
+    if data_type == "error":
+        return ErrorDataTypeSerializer(prompt_text="")
+    raise ValueError(f"Data type {data_type} without prompt text not supported")
 
 
 class DataTypeSerializer(abc.ABC):

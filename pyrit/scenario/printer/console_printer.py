@@ -196,9 +196,8 @@ class ConsoleScenarioResultPrinter(ScenarioResultPrinter):
         """
         if rate >= 75:
             return str(Fore.RED)  # High success (bad for security)
-        elif rate >= 50:
+        if rate >= 50:
             return str(Fore.YELLOW)  # Medium success
-        elif rate >= 25:
+        if rate >= 25:
             return str(Fore.CYAN)  # Low success
-        else:
-            return str(Fore.GREEN)  # Very low success (good for security)
+        return str(Fore.GREEN)  # Very low success (good for security)

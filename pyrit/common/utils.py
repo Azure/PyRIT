@@ -75,8 +75,7 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
         list2 = [list2]
 
     # Merge and keep only unique values
-    combined = list(set(list1 + list2))
-    return combined
+    return list(set(list1 + list2))
 
 
 def get_random_indices(*, start: int, size: int, proportion: float) -> List[int]:

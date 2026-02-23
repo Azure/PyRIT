@@ -162,8 +162,7 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
         return ConverterResult(output_text=prompt, output_type="text")
 
     async def _replace_text_match(self, match: str) -> ConverterResult:
-        result = await self.convert_async(prompt=match, input_type="text")
-        return result
+        return await self.convert_async(prompt=match, input_type="text")
 
     def _build_identifier(self) -> ConverterIdentifier:
         """

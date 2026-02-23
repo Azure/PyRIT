@@ -343,7 +343,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         combined_conditions = " AND ".join(harm_conditions)
 
-        targeted_harm_categories_subquery = exists().where(
+        return exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.targeted_harm_categories.isnot(None),
@@ -352,7 +352,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 text(f"ISJSON(targeted_harm_categories) = 1 AND {combined_conditions}").bindparams(**bindparams_dict),
             )
         )
-        return targeted_harm_categories_subquery
 
     def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
@@ -376,14 +375,13 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         combined_conditions = " AND ".join(label_conditions)
 
-        labels_subquery = exists().where(
+        return exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.labels.isnot(None),
                 text(f"ISJSON(labels) = 1 AND {combined_conditions}").bindparams(**bindparams_dict),
             )
         )
-        return labels_subquery
 
     def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
         """

@@ -333,17 +333,17 @@ class ProportionSelectionStrategy(TextSelectionStrategy):
 
         if self._anchor == "start":
             return (0, selection_len)
-        elif self._anchor == "end":
+        if self._anchor == "end":
             return (text_len - selection_len, text_len)
-        elif self._anchor == "middle":
+        if self._anchor == "middle":
             start = (text_len - selection_len) // 2
             return (start, start + selection_len)
-        else:  # random
-            if self._seed is not None:
-                random.seed(self._seed)
-            max_start = max(0, text_len - selection_len)
-            start = random.randint(0, max_start) if max_start > 0 else 0
-            return (start, start + selection_len)
+        # random
+        if self._seed is not None:
+            random.seed(self._seed)
+        max_start = max(0, text_len - selection_len)
+        start = random.randint(0, max_start) if max_start > 0 else 0
+        return (start, start + selection_len)
 
 
 class RangeSelectionStrategy(TextSelectionStrategy):
@@ -465,9 +465,8 @@ class WordKeywordSelectionStrategy(WordSelectionStrategy):
 
         if self._case_sensitive:
             return [i for i, word in enumerate(words) if word in self._keywords]
-        else:
-            keywords_lower = [k.lower() for k in self._keywords]
-            return [i for i, word in enumerate(words) if word.lower() in keywords_lower]
+        keywords_lower = [k.lower() for k in self._keywords]
+        return [i for i, word in enumerate(words) if word.lower() in keywords_lower]
 
 
 class WordProportionSelectionStrategy(WordSelectionStrategy):

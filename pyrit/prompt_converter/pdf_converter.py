@@ -204,9 +204,8 @@ class PDFConverter(PromptConverter):
         if isinstance(prompt, str):
             logger.debug("No template provided. Using raw prompt.")
             return prompt
-        else:
-            logger.error("Prompt must be a string when no template is provided.")
-            raise ValueError("Prompt must be a string when no template is provided.")
+        logger.error("Prompt must be a string when no template is provided.")
+        raise ValueError("Prompt must be a string when no template is provided.")
 
     def _generate_pdf(self, content: str) -> bytes:
         """

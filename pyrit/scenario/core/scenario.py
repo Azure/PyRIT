@@ -260,9 +260,8 @@ class Scenario(ABC):
                 # Validate that the stored scenario matches current configuration
                 if self._validate_stored_scenario(stored_result=existing_result):
                     return  # Valid match - skip creating new scenario result
-                else:
-                    # Validation failed - will create new scenario result
-                    self._scenario_result_id = None
+                # Validation failed - will create new scenario result
+                self._scenario_result_id = None
             else:
                 logger.warning(
                     f"Scenario result ID {self._scenario_result_id} not found in memory. Creating new scenario result."
@@ -564,8 +563,7 @@ class Scenario(ABC):
         last_exception = None
         for retry_attempt in range(self._max_retries + 1):  # +1 for initial attempt
             try:
-                result = await self._execute_scenario_async()
-                return result
+                return await self._execute_scenario_async()
             except Exception as e:
                 last_exception = e
 
@@ -584,14 +582,13 @@ class Scenario(ABC):
                     )
                     # Continue to next iteration for retry
                     continue
-                else:
-                    # No more retries, log final failure
-                    logger.error(
-                        f"Scenario '{self._name}' failed after {current_tries} attempts "
-                        f"(initial + {self._max_retries} retries) with error: {str(e)}. Giving up.",
-                        exc_info=True,
-                    )
-                    raise
+                # No more retries, log final failure
+                logger.error(
+                    f"Scenario '{self._name}' failed after {current_tries} attempts "
+                    f"(initial + {self._max_retries} retries) with error: {str(e)}. Giving up.",
+                    exc_info=True,
+                )
+                raise
 
         # This should never be reached, but just in case
         if last_exception:
@@ -645,8 +642,7 @@ class Scenario(ABC):
             scenario_results = self._memory.get_scenario_results(scenario_result_ids=[scenario_result_id])
             if scenario_results:
                 return scenario_results[0]
-            else:
-                raise ValueError(f"Scenario result with ID {scenario_result_id} not found")
+            raise ValueError(f"Scenario result with ID {scenario_result_id} not found")
 
         logger.info(
             f"Scenario '{self._name}' has {len(remaining_attacks)} atomic attacks "
@@ -715,11 +711,10 @@ class Scenario(ABC):
                             f"in scenario '{self._name}': {incomplete_count} of {incomplete_count + completed_count} "
                             f"objectives incomplete. First failure: {atomic_results.incomplete_objectives[0][1]}"
                         ) from atomic_results.incomplete_objectives[0][1]
-                    else:
-                        logger.info(
-                            f"Atomic attack {i}/{len(self._atomic_attacks)} completed successfully with "
-                            f"{len(atomic_results.completed_results)} results"
-                        )
+                    logger.info(
+                        f"Atomic attack {i}/{len(self._atomic_attacks)} completed successfully with "
+                        f"{len(atomic_results.completed_results)} results"
+                    )
 
                 except Exception as e:
                     # Exception was raised either by run_async or by our check above

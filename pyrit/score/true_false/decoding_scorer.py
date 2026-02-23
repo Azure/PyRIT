@@ -102,7 +102,7 @@ class DecodingScorer(TrueFalseScorer):
                 match_found = True
                 break
 
-        score = [
+        return [
             Score(
                 score_value=str(match_found),
                 score_value_description="",
@@ -115,5 +115,3 @@ class DecodingScorer(TrueFalseScorer):
                 objective=objective,
             )
         ]
-
-        return score

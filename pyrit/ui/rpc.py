@@ -219,7 +219,7 @@ class AppRPCServer:
         if score_ref is None:
             return None
         # Pass instance variables of reflected RPyC Score object as args to PyRIT Score object
-        score = Score(
+        return Score(
             score_value=score_ref.score_value,
             score_type=score_ref.score_type,
             score_category=score_ref.score_category,
@@ -234,8 +234,6 @@ class AppRPCServer:
                 identifier_type="instance",
             ),
         )
-
-        return score
 
     def wait_for_client(self) -> None:
         """

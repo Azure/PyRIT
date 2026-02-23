@@ -119,8 +119,7 @@ class GCGPromptManager(PromptManager):
         new_token_val = torch.gather(
             top_indices[new_token_pos], 1, torch.randint(0, topk, (batch_size, 1), device=grad.device)
         )
-        new_control_toks = original_control_toks.scatter_(1, new_token_pos.unsqueeze(-1), new_token_val)
-        return new_control_toks
+        return original_control_toks.scatter_(1, new_token_pos.unsqueeze(-1), new_token_val)
 
 
 class GCGMultiPromptAttack(MultiPromptAttack):

@@ -185,8 +185,7 @@ class ScenarioResult:
             # Convert snake_case to PascalCase
             # e.g., "content_harms" -> "ContentHarms"
             parts = scenario_name.split("_")
-            pascal_name = "".join(part.capitalize() for part in parts)
-            return pascal_name
+            return "".join(part.capitalize() for part in parts)
         # Already PascalCase or other format, return as-is
         return scenario_name
 

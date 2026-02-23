@@ -507,13 +507,13 @@ class RealtimeTarget(OpenAITarget):
                     logger.debug("Received response.done - finishing normally")
                     break
 
-                elif event_type == "error":
+                if event_type == "error":
                     error_message = event.error.message if hasattr(event.error, "message") else str(event.error)
                     error_type = event.error.type if hasattr(event.error, "type") else "unknown"
                     logger.error(f"Received 'error' event: [{error_type}] {error_message}")
                     raise RuntimeError(f"Server error: [{error_type}] {error_message}")
 
-                elif event_type in ["response.audio.delta", "response.output_audio.delta"]:
+                if event_type in ["response.audio.delta", "response.output_audio.delta"]:
                     audio_data = base64.b64decode(event.delta)
                     result.audio_bytes += audio_data
                     logger.debug(f"Decoded {len(audio_data)} bytes of audio data")

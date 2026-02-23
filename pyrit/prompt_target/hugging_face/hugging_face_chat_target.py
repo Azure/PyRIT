@@ -371,7 +371,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             logger.info("Tokenizer has a chat template. Applying it to the input messages.")
 
             # Apply the chat template to format and tokenize the messages
-            tokenized_chat = cast(
+            return cast(
                 BatchEncoding,
                 self.tokenizer.apply_chat_template(
                     messages,
@@ -381,14 +381,12 @@ class HuggingFaceChatTarget(PromptChatTarget):
                     return_dict=True,
                 ),
             ).to(self.device)
-            return tokenized_chat
-        else:
-            error_message = (
-                "Tokenizer does not have a chat template. "
-                "This model is not supported, as we only support instruct models with a chat template."
-            )
-            logger.error(error_message)
-            raise ValueError(error_message)
+        error_message = (
+            "Tokenizer does not have a chat template. "
+            "This model is not supported, as we only support instruct models with a chat template."
+        )
+        logger.error(error_message)
+        raise ValueError(error_message)
 
     def _validate_request(self, *, message: Message) -> None:
         """

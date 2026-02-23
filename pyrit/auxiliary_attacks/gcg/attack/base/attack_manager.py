@@ -66,44 +66,41 @@ class NpEncoder(json.JSONEncoder):
 def get_embedding_layer(model: Any) -> Any:
     if isinstance(model, GPTJForCausalLM) or isinstance(model, GPT2LMHeadModel):
         return model.transformer.wte
-    elif isinstance(model, LlamaForCausalLM):
+    if isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens
-    elif isinstance(model, GPTNeoXForCausalLM):
+    if isinstance(model, GPTNeoXForCausalLM):
         return model.base_model.embed_in
-    elif isinstance(model, Phi3ForCausalLM):
+    if isinstance(model, Phi3ForCausalLM):
         return model.model.embed_tokens
-    else:
-        raise ValueError(f"Unknown model type: {type(model)}")
+    raise ValueError(f"Unknown model type: {type(model)}")
 
 
 def get_embedding_matrix(model: Any) -> Any:
     if isinstance(model, GPTJForCausalLM) or isinstance(model, GPT2LMHeadModel):
         return model.transformer.wte.weight
-    elif isinstance(model, LlamaForCausalLM):
+    if isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens.weight
-    elif isinstance(model, GPTNeoXForCausalLM):
+    if isinstance(model, GPTNeoXForCausalLM):
         return model.base_model.embed_in.weight  # type: ignore[union-attr, unused-ignore]
-    elif isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
+    if isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
         return model.model.embed_tokens.weight
-    elif isinstance(model, Phi3ForCausalLM):
+    if isinstance(model, Phi3ForCausalLM):
         return model.model.embed_tokens.weight
-    else:
-        raise ValueError(f"Unknown model type: {type(model)}")
+    raise ValueError(f"Unknown model type: {type(model)}")
 
 
 def get_embeddings(model: Any, input_ids: torch.Tensor) -> Any:
     if isinstance(model, GPTJForCausalLM) or isinstance(model, GPT2LMHeadModel):
         return model.transformer.wte(input_ids).half()
-    elif isinstance(model, LlamaForCausalLM):
+    if isinstance(model, LlamaForCausalLM):
         return model.model.embed_tokens(input_ids)
-    elif isinstance(model, GPTNeoXForCausalLM):
+    if isinstance(model, GPTNeoXForCausalLM):
         return model.base_model.embed_in(input_ids).half()  # type: ignore[operator, unused-ignore]
-    elif isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
+    if isinstance(model, MixtralForCausalLM) or isinstance(model, MistralForCausalLM):
         return model.model.embed_tokens(input_ids)
-    elif isinstance(model, Phi3ForCausalLM):
+    if isinstance(model, Phi3ForCausalLM):
         return model.model.embed_tokens(input_ids)
-    else:
-        raise ValueError(f"Unknown model type: {type(model)}")
+    raise ValueError(f"Unknown model type: {type(model)}")
 
 
 def get_nonascii_toks(tokenizer: Any, device: str = "cpu") -> torch.Tensor:
@@ -364,24 +361,21 @@ class AttackPrompt:
             del locs, test_ids
             gc.collect()
             return model(input_ids=ids, attention_mask=attn_mask).logits, ids
-        else:
-            del locs, test_ids
-            logits = model(input_ids=ids, attention_mask=attn_mask).logits
-            del ids
-            gc.collect()
-            return logits
+        del locs, test_ids
+        logits = model(input_ids=ids, attention_mask=attn_mask).logits
+        del ids
+        gc.collect()
+        return logits
 
     def target_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._target_slice.start - 1, self._target_slice.stop - 1)
-        loss = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])
-        return loss  # type: ignore[no-any-return, unused-ignore]
+        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])  # type: ignore[no-any-return]
 
     def control_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._control_slice.start - 1, self._control_slice.stop - 1)
-        loss = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])
-        return loss  # type: ignore[no-any-return, unused-ignore]
+        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])  # type: ignore[no-any-return]
 
     @property
     def assistant_str(self) -> Any:
@@ -527,8 +521,7 @@ class PromptManager:
         vals = [prompt.logits(model, test_controls, return_ids) for prompt in self._prompts]
         if return_ids:
             return [val[0] for val in vals], [val[1] for val in vals]
-        else:
-            return vals
+        return vals
 
     def target_loss(self, logits: list[torch.Tensor], ids: list[torch.Tensor]) -> torch.Tensor:
         return torch.cat(

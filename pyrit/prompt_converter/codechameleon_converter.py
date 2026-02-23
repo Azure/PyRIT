@@ -213,16 +213,14 @@ class CodeChameleonConverter(PromptConverter):
         return json.dumps(tree_representation)
 
     def _encrypt_reverse(self, sentence: str) -> str:
-        reverse_sentence = " ".join(sentence.split(" ")[::-1])
-        return reverse_sentence
+        return " ".join(sentence.split(" ")[::-1])
 
     def _encrypt_odd_even(self, sentence: str) -> str:
         words = sentence.split()
         odd_words = words[::2]
         even_words = words[1::2]
         encrypted_words = odd_words + even_words
-        encrypted_sentence = " ".join(encrypted_words)
-        return encrypted_sentence
+        return " ".join(encrypted_words)
 
     def _encrypt_length(self, sentence: str) -> str:
         class WordData:

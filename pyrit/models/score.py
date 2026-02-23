@@ -105,7 +105,7 @@ class Score:
         """
         if self.score_type == "true_false":
             return self.score_value.lower() == "true"
-        elif self.score_type == "float_scale":
+        if self.score_type == "float_scale":
             return float(self.score_value)
 
         raise ValueError(f"Unknown scorer type: {self.score_type}")
@@ -113,7 +113,7 @@ class Score:
     def validate(self, scorer_type: str, score_value: str) -> None:
         if scorer_type == "true_false" and str(score_value).lower() not in ["true", "false"]:
             raise ValueError(f"True False scorers must have a score value of 'true' or 'false' not {score_value}")
-        elif scorer_type == "float_scale":
+        if scorer_type == "float_scale":
             try:
                 score = float(score_value)
                 if not (0 <= score <= 1):

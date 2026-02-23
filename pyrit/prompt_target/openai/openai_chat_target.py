@@ -497,8 +497,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         """
         if self._is_text_message_format(conversation):
             return self._build_chat_messages_for_text(conversation)
-        else:
-            return await self._build_chat_messages_for_multi_modal_async(conversation)
+        return await self._build_chat_messages_for_multi_modal_async(conversation)
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
         """
