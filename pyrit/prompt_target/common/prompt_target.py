@@ -120,10 +120,14 @@ class PromptTarget(Identifiable):
         """
         model_name = self._underlying_model or self._model_name or ""
 
+        # Late import to avoid circular dependency (PromptChatTarget inherits from PromptTarget)
+        from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+
         all_params: Dict[str, Any] = {
             "endpoint": self._endpoint,
             "model_name": model_name,
             "max_requests_per_minute": self._max_requests_per_minute,
+            "supports_conversation_history": isinstance(self, PromptChatTarget),
         }
         if params:
             all_params.update(params)
