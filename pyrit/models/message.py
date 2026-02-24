@@ -19,9 +19,6 @@ class Message:
     Represents a message in a conversation, for example a prompt or a response to a prompt.
 
     This is a single request to a target. It can contain multiple message pieces.
-
-    Attributes:
-        message_pieces (Sequence[MessagePiece]): The list of message pieces.
     """
 
     def __init__(self, message_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False) -> None:

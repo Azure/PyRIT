@@ -97,12 +97,6 @@ class ChatMessageListDictContent(ChatMessage):
 class ChatMessagesDataset(BaseModel):
     """
     Represents a dataset of chat messages.
-
-    Attributes:
-        model_config (ConfigDict): The model configuration.
-        name (str): The name of the dataset.
-        description (str): The description of the dataset.
-        list_of_chat_messages (list[list[ChatMessage]]): A list of chat messages.
     """
 
     model_config = ConfigDict(extra="forbid")
