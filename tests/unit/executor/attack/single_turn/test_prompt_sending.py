@@ -5,6 +5,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from unit.mocks import get_mock_scorer_identifier, get_mock_target_identifier
 
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -34,7 +35,7 @@ def mock_target():
     """Create a mock prompt target for testing"""
     target = MagicMock(spec=PromptTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = {"id": "mock_target_id"}
+    target.get_identifier.return_value = get_mock_target_identifier("MockTarget")
     return target
 
 
@@ -43,6 +44,7 @@ def mock_true_false_scorer():
     """Create a mock true/false scorer for testing"""
     scorer = MagicMock(spec=TrueFalseScorer)
     scorer.score_text_async = AsyncMock()
+    scorer.get_identifier.return_value = get_mock_scorer_identifier()
     return scorer
 
 
@@ -50,6 +52,7 @@ def mock_true_false_scorer():
 def mock_non_true_false_scorer():
     """Create a mock scorer that is not a true/false type"""
     scorer = MagicMock(spec=Scorer)
+    scorer.get_identifier.return_value = get_mock_scorer_identifier()
     return scorer
 
 
@@ -89,6 +92,7 @@ def success_score():
         score_rationale="Test rationale for success",
         score_metadata="{}",
         message_piece_id=str(uuid.uuid4()),
+        scorer_class_identifier=get_mock_scorer_identifier(),
     )
 
 
@@ -103,6 +107,7 @@ def failure_score():
         score_rationale="Test rationale for failure",
         score_metadata={},
         message_piece_id=str(uuid.uuid4()),
+        scorer_class_identifier=get_mock_scorer_identifier(),
     )
 
 
@@ -496,6 +501,7 @@ class TestResponseEvaluation:
             score_rationale="Auxiliary rationale",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
 
         attack = PromptSendingAttack(
@@ -840,6 +846,7 @@ class TestDetermineAttackOutcome:
             score_rationale="Objective achieved",
             score_metadata="{}",
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -864,6 +871,7 @@ class TestDetermineAttackOutcome:
             score_rationale="Objective not achieved",
             score_metadata="{}",
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -888,6 +896,7 @@ class TestDetermineAttackOutcome:
             score_rationale="Objective not achieved",
             score_metadata="{}",
             message_piece_id=str(uuid.uuid4()),
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
 
         outcome, reason = attack._determine_attack_outcome(
@@ -1139,13 +1148,13 @@ class TestEdgeCasesAndErrorHandling:
         id2 = attack2.get_identifier()
 
         # Verify identifier structure
-        assert "__type__" in id1
-        assert "__module__" in id1
-        assert "id" in id1
+        assert id1.class_name == "PromptSendingAttack"
+        assert id1.class_module is not None
+        assert id1.hash is not None
 
-        # Verify uniqueness
-        assert id1["id"] != id2["id"]
-        assert id1["__type__"] == id2["__type__"] == "PromptSendingAttack"
+        # Same config produces same identifier
+        assert id1.hash == id2.hash
+        assert id1.class_name == id2.class_name == "PromptSendingAttack"
 
     @pytest.mark.asyncio
     async def test_retry_stores_unsuccessful_conversation_and_updates_id(

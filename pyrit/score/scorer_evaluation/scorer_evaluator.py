@@ -273,7 +273,7 @@ class ScorerEvaluator(abc.ABC):
                 - (False, None) if should run evaluation
         """
         try:
-            scorer_hash = self.scorer.scorer_identifier.compute_hash()
+            scorer_hash = self.scorer.get_identifier().hash
 
             # Determine if this is a harm or objective evaluation
             metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
@@ -323,12 +323,11 @@ class ScorerEvaluator(abc.ABC):
                     f"(requested {num_scorer_trials}). Skipping evaluation."
                 )
                 return (True, existing)
-            else:
-                logger.info(
-                    f"Existing metrics have fewer trials ({existing.num_scorer_trials} < {num_scorer_trials}). "
-                    f"Will re-run evaluation with more trials and replace existing entry."
-                )
-                return (False, None)
+            logger.info(
+                f"Existing metrics have fewer trials ({existing.num_scorer_trials} < {num_scorer_trials}). "
+                f"Will re-run evaluation with more trials and replace existing entry."
+            )
+            return (False, None)
 
         except Exception as e:
             logger.warning(f"Error checking for existing metrics: {e}")
@@ -484,7 +483,7 @@ class ScorerEvaluator(abc.ABC):
         try:
             replace_evaluation_results(
                 file_path=result_file_path,
-                scorer_identifier=self.scorer.scorer_identifier,
+                scorer_identifier=self.scorer.get_identifier(),
                 metrics=metrics,
             )
         except Exception as e:

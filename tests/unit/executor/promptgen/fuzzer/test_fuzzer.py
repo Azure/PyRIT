@@ -5,7 +5,7 @@ import pathlib
 from unittest.mock import MagicMock, patch
 
 import pytest
-from unit.mocks import MockPromptTarget
+from unit.mocks import MockPromptTarget, get_mock_scorer_identifier
 
 from pyrit.common.path import DATASETS_PATH
 from pyrit.datasets import TextJailBreak
@@ -72,8 +72,7 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def mock_scorer(self) -> MagicMock:
         """Mock scorer for testing."""
-        scorer = MagicMock(TrueFalseScorer)
-        return scorer
+        return MagicMock(TrueFalseScorer)
 
     @pytest.fixture
     def fuzzer_context(self, simple_prompts: list[str], simple_prompt_templates: list[str]) -> FuzzerContext:
@@ -271,6 +270,7 @@ class TestFuzzerGenerator:
             score_rationale="",
             score_metadata={},
             message_piece_id="",
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
         assert generator._is_jailbreak(true_score) is True
 
@@ -283,6 +283,7 @@ class TestFuzzerGenerator:
             score_rationale="",
             score_metadata={},
             message_piece_id="",
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
         assert generator._is_jailbreak(false_score) is False
 
@@ -308,6 +309,7 @@ class TestFuzzerGenerator:
             score_rationale="",
             score_metadata={},
             message_piece_id="",
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
         assert generator._is_jailbreak(high_score) is True
 
@@ -320,6 +322,7 @@ class TestFuzzerGenerator:
             score_rationale="",
             score_metadata={},
             message_piece_id="",
+            scorer_class_identifier=get_mock_scorer_identifier(),
         )
         assert generator._is_jailbreak(low_score) is False
 

@@ -1,0 +1,37 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+"""
+Target mappers – domain → DTO translation for target-related models.
+"""
+
+from pyrit.backend.models.targets import TargetInstance
+from pyrit.prompt_target import PromptTarget
+
+
+def target_object_to_instance(target_unique_name: str, target_obj: PromptTarget) -> TargetInstance:
+    """
+    Build a TargetInstance DTO from a registry target object.
+
+    Extracts only the frontend-relevant fields from the internal identifier,
+    avoiding leakage of internal PyRIT core structures.
+
+    Args:
+        target_unique_name: The unique target instance identifier (registry key / unique_name).
+        target_obj: The domain PromptTarget object from the registry.
+
+    Returns:
+        TargetInstance DTO with metadata derived from the object.
+    """
+    identifier = target_obj.get_identifier()
+
+    return TargetInstance(
+        target_unique_name=target_unique_name,
+        target_type=identifier.class_name,
+        endpoint=identifier.params.get("endpoint") or None,
+        model_name=identifier.params.get("model_name") or None,
+        temperature=identifier.params.get("temperature"),
+        top_p=identifier.params.get("top_p"),
+        max_requests_per_minute=identifier.params.get("max_requests_per_minute"),
+        target_specific_params=identifier.params.get("target_specific_params"),
+    )

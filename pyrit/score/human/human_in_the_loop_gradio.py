@@ -4,6 +4,8 @@
 import asyncio
 from typing import Optional
 
+from pyrit.common.deprecation import print_deprecation_message
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -18,9 +20,13 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     Create scores from manual human input using Gradio and adds them to the database.
 
     In the future this will not be a TrueFalseScorer. However, it is all that is supported currently.
+
+    .. deprecated::
+        This Gradio-based scorer is deprecated and will be removed in v0.13.0.
+        Use the React-based GUI instead.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -39,17 +45,30 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
                 TrueFalseScoreAggregator.OR.
         """
+        print_deprecation_message(
+            old_item="HumanInTheLoopScorerGradio (Gradio-based GUI)",
+            new_item="the React-based GUI (CoPyRIT); see https://azure.github.io/PyRIT/code/gui/0_gui.html",
+            removed_in="0.13.0",
+        )
+
         # Import here to avoid importing rpyc in the main module that might not be installed
         from pyrit.ui.rpc import AppRPCServer
 
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
         self._rpc_server = AppRPCServer(open_browser=open_browser)
         self._rpc_server.start()
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
-            score_aggregator=self._score_aggregator.__name__,
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this scorer.
+
+        Returns:
+            ComponentIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
+            params={
+                "score_aggregator": self._score_aggregator.__name__,
+            },
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -67,8 +86,7 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
             asyncio.CancelledError: If the scoring operation is cancelled.
         """
         try:
-            score = await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
-            return score
+            return await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
         except asyncio.CancelledError:
             self._rpc_server.stop()
             raise

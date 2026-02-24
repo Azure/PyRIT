@@ -5,6 +5,7 @@ from typing import Generator, Optional
 
 from sqlalchemy import inspect
 
+from pyrit.identifiers import AttackIdentifier
 from pyrit.memory import MemoryInterface, SQLiteMemory
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
@@ -47,7 +48,7 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[AttackIdentifier] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt

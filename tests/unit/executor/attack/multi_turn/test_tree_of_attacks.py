@@ -26,6 +26,7 @@ from pyrit.executor.attack.multi_turn.tree_of_attacks import (
     TAPAttackScoringConfig,
     _TreeOfAttacksNode,
 )
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     AttackOutcome,
     ConversationReference,
@@ -194,10 +195,10 @@ class AttackBuilder:
         mock_threshold_scorer.threshold = self.successful_threshold
         mock_threshold_scorer.scorer_type = "true_false"
         mock_threshold_scorer.score_async = AsyncMock(return_value=[])
-        mock_threshold_scorer.get_identifier.return_value = {
-            "__type__": "FloatScaleThresholdScorer",
-            "__module__": "pyrit.score",
-        }
+        mock_threshold_scorer.get_identifier.return_value = ComponentIdentifier(
+            class_name="FloatScaleThresholdScorer",
+            class_module="pyrit.score",
+        )
 
         scoring_config = TAPAttackScoringConfig(
             objective_scorer=mock_threshold_scorer,
@@ -220,7 +221,10 @@ class AttackBuilder:
     def _create_mock_target() -> PromptTarget:
         target = MagicMock(spec=PromptTarget)
         target.send_prompt_async = AsyncMock(return_value=None)
-        target.get_identifier.return_value = {"__type__": "MockTarget", "__module__": "test_module"}
+        target.get_identifier.return_value = ComponentIdentifier(
+            class_name="MockTarget",
+            class_module="test_module",
+        )
         return cast(PromptTarget, target)
 
     @staticmethod
@@ -228,7 +232,10 @@ class AttackBuilder:
         chat = MagicMock(spec=PromptChatTarget)
         chat.send_prompt_async = AsyncMock(return_value=None)
         chat.set_system_prompt = MagicMock()
-        chat.get_identifier.return_value = {"__type__": "MockChatTarget", "__module__": "test_module"}
+        chat.get_identifier.return_value = ComponentIdentifier(
+            class_name="MockChatTarget",
+            class_module="test_module",
+        )
         return cast(PromptChatTarget, chat)
 
     @staticmethod
@@ -236,7 +243,10 @@ class AttackBuilder:
         scorer = MagicMock(spec=TrueFalseScorer)
         scorer.scorer_type = "true_false"
         scorer.score_async = AsyncMock(return_value=[])
-        scorer.get_identifier.return_value = {"__type__": name, "__module__": "test_module"}
+        scorer.get_identifier.return_value = ComponentIdentifier(
+            class_name=name,
+            class_module="test_module",
+        )
         return cast(TrueFalseScorer, scorer)
 
     @staticmethod
@@ -245,7 +255,10 @@ class AttackBuilder:
         scorer = MagicMock(spec=Scorer)
         scorer.scorer_type = "float_scale"
         scorer.score_async = AsyncMock(return_value=[])
-        scorer.get_identifier.return_value = {"__type__": name, "__module__": "test_module"}
+        scorer.get_identifier.return_value = ComponentIdentifier(
+            class_name=name,
+            class_module="test_module",
+        )
         return cast(Scorer, scorer)
 
 
@@ -273,7 +286,10 @@ class TestHelpers:
             score_rationale="Test rationale",
             score_metadata={"test": "metadata"},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
+            scorer_class_identifier=ComponentIdentifier(
+                class_name="MockScorer",
+                class_module="test_module",
+            ),
         )
 
     @staticmethod
@@ -293,11 +309,11 @@ class TestHelpers:
         """
         # Create a mock FloatScaleScorer that returns the desired float value
         mock_float_scorer = MagicMock(spec=FloatScaleScorer)
-        # Set up a proper identifier dict that can be JSON serialized
-        mock_float_scorer.get_identifier.return_value = {
-            "__type__": "MockFloatScaleScorer",
-            "__module__": "test_module",
-        }
+        # Set up a proper identifier that can be JSON serialized
+        mock_float_scorer.get_identifier.return_value = ComponentIdentifier(
+            class_name="MockFloatScaleScorer",
+            class_module="test_module",
+        )
 
         # Create the float scale score that the mock scorer will return
         float_score = Score(
@@ -309,7 +325,10 @@ class TestHelpers:
             score_rationale="Mock rationale",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "MockFloatScaleScorer", "__module__": "test_module"},
+            scorer_class_identifier=ComponentIdentifier(
+                class_name="MockFloatScaleScorer",
+                class_module="test_module",
+            ),
         )
         mock_float_scorer.score_async = AsyncMock(return_value=[float_score])
 
@@ -317,11 +336,10 @@ class TestHelpers:
         threshold_scorer = FloatScaleThresholdScorer(scorer=mock_float_scorer, threshold=threshold)
 
         # Patch get_identifier to avoid MagicMock serialization issues
-        threshold_scorer.get_identifier = lambda: {
-            "__type__": "FloatScaleThresholdScorer",
-            "__module__": "pyrit.score",
-            "threshold": threshold,
-        }
+        threshold_scorer.get_identifier = lambda: ComponentIdentifier(
+            class_name="FloatScaleThresholdScorer",
+            class_module="pyrit.score",
+        )
 
         # Create a dummy message to score
         dummy_message = Message(
@@ -463,10 +481,10 @@ class TestTreeOfAttacksInitialization:
         mock_threshold_scorer.threshold = 0.8
         mock_threshold_scorer.scorer_type = "true_false"
         mock_threshold_scorer.score_async = AsyncMock(return_value=[])
-        mock_threshold_scorer.get_identifier.return_value = {
-            "__type__": "FloatScaleThresholdScorer",
-            "__module__": "pyrit.score",
-        }
+        mock_threshold_scorer.get_identifier.return_value = ComponentIdentifier(
+            class_name="FloatScaleThresholdScorer",
+            class_module="pyrit.score",
+        )
 
         # Pass base AttackScoringConfig (not TAPAttackScoringConfig)
         base_config = AttackScoringConfig(
@@ -1114,7 +1132,7 @@ class TestTreeOfAttacksNode:
         prompt_normalizer = MagicMock()
         prompt_normalizer.send_prompt_async = AsyncMock(return_value=None)
 
-        components = {
+        return {
             "objective_target": builder.objective_target,
             "adversarial_chat": builder.adversarial_chat,
             "objective_scorer": builder.objective_scorer,
@@ -1127,11 +1145,11 @@ class TestTreeOfAttacksNode:
             "response_converters": [],
             "auxiliary_scorers": [],
             "attack_id": {"id": "test_attack"},
+            "attack_strategy_name": "TreeOfAttacksWithPruningAttack",
             "memory_labels": {"test": "label"},
             "parent_id": None,
             "prompt_normalizer": prompt_normalizer,
         }
-        return components
 
     def test_node_initialization(self, node_components):
         """Test _TreeOfAttacksNode initialization."""
@@ -1249,13 +1267,19 @@ class TestTreeOfAttacksNode:
         # Add auxiliary scorers with specific class identifiers
         aux_score1 = MagicMock()
         aux_score1.get_value.return_value = 0.8
-        aux_score1.scorer_class_identifier = {"__type__": "AuxScorer1"}
+        aux_score1.scorer_class_identifier = ComponentIdentifier(
+            class_name="AuxScorer1",
+            class_module="test.module",
+        )
         aux_scorer1 = MagicMock(spec=Scorer)
         aux_scorer1.score_async = AsyncMock(return_value=[aux_score1])
 
         aux_score2 = MagicMock()
         aux_score2.get_value.return_value = 0.6
-        aux_score2.scorer_class_identifier = {"__type__": "AuxScorer2"}
+        aux_score2.scorer_class_identifier = ComponentIdentifier(
+            class_name="AuxScorer2",
+            class_module="test.module",
+        )
         aux_scorer2 = MagicMock(spec=Scorer)
         aux_scorer2.score_async = AsyncMock(return_value=[aux_score2])
 
@@ -1283,26 +1307,28 @@ class TestTreeOfAttacksNode:
                         )
                     ]
                 )
-            else:
-                # Return normal response for objective target
-                return Message(
-                    message_pieces=[
-                        MessagePiece(
-                            role="assistant",
-                            original_value="Target response",
-                            converted_value="Target response",
-                            conversation_id=node.objective_target_conversation_id,
-                            id=str(uuid.uuid4()),
-                        )
-                    ]
-                )
+            # Return normal response for objective target
+            return Message(
+                message_pieces=[
+                    MessagePiece(
+                        role="assistant",
+                        original_value="Target response",
+                        converted_value="Target response",
+                        conversation_id=node.objective_target_conversation_id,
+                        id=str(uuid.uuid4()),
+                    )
+                ]
+            )
 
         mock_normalizer.send_prompt_async = AsyncMock(side_effect=normalizer_side_effect)
 
         # Mocking objective scorer
         obj_score = MagicMock()
         obj_score.get_value.return_value = 0.7
-        obj_score.scorer_class_identifier = {"__type__": "ObjectiveScorer"}
+        obj_score.scorer_class_identifier = ComponentIdentifier(
+            class_name="ObjectiveScorer",
+            class_module="test.module",
+        )
         node._objective_scorer.score_async = AsyncMock(return_value=[obj_score])
 
         # Mock for Scorer.score_response_async

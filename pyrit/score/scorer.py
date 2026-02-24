@@ -26,6 +26,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     ChatMessageRole,
@@ -38,13 +39,7 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_identifier import ScorerIdentifier
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
-
-if TYPE_CHECKING:
-    from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
-
-logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
@@ -53,8 +48,10 @@ if TYPE_CHECKING:
     )
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
+logger = logging.getLogger(__name__)
 
-class Scorer(abc.ABC):
+
+class Scorer(Identifiable, abc.ABC):
     """
     Abstract base class for scorers.
     """
@@ -63,7 +60,7 @@ class Scorer(abc.ABC):
     # Specifies glob patterns for datasets and a result file name
     evaluation_file_mapping: Optional["ScorerEvalDatasetFiles"] = None
 
-    _scorer_identifier: Optional[ScorerIdentifier] = None
+    _identifier: Optional[ComponentIdentifier] = None
 
     def __init__(self, *, validator: ScorerPromptValidator):
         """
@@ -90,82 +87,46 @@ class Scorer(abc.ABC):
 
         if isinstance(self, TrueFalseScorer):
             return "true_false"
-        elif isinstance(self, FloatScaleScorer):
+        if isinstance(self, FloatScaleScorer):
             return "float_scale"
-        else:
-            return "unknown"
-
-    @abstractmethod
-    def _build_scorer_identifier(self) -> None:
-        """
-        Build the scorer evaluation identifier for this scorer.
-
-        Subclasses must implement this method to call `_set_scorer_identifier()` with their
-        specific parameters (system_prompt_template, sub_scorers, scorer_specific_params, prompt_target).
-        """
-        raise NotImplementedError("Subclasses must implement _build_scorer_identifier")
-
-    @property
-    def scorer_identifier(self) -> ScorerIdentifier:
-        """
-        Get the scorer identifier. Built lazily on first access.
-
-        Returns:
-            ScorerIdentifier: The identifier containing all configuration parameters.
-        """
-        if self._scorer_identifier is None:
-            self._build_scorer_identifier()
-        return self._scorer_identifier
+        return "unknown"
 
     @property
     def _memory(self) -> MemoryInterface:
         return CentralMemory.get_memory_instance()
 
-    def _set_scorer_identifier(
+    def _create_identifier(
         self,
         *,
-        system_prompt_template: Optional[str] = None,
-        user_prompt_template: Optional[str] = None,
-        sub_scorers: Optional[Sequence["Scorer"]] = None,
-        score_aggregator: Optional[str] = None,
-        scorer_specific_params: Optional[Dict[str, Any]] = None,
-        prompt_target: Optional[PromptTarget] = None,
-    ) -> None:
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
-        Construct the scorer evaluation identifier.
+        Construct the scorer identifier.
+
+        Builds a ComponentIdentifier with the base scorer parameters (scorer_type)
+        and merges in any additional params or children provided by subclasses.
+
+        Subclasses should call this method in their _build_identifier() implementation
+        to set the identifier with their specific parameters.
 
         Args:
-            system_prompt_template (Optional[str]): The system prompt template used by this scorer. Defaults to None.
-            user_prompt_template (Optional[str]): The user prompt template used by this scorer. Defaults to None.
-            sub_scorers (Optional[Sequence[Scorer]]): List of sub-scorers for composite scorers. Defaults to None.
-            score_aggregator (Optional[str]): The name of the score aggregator function. Defaults to None.
-            scorer_specific_params (Optional[Dict[str, Any]]): Additional scorer-specific parameters.
-                Defaults to None.
-            prompt_target (Optional[PromptTarget]): The prompt target used by this scorer. Defaults to None.
-        """
-        # Build sub_identifier from sub_scorers
-        sub_identifier: Optional[List[ScorerIdentifier]] = None
-        if sub_scorers:
-            sub_identifier = [scorer.scorer_identifier for scorer in sub_scorers]
-        # Extract target_info from prompt_target
-        target_info: Optional[Dict[str, Any]] = None
-        if prompt_target:
-            target_id = prompt_target.get_identifier()
-            # Extract standard fields for scorer evaluation
-            target_info = {}
-            for key in ["__type__", "model_name", "temperature", "top_p"]:
-                if key in target_id:
-                    target_info[key] = target_id[key]
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters from
+                the subclass (e.g., system_prompt_template, score_aggregator). Merged
+                into the base params.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers (e.g., prompt_target, sub_scorers).
 
-        self._scorer_identifier = ScorerIdentifier(
-            type=self.__class__.__name__,
-            system_prompt_template=system_prompt_template,
-            user_prompt_template=user_prompt_template,
-            sub_identifier=sub_identifier,
-            target_info=target_info,
-            score_aggregator=score_aggregator,
-            scorer_specific_params=scorer_specific_params,
-        )
+        Returns:
+            ComponentIdentifier: The identifier for this scorer.
+        """
+        all_params: Dict[str, Any] = {
+            "scorer_type": self.scorer_type,
+        }
+        if params:
+            all_params.update(params)
+
+        return ComponentIdentifier.of(self, params=all_params, children=children)
 
     async def score_async(
         self,
@@ -513,20 +474,7 @@ class Scorer(abc.ABC):
         if max_value == min_value:
             return 0.0
 
-        normalized_value = (value - min_value) / (max_value - min_value)
-        return normalized_value
-
-    def get_identifier(self) -> Dict[str, Any]:
-        """
-        Get an identifier dictionary for the scorer for database storage.
-
-        Large fields (system_prompt_template, user_prompt_template) are shortened for compact storage.
-        Includes the computed hash of the configuration.
-
-        Returns:
-            dict: The identifier dictionary containing configuration details and hash.
-        """
-        return self.scorer_identifier.to_compact_dict()
+        return (value - min_value) / (max_value - min_value)
 
     @pyrit_json_retry
     async def _score_value_with_llm(
@@ -545,7 +493,7 @@ class Scorer(abc.ABC):
         description_output_key: str = "description",
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
-        attack_identifier: Optional[Dict[str, str]] = None,
+        attack_identifier: Optional[ComponentIdentifier] = None,
     ) -> UnvalidatedScore:
         """
         Send a request to a target, and take care of retries.
@@ -579,7 +527,7 @@ class Scorer(abc.ABC):
                 Defaults to "metadata".
             category_output_key (str): The key in the JSON response that contains the category.
                 Defaults to "category".
-            attack_identifier (Optional[Dict[str, str]]): A dictionary containing attack-specific identifiers.
+            attack_identifier (Optional[ComponentIdentifier]): The attack identifier.
                 Defaults to None.
 
         Returns:
@@ -592,9 +540,6 @@ class Scorer(abc.ABC):
             Exception: For other unexpected errors during scoring.
         """
         conversation_id = str(uuid.uuid4())
-
-        if attack_identifier:
-            attack_identifier["scored_prompt_id"] = str(scored_prompt_id)
 
         prompt_target.set_system_prompt(
             system_prompt=system_prompt,
@@ -722,15 +667,13 @@ class Scorer(abc.ABC):
         last_prompt = max(conversation, key=lambda x: x.sequence)
 
         # Every text message piece from the last turn
-        last_turn_text = "\n".join(
+        return "\n".join(
             [
                 piece.original_value
                 for piece in conversation
                 if piece.sequence == last_prompt.sequence - 1 and piece.original_value_data_type == "text"
             ]
         )
-
-        return last_turn_text
 
     @staticmethod
     async def score_response_async(

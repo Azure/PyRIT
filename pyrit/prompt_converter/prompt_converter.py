@@ -6,10 +6,11 @@ import asyncio
 import inspect
 import re
 from dataclasses import dataclass
-from typing import get_args
+from typing import Any, Dict, List, Optional, Union, get_args
 
 from pyrit import prompt_converter
-from pyrit.models import Identifier, PromptDataType
+from pyrit.identifiers import ComponentIdentifier, Identifiable
+from pyrit.models import PromptDataType
 
 
 @dataclass
@@ -31,7 +32,7 @@ class ConverterResult:
         return f"{self.output_type}: {self.output_text}"
 
 
-class PromptConverter(abc.ABC, Identifier):
+class PromptConverter(Identifiable):
     """
     Base class for converters that transform prompts into a different representation or format.
 
@@ -46,6 +47,8 @@ class PromptConverter(abc.ABC, Identifier):
     SUPPORTED_INPUT_TYPES: tuple[PromptDataType, ...] = ()
     #: Tuple of output modalities supported by this converter. Subclasses must override this.
     SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ()
+
+    _identifier: Optional[ComponentIdentifier] = None
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         """
@@ -159,20 +162,55 @@ class PromptConverter(abc.ABC, Identifier):
         return ConverterResult(output_text=prompt, output_type="text")
 
     async def _replace_text_match(self, match: str) -> ConverterResult:
-        result = await self.convert_async(prompt=match, input_type="text")
-        return result
+        return await self.convert_async(prompt=match, input_type="text")
 
-    def get_identifier(self) -> dict[str, str]:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Return an identifier dictionary for the converter.
+        Build and return the identifier for this converter.
+
+        Subclasses can override this method to add converter-specific parameters
+        by calling _create_identifier with additional arguments.
+
+        The default implementation calls _create_identifier with no extra parameters.
 
         Returns:
-            dict: The identifier dictionary.
+            ComponentIdentifier: The constructed identifier.
         """
-        public_attributes = {}
-        public_attributes["__type__"] = self.__class__.__name__
-        public_attributes["__module__"] = self.__class__.__module__
-        return public_attributes
+        return self._create_identifier()
+
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
+        """
+        Construct and return the converter identifier.
+
+        Builds a ComponentIdentifier with the base converter parameters
+        (supported_input_types, supported_output_types) and merges in any
+        additional params or children provided by subclasses.
+
+        Subclasses should call this method in their _build_identifier() implementation
+        to set the identifier with their specific parameters.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters from
+                the subclass (e.g., font, encoding_func). Merged into the base params.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers (e.g., sub-converters, converter targets).
+
+        Returns:
+            ComponentIdentifier: The identifier for this converter.
+        """
+        all_params: Dict[str, Any] = {
+            "supported_input_types": self.SUPPORTED_INPUT_TYPES,
+            "supported_output_types": self.SUPPORTED_OUTPUT_TYPES,
+        }
+        if params:
+            all_params.update(params)
+
+        return ComponentIdentifier.of(self, params=all_params, children=children)
 
     @property
     def supported_input_types(self) -> list[PromptDataType]:

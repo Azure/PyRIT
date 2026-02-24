@@ -5,7 +5,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: pyrit (3.13.5)
+#     language: python
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -24,7 +28,7 @@
 # Every scorer has a unique **identity hash** computed from its complete configuration:
 # - Scorer type (e.g., `SelfAskRefusalScorer`)
 # - System and user prompt templates
-# - Target model information (endpoint, model name)
+# - Target model information (model name)
 # - Temperature and other generation parameters
 # - Any scorer-specific configuration
 #
@@ -43,14 +47,14 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 refusal_scorer = SelfAskRefusalScorer(chat_target=OpenAIChatTarget(temperature=0.9))
 
 # View the scorer's full identity - this determines which metrics apply
-scorer_identity = refusal_scorer.scorer_identifier
+scorer_identity = refusal_scorer.get_identifier()
 print("Scorer Identity:")
-print(f"  Type: {scorer_identity.type}")
-print(
-    f"  System Prompt: {scorer_identity.system_prompt_template[:50] if scorer_identity.system_prompt_template else 'None'}..."
-)
-print(f"  Target Info: {scorer_identity.target_info}")
-print(f"  Identity Hash: {scorer_identity.compute_hash()}")
+print(f"  Type: {scorer_identity.class_name}")
+system_prompt = scorer_identity.params.get("system_prompt_template")
+print(f"  System Prompt: {system_prompt[:50] if system_prompt else 'None'}...")
+prompt_target = scorer_identity.get_child("prompt_target")
+print(f"  Target Info: {prompt_target}")
+print(f"  Identity Hash: {scorer_identity.hash}")
 
 # %% [markdown]
 # ### Objective Metrics

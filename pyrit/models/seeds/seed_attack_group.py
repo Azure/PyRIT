@@ -41,6 +41,7 @@ class SeedAttackGroup(SeedGroup):
         Raises:
             ValueError: If seeds is empty.
             ValueError: If exactly one objective is not provided.
+
         """
         super().__init__(seeds=seeds)
 
@@ -52,12 +53,19 @@ class SeedAttackGroup(SeedGroup):
 
         Raises:
             ValueError: If validation fails.
+
         """
         super().validate()
         self._enforce_exactly_one_objective()
 
     def _enforce_exactly_one_objective(self) -> None:
-        """Ensure exactly one objective is present."""
+        """
+        Ensure exactly one objective is present.
+
+        Raises:
+            ValueError: If the group does not contain exactly one SeedObjective.
+
+        """
         objective_count = len([s for s in self.seeds if isinstance(s, SeedObjective)])
         if objective_count != 1:
             raise ValueError(f"SeedAttackGroup must have exactly one objective. Found {objective_count}.")
@@ -72,6 +80,7 @@ class SeedAttackGroup(SeedGroup):
 
         Returns:
             The SeedObjective for this attack group.
+
         """
         obj = self._get_objective()
         assert obj is not None, "SeedAttackGroup should always have an objective"

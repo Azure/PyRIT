@@ -8,7 +8,7 @@ import logging
 import time
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, overload
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union, overload
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
@@ -20,6 +20,7 @@ from pyrit.executor.core import (
     StrategyEventData,
     StrategyEventHandler,
 )
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -224,7 +225,7 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         self._logger.info(message)
 
 
-class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], ABC):
+class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Identifiable, ABC):
     """
     Abstract base class for attack strategies.
     Defines the interface for executing attacks and handling results.
@@ -258,6 +259,71 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
         )
         self._objective_target = objective_target
         self._params_type = params_type
+        # Guard so subclasses that set converters before calling super() aren't clobbered
+        if not hasattr(self, "_request_converters"):
+            self._request_converters: list[Any] = []
+        if not hasattr(self, "_response_converters"):
+            self._response_converters: list[Any] = []
+
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
+        """
+        Construct the attack strategy identifier.
+
+        Builds a ComponentIdentifier with the objective target, optional scorer,
+        and converter pipeline as children. Subclasses can extend by passing
+        additional params or children.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters from
+                the subclass.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
+
+        Returns:
+            ComponentIdentifier: The identifier for this attack strategy.
+        """
+        all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
+            "objective_target": self.get_objective_target().get_identifier(),
+        }
+
+        # Add scorer if present
+        scoring_config = self.get_attack_scoring_config()
+        if scoring_config and scoring_config.objective_scorer:
+            all_children["objective_scorer"] = scoring_config.objective_scorer.get_identifier()
+
+        # Add request converter identifiers if present
+        if self._request_converters:
+            all_children["request_converters"] = [
+                converter.get_identifier() for config in self._request_converters for converter in config.converters
+            ]
+
+        # Add response converter identifiers if present
+        if self._response_converters:
+            all_children["response_converters"] = [
+                converter.get_identifier() for config in self._response_converters for converter in config.converters
+            ]
+
+        if children:
+            all_children.update(children)
+
+        return ComponentIdentifier.of(self, params=params, children=all_children)
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this attack strategy.
+
+        Subclasses can override this method to call _create_identifier() with
+        their specific params and children.
+
+        Returns:
+            ComponentIdentifier: The identifier for this attack strategy.
+        """
+        return self._create_identifier()
 
     @property
     def params_type(self) -> Type[AttackParameters]:
@@ -290,6 +356,15 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], AB
             scoring configuration. The default implementation returns None.
         """
         return None
+
+    def get_request_converters(self) -> list[Any]:
+        """
+        Get request converter configurations used by this strategy.
+
+        Returns:
+            list[Any]: The list of request PromptConverterConfiguration objects.
+        """
+        return self._request_converters
 
     @overload
     async def execute_async(

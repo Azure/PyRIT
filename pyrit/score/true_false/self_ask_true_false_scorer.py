@@ -9,6 +9,7 @@ import yaml
 
 from pyrit.common import verify_and_resolve_path
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score, SeedPrompt
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -77,9 +78,16 @@ class TrueFalseQuestion:
 
 
 class SelfAskTrueFalseScorer(TrueFalseScorer):
-    """A class that represents a self-ask true/false for scoring."""
+    """
+    A class that represents a self-ask true/false for scoring.
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    Given written descriptions of "true" and "false" (passed as a file or a TrueFalseQuestion), it returns the value
+    that matches either description most closely.
+
+    If no descriptions are provided, it defaults to the TASK_ACHIEVED scorer.
+    """
+
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
 
@@ -106,18 +114,17 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
                 Defaults to TrueFalseScoreAggregator.OR.
 
         Raises:
-            ValueError: If neither true_false_question_path nor true_false_question is provided.
             ValueError: If both true_false_question_path and true_false_question are provided.
             ValueError: If required keys are missing in true_false_question.
         """
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
 
         self._prompt_target = chat_target
 
-        if not true_false_question_path and not true_false_question:
-            raise ValueError("Either true_false_question_path or true_false_question must be provided.")
         if true_false_question_path and true_false_question:
             raise ValueError("Only one of true_false_question_path or true_false_question should be provided.")
+        if not true_false_question_path and not true_false_question:
+            true_false_question_path = TrueFalseQuestionPaths.TASK_ACHIEVED.value
 
         true_false_system_prompt_path = (
             true_false_system_prompt_path
@@ -147,13 +154,22 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
             true_description=true_category, false_description=false_category, metadata=metadata
         )
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
-            system_prompt_template=self._system_prompt,
-            user_prompt_template="objective: {objective}\nresponse: {response}",
-            prompt_target=self._prompt_target,
-            score_aggregator=self._score_aggregator.__name__,
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this scorer.
+
+        Returns:
+            ComponentIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
+            params={
+                "system_prompt_template": self._system_prompt,
+                "user_prompt_template": "objective: {objective}\nresponse: {response}",
+                "score_aggregator": self._score_aggregator.__name__,
+            },
+            children={
+                "prompt_target": self._prompt_target.get_identifier(),
+            },
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:

@@ -15,7 +15,7 @@ from pyrit.models import MessagePiece
 def test_export_conversation_by_attack_id_file_created(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
-    attack1_id = sample_conversations[0].attack_identifier["id"]
+    attack1_id = sample_conversations[0].attack_identifier.hash
 
     # Default path in export_conversations()
     file_name = f"{attack1_id}.json"

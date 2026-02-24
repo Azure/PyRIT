@@ -136,18 +136,17 @@ class ChatMessageNormalizer(MessageListNormalizer[ChatMessage], MessageStringNor
 
         if data_type == "text":
             return {"type": "text", "text": content}
-        elif data_type == "image_path":
+        if data_type == "image_path":
             # Convert local image to base64 data URL
             data_url = await convert_local_image_to_data_url(content)
             return {"type": "image_url", "image_url": {"url": data_url}}
-        elif data_type == "audio_path":
+        if data_type == "audio_path":
             # Convert local audio to base64 for input_audio format
             return await self._convert_audio_to_input_audio(content)
-        elif data_type == "url":
+        if data_type == "url":
             # Direct URL (typically for images)
             return {"type": "image_url", "image_url": {"url": content}}
-        else:
-            raise ValueError(f"Data type '{data_type}' is not yet supported for chat message content.")
+        raise ValueError(f"Data type '{data_type}' is not yet supported for chat message content.")
 
     async def _convert_audio_to_input_audio(self, audio_path: str) -> dict[str, Any]:
         """

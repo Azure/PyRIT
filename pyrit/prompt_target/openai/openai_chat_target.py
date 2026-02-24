@@ -12,6 +12,7 @@ from pyrit.exceptions import (
     PyritException,
     pyrit_target_retry,
 )
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
@@ -162,6 +163,26 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 extra_body_parameters = audio_params
 
         self._extra_body_parameters = extra_body_parameters
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier with OpenAI chat-specific parameters.
+
+        Returns:
+            ComponentIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            params={
+                "temperature": self._temperature,
+                "top_p": self._top_p,
+                "max_completion_tokens": self._max_completion_tokens,
+                "max_tokens": self._max_tokens,
+                "frequency_penalty": self._frequency_penalty,
+                "presence_penalty": self._presence_penalty,
+                "seed": self._seed,
+                "n": self._n,
+            },
+        )
 
     def _set_openai_env_configuration_vars(self) -> None:
         """
@@ -476,8 +497,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         """
         if self._is_text_message_format(conversation):
             return self._build_chat_messages_for_text(conversation)
-        else:
-            return await self._build_chat_messages_for_multi_modal_async(conversation)
+        return await self._build_chat_messages_for_multi_modal_async(conversation)
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
         """

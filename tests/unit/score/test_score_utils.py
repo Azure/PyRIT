@@ -12,6 +12,7 @@ to provide numerical feedback to adversarial chats regardless of score type.
 import uuid
 from unittest.mock import MagicMock
 
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Score
 from pyrit.score.score_utils import (
     ORIGINAL_FLOAT_VALUE_KEY,
@@ -19,6 +20,14 @@ from pyrit.score.score_utils import (
     format_score_for_rationale,
     normalize_score_to_float,
 )
+
+
+# Reusable test scorer identifiers
+def _make_scorer_id(name: str) -> ComponentIdentifier:
+    return ComponentIdentifier(
+        class_name=name,
+        class_module="tests.unit.score",
+    )
 
 
 class TestNormalizeScoreToFloat:
@@ -58,7 +67,7 @@ class TestNormalizeScoreToFloat:
             score_rationale="Test",
             score_metadata={ORIGINAL_FLOAT_VALUE_KEY: original_float},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "FloatScaleThresholdScorer"},
+            scorer_class_identifier=_make_scorer_id("FloatScaleThresholdScorer"),
         )
 
         result = normalize_score_to_float(score)
@@ -74,7 +83,7 @@ class TestNormalizeScoreToFloat:
             score_rationale="Test",
             score_metadata={},  # No ORIGINAL_FLOAT_VALUE_KEY
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "SelfAskScaleScorer"},
+            scorer_class_identifier=_make_scorer_id("SelfAskScaleScorer"),
         )
 
         result = normalize_score_to_float(score)
@@ -90,7 +99,7 @@ class TestNormalizeScoreToFloat:
             score_rationale="Test",
             score_metadata={},  # No float metadata
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "TrueFalseScorer"},
+            scorer_class_identifier=_make_scorer_id("TrueFalseScorer"),
         )
 
         result = normalize_score_to_float(score)
@@ -106,7 +115,7 @@ class TestNormalizeScoreToFloat:
             score_rationale="Test",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "TrueFalseScorer"},
+            scorer_class_identifier=_make_scorer_id("TrueFalseScorer"),
         )
 
         result = normalize_score_to_float(score)
@@ -149,7 +158,7 @@ class TestNormalizeScoreToFloat:
             score_rationale="Test",
             score_metadata={ORIGINAL_FLOAT_VALUE_KEY: 0.71},  # Actual value
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "FloatScaleThresholdScorer"},
+            scorer_class_identifier=_make_scorer_id("FloatScaleThresholdScorer"),
         )
 
         result = normalize_score_to_float(score)
@@ -235,7 +244,7 @@ class TestFormatScoreForRationale:
             score_rationale="This is the rationale",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "TestScorer", "__module__": "test"},
+            scorer_class_identifier=_make_scorer_id("TestScorer"),
         )
 
         result = format_score_for_rationale(score)
@@ -253,7 +262,7 @@ class TestFormatScoreForRationale:
             score_rationale=None,
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "TestScorer"},
+            scorer_class_identifier=_make_scorer_id("TestScorer"),
         )
 
         result = format_score_for_rationale(score)

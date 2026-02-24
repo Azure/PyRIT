@@ -62,7 +62,7 @@ def main():
         if file in processed_files:
             print(f"Skipping already processed file: {file}")
             continue
-        if any([skip_file in file for skip_file in skip_files]):
+        if any(skip_file in file for skip_file in skip_files):
             print(f"Skipping configured skipped file: {file}")
             continue
         print(f"Processing {file}")

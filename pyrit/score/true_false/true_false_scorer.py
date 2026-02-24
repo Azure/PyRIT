@@ -89,13 +89,12 @@ class TrueFalseScorer(Scorer):
         if self.evaluation_file_mapping is None:
             return None
 
-        scorer_hash = self.scorer_identifier.compute_hash()
         result_file = SCORER_EVALS_PATH / self.evaluation_file_mapping.result_file
 
         if not result_file.exists():
             return None
 
-        return find_objective_metrics_by_hash(hash=scorer_hash, file_path=result_file)
+        return find_objective_metrics_by_hash(hash=self.get_identifier().hash, file_path=result_file)
 
     async def _score_async(self, message: Message, *, objective: Optional[str] = None) -> list[Score]:
         """

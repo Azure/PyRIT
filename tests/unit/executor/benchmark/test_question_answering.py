@@ -10,6 +10,7 @@ from pyrit.executor.benchmark.question_answering import (
     QuestionAnsweringBenchmark,
     QuestionAnsweringBenchmarkContext,
 )
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -20,12 +21,22 @@ from pyrit.models import (
 )
 from pyrit.prompt_target import PromptTarget
 
-
 # Fixtures at the top of the file
+
+
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
+        class_name=name,
+        class_module="test_module",
+    )
+
+
 @pytest.fixture
 def mock_prompt_target() -> MagicMock:
     """Mock prompt target for testing."""
     target = MagicMock(spec=PromptTarget)
+    target.get_identifier.return_value = _mock_target_id("mock_prompt_target")
     return target
 
 

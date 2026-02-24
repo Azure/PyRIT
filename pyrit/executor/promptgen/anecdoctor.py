@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, overload
+from typing import Any, Dict, List, Optional, Union, overload
 
 import yaml
 
@@ -19,6 +19,7 @@ from pyrit.executor.promptgen.core import (
     PromptGeneratorStrategyContext,
     PromptGeneratorStrategyResult,
 )
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.models import (
     Message,
 )
@@ -67,7 +68,10 @@ class AnecdoctorResult(PromptGeneratorStrategyResult):
     generated_content: Message
 
 
-class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult]):
+class AnecdoctorGenerator(
+    PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult],
+    Identifiable,
+):
     """
     Implementation of the Anecdoctor prompt generation strategy.
 
@@ -130,6 +134,39 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
             self._system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_KG_YAML)
         else:
             self._system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_FEWSHOT_YAML)
+
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
+        """
+        Construct the identifier for this prompt generator.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
+
+        Returns:
+            ComponentIdentifier: The identifier for this prompt generator.
+        """
+        all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
+            "objective_target": self._objective_target.get_identifier(),
+        }
+        if children:
+            all_children.update(children)
+        return ComponentIdentifier.of(self, params=params, children=all_children)
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this prompt generator.
+
+        Returns:
+            ComponentIdentifier: The constructed identifier.
+        """
+        return self._create_identifier()
 
     def _validate_context(self, *, context: AnecdoctorContext) -> None:
         """
@@ -237,9 +274,8 @@ class AnecdoctorGenerator(PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorR
         if self._processing_model:
             # Extract knowledge graph from examples using the processing model
             return await self._extract_knowledge_graph_async(context=context)
-        else:
-            # Use few-shot examples directly without knowledge graph extraction
-            return self._format_few_shot_examples(evaluation_data=context.evaluation_data)
+        # Use few-shot examples directly without knowledge graph extraction
+        return self._format_few_shot_examples(evaluation_data=context.evaluation_data)
 
     async def _send_examples_to_target_async(
         self, *, formatted_examples: str, context: AnecdoctorContext

@@ -9,9 +9,74 @@ from contextlib import AbstractAsyncContextManager
 from typing import Generator, MutableSequence, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target import PromptChatTarget, limit_requests_per_minute
+from pyrit.prompt_target import PromptChatTarget, PromptTarget, limit_requests_per_minute
+
+
+def get_mock_scorer_identifier() -> ComponentIdentifier:
+    """
+    Returns a mock ComponentIdentifier for use in tests where the specific
+    scorer identity doesn't matter.
+    """
+    return ComponentIdentifier(
+        class_name="MockScorer",
+        class_module="tests.unit.mocks",
+    )
+
+
+def get_mock_target_identifier(name: str = "MockTarget", module: str = "tests.unit.mocks") -> ComponentIdentifier:
+    """
+    Returns a mock ComponentIdentifier for use in tests where the specific
+    target identity doesn't matter.
+
+    Args:
+        name: The class name for the mock target. Defaults to "MockTarget".
+        module: The module path for the mock target. Defaults to "tests.unit.mocks".
+
+    Returns:
+        A ComponentIdentifier configured with the provided name and module.
+    """
+    return ComponentIdentifier(
+        class_name=name,
+        class_module=module,
+    )
+
+
+def get_mock_attack_identifier(name: str = "MockAttack", module: str = "tests.unit.mocks") -> ComponentIdentifier:
+    """
+    Returns a mock ComponentIdentifier for use in tests where the specific
+    attack identity doesn't matter.
+
+    Args:
+        name: The class name for the mock attack. Defaults to "MockAttack".
+        module: The module path for the mock attack. Defaults to "tests.unit.mocks".
+
+    Returns:
+        A ComponentIdentifier configured with the provided name and module.
+    """
+    return ComponentIdentifier(
+        class_name=name,
+        class_module=module,
+    )
+
+
+def get_mock_target(name: str = "MockTarget") -> MagicMock:
+    """
+    Returns a MagicMock target whose ``get_identifier()`` returns a real
+    :class:`ComponentIdentifier`. Use this wherever a ``MagicMock(spec=PromptTarget)``
+    is needed as an ``objective_target``.
+
+    Args:
+        name: The class name for the mock target. Defaults to "MockTarget".
+
+    Returns:
+        A MagicMock configured to return a real ComponentIdentifier.
+    """
+    target = MagicMock(spec=PromptTarget)
+    target.get_identifier.return_value = get_mock_target_identifier(name)
+    return target
 
 
 class MockHttpPostAsync(AbstractAsyncContextManager):
@@ -66,7 +131,7 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        attack_identifier: Optional[dict[str, str]] = None,
+        attack_identifier: Optional[ComponentIdentifier] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt
@@ -188,11 +253,7 @@ def get_test_message_piece() -> MessagePiece:
 def get_sample_conversations() -> MutableSequence[Message]:
     with patch.object(CentralMemory, "get_memory_instance", return_value=MagicMock()):
         conversation_1 = str(uuid.uuid4())
-        attack_identifier = {
-            "__type__": "MockPromptTarget",
-            "__module__": "unit.mocks",
-            "id": str(uuid.uuid4()),
-        }
+        attack_id = get_mock_attack_identifier()
 
         return [
             MessagePiece(
@@ -201,7 +262,7 @@ def get_sample_conversations() -> MutableSequence[Message]:
                 converted_value="Hello, how are you?",
                 conversation_id=conversation_1,
                 sequence=0,
-                attack_identifier=attack_identifier,
+                attack_identifier=attack_id,
             ).to_message(),
             MessagePiece(
                 role="assistant",
@@ -209,14 +270,14 @@ def get_sample_conversations() -> MutableSequence[Message]:
                 converted_value="I'm fine, thank you!",
                 conversation_id=conversation_1,
                 sequence=1,
-                attack_identifier=attack_identifier,
+                attack_identifier=attack_id,
             ).to_message(),
             MessagePiece(
                 role="assistant",
                 original_value="original prompt text",
                 converted_value="I'm fine, thank you!",
                 conversation_id=str(uuid.uuid4()),
-                attack_identifier=attack_identifier,
+                attack_identifier=attack_id,
             ).to_message(),
         ]
 

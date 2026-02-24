@@ -6,6 +6,7 @@ import time
 from threading import Semaphore, Thread
 from typing import Any, Callable, Optional
 
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.ui.app import is_app_running, launch_app
 
@@ -218,7 +219,7 @@ class AppRPCServer:
         if score_ref is None:
             return None
         # Pass instance variables of reflected RPyC Score object as args to PyRIT Score object
-        score = Score(
+        return Score(
             score_value=score_ref.score_value,
             score_type=score_ref.score_type,
             score_category=score_ref.score_category,
@@ -226,9 +227,11 @@ class AppRPCServer:
             score_rationale=score_ref.score_rationale,
             score_metadata=score_ref.score_metadata,
             message_piece_id=score_ref.message_piece_id,
+            scorer_class_identifier=ComponentIdentifier(
+                class_name="RPCScorer",
+                class_module="pyrit.ui.rpc",
+            ),
         )
-
-        return score
 
     def wait_for_client(self) -> None:
         """

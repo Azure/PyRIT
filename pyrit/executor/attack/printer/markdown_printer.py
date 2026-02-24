@@ -82,7 +82,8 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         lines.append(f"{indent}- **Score Type:** {score.score_type}")
         lines.append(f"{indent}- **Value:** {value_str}")
-        lines.append(f"{indent}- **Category:** {score.score_category or 'N/A'}")
+        category_str = ", ".join(score.score_category) if score.score_category else "N/A"
+        lines.append(f"{indent}- **Category:** {category_str}")
 
         if score.score_rationale:
             # Handle multi-line rationale
@@ -336,12 +337,11 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         """
         if audio_path.lower().endswith(".wav"):
             return "audio/wav"
-        elif audio_path.lower().endswith(".ogg"):
+        if audio_path.lower().endswith(".ogg"):
             return "audio/ogg"
-        elif audio_path.lower().endswith(".m4a"):
+        if audio_path.lower().endswith(".m4a"):
             return "audio/mp4"
-        else:
-            return "audio/mpeg"  # Default fallback for .mp3, .mpeg, and unknown formats
+        return "audio/mpeg"  # Default fallback for .mp3, .mpeg, and unknown formats
 
     def _format_image_content(self, *, image_path: str) -> List[str]:
         """
@@ -435,14 +435,12 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         """
         if piece.converted_value_data_type == "image_path":
             return self._format_image_content(image_path=piece.converted_value)
-        elif piece.converted_value_data_type == "audio_path":
+        if piece.converted_value_data_type == "audio_path":
             return self._format_audio_content(audio_path=piece.converted_value)
-        else:
-            # Handle text content (including errors)
-            if piece.has_error():
-                return self._format_error_content(piece=piece)
-            else:
-                return self._format_text_content(piece=piece, show_original=show_original)
+        # Handle text content (including errors)
+        if piece.has_error():
+            return self._format_error_content(piece=piece)
+        return self._format_text_content(piece=piece, show_original=show_original)
 
     def _format_message_scores(self, message: Message) -> List[str]:
         """
@@ -492,7 +490,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         markdown_lines.append("|-------|-------|")
         markdown_lines.append(f"| **Objective** | {result.objective} |")
 
-        attack_type = result.attack_identifier.get("__type__", "Unknown")
+        attack_type = result.attack_identifier.class_name if result.attack_identifier else "Unknown"
 
         markdown_lines.append(f"| **Attack Type** | `{attack_type}` |")
         markdown_lines.append(f"| **Conversation ID** | `{result.conversation_id}` |")

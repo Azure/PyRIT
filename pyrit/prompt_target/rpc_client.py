@@ -8,6 +8,7 @@ from typing import Callable, Optional
 
 import rpyc
 
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.ui.rpc import RPCAppException
 
@@ -94,6 +95,10 @@ class RPCClient:
             score_rationale="The prompt was marked safe" if response else "The prompt was marked unsafe",
             score_metadata=None,
             message_piece_id=self._prompt_received.id,
+            scorer_class_identifier=ComponentIdentifier(
+                class_name="RPCClient",
+                class_module="pyrit.prompt_target.rpc_client",
+            ),
         )
         self._c.root.receive_score(score)
 

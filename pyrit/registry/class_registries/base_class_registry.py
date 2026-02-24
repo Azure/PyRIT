@@ -19,8 +19,8 @@ Terminology:
 from abc import ABC, abstractmethod
 from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
 
-from pyrit.registry.base import RegistryItemMetadata, RegistryProtocol
-from pyrit.registry.name_utils import class_name_to_registry_name
+from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.registry.base import RegistryProtocol
 
 # Type variable for the registered class type
 T = TypeVar("T")
@@ -81,8 +81,7 @@ class ClassEntry(Generic[T]):
 
         if self.factory is not None:
             return self.factory(**merged_kwargs)
-        else:
-            return self.registered_class(**merged_kwargs)
+        return self.registered_class(**merged_kwargs)
 
 
 class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT]):
@@ -181,35 +180,6 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             A metadata dataclass with descriptive information about the registered class.
         """
         pass
-
-    def _build_base_metadata(self, name: str, entry: ClassEntry[T]) -> RegistryItemMetadata:
-        """
-        Build the common base metadata for a registered class.
-
-        This helper extracts fields common to all registries: name, class_name, description.
-        Subclasses can use this for building common fields if needed.
-
-        Args:
-            name: The registry name (snake_case identifier).
-            entry: The ClassEntry containing the registered class.
-
-        Returns:
-            A RegistryItemMetadata dataclass with common fields.
-        """
-        registered_class = entry.registered_class
-
-        # Extract description from docstring, clean up whitespace
-        doc = registered_class.__doc__ or ""
-        if doc:
-            description = " ".join(doc.split())
-        else:
-            description = entry.description or "No description available"
-
-        return RegistryItemMetadata(
-            name=name,
-            class_name=registered_class.__name__,
-            description=description,
-        )
 
     def get_class(self, name: str) -> Type[T]:
         """
@@ -368,7 +338,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         Returns:
             The registry name (snake_case identifier).
         """
-        return class_name_to_registry_name(cls.__name__)
+        return class_name_to_snake_case(cls.__name__)
 
     def __contains__(self, name: str) -> bool:
         """

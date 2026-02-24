@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Optional, Sequence
 
 import httpx
 
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -82,6 +83,21 @@ class HTTPTarget(PromptTarget):
         if client and httpx_client_kwargs:
             raise ValueError("Cannot provide both a pre-configured client and additional httpx client kwargs.")
 
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier with HTTP target-specific parameters.
+
+        Returns:
+            ComponentIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            params={
+                "use_tls": self.use_tls,
+                "prompt_regex_string": self.prompt_regex_string,
+                "callback_function": getattr(self.callback_function, "__name__", None),
+            },
+        )
+
     @classmethod
     def with_client(
         cls,
@@ -104,14 +120,13 @@ class HTTPTarget(PromptTarget):
         Returns:
             HTTPTarget: an instance of HTTPTarget
         """
-        instance = cls(
+        return cls(
             http_request=http_request,
             prompt_regex_string=prompt_regex_string,
             callback_function=callback_function,
             max_requests_per_minute=max_requests_per_minute,
             client=client,
         )
-        return instance
 
     def _inject_prompt_into_request(self, request: MessagePiece) -> str:
         """

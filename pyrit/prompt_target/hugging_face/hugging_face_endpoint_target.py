@@ -5,6 +5,7 @@ import logging
 from typing import Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
@@ -60,6 +61,21 @@ class HuggingFaceEndpointTarget(PromptTarget):
         self.max_tokens = max_tokens
         self._temperature = temperature
         self._top_p = top_p
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier with HuggingFace endpoint-specific parameters.
+
+        Returns:
+            ComponentIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            params={
+                "temperature": self._temperature,
+                "top_p": self._top_p,
+                "max_tokens": self.max_tokens,
+            },
+        )
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:

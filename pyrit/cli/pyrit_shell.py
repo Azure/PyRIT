@@ -14,7 +14,8 @@ import asyncio
 import cmd
 import sys
 import threading
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from pyrit.models.scenario_result import ScenarioResult
@@ -98,7 +99,7 @@ class PyRITShell(cmd.Cmd):
         super().__init__()
         self.context = context
         self.default_database = context._database
-        self.default_log_level = context._log_level
+        self.default_log_level: Optional[int] = context._log_level
         self.default_env_files = context._env_files
 
         # Track scenario execution history: list of (command_string, ScenarioResult) tuples
@@ -217,16 +218,16 @@ class PyRITShell(cmd.Cmd):
                 return
 
         # Resolve env files if provided
-        resolved_env_files = None
+        resolved_env_files: Optional[list[Path]] = None
         if args["env_files"]:
             try:
-                resolved_env_files = frontend_core.resolve_env_files(env_file_paths=args["env_files"])
+                resolved_env_files = list(frontend_core.resolve_env_files(env_file_paths=args["env_files"]))
             except ValueError as e:
                 print(f"Error: {e}")
                 return
         else:
             # Use default env files from shell startup
-            resolved_env_files = self.default_env_files
+            resolved_env_files = list(self.default_env_files) if self.default_env_files else None
 
         # Create a context for this run with overrides
         run_context = frontend_core.FrontendCore(
@@ -234,7 +235,7 @@ class PyRITShell(cmd.Cmd):
             initialization_scripts=resolved_scripts,
             initializer_names=args["initializers"],
             env_files=resolved_env_files,
-            log_level=args["log_level"] or self.default_log_level,
+            log_level=args["log_level"] if args["log_level"] else self.default_log_level,
         )
         # Use the existing registries (don't reinitialize)
         run_context._scenario_registry = self.context._scenario_registry
@@ -454,6 +455,12 @@ def main() -> int:
     )
 
     parser.add_argument(
+        "--config-file",
+        type=Path,
+        help=frontend_core.ARG_HELP["config_file"],
+    )
+
+    parser.add_argument(
         "--database",
         choices=[frontend_core.IN_MEMORY, frontend_core.SQLITE, frontend_core.AZURE_SQL],
         default=frontend_core.SQLITE,
@@ -488,6 +495,7 @@ def main() -> int:
 
     # Create context (initializers are specified per-run, not at startup)
     context = frontend_core.FrontendCore(
+        config_file=args.config_file,
         database=args.database,
         initialization_scripts=None,
         initializer_names=None,

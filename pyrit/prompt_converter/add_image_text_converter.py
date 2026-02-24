@@ -11,6 +11,7 @@ from typing import cast
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageFont import FreeTypeFont
 
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -62,6 +63,24 @@ class AddImageTextConverter(PromptConverter):
         self._color = color
         self._x_pos = x_pos
         self._y_pos = y_pos
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the converter identifier with image and text parameters.
+
+        Returns:
+            ComponentIdentifier: The identifier for this converter.
+        """
+        return self._create_identifier(
+            params={
+                "img_to_add_path": str(self._img_to_add),
+                "font_name": self._font_name,
+                "color": self._color,
+                "font_size": self._font_size,
+                "x_pos": self._x_pos,
+                "y_pos": self._y_pos,
+            },
+        )
 
     def _load_font(self) -> FreeTypeFont:
         """

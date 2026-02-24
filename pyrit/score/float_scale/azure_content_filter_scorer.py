@@ -17,6 +17,7 @@ from azure.core.credentials import AzureKeyCredential
 
 from pyrit.auth import TokenProviderCredential
 from pyrit.common import default_values
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     DataTypeSerializer,
     MessagePiece,
@@ -46,7 +47,7 @@ class AzureContentFilterScorer(FloatScaleScorer):
 
     MAX_TEXT_LENGTH = 10000  # Azure Content Safety API limit
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text", "image_path"],
     )
 
@@ -139,19 +140,24 @@ class AzureContentFilterScorer(FloatScaleScorer):
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint and api_key")
 
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
 
     @property
     def _category_values(self) -> list[str]:
         """Get the string values of the configured harm categories for API calls."""
         return [category.value for category in self._harm_categories]
 
-    def _build_scorer_identifier(self) -> None:
-        """Build the scorer evaluation identifier for this scorer."""
-        self._set_scorer_identifier(
-            scorer_specific_params={
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this scorer.
+
+        Returns:
+            ComponentIdentifier: The identifier for this scorer.
+        """
+        return self._create_identifier(
+            params={
                 "score_categories": self._category_values,
-            }
+            },
         )
 
     async def evaluate_async(
@@ -333,5 +339,4 @@ class AzureContentFilterScorer(FloatScaleScorer):
         image_serializer = data_serializer_factory(
             category="prompt-memory-entries", value=image_path, data_type="image_path", extension=ext
         )
-        base64_encoded_data = await image_serializer.read_data_base64()
-        return base64_encoded_data
+        return await image_serializer.read_data_base64()

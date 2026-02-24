@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Dict, List, Literal, Optional, Union, get_args
+from typing import Any, Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -36,10 +37,10 @@ class MessagePiece:
         sequence: int = -1,
         labels: Optional[Dict[str, str]] = None,
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
-        converter_identifiers: Optional[List[Dict[str, str]]] = None,
-        prompt_target_identifier: Optional[Dict[str, str]] = None,
-        attack_identifier: Optional[Dict[str, str]] = None,
-        scorer_identifier: Optional[Dict[str, str]] = None,
+        converter_identifiers: Optional[List[Union[ComponentIdentifier, Dict[str, str]]]] = None,
+        prompt_target_identifier: Optional[Union[ComponentIdentifier, Dict[str, Any]]] = None,
+        attack_identifier: Optional[Union[ComponentIdentifier, Dict[str, str]]] = None,
+        scorer_identifier: Optional[Union[ComponentIdentifier, Dict[str, str]]] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: Optional[PromptDataType] = None,
         response_error: PromptResponseError = "none",
@@ -67,10 +68,12 @@ class MessagePiece:
                 Because memory is how components talk with each other, this can be component specific.
                 e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
                 Defaults to None.
-            converter_identifiers: The converter identifiers for the prompt. Defaults to None.
+            converter_identifiers: The converter identifiers for the prompt. Can be ComponentIdentifier
+                objects or dicts (deprecated, will be removed in 0.14.0). Defaults to None.
             prompt_target_identifier: The target identifier for the prompt. Defaults to None.
             attack_identifier: The attack identifier for the prompt. Defaults to None.
-            scorer_identifier: The scorer identifier for the prompt. Defaults to None.
+            scorer_identifier: The scorer identifier for the prompt. Can be a ComponentIdentifier or a
+                dict (deprecated, will be removed in 0.13.0). Defaults to None.
             original_value_data_type: The data type of the original prompt (text, image). Defaults to "text".
             converted_value_data_type: The data type of the converted prompt (text, image). Defaults to "text".
             response_error: The response error type. Defaults to "none".
@@ -79,6 +82,10 @@ class MessagePiece:
             timestamp: The timestamp of the memory entry. Defaults to None (auto-generated).
             scores: The scores associated with the prompt. Defaults to None.
             targeted_harm_categories: The harm categories associated with the prompt. Defaults to None.
+
+        Raises:
+            ValueError: If role, data types, or response error are invalid.
+
         """
         self.id = id if id else uuid4()
 
@@ -103,11 +110,27 @@ class MessagePiece:
         self.labels = labels or {}
         self.prompt_metadata = prompt_metadata or {}
 
-        self.converter_identifiers = converter_identifiers if converter_identifiers else []
+        # Handle converter_identifiers: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.converter_identifiers: List[ComponentIdentifier] = (
+            [ComponentIdentifier.normalize(conv_id) for conv_id in converter_identifiers]
+            if converter_identifiers
+            else []
+        )
 
-        self.prompt_target_identifier = prompt_target_identifier or {}
-        self.attack_identifier = attack_identifier or {}
-        self.scorer_identifier = scorer_identifier or {}
+        # Handle prompt_target_identifier: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.prompt_target_identifier: Optional[ComponentIdentifier] = (
+            ComponentIdentifier.normalize(prompt_target_identifier) if prompt_target_identifier else None
+        )
+
+        # Handle attack_identifier: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.attack_identifier: Optional[ComponentIdentifier] = (
+            ComponentIdentifier.normalize(attack_identifier) if attack_identifier else None
+        )
+
+        # Handle scorer_identifier: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.scorer_identifier: Optional[ComponentIdentifier] = (
+            ComponentIdentifier.normalize(scorer_identifier) if scorer_identifier else None
+        )
 
         self.original_value = original_value
 
@@ -141,7 +164,7 @@ class MessagePiece:
 
     async def set_sha256_values_async(self) -> None:
         """
-        This method computes the SHA256 hash values asynchronously.
+        Compute SHA256 hash values for original and converted payloads.
         It should be called after object creation if `original_value` and `converted_value` are set.
 
         Note, this method is async due to the blob retrieval. And because of that, we opted
@@ -192,6 +215,7 @@ class MessagePiece:
 
         Returns:
             The actual role stored (may be simulated_assistant).
+
         """
         return self._role
 
@@ -223,6 +247,7 @@ class MessagePiece:
 
         Raises:
             ValueError: If the role is not a valid ChatMessageRole.
+
         """
         if value not in ChatMessageRole.__args__:  # type: ignore
             raise ValueError(f"Role {value} is not a valid role.")
@@ -236,12 +261,20 @@ class MessagePiece:
     def has_error(self) -> bool:
         """
         Check if the message piece has an error.
+
+        Returns:
+            bool: True when the response_error is not "none".
+
         """
         return self.response_error != "none"
 
     def is_blocked(self) -> bool:
         """
         Check if the message piece is blocked.
+
+        Returns:
+            bool: True when the response_error is "blocked".
+
         """
         return self.response_error == "blocked"
 
@@ -254,6 +287,13 @@ class MessagePiece:
         self.id = None
 
     def to_dict(self) -> dict[str, object]:
+        """
+        Convert this message piece to a dictionary representation.
+
+        Returns:
+            dict[str, object]: Dictionary representation suitable for serialization.
+
+        """
         return {
             "id": str(self.id),
             "role": self._role,
@@ -263,10 +303,12 @@ class MessagePiece:
             "labels": self.labels,
             "targeted_harm_categories": self.targeted_harm_categories if self.targeted_harm_categories else None,
             "prompt_metadata": self.prompt_metadata,
-            "converter_identifiers": self.converter_identifiers,
-            "prompt_target_identifier": self.prompt_target_identifier,
-            "attack_identifier": self.attack_identifier,
-            "scorer_identifier": self.scorer_identifier,
+            "converter_identifiers": [conv.to_dict() for conv in self.converter_identifiers],
+            "prompt_target_identifier": (
+                self.prompt_target_identifier.to_dict() if self.prompt_target_identifier else None
+            ),
+            "attack_identifier": self.attack_identifier.to_dict() if self.attack_identifier else None,
+            "scorer_identifier": self.scorer_identifier.to_dict() if self.scorer_identifier else None,
             "original_value_data_type": self.original_value_data_type,
             "original_value": self.original_value,
             "original_value_sha256": self.original_value_sha256,
@@ -280,11 +322,29 @@ class MessagePiece:
         }
 
     def __str__(self) -> str:
-        return f"{self.prompt_target_identifier}: {self._role}: {self.converted_value}"
+        """
+        Return a concise string representation of this message piece.
+
+        Returns:
+            str: Target, role, and converted value summary.
+
+        """
+        target_str = self.prompt_target_identifier.class_name if self.prompt_target_identifier else "Unknown"
+        return f"{target_str}: {self._role}: {self.converted_value}"
 
     __repr__ = __str__
 
     def __eq__(self, other: object) -> bool:
+        """
+        Compare this message piece with another for semantic equality.
+
+        Args:
+            other (object): Object to compare.
+
+        Returns:
+            bool: True when all relevant message fields match.
+
+        """
         if not isinstance(other, MessagePiece):
             return NotImplemented
         return (
@@ -306,6 +366,13 @@ def sort_message_pieces(message_pieces: list[MessagePiece]) -> list[MessagePiece
     Group by conversation_id.
     Order conversations by the earliest timestamp within each conversation_id.
     Within each conversation, order messages by sequence.
+
+    Args:
+        message_pieces (list[MessagePiece]): Message pieces to sort.
+
+    Returns:
+        list[MessagePiece]: Sorted message pieces.
+
     """
     earliest_timestamps = {
         convo_id: min(x.timestamp for x in message_pieces if x.conversation_id == convo_id)

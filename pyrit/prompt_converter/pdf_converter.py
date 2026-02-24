@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import ast
+import hashlib
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -12,6 +13,7 @@ from reportlab.lib.utils import simpleSplit
 from reportlab.pdfgen import canvas
 
 from pyrit.common.logger import logger
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
 from pyrit.models.data_type_serializer import DataTypeSerializer
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
@@ -103,6 +105,32 @@ class PDFConverter(PromptConverter):
         if not all(isinstance(item, dict) for item in self._injection_items):
             raise ValueError("Each injection item must be a dictionary.")
 
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build identifier with PDF converter parameters.
+
+        Returns:
+            ComponentIdentifier: The identifier for this converter.
+        """
+        template_hash = None
+        if self._prompt_template:
+            template_hash = hashlib.sha256(str(self._prompt_template.value).encode("utf-8")).hexdigest()[:16]
+
+        existing_pdf_path = None
+        if self._existing_pdf_path:
+            existing_pdf_path = str(self._existing_pdf_path)
+
+        return self._create_identifier(
+            params={
+                "font_type": self._font_type,
+                "font_size": self._font_size,
+                "page_width": self._page_width,
+                "page_height": self._page_height,
+                "prompt_template_hash": template_hash,
+                "existing_pdf_path": existing_pdf_path,
+            }
+        )
+
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
         Convert the given prompt into a PDF.
@@ -176,9 +204,8 @@ class PDFConverter(PromptConverter):
         if isinstance(prompt, str):
             logger.debug("No template provided. Using raw prompt.")
             return prompt
-        else:
-            logger.error("Prompt must be a string when no template is provided.")
-            raise ValueError("Prompt must be a string when no template is provided.")
+        logger.error("Prompt must be a string when no template is provided.")
+        raise ValueError("Prompt must be a string when no template is provided.")
 
     def _generate_pdf(self, content: str) -> bytes:
         """

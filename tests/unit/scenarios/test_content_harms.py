@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.common.path import DATASETS_PATH
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedAttackGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -23,11 +24,27 @@ from pyrit.scenario.scenarios.airt.content_harms import (
 from pyrit.score import TrueFalseScorer
 
 
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
+        class_name=name,
+        class_module="test",
+    )
+
+
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
+        class_name=name,
+        class_module="test",
+    )
+
+
 @pytest.fixture
 def mock_objective_target():
     """Create a mock objective target for testing."""
     mock = MagicMock(spec=PromptTarget)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockObjectiveTarget")
     return mock
 
 
@@ -35,7 +52,7 @@ def mock_objective_target():
 def mock_adversarial_target():
     """Create a mock adversarial target for testing."""
     mock = MagicMock(spec=PromptChatTarget)
-    mock.get_identifier.return_value = {"__type__": "MockAdversarialTarget", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_target_id("MockAdversarialTarget")
     return mock
 
 
@@ -43,7 +60,7 @@ def mock_adversarial_target():
 def mock_objective_scorer():
     """Create a mock objective scorer for testing."""
     mock = MagicMock(spec=TrueFalseScorer)
-    mock.get_identifier.return_value = {"__type__": "MockObjectiveScorer", "__module__": "test"}
+    mock.get_identifier.return_value = _mock_scorer_id("MockObjectiveScorer")
     return mock
 
 
@@ -221,7 +238,7 @@ class TestContentHarmsBasic:
         # Constructor should set adversarial chat and basic metadata
         assert scenario._adversarial_chat == mock_adversarial_target
         assert scenario.name == "Content Harms"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
         # Initialization populates objective target and scenario composites
         await scenario.initialize_async(objective_target=mock_objective_target)
@@ -370,7 +387,7 @@ class TestContentHarmsBasic:
 
     def test_scenario_version(self):
         """Test that scenario has correct version."""
-        assert ContentHarms.version == 1
+        assert ContentHarms.VERSION == 1
 
     @patch.dict(
         "os.environ",

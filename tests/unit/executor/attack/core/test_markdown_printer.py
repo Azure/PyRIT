@@ -8,8 +8,17 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.executor.attack.printer.markdown_printer import MarkdownAttackResultPrinter
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult, Message, MessagePiece, Score
+
+
+def _mock_scorer_id(name: str = "MockScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
+        class_name=name,
+        class_module="test_module",
+    )
 
 
 @pytest.fixture
@@ -31,12 +40,12 @@ def sample_boolean_score():
     return Score(
         score_type="true_false",
         score_value="true",
-        score_category="test",
+        score_category=["test"],
         score_value_description="Test true score",
         score_rationale="Line 1\nLine 2\nLine 3",
-        score_metadata="{}",
+        score_metadata={},
         message_piece_id=str(uuid.uuid4()),
-        scorer_class_identifier={"__type__": "MockScorer", "__module__": "test_module"},
+        scorer_class_identifier=_mock_scorer_id("MockScorer"),
     )
 
 
@@ -45,12 +54,12 @@ def sample_float_score():
     return Score(
         score_type="float_scale",
         score_value="0.5",
-        score_category="other",
+        score_category=["other"],
         score_value_description="Other score",
         score_rationale="Other rationale",
-        score_metadata="{}",
+        score_metadata={},
         message_piece_id=str(uuid.uuid4()),
-        scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
+        scorer_class_identifier=_mock_scorer_id("OtherScorer"),
     )
 
 
@@ -58,7 +67,7 @@ def sample_float_score():
 def sample_attack_result():
     return AttackResult(
         objective="Test objective",
-        attack_identifier={"__type__": "TestAttack"},
+        attack_identifier=ComponentIdentifier(class_name="TestAttack", class_module="test_module"),
         conversation_id="test-conv-123",
         executed_turns=3,
         execution_time_ms=1500,
@@ -72,7 +81,7 @@ def sample_attack_result():
             score_rationale="Other rationale",
             score_metadata={},
             message_piece_id=str(uuid.uuid4()),
-            scorer_class_identifier={"__type__": "OtherScorer", "__module__": "test_module"},
+            scorer_class_identifier=_mock_scorer_id("OtherScorer"),
         ),
     )
 
@@ -102,7 +111,8 @@ def test_format_score_bool(markdown_printer, sample_boolean_score):
     assert "**Value:** True" in formatted
     assert "**Score Type:** true_false" in formatted
     assert "**Category:** test" in formatted
-    assert "**Metadata:** `{}`" in formatted
+    # Empty metadata dict is not printed
+    assert "**Metadata:**" not in formatted
 
 
 def test_format_score_float(markdown_printer, sample_float_score):

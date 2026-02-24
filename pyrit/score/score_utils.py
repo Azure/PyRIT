@@ -43,7 +43,10 @@ def format_score_for_rationale(score: Score) -> str:
     Returns:
         Formatted string with scorer class, value, and rationale.
     """
-    class_type = score.scorer_class_identifier.get("__type__", "Unknown")
+    if score.scorer_class_identifier:
+        class_type = score.scorer_class_identifier.class_name or "Unknown"
+    else:
+        class_type = "Unknown"
     return f"   - {class_type} {score.score_value}: {score.score_rationale or ''}"
 
 
@@ -80,7 +83,6 @@ def normalize_score_to_float(score: Optional[Score]) -> float:
     score_value = score.get_value()
     if isinstance(score_value, bool):
         return 1.0 if score_value else 0.0
-    elif isinstance(score_value, (int, float)):
+    if isinstance(score_value, (int, float)):
         return float(score_value)
-    else:
-        return 0.0
+    return 0.0

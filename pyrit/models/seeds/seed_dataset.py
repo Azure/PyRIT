@@ -89,6 +89,10 @@ class SeedDataset(YamlLoadable):
             added_by: User who added the dataset.
             seed_type: The type of seeds in this dataset ("prompt", "objective", or "simulated_conversation").
             is_objective: Deprecated in 0.13.0. Use seed_type="objective" instead.
+
+        Raises:
+            ValueError: If seeds are missing or contain invalid/contradictory seed definitions.
+
         """
         if not seeds:
             raise ValueError("SeedDataset cannot be empty.")
@@ -201,7 +205,7 @@ class SeedDataset(YamlLoadable):
         harm_categories: Optional[Sequence[str]] = None,
     ) -> Sequence[str]:
         """
-        Extracts and returns a list of prompt values from the dataset. By default, returns all of them.
+        Extract and return prompt values from the dataset.
 
         Args:
             first (Optional[int]): If provided, values from the first N prompts are included.
@@ -211,6 +215,7 @@ class SeedDataset(YamlLoadable):
 
         Returns:
             Sequence[str]: A list of prompt values.
+
         """
         # Filter by harm categories if specified
         seeds = self.seeds
@@ -237,7 +242,7 @@ class SeedDataset(YamlLoadable):
         self, *, number: PositiveInt, harm_categories: Optional[Sequence[str]] = None
     ) -> Sequence[str]:
         """
-        Extracts and returns a list of random prompt values from the dataset.
+        Extract and return random prompt values from the dataset.
 
         Args:
             number (int): The number of random prompt values to return.
@@ -246,6 +251,7 @@ class SeedDataset(YamlLoadable):
 
         Returns:
             Sequence[str]: A list of prompt values.
+
         """
         prompts = self.get_values(harm_categories=harm_categories)
         return random.sample(prompts, min(len(prompts), number))
@@ -253,7 +259,17 @@ class SeedDataset(YamlLoadable):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> SeedDataset:
         """
-        Builds a SeedDataset by merging top-level defaults into each item in 'seeds'.
+        Build a SeedDataset by merging top-level defaults into each item in `seeds`.
+
+        Args:
+            data (Dict[str, Any]): Dataset payload with top-level defaults and seed entries.
+
+        Returns:
+            SeedDataset: Constructed dataset with merged defaults.
+
+        Raises:
+            ValueError: If any seed entry includes a pre-set prompt_group_id.
+
         """
         # Pop out the seeds section
         seeds_data = data.pop("seeds", [])
@@ -296,16 +312,14 @@ class SeedDataset(YamlLoadable):
 
     def render_template_value(self, **kwargs: object) -> None:
         """
-        Renders self.value as a template, applying provided parameters in kwargs.
+        Render seed values as templates using provided parameters.
 
         Args:
             kwargs:Key-value pairs to replace in the SeedDataset value.
 
-        Returns:
-            None
-
         Raises:
             ValueError: If parameters are missing or invalid in the template.
+
         """
         for seed in self.seeds:
             seed.value = seed.render_template_value(**kwargs)
@@ -313,7 +327,7 @@ class SeedDataset(YamlLoadable):
     @staticmethod
     def _set_seed_group_id_by_alias(seed_prompts: Sequence[dict[str, object]]) -> None:
         """
-        Sets all seed_group_ids based on prompt_group_alias matches.
+        Set all seed_group_ids based on prompt_group_alias matches.
 
         This is important so the prompt_group_alias can be set in yaml to group prompts
         """
@@ -331,7 +345,7 @@ class SeedDataset(YamlLoadable):
     @staticmethod
     def group_seed_prompts_by_prompt_group_id(seeds: Sequence[Seed]) -> Sequence[SeedGroup]:
         """
-        Groups the given list of Seeds by their prompt_group_id and creates
+        Group the given list of seeds by prompt_group_id and create
         SeedGroup or SeedAttackGroup instances.
 
         For each group, this method first attempts to create a SeedAttackGroup
@@ -345,6 +359,7 @@ class SeedDataset(YamlLoadable):
             A list of SeedGroup or SeedAttackGroup objects, with seeds grouped by
             prompt_group_id. Each group will be ordered by the sequence number of
             the seeds, if available.
+
         """
         # Group seeds by `prompt_group_id`
         grouped_seeds: Dict[uuid.UUID, list[Seed]] = defaultdict(list)
@@ -371,10 +386,24 @@ class SeedDataset(YamlLoadable):
 
     @property
     def prompts(self) -> Sequence[SeedPrompt]:
+        """
+        Return all prompt-type seeds.
+
+        Returns:
+            Sequence[SeedPrompt]: Prompt seeds in this dataset.
+
+        """
         return [s for s in self.seeds if isinstance(s, SeedPrompt)]
 
     @property
     def objectives(self) -> Sequence[SeedObjective]:
+        """
+        Return all objective-type seeds.
+
+        Returns:
+            Sequence[SeedObjective]: Objective seeds in this dataset.
+
+        """
         return [s for s in self.seeds if isinstance(s, SeedObjective)]
 
     @property
@@ -384,8 +413,16 @@ class SeedDataset(YamlLoadable):
 
         Returns:
             Sequence[SeedGroup]: A list of SeedGroup objects, with seeds grouped by prompt_group_id.
+
         """
         return self.group_seed_prompts_by_prompt_group_id(self.seeds)
 
     def __repr__(self) -> str:
+        """
+        Return a concise representation of the dataset.
+
+        Returns:
+            str: Dataset summary string.
+
+        """
         return f"<SeedDataset(seeds={len(self.seeds)} seeds)>"

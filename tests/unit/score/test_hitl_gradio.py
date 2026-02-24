@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece, Score
@@ -15,6 +16,14 @@ from pyrit.score import HumanInTheLoopScorerGradio
 
 def if_gradio_installed():
     return importlib.util.find_spec("gradio") is not None
+
+
+def _make_scorer_id(name: str = "TestScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
+        class_name=name,
+        class_module="test_module",
+    )
 
 
 @pytest.fixture
@@ -27,7 +36,7 @@ def score() -> Score:
         score_rationale="The prompt was marked safe",
         score_metadata=None,
         message_piece_id="1234",
-        scorer_class_identifier={"id": "test"},
+        scorer_class_identifier=_make_scorer_id(),
         objective=None,
     )
 

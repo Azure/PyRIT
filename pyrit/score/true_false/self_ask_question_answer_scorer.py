@@ -26,7 +26,7 @@ class SelfAskQuestionAnswerScorer(SelfAskTrueFalseScorer):
     to objective target or you need more flexibility in determining if the questions were answered correctly.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"],
         is_objective_required=True,
     )

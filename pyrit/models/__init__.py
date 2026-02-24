@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""Public model exports for PyRIT core data structures and helpers."""
+
 from pyrit.models.attack_result import AttackOutcome, AttackResult, AttackResultT
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,
@@ -22,7 +24,6 @@ from pyrit.models.data_type_serializer import (
 )
 from pyrit.models.embeddings import EmbeddingData, EmbeddingResponse, EmbeddingSupport, EmbeddingUsageInformation
 from pyrit.models.harm_definition import HarmDefinition, ScaleDescription, get_all_harm_definitions
-from pyrit.models.identifiers import Identifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError, SeedType
 from pyrit.models.message import (
     Message,
@@ -82,7 +83,6 @@ __all__ = [
     "group_conversation_message_pieces_by_sequence",
     "group_message_pieces_into_conversations",
     "HarmDefinition",
-    "Identifier",
     "ImagePathDataTypeSerializer",
     "Message",
     "MessagePiece",
