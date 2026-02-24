@@ -6,7 +6,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.prompt_converter.text_selection_strategy import WordSelectionStrategy
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
@@ -47,16 +47,20 @@ class BinaryConverter(WordLevelConverter):
             raise TypeError("bits_per_char must be an instance of BinaryConverter.BitsPerChar Enum.")
         self.bits_per_char = bits_per_char
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with binary converter parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
-        base_params = super()._build_identifier().converter_specific_params or {}
-        base_params["bits_per_char"] = self.bits_per_char.value
-        return self._create_identifier(converter_specific_params=base_params)
+        return self._create_identifier(
+            params={
+                "word_selection_strategy": self._word_selection_strategy.__class__.__name__,
+                "word_split_separator": self._word_split_separator,
+                "bits_per_char": self.bits_per_char.value,
+            }
+        )
 
     def validate_input(self, prompt: str) -> None:
         """

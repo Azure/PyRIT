@@ -299,7 +299,7 @@ class AttackPrompt:
             gen_config.max_new_tokens = self.test_new_toks
         gen_str = self.generate_str(model, gen_config).strip()
         logger.info(gen_str)
-        jailbroken = not any([prefix in gen_str for prefix in self.test_prefixes])
+        jailbroken = not any(prefix in gen_str for prefix in self.test_prefixes)
         em = self.target in gen_str
         return jailbroken, int(em)
 
@@ -329,7 +329,7 @@ class AttackPrompt:
                 for control in test_controls
             ]
             pad_tok = 0
-            while pad_tok in self.input_ids or any([pad_tok in ids for ids in test_ids]):
+            while pad_tok in self.input_ids or any(pad_tok in ids for ids in test_ids):
                 pad_tok += 1
             nested_ids = torch.nested.nested_tensor(test_ids)
             test_ids = torch.nested.to_padded_tensor(nested_ids, pad_tok, (len(test_ids), max_len))
@@ -521,7 +521,7 @@ class PromptManager:
         return [prompt.test_loss(model) for prompt in self._prompts]
 
     def grad(self, model: Any) -> torch.Tensor:
-        return sum([prompt.grad(model) for prompt in self._prompts])  # type: ignore[return-value, unused-ignore]
+        return sum(prompt.grad(model) for prompt in self._prompts)  # type: ignore[return-value, unused-ignore]
 
     def logits(self, model: Any, test_controls: Any = None, return_ids: bool = False) -> Any:
         vals = [prompt.logits(model, test_controls, return_ids) for prompt in self._prompts]
@@ -1564,7 +1564,7 @@ class EvaluateAttack:
 
                     curr_jb, curr_em = [], []
                     for gen_str, target in zip(all_outputs, targets):
-                        jailbroken = not any([prefix in gen_str for prefix in self.test_prefixes])
+                        jailbroken = not any(prefix in gen_str for prefix in self.test_prefixes)
                         em = target in gen_str
                         curr_jb.append(jailbroken)
                         curr_em.append(em)
@@ -1704,7 +1704,7 @@ def get_workers(params: Any, eval: bool = False) -> tuple[list[ModelWorker], lis
     conv_templates = []
     for conv in raw_conv_templates:
         if conv.name == "zero_shot":
-            conv.roles = tuple(["### " + r for r in conv.roles])
+            conv.roles = tuple("### " + r for r in conv.roles)
             conv.sep = "\n"
         elif conv.name == "llama-2":
             conv.sep2 = conv.sep2.strip()

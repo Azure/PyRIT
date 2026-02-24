@@ -86,9 +86,9 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         # Validate categories if provided
         if categories is not None:
             valid_categories = {category.value for category in VLSUCategory}
-            invalid_categories = (
-                set(cat.value if isinstance(cat, VLSUCategory) else cat for cat in categories) - valid_categories
-            )
+            invalid_categories = {
+                cat.value if isinstance(cat, VLSUCategory) else cat for cat in categories
+            } - valid_categories
             if invalid_categories:
                 raise ValueError(f"Invalid VLSU categories: {', '.join(invalid_categories)}")
 

@@ -13,7 +13,7 @@ from pyrit.exceptions import (
     pyrit_json_retry,
     remove_markdown_json,
 )
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -80,18 +80,18 @@ class PersuasionConverter(PromptConverter):
         self.system_prompt = str(prompt_template.value)
         self._persuasion_technique = persuasion_technique
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with persuasion parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_target=self.converter_target,
-            converter_specific_params={
+            params={
                 "persuasion_technique": self._persuasion_technique,
             },
+            children={"converter_target": self.converter_target.get_identifier()},
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:

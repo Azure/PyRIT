@@ -86,7 +86,7 @@ async def test_prompt_shield_document_parsing(
 @pytest.mark.asyncio
 async def test_prompt_shield_response_validation(promptshield_target: PromptShieldTarget):
     # This tests handling both an empty request and an empty response
-    promptshield_target._validate_response(request_body=dict(), response_body=dict())
+    promptshield_target._validate_response(request_body={}, response_body={})
 
 
 def test_api_key_authentication():

@@ -102,7 +102,7 @@ class SeedDatasetProvider(ABC):
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
                 raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}")
-        return sorted(list(dataset_names))
+        return sorted(dataset_names)
 
     @classmethod
     async def fetch_datasets_async(
