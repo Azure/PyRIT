@@ -15,7 +15,7 @@ from pyrit.executor.attack.single_turn.role_play import RolePlayAttack
 from pyrit.executor.attack.single_turn.skeleton_key import SkeletonKeyAttack
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedGroup, SeedObjective
-from pyrit.prompt_target import PromptTarget
+from pyrit.prompt_target import OpenAIChatTarget, PromptTarget
 from pyrit.scenario.scenarios.airt.jailbreak import Jailbreak, JailbreakStrategy
 from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterScorer
 
@@ -105,6 +105,20 @@ def skeleton_jailbreak_attack() -> JailbreakStrategy:
 @pytest.fixture
 def roleplay_jailbreak_strategy() -> JailbreakStrategy:
     return JailbreakStrategy.RolePlay
+
+
+# Synthetic many-shot examples used to prevent real HTTP requests to GitHub during tests
+_MOCK_MANY_SHOT_EXAMPLES = [{"question": f"test question {i}", "answer": f"test answer {i}"} for i in range(100)]
+
+
+@pytest.fixture(autouse=True)
+def patch_many_shot_http_fetch():
+    """Prevent ManyShotJailbreakAttack from making real HTTP calls during unit tests."""
+    with patch(
+        "pyrit.executor.attack.single_turn.many_shot_jailbreak.fetch_many_shot_jailbreaking_dataset",
+        return_value=_MOCK_MANY_SHOT_EXAMPLES,
+    ):
+        yield
 
 
 @pytest.fixture
@@ -432,3 +446,50 @@ class TestJailbreakProperties:
             scorer_target = scenario._scorer_config.objective_scorer  # type: ignore
 
             assert objective_target != scorer_target
+
+
+@pytest.mark.usefixtures(*FIXTURES)
+class TestJailbreakAdversarialTarget:
+    """Tests for adversarial target creation and caching."""
+
+    def test_create_adversarial_target_returns_openai_chat_target(self) -> None:
+        """Test that _create_adversarial_target returns a new OpenAIChatTarget."""
+        scenario = Jailbreak()
+        target = scenario._create_adversarial_target()
+        assert isinstance(target, OpenAIChatTarget)
+
+    def test_get_or_create_adversarial_target_reuses_instance(self) -> None:
+        """Test that _get_or_create_adversarial_target returns the same instance on repeated calls."""
+        scenario = Jailbreak()
+        first = scenario._get_or_create_adversarial_target()
+        second = scenario._get_or_create_adversarial_target()
+        assert first is second
+
+    def test_get_or_create_adversarial_target_creates_on_first_call(self) -> None:
+        """Test that _adversarial_target starts as None and is populated after first access."""
+        scenario = Jailbreak()
+        assert scenario._adversarial_target is None
+        target = scenario._get_or_create_adversarial_target()
+        assert scenario._adversarial_target is target
+
+    @pytest.mark.asyncio
+    async def test_roleplay_attacks_share_adversarial_target(
+        self,
+        *,
+        mock_objective_target: PromptTarget,
+        mock_objective_scorer: TrueFalseInverterScorer,
+        mock_memory_seed_groups: List[SeedGroup],
+        roleplay_jailbreak_strategy: JailbreakStrategy,
+    ) -> None:
+        """Test that multiple role-play attacks share the same adversarial target instance."""
+        with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
+            scenario = Jailbreak(objective_scorer=mock_objective_scorer, num_templates=2)
+            await scenario.initialize_async(
+                objective_target=mock_objective_target, scenario_strategies=[roleplay_jailbreak_strategy]
+            )
+            atomic_attacks = await scenario._get_atomic_attacks_async()
+            assert len(atomic_attacks) >= 2
+
+            # All role-play attacks should share the same adversarial chat target
+            adversarial_targets = [run._attack._adversarial_chat for run in atomic_attacks]
+            assert all(t is adversarial_targets[0] for t in adversarial_targets)

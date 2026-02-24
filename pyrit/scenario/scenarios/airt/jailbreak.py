@@ -158,6 +158,7 @@ class Jailbreak(Scenario):
 
         self._num_templates = num_templates
         self._num_attempts = num_attempts
+        self._adversarial_target: Optional[OpenAIChatTarget] = None
 
         # Note that num_templates and jailbreak_names are mutually exclusive.
         # If self._num_templates is None, then this returns all discoverable jailbreak templates.
@@ -209,12 +210,12 @@ class Jailbreak(Scenario):
         )
         return refusal_scorer
 
-    def _get_default_adversarial_target(self) -> OpenAIChatTarget:
+    def _create_adversarial_target(self) -> OpenAIChatTarget:
         """
-        Create and retrieve the default adversarial target.
+        Create a new adversarial target instance.
 
         Returns:
-            OpenAIChatTarget: Default adversarial target using an unfiltered endpoint.
+            OpenAIChatTarget: A fresh adversarial target using an unfiltered endpoint.
         """
         return OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
@@ -222,6 +223,20 @@ class Jailbreak(Scenario):
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
+
+    def _get_or_create_adversarial_target(self) -> OpenAIChatTarget:
+        """
+        Return the shared adversarial target, creating it on first access.
+
+        Reuses a single OpenAIChatTarget instance across all role-play attacks
+        to avoid repeated client and TLS setup.
+
+        Returns:
+            OpenAIChatTarget: The shared adversarial target.
+        """
+        if self._adversarial_target is None:
+            self._adversarial_target = self._create_adversarial_target()
+        return self._adversarial_target
 
     def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
         """
@@ -284,7 +299,7 @@ class Jailbreak(Scenario):
             case "skeleton":
                 attack = SkeletonKeyAttack(**args)
             case "role_play":
-                args["adversarial_chat"] = self._get_default_adversarial_target()
+                args["adversarial_chat"] = self._get_or_create_adversarial_target()
                 args["role_play_definition_path"] = RolePlayPaths.PERSUASION_SCRIPT.value
                 attack = RolePlayAttack(**args)
             case _:
