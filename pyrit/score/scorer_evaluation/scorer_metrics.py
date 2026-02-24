@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
     import numpy as np
 
-    from pyrit.identifiers import ScorerIdentifier
+    from pyrit.identifiers import ComponentIdentifier
     from pyrit.models.harm_definition import HarmDefinition
 
 T = TypeVar("T", bound="ScorerMetrics")
@@ -189,11 +189,11 @@ class ScorerMetricsWithIdentity(Generic[M]):
     - ScorerMetricsWithIdentity[HarmScorerMetrics] has metrics: HarmScorerMetrics
 
     Args:
-        scorer_identifier (ScorerIdentifier): The scorer's configuration identifier.
+        scorer_identifier (ComponentIdentifier): The scorer's configuration identifier.
         metrics (M): The evaluation metrics (ObjectiveScorerMetrics or HarmScorerMetrics).
     """
 
-    scorer_identifier: "ScorerIdentifier"
+    scorer_identifier: "ComponentIdentifier"
     metrics: M
 
     def __repr__(self) -> str:

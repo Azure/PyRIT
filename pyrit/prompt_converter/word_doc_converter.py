@@ -18,7 +18,7 @@ from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConve
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from pyrit.identifiers import ConverterIdentifier
+    from pyrit.identifiers import ComponentIdentifier
     from pyrit.models.data_type_serializer import DataTypeSerializer
 
 
@@ -105,12 +105,12 @@ class WordDocConverter(PromptConverter):
             placeholder=placeholder,
         )
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with template and document parameters.
 
         Returns:
-            ConverterIdentifier: The identifier with converter-specific parameters.
+            ComponentIdentifier: The identifier with converter-specific parameters.
         """
         template_hash: Optional[str] = None
         if self._prompt_template:
@@ -121,7 +121,7 @@ class WordDocConverter(PromptConverter):
             existing_docx_path = str(self._injection_config.existing_docx)
 
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "prompt_template_hash": template_hash,
                 "existing_docx_path": existing_docx_path,
                 "placeholder": self._injection_config.placeholder,

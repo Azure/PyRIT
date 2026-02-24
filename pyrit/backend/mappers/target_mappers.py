@@ -28,10 +28,10 @@ def target_object_to_instance(target_unique_name: str, target_obj: PromptTarget)
     return TargetInstance(
         target_unique_name=target_unique_name,
         target_type=identifier.class_name,
-        endpoint=identifier.endpoint or None,
-        model_name=identifier.model_name or None,
-        temperature=identifier.temperature,
-        top_p=identifier.top_p,
-        max_requests_per_minute=identifier.max_requests_per_minute,
-        target_specific_params=identifier.target_specific_params,
+        endpoint=identifier.params.get("endpoint") or None,
+        model_name=identifier.params.get("model_name") or None,
+        temperature=identifier.params.get("temperature"),
+        top_p=identifier.params.get("top_p"),
+        max_requests_per_minute=identifier.params.get("max_requests_per_minute"),
+        target_specific_params=identifier.params.get("target_specific_params"),
     )

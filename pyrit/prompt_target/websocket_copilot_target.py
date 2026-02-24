@@ -19,7 +19,7 @@ from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import DataTypeSerializer, Message, MessagePiece, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
@@ -119,15 +119,15 @@ class WebSocketCopilotTarget(PromptTarget):
             model_name=model_name,
         )
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with WebSocketCopilot-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "response_timeout_seconds": self._response_timeout_seconds,
             },
         )

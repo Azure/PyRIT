@@ -1,31 +1,19 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from dataclasses import dataclass, field
-
-from pyrit.identifiers import Identifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.registry.instance_registries.base_instance_registry import BaseInstanceRegistry
 
 
-@dataclass(frozen=True)
-class SampleItemMetadata(Identifier):
-    """Sample metadata with an extra field."""
-
-    category: str = field(kw_only=True)
-
-
-class ConcreteTestRegistry(BaseInstanceRegistry[str, SampleItemMetadata]):
+class ConcreteTestRegistry(BaseInstanceRegistry[str, ComponentIdentifier]):
     """Concrete implementation of BaseInstanceRegistry for testing."""
 
-    def _build_metadata(self, name: str, instance: str) -> SampleItemMetadata:
+    def _build_metadata(self, name: str, instance: str) -> ComponentIdentifier:
         """Build test metadata from a string instance."""
-        # Note: name parameter is for registry key, but Identifier.unique_name is auto-computed
-        return SampleItemMetadata(
-            identifier_type="instance",
+        return ComponentIdentifier(
             class_name="str",
             class_module="builtins",
-            class_description=f"Description for {instance}",
-            category="test" if "test" in instance.lower() else "other",
+            params={"category": "test" if "test" in instance.lower() else "other"},
         )
 
 
@@ -199,7 +187,7 @@ class TestBaseInstanceRegistryListMetadata:
         """Test filtering metadata by a field."""
         metadata = self.registry.list_metadata(include_filters={"category": "test"})
         assert len(metadata) == 2
-        assert all(m.category == "test" for m in metadata)
+        assert all(m.params["category"] == "test" for m in metadata)
 
     def test_list_metadata_filter_no_match(self):
         """Test filtering with no matches returns empty list."""
@@ -210,7 +198,7 @@ class TestBaseInstanceRegistryListMetadata:
         """Test excluding metadata by a field."""
         metadata = self.registry.list_metadata(exclude_filters={"category": "test"})
         assert len(metadata) == 1
-        assert all(m.category == "other" for m in metadata)
+        assert all(m.params["category"] == "other" for m in metadata)
 
     def test_list_metadata_combined_include_and_exclude(self):
         """Test combined include and exclude filters."""
@@ -222,7 +210,7 @@ class TestBaseInstanceRegistryListMetadata:
         # Instead, test with category filters
         metadata = self.registry.list_metadata(include_filters={"category": "test"})
         assert len(metadata) == 3  # item1, item3, item4 (all have "test" in value)
-        assert all(m.category == "test" for m in metadata)
+        assert all(m.params["category"] == "test" for m in metadata)
 
     def test_list_metadata_caching(self):
         """Test that metadata is cached after first call."""

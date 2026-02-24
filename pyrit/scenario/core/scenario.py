@@ -34,7 +34,7 @@ from pyrit.score import Scorer, TrueFalseScorer
 
 if TYPE_CHECKING:
     from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-    from pyrit.identifiers import TargetIdentifier
+    from pyrit.identifiers import ComponentIdentifier
     from pyrit.models import SeedAttackGroup
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class Scenario(ABC):
 
         # These will be set in initialize_async
         self._objective_target: Optional[PromptTarget] = None
-        self._objective_target_identifier: Optional[TargetIdentifier] = None
+        self._objective_target_identifier: Optional[ComponentIdentifier] = None
         self._memory_labels: Dict[str, str] = {}
         self._max_concurrency: int = 1
         self._max_retries: int = 0
