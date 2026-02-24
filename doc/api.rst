@@ -445,7 +445,6 @@ API Reference
     MaliciousQuestionGeneratorConverter
     MathObfuscationConverter
     MathPromptConverter
-    MultiLanguageTranslationConverter
     MorseConverter
     NatoConverter
     NegationTrapConverter

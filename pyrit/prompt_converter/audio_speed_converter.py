@@ -44,13 +44,13 @@ class AudioSpeedConverter(PromptConverter):
             output_format (str): The format of the audio file, defaults to "wav".
             speed_factor (float): The factor by which to change the speed.
                 Values > 1.0 speed up the audio, values < 1.0 slow it down.
-                Must be greater than 0. Defaults to 1.5.
+                Must be greater than 0 and at most 100. Defaults to 1.5.
 
         Raises:
-            ValueError: If speed_factor is not positive.
+            ValueError: If speed_factor is not positive or exceeds 100.
         """
-        if speed_factor <= 0:
-            raise ValueError("speed_factor must be greater than 0.")
+        if speed_factor <= 0 or speed_factor > 100:
+            raise ValueError("speed_factor must be greater than 0 and at most 100.")
         self._output_format = output_format
         self._speed_factor = speed_factor
 
