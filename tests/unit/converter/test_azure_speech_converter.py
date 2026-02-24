@@ -71,6 +71,7 @@ class TestAzureSpeechTextToAudioConverter:
 
     def test_azure_speech_audio_text_converter_input_supported(self):
         converter = AzureSpeechTextToAudioConverter()
+        assert converter.input_supported("audio_path") is False
         assert converter.input_supported("text") is True
 
     def test_use_entra_auth_true_with_api_key_raises_error(self):

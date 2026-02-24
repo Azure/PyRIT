@@ -406,10 +406,10 @@ API Reference
     AddTextImageConverter
     AnsiAttackConverter
     AsciiArtConverter
-    AudioEchoConverter
     AsciiSmugglerConverter
     AskToDecodeConverter
     AtbashConverter
+    AudioEchoConverter
     AudioFrequencyConverter
     AudioSpeedConverter
     AudioVolumeConverter
