@@ -10,10 +10,13 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     MutableSequence,
     Optional,
     cast,
 )
+
+from openai.types.shared import ReasoningEffort
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -75,6 +78,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
+        reasoning_effort: Optional[ReasoningEffort] = None,
+        reasoning_summary: Optional[Literal["auto", "concise", "detailed"]] = None,
         extra_body_parameters: Optional[dict[str, Any]] = None,
         fail_on_missing_function: bool = False,
         **kwargs: Any,
@@ -100,6 +105,13 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 randomness of the response.
             top_p (float, Optional): The top-p parameter for controlling the diversity of the
                 response.
+            reasoning_effort (ReasoningEffort, Optional): Controls how much reasoning the model
+                performs. Accepts "minimal", "low", "medium", or "high". Lower effort
+                favors speed and lower cost; higher effort favors thoroughness. Defaults to None
+                (uses model default, typically "medium").
+            reasoning_summary (Literal["auto", "concise", "detailed"], Optional): Controls
+                whether a summary of the model's reasoning is included in the response.
+                Defaults to None (no summary).
             is_json_supported (bool, Optional): If True, the target will support formatting responses as JSON by
                 setting the response_format header. Official OpenAI models all support this, but if you are using
                 this target with different models, is_json_supported should be set correctly to avoid issues when
@@ -133,9 +145,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._top_p = top_p
         self._max_output_tokens = max_output_tokens
 
-        # Reasoning parameters are not yet supported by PyRIT.
-        # See https://platform.openai.com/docs/api-reference/responses/create#responses-create-reasoning
-        # for more information.
+        self._reasoning_effort = reasoning_effort
+        self._reasoning_summary = reasoning_summary
 
         self._extra_body_parameters = extra_body_parameters
 
@@ -169,6 +180,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 "temperature": self._temperature,
                 "top_p": self._top_p,
                 "max_output_tokens": self._max_output_tokens,
+                "reasoning_effort": self._reasoning_effort,
+                "reasoning_summary": self._reasoning_summary,
             },
         )
 
@@ -360,6 +373,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             "input": input_items,
             # Correct JSON response format per Responses API
             "text": text_format,
+            "reasoning": self._build_reasoning_config(),
         }
 
         if self._extra_body_parameters:
@@ -367,6 +381,23 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
+
+    def _build_reasoning_config(self) -> Optional[Dict[str, Any]]:
+        """
+        Build the reasoning configuration dict for the Responses API.
+
+        Returns:
+            Optional[Dict[str, Any]]: The reasoning config, or None if neither effort nor summary is set.
+        """
+        if self._reasoning_effort is None and self._reasoning_summary is None:
+            return None
+
+        reasoning: Dict[str, Any] = {}
+        if self._reasoning_effort is not None:
+            reasoning["effort"] = self._reasoning_effort
+        if self._reasoning_summary is not None:
+            reasoning["summary"] = self._reasoning_summary
+        return reasoning
 
     def _build_text_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
         if not json_config.enabled:
@@ -577,13 +608,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         elif section_type == MessagePieceType.REASONING:
             # Store reasoning in memory for debugging/logging, but won't be sent back to API
             piece_value = json.dumps(
-                {
-                    "id": section.id,
-                    "type": section.type,
-                    "summary": section.summary,
-                    "content": section.content,
-                    "encrypted_content": section.encrypted_content,
-                },
+                section.model_dump(),
                 separators=(",", ":"),
             )
             piece_type = "reasoning"
@@ -691,12 +716,13 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             The tool-call section dict, or None if not found.
         """
         for piece in reversed(reply.message_pieces):
-            if piece.api_role == "assistant":
+            # Filter on data_type to skip reasoning/message pieces that also have api_role "assistant".
+            if piece.api_role == "assistant" and piece.original_value_data_type == "function_call":
                 try:
                     section = json.loads(piece.original_value)
                 except Exception:
                     continue
-                if section.get("type") == "function_call":
+                if isinstance(section, dict) and section.get("type") == "function_call":
                     # Do NOT skip function_call even if status == "completed" — we still need to emit the output.
                     return cast(dict[str, Any], section)
         return None

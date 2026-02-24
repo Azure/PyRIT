@@ -4,6 +4,7 @@
 import logging
 from typing import Optional
 
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
@@ -17,6 +18,10 @@ class HumanInTheLoopConverter(PromptConverter):
 
     Users can choose to send the prompt as is, modify the prompt,
     or run the prompt through one of the passed-in converters before sending it.
+
+    .. deprecated::
+        This converter is deprecated and will be removed in v0.13.0.
+        Use the React-based GUI (CoPyRIT) instead.
     """
 
     SUPPORTED_INPUT_TYPES = ("text",)
@@ -32,6 +37,12 @@ class HumanInTheLoopConverter(PromptConverter):
         Args:
             converters (List[PromptConverter], Optional): List of possible converters to run input through.
         """
+        print_deprecation_message(
+            old_item="HumanInTheLoopConverter",
+            new_item="the React-based GUI (CoPyRIT); see https://azure.github.io/PyRIT/code/gui/0_gui.html",
+            removed_in="0.13.0",
+        )
+
         self._converters = converters or []
 
     def _build_identifier(self) -> ComponentIdentifier:

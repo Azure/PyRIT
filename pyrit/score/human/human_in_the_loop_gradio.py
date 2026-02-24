@@ -4,6 +4,7 @@
 import asyncio
 from typing import Optional
 
+from pyrit.common.deprecation import print_deprecation_message
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -19,6 +20,10 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
     Create scores from manual human input using Gradio and adds them to the database.
 
     In the future this will not be a TrueFalseScorer. However, it is all that is supported currently.
+
+    .. deprecated::
+        This Gradio-based scorer is deprecated and will be removed in v0.13.0.
+        Use the React-based GUI instead.
     """
 
     _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
@@ -40,6 +45,12 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
             score_aggregator (TrueFalseAggregatorFunc): Aggregator for combining scores. Defaults to
                 TrueFalseScoreAggregator.OR.
         """
+        print_deprecation_message(
+            old_item="HumanInTheLoopScorerGradio (Gradio-based GUI)",
+            new_item="the React-based GUI (CoPyRIT); see https://azure.github.io/PyRIT/code/gui/0_gui.html",
+            removed_in="0.13.0",
+        )
+
         # Import here to avoid importing rpyc in the main module that might not be installed
         from pyrit.ui.rpc import AppRPCServer
 

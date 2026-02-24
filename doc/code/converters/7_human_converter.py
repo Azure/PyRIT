@@ -9,6 +9,9 @@
 # ---
 
 # %% [markdown]
+# > ⚠️ **Deprecated:** The `HumanInTheLoopConverter` is deprecated and will be removed in PyRIT v0.13.0.
+# > Use the React-based GUI (CoPyRIT) instead. See the [GUI documentation](../gui/0_gui.md) for details.
+#
 # # 7. Human in the Loop Converter
 #
 # The Human in the Loop Converter allows a user to review each prompt before sending it to a target, allowing for closer moderation of multi-turn conversations.

@@ -1178,3 +1178,120 @@ async def test_construct_message_from_response(target: OpenAIResponseTarget, dum
         assert isinstance(result, Message)
         assert len(result.message_pieces) == 1
         mock_parse.assert_called_once()
+
+
+# ── Reasoning effort / summary tests ───────────────────────────────────────
+
+
+def test_init_with_reasoning_effort(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="high",
+    )
+    assert target._reasoning_effort == "high"
+
+
+def test_init_with_reasoning_summary(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_summary="auto",
+    )
+    assert target._reasoning_summary == "auto"
+
+
+def test_init_with_reasoning_effort_and_summary(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="low",
+        reasoning_summary="detailed",
+    )
+    assert target._reasoning_effort == "low"
+    assert target._reasoning_summary == "detailed"
+
+
+def test_init_without_reasoning_params(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+    )
+    assert target._reasoning_effort is None
+    assert target._reasoning_summary is None
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_includes_reasoning_effort(
+    patch_central_database, dummy_text_message_piece: MessagePiece
+):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="medium",
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["reasoning"] == {"effort": "medium"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_includes_reasoning_summary(
+    patch_central_database, dummy_text_message_piece: MessagePiece
+):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_summary="detailed",
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["reasoning"] == {"summary": "detailed"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_includes_reasoning_effort_and_summary(
+    patch_central_database, dummy_text_message_piece: MessagePiece
+):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="high",
+        reasoning_summary="auto",
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["reasoning"] == {"effort": "high", "summary": "auto"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_omits_reasoning_when_not_set(
+    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
+):
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert "reasoning" not in body
+
+
+def test_build_identifier_includes_reasoning_params(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="low",
+        reasoning_summary="concise",
+    )
+    identifier = target._build_identifier()
+    assert identifier.params["reasoning_effort"] == "low"
+    assert identifier.params["reasoning_summary"] == "concise"
