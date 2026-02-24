@@ -1293,5 +1293,5 @@ def test_build_identifier_includes_reasoning_params(patch_central_database):
         reasoning_summary="concise",
     )
     identifier = target._build_identifier()
-    assert identifier.target_specific_params["reasoning_effort"] == "low"
-    assert identifier.target_specific_params["reasoning_summary"] == "concise"
+    assert identifier.params["reasoning_effort"] == "low"
+    assert identifier.params["reasoning_summary"] == "concise"
