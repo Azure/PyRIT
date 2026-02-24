@@ -315,8 +315,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             )
             related_conversations.add(nxt)
 
-        # Create the final attack result
-        result = AttackResult(
+        # Return the AttackResult, ruff compliant
+        return AttackResult(
             conversation_id=beams[0].id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
@@ -327,8 +327,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             outcome_reason=outcome_reason,
             executed_turns=1,
         )
-
-        return result
 
     async def _propagate_beam(self, *, beam: Beam) -> None:
         # print(f"Propagating beam with text: {beam.text}")
