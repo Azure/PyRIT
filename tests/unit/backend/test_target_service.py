@@ -5,13 +5,13 @@
 Tests for backend target service.
 """
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 
 from pyrit.backend.models.targets import CreateTargetRequest
 from pyrit.backend.services.target_service import TargetService, get_target_service
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.registry.instance_registries import TargetRegistry
 
 
@@ -23,16 +23,21 @@ def reset_registry():
     TargetRegistry.reset_instance()
 
 
-def _mock_target_identifier(*, class_name: str = "MockTarget", **kwargs) -> SimpleNamespace:
-    """Create a mock target identifier with attribute access."""
-    return SimpleNamespace(
+def _mock_target_identifier(*, class_name: str = "MockTarget", **kwargs) -> ComponentIdentifier:
+    """Create a mock target identifier using ComponentIdentifier."""
+    params = {
+        "endpoint": kwargs.get("endpoint"),
+        "model_name": kwargs.get("model_name"),
+        "temperature": kwargs.get("temperature"),
+        "top_p": kwargs.get("top_p"),
+        "max_requests_per_minute": kwargs.get("max_requests_per_minute"),
+    }
+    # Filter out None values to match ComponentIdentifier.of behavior
+    clean_params = {k: v for k, v in params.items() if v is not None}
+    return ComponentIdentifier(
         class_name=class_name,
-        endpoint=kwargs.get("endpoint"),
-        model_name=kwargs.get("model_name"),
-        temperature=kwargs.get("temperature"),
-        top_p=kwargs.get("top_p"),
-        max_requests_per_minute=kwargs.get("max_requests_per_minute"),
-        target_specific_params=kwargs.get("target_specific_params"),
+        class_module="tests.unit.backend.test_target_service",
+        params=clean_params,
     )
 
 

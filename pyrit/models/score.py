@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union, get_args
 
 if TYPE_CHECKING:
-    from pyrit.identifiers import ScorerIdentifier
+    from pyrit.identifiers.component_identifier import ComponentIdentifier
 
 ScoreType = Literal["true_false", "float_scale", "unknown"]
 
@@ -36,7 +36,7 @@ class Score:
     score_metadata: Optional[Dict[str, Union[str, int, float]]]
 
     # The identifier of the scorer class, including relevant information
-    scorer_class_identifier: ScorerIdentifier
+    scorer_class_identifier: "ComponentIdentifier"
 
     # This is the ID of the MessagePiece that the score is scoring
     # Note a scorer can generate an additional request. This is NOT that, but
@@ -60,12 +60,12 @@ class Score:
         id: Optional[uuid.UUID | str] = None,
         score_category: Optional[List[str]] = None,
         score_metadata: Optional[Dict[str, Union[str, int, float]]] = None,
-        scorer_class_identifier: Union["ScorerIdentifier", Dict[str, Any]],
+        scorer_class_identifier: Union["ComponentIdentifier", Dict[str, Any]],
         timestamp: Optional[datetime] = None,
         objective: Optional[str] = None,
     ):
         # Import at runtime to avoid circular import
-        from pyrit.identifiers import ScorerIdentifier
+        from pyrit.identifiers.component_identifier import ComponentIdentifier
 
         self.id = id if id else uuid.uuid4()
         self.timestamp = timestamp if timestamp else datetime.now()
@@ -85,8 +85,8 @@ class Score:
         self.message_piece_id = message_piece_id
         self.objective = objective
 
-        # Normalize to ScorerIdentifier (handles dict with deprecation warning)
-        self.scorer_class_identifier = ScorerIdentifier.normalize(scorer_class_identifier)
+        # Normalize to ComponentIdentifier (handles dict)
+        self.scorer_class_identifier = ComponentIdentifier.normalize(scorer_class_identifier)
 
     def get_value(self) -> bool | float:
         """
@@ -160,7 +160,7 @@ class UnvalidatedScore:
     score_category: Optional[List[str]]
     score_rationale: str
     score_metadata: Optional[Dict[str, Union[str, int, float]]]
-    scorer_class_identifier: ScorerIdentifier
+    scorer_class_identifier: "ComponentIdentifier"
     message_piece_id: uuid.UUID | str
     objective: Optional[str]
     id: Optional[uuid.UUID | str] = None

@@ -12,7 +12,7 @@ from pyrit.exceptions import (
     get_execution_context,
     set_execution_context,
 )
-from pyrit.identifiers import AttackIdentifier, ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 
 
 class TestExecutionContext:
@@ -32,14 +32,14 @@ class TestExecutionContext:
 
     def test_initialization_with_values(self):
         """Test ExecutionContext initialization with all values."""
-        attack_id = AttackIdentifier(
+        attack_id = ComponentIdentifier(
             class_name="PromptSendingAttack",
             class_module="pyrit.executor.attack.single_turn.prompt_sending",
         )
-        target_id = TargetIdentifier(
+        target_id = ComponentIdentifier(
             class_name="OpenAIChatTarget",
             class_module="pyrit.prompt_target.openai.openai_chat_target",
-            endpoint="https://api.openai.com",
+            params={"endpoint": "https://api.openai.com"},
         )
         context = ExecutionContext(
             component_role=ComponentRole.OBJECTIVE_TARGET,
@@ -106,11 +106,11 @@ class TestExecutionContext:
 
     def test_get_exception_details_full(self):
         """Test exception details with full context."""
-        attack_id = AttackIdentifier(
+        attack_id = ComponentIdentifier(
             class_name="RedTeamingAttack",
             class_module="pyrit.executor.attack.multi_turn.red_teaming",
         )
-        target_id = TargetIdentifier(
+        target_id = ComponentIdentifier(
             class_name="OpenAIChatTarget",
             class_module="pyrit.prompt_target.openai.openai_chat_target",
         )
@@ -265,10 +265,10 @@ class TestExecutionContextFactory:
 
     def test_execution_context_extracts_endpoint(self):
         """Test that endpoint is extracted from component_identifier."""
-        component_id = TargetIdentifier(
+        component_id = ComponentIdentifier(
             class_name="OpenAIChatTarget",
             class_module="pyrit.prompt_target.openai.openai_chat_target",
-            endpoint="https://api.openai.com",
+            params={"endpoint": "https://api.openai.com"},
         )
         manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
@@ -278,7 +278,7 @@ class TestExecutionContextFactory:
 
     def test_execution_context_extracts_component_name(self):
         """Test that component_name is extracted from component_identifier.class_name."""
-        component_id = ScorerIdentifier(
+        component_id = ComponentIdentifier(
             class_name="TrueFalseScorer",
             class_module="pyrit.score.true_false.true_false_scorer",
         )
@@ -290,7 +290,7 @@ class TestExecutionContextFactory:
 
     def test_execution_context_no_endpoint(self):
         """Test that endpoint is None when not in component_identifier."""
-        component_id = TargetIdentifier(
+        component_id = ComponentIdentifier(
             class_name="TextTarget",
             class_module="pyrit.prompt_target.text_target",
         )
@@ -298,18 +298,18 @@ class TestExecutionContextFactory:
             component_role=ComponentRole.OBJECTIVE_TARGET,
             component_identifier=component_id,
         )
-        assert manager.context.endpoint == ""
+        assert manager.context.endpoint is None
 
     def test_execution_context_full_usage(self):
         """Test full usage of execution_context as context manager."""
-        attack_id = AttackIdentifier(
+        attack_id = ComponentIdentifier(
             class_name="CrescendoAttack",
             class_module="pyrit.executor.attack.multi_turn.crescendo",
         )
-        target_id = TargetIdentifier(
+        target_id = ComponentIdentifier(
             class_name="OpenAIChatTarget",
             class_module="pyrit.prompt_target.openai.openai_chat_target",
-            endpoint="https://example.com",
+            params={"endpoint": "https://example.com"},
         )
         with execution_context(
             component_role=ComponentRole.ADVERSARIAL_CHAT,

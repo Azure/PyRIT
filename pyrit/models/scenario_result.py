@@ -10,7 +10,7 @@ import pyrit
 from pyrit.models import AttackOutcome, AttackResult
 
 if TYPE_CHECKING:
-    from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+    from pyrit.identifiers.component_identifier import ComponentIdentifier
     from pyrit.score import Scorer
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
 
@@ -59,9 +59,9 @@ class ScenarioResult:
         self,
         *,
         scenario_identifier: ScenarioIdentifier,
-        objective_target_identifier: Union[Dict[str, Any], "TargetIdentifier"],
+        objective_target_identifier: Union[Dict[str, Any], "ComponentIdentifier"],
         attack_results: dict[str, List[AttackResult]],
-        objective_scorer_identifier: Union[Dict[str, Any], "ScorerIdentifier"],
+        objective_scorer_identifier: Union[Dict[str, Any], "ComponentIdentifier"],
         scenario_run_state: ScenarioRunState = "CREATED",
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,
@@ -71,13 +71,13 @@ class ScenarioResult:
         objective_scorer: Optional["Scorer"] = None,
     ) -> None:
         from pyrit.common import print_deprecation_message
-        from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+        from pyrit.identifiers.component_identifier import ComponentIdentifier
 
         self.id = id if id is not None else uuid.uuid4()
         self.scenario_identifier = scenario_identifier
 
-        # Normalize objective_target_identifier to TargetIdentifier
-        self.objective_target_identifier = TargetIdentifier.normalize(objective_target_identifier)
+        # Normalize objective_target_identifier to ComponentIdentifier
+        self.objective_target_identifier = ComponentIdentifier.normalize(objective_target_identifier)
 
         # Handle deprecated objective_scorer parameter
         if objective_scorer is not None:
@@ -87,10 +87,10 @@ class ScenarioResult:
                 removed_in="0.13.0",
             )
             # Extract identifier from scorer object and normalize
-            # (handles both ScorerIdentifier and legacy dict returns)
-            self.objective_scorer_identifier = ScorerIdentifier.normalize(objective_scorer.get_identifier())
+            # (handles both ComponentIdentifier and legacy dict returns)
+            self.objective_scorer_identifier = ComponentIdentifier.normalize(objective_scorer.get_identifier())
         else:
-            self.objective_scorer_identifier = ScorerIdentifier.normalize(objective_scorer_identifier)
+            self.objective_scorer_identifier = ComponentIdentifier.normalize(objective_scorer_identifier)
 
         self.scenario_run_state = scenario_run_state
         self.attack_results = attack_results

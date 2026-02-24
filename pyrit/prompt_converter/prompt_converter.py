@@ -6,10 +6,10 @@ import asyncio
 import inspect
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, get_args
+from typing import Any, Dict, List, Optional, Union, get_args
 
 from pyrit import prompt_converter
-from pyrit.identifiers import ConverterIdentifier, Identifiable
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.models import PromptDataType
 
 
@@ -32,7 +32,7 @@ class ConverterResult:
         return f"{self.output_type}: {self.output_text}"
 
 
-class PromptConverter(Identifiable[ConverterIdentifier]):
+class PromptConverter(Identifiable):
     """
     Base class for converters that transform prompts into a different representation or format.
 
@@ -48,7 +48,7 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
     #: Tuple of output modalities supported by this converter. Subclasses must override this.
     SUPPORTED_OUTPUT_TYPES: tuple[PromptDataType, ...] = ()
 
-    _identifier: Optional[ConverterIdentifier] = None
+    _identifier: Optional[ComponentIdentifier] = None
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         """
@@ -165,7 +165,7 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
         result = await self.convert_async(prompt=match, input_type="text")
         return result
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build and return the identifier for this converter.
 
@@ -175,58 +175,43 @@ class PromptConverter(Identifiable[ConverterIdentifier]):
         The default implementation calls _create_identifier with no extra parameters.
 
         Returns:
-            ConverterIdentifier: The constructed identifier.
+            ComponentIdentifier: The constructed identifier.
         """
         return self._create_identifier()
 
     def _create_identifier(
         self,
         *,
-        sub_converters: Optional[Sequence["PromptConverter"]] = None,
-        converter_target: Optional[Any] = None,
-        converter_specific_params: Optional[Dict[str, Any]] = None,
-    ) -> ConverterIdentifier:
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
         Construct and return the converter identifier.
 
+        Builds a ComponentIdentifier with the base converter parameters
+        (supported_input_types, supported_output_types) and merges in any
+        additional params or children provided by subclasses.
+
+        Subclasses should call this method in their _build_identifier() implementation
+        to set the identifier with their specific parameters.
+
         Args:
-            sub_converters: List of sub-converters for composite converters
-                (e.g., ConverterPipeline). Defaults to None.
-            converter_target: The prompt target used by this converter (for LLM-based converters).
-                Defaults to None.
-            converter_specific_params: Additional converter-specific parameters.
-                Defaults to None.
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters from
+                the subclass (e.g., font, encoding_func). Merged into the base params.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers (e.g., sub-converters, converter targets).
 
         Returns:
-            ConverterIdentifier: The constructed identifier.
+            ComponentIdentifier: The identifier for this converter.
         """
-        # Build sub_identifier from sub_converters
-        sub_identifier: Optional[List[ConverterIdentifier]] = None
-        if sub_converters:
-            sub_identifier = [converter.get_identifier() for converter in sub_converters]
+        all_params: Dict[str, Any] = {
+            "supported_input_types": self.SUPPORTED_INPUT_TYPES,
+            "supported_output_types": self.SUPPORTED_OUTPUT_TYPES,
+        }
+        if params:
+            all_params.update(params)
 
-        # Extract target_info from converter_target
-        target_info: Optional[Dict[str, Any]] = None
-        if converter_target:
-            target_id = converter_target.get_identifier()
-            # Extract standard fields for converter identification using attribute access
-            target_info = {
-                "class_name": target_id.class_name,
-                "model_name": target_id.model_name,
-                "temperature": target_id.temperature,
-                "top_p": target_id.top_p,
-            }
-
-        return ConverterIdentifier(
-            class_name=self.__class__.__name__,
-            class_module=self.__class__.__module__,
-            class_description=self.__class__.__doc__ or "",
-            supported_input_types=self.SUPPORTED_INPUT_TYPES,
-            supported_output_types=self.SUPPORTED_OUTPUT_TYPES,
-            sub_identifier=sub_identifier,
-            target_info=target_info,
-            converter_specific_params=converter_specific_params,
-        )
+        return ComponentIdentifier.of(self, params=all_params, children=children)
 
     @property
     def supported_input_types(self) -> list[PromptDataType]:

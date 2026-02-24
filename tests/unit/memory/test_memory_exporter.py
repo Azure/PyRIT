@@ -31,7 +31,7 @@ def read_file(file_path, export_type):
     elif export_type == "csv":
         with open(file_path, "r", newline="") as f:
             reader = csv.DictReader(f)
-            return [row for row in reader]
+            return list(reader)
     else:
         raise ValueError(f"Invalid export type: {export_type}")
 
