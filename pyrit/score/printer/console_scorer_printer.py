@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from colorama import Fore, Style
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.score.printer.scorer_printer import ScorerPrinter
 
 if TYPE_CHECKING:
@@ -23,6 +23,9 @@ class ConsoleScorerPrinter(ScorerPrinter):
     proper indentation, and visual hierarchy. Colors can be disabled for consoles
     that don't support ANSI characters.
     """
+
+    _SCORER_DISPLAY_PARAMS = frozenset({"scorer_type", "score_aggregator"})
+    _TARGET_DISPLAY_PARAMS = frozenset({"model_name", "temperature"})
 
     def __init__(self, *, indent_size: int = 2, enable_colors: bool = True):
         """
@@ -86,7 +89,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
                 return Fore.RED  # type: ignore[no-any-return]
             return Fore.CYAN  # type: ignore[no-any-return]
 
-    def print_objective_scorer(self, *, scorer_identifier: ScorerIdentifier) -> None:
+    def print_objective_scorer(self, *, scorer_identifier: ComponentIdentifier) -> None:
         """
         Print objective scorer information including type, nested scorers, and evaluation metrics.
 
@@ -96,7 +99,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
         - Objective evaluation metrics (accuracy, precision, recall, F1) from the registry
 
         Args:
-            scorer_identifier (ScorerIdentifier): The scorer identifier to print information for.
+            scorer_identifier (ComponentIdentifier): The scorer identifier to print information for.
         """
         from pyrit.score.scorer_evaluation.scorer_metrics_io import (
             find_objective_metrics_by_hash,
@@ -112,7 +115,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
         metrics = find_objective_metrics_by_hash(hash=scorer_hash)
         self._print_objective_metrics(metrics)
 
-    def print_harm_scorer(self, scorer_identifier: ScorerIdentifier, *, harm_category: str) -> None:
+    def print_harm_scorer(self, scorer_identifier: ComponentIdentifier, *, harm_category: str) -> None:
         """
         Print harm scorer information including type, nested scorers, and evaluation metrics.
 
@@ -122,7 +125,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
         - Harm evaluation metrics (MAE, Krippendorff alpha) from the registry
 
         Args:
-            scorer_identifier (ScorerIdentifier): The scorer identifier to print information for.
+            scorer_identifier (ComponentIdentifier): The scorer identifier to print information for.
             harm_category (str): The harm category for looking up metrics (e.g., "hate_speech", "violence").
         """
         from pyrit.score.scorer_evaluation.scorer_metrics_io import (
@@ -139,42 +142,35 @@ class ConsoleScorerPrinter(ScorerPrinter):
         metrics = find_harm_metrics_by_hash(hash=scorer_hash, harm_category=harm_category)
         self._print_harm_metrics(metrics)
 
-    def _print_scorer_info(self, scorer_identifier: ScorerIdentifier, *, indent_level: int = 2) -> None:
+    def _print_scorer_info(self, scorer_identifier: ComponentIdentifier, *, indent_level: int = 2) -> None:
         """
         Print scorer information including nested sub-scorers.
 
         Args:
-            scorer_identifier (ScorerIdentifier): The scorer identifier.
+            scorer_identifier (ComponentIdentifier): The scorer identifier.
             indent_level (int): Current indentation level for nested display.
         """
         indent = self._indent * indent_level
 
         self._print_colored(f"{indent}• Scorer Type: {scorer_identifier.class_name}", Fore.CYAN)
 
-        # Print target info if available
-        if scorer_identifier.target_info:
-            model_name = scorer_identifier.target_info.get("model_name", "Unknown")
-            temperature = scorer_identifier.target_info.get("temperature")
-            self._print_colored(f"{indent}• Target Model: {model_name}", Fore.CYAN)
-            self._print_colored(f"{indent}• Temperature: {temperature}", Fore.CYAN)
-
-        # Print score aggregator if available
-        if scorer_identifier.score_aggregator:
-            self._print_colored(f"{indent}• Score Aggregator: {scorer_identifier.score_aggregator}", Fore.CYAN)
-
-        # Print scorer-specific params if available
-        if scorer_identifier.scorer_specific_params:
-            for key, value in scorer_identifier.scorer_specific_params.items():
+        for key, value in scorer_identifier.params.items():
+            if key in self._SCORER_DISPLAY_PARAMS and value is not None:
                 self._print_colored(f"{indent}• {key}: {value}", Fore.CYAN)
 
-        # Check for sub_identifier (nested scorers)
-        sub_identifier = scorer_identifier.sub_identifier
-        if sub_identifier:
-            # Handle list of sub-scorers (composite scorer)
-            if isinstance(sub_identifier, list):
-                self._print_colored(f"{indent}  └─ Composite of {len(sub_identifier)} scorer(s):", Fore.CYAN)
-                for sub_scorer_id in sub_identifier:
-                    self._print_scorer_info(sub_scorer_id, indent_level=indent_level + 3)
+        # Print target summary if available
+        prompt_target = scorer_identifier.get_child("prompt_target")
+        if prompt_target:
+            for key, value in prompt_target.params.items():
+                if key in self._TARGET_DISPLAY_PARAMS and value is not None:
+                    self._print_colored(f"{indent}• {key}: {value}", Fore.CYAN)
+
+        # Print sub-scorers recursively
+        sub_scorers = scorer_identifier.get_child_list("sub_scorers")
+        if sub_scorers:
+            self._print_colored(f"{indent}  └─ Composite of {len(sub_scorers)} scorer(s):", Fore.CYAN)
+            for sub_scorer_id in sub_scorers:
+                self._print_scorer_info(sub_scorer_id, indent_level=indent_level + 3)
 
     def _print_objective_metrics(self, metrics: Optional["ObjectiveScorerMetrics"]) -> None:
         """

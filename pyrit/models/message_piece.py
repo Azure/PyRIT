@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union, get_args
 from uuid import uuid4
 
-from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.score import Score
 
@@ -37,10 +37,10 @@ class MessagePiece:
         sequence: int = -1,
         labels: Optional[Dict[str, str]] = None,
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
-        converter_identifiers: Optional[List[Union[ConverterIdentifier, Dict[str, str]]]] = None,
-        prompt_target_identifier: Optional[Union[TargetIdentifier, Dict[str, Any]]] = None,
-        attack_identifier: Optional[Union[AttackIdentifier, Dict[str, str]]] = None,
-        scorer_identifier: Optional[Union[ScorerIdentifier, Dict[str, str]]] = None,
+        converter_identifiers: Optional[List[Union[ComponentIdentifier, Dict[str, str]]]] = None,
+        prompt_target_identifier: Optional[Union[ComponentIdentifier, Dict[str, Any]]] = None,
+        attack_identifier: Optional[Union[ComponentIdentifier, Dict[str, str]]] = None,
+        scorer_identifier: Optional[Union[ComponentIdentifier, Dict[str, str]]] = None,
         original_value_data_type: PromptDataType = "text",
         converted_value_data_type: Optional[PromptDataType] = None,
         response_error: PromptResponseError = "none",
@@ -68,11 +68,11 @@ class MessagePiece:
                 Because memory is how components talk with each other, this can be component specific.
                 e.g. the URI from a file uploaded to a blob store, or a document type you want to upload.
                 Defaults to None.
-            converter_identifiers: The converter identifiers for the prompt. Can be ConverterIdentifier
+            converter_identifiers: The converter identifiers for the prompt. Can be ComponentIdentifier
                 objects or dicts (deprecated, will be removed in 0.14.0). Defaults to None.
             prompt_target_identifier: The target identifier for the prompt. Defaults to None.
             attack_identifier: The attack identifier for the prompt. Defaults to None.
-            scorer_identifier: The scorer identifier for the prompt. Can be a ScorerIdentifier or a
+            scorer_identifier: The scorer identifier for the prompt. Can be a ComponentIdentifier or a
                 dict (deprecated, will be removed in 0.13.0). Defaults to None.
             original_value_data_type: The data type of the original prompt (text, image). Defaults to "text".
             converted_value_data_type: The data type of the converted prompt (text, image). Defaults to "text".
@@ -106,26 +106,26 @@ class MessagePiece:
         self.labels = labels or {}
         self.prompt_metadata = prompt_metadata or {}
 
-        # Handle converter_identifiers: normalize to ConverterIdentifier (handles dict with deprecation warning)
-        self.converter_identifiers: List[ConverterIdentifier] = (
-            [ConverterIdentifier.normalize(conv_id) for conv_id in converter_identifiers]
+        # Handle converter_identifiers: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.converter_identifiers: List[ComponentIdentifier] = (
+            [ComponentIdentifier.normalize(conv_id) for conv_id in converter_identifiers]
             if converter_identifiers
             else []
         )
 
-        # Handle prompt_target_identifier: normalize to TargetIdentifier (handles dict with deprecation warning)
-        self.prompt_target_identifier: Optional[TargetIdentifier] = (
-            TargetIdentifier.normalize(prompt_target_identifier) if prompt_target_identifier else None
+        # Handle prompt_target_identifier: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.prompt_target_identifier: Optional[ComponentIdentifier] = (
+            ComponentIdentifier.normalize(prompt_target_identifier) if prompt_target_identifier else None
         )
 
-        # Handle attack_identifier: normalize to AttackIdentifier (handles dict with deprecation warning)
-        self.attack_identifier: Optional[AttackIdentifier] = (
-            AttackIdentifier.normalize(attack_identifier) if attack_identifier else None
+        # Handle attack_identifier: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.attack_identifier: Optional[ComponentIdentifier] = (
+            ComponentIdentifier.normalize(attack_identifier) if attack_identifier else None
         )
 
-        # Handle scorer_identifier: normalize to ScorerIdentifier (handles dict with deprecation warning)
-        self.scorer_identifier: Optional[ScorerIdentifier] = (
-            ScorerIdentifier.normalize(scorer_identifier) if scorer_identifier else None
+        # Handle scorer_identifier: normalize to ComponentIdentifier (handles dict with deprecation warning)
+        self.scorer_identifier: Optional[ComponentIdentifier] = (
+            ComponentIdentifier.normalize(scorer_identifier) if scorer_identifier else None
         )
 
         self.original_value = original_value

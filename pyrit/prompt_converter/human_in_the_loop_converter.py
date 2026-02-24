@@ -4,7 +4,7 @@
 import logging
 from typing import Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -34,14 +34,18 @@ class HumanInTheLoopConverter(PromptConverter):
         """
         self._converters = converters or []
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with sub-converters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
-        return self._create_identifier(sub_converters=self._converters)
+        return self._create_identifier(
+            children={
+                "sub_converters": [converter.get_identifier() for converter in self._converters],
+            },
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

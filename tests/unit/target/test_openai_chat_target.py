@@ -24,7 +24,7 @@ from pyrit.exceptions.exception_classes import (
     PyritException,
     RateLimitException,
 )
-from pyrit.identifiers import AttackIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
@@ -306,8 +306,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -317,8 +317,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -400,8 +400,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -411,8 +411,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -448,8 +448,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -459,8 +459,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -1084,7 +1084,7 @@ def test_get_identifier_uses_model_name_when_no_underlying_model(patch_central_d
 
         identifier = target.get_identifier()
 
-        assert identifier.model_name == "my-deployment"
+        assert identifier.params["model_name"] == "my-deployment"
         assert identifier.class_name == "OpenAIChatTarget"
 
 
@@ -1099,7 +1099,7 @@ def test_get_identifier_uses_underlying_model_when_provided_as_param(patch_centr
 
     identifier = target.get_identifier()
 
-    assert identifier.model_name == "gpt-4o"
+    assert identifier.params["model_name"] == "gpt-4o"
     assert identifier.class_name == "OpenAIChatTarget"
 
 
@@ -1114,7 +1114,7 @@ def test_get_identifier_uses_underlying_model_from_env_var(patch_central_databas
 
         identifier = target.get_identifier()
 
-        assert identifier.model_name == "gpt-4o"
+        assert identifier.params["model_name"] == "gpt-4o"
 
 
 def test_underlying_model_param_takes_precedence_over_env_var(patch_central_database):
@@ -1129,7 +1129,7 @@ def test_underlying_model_param_takes_precedence_over_env_var(patch_central_data
 
         identifier = target.get_identifier()
 
-        assert identifier.model_name == "gpt-4o-from-param"
+        assert identifier.params["model_name"] == "gpt-4o-from-param"
 
 
 def test_get_identifier_includes_endpoint(patch_central_database):
@@ -1142,7 +1142,7 @@ def test_get_identifier_includes_endpoint(patch_central_database):
 
     identifier = target.get_identifier()
 
-    assert identifier.endpoint == "https://mock.azure.com/"
+    assert identifier.params["endpoint"] == "https://mock.azure.com/"
 
 
 def test_get_identifier_includes_temperature_when_set(patch_central_database):
@@ -1156,7 +1156,7 @@ def test_get_identifier_includes_temperature_when_set(patch_central_database):
 
     identifier = target.get_identifier()
 
-    assert identifier.temperature == 0.7
+    assert identifier.params["temperature"] == 0.7
 
 
 def test_get_identifier_includes_top_p_when_set(patch_central_database):
@@ -1170,7 +1170,7 @@ def test_get_identifier_includes_top_p_when_set(patch_central_database):
 
     identifier = target.get_identifier()
 
-    assert identifier.top_p == 0.9
+    assert identifier.params["top_p"] == 0.9
 
 
 # ============================================================================

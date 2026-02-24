@@ -4,7 +4,7 @@
 import random
 from typing import Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.prompt_converter.text_selection_strategy import WordSelectionStrategy
 from pyrit.prompt_converter.word_level_converter import WordLevelConverter
 
@@ -52,12 +52,12 @@ class LeetspeakConverter(WordLevelConverter):
         self._deterministic = deterministic
         self._has_custom_substitutions = custom_substitutions is not None
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with leetspeak parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         import hashlib
         import json
@@ -69,7 +69,7 @@ class LeetspeakConverter(WordLevelConverter):
             substitutions_hash = hashlib.sha256(substitutions_str.encode("utf-8")).hexdigest()[:16]
 
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "deterministic": self._deterministic,
                 "custom_substitutions_hash": substitutions_hash,
             },
