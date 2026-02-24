@@ -176,7 +176,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
         # Create SQL condition using SQLAlchemy's text() with bindparams
         # Note: We do NOT convert values to string here, to allow integer comparison in JSON
-        return text(json_conditions).bindparams(**{key: value for key, value in metadata.items()})
+        return text(json_conditions).bindparams(**dict(metadata.items()))
 
     def add_message_pieces_to_memory(self, *, message_pieces: Sequence[MessagePiece]) -> None:
         """

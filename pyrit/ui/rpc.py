@@ -6,7 +6,7 @@ import time
 from threading import Semaphore, Thread
 from typing import Any, Callable, Optional
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.ui.app import is_app_running, launch_app
 
@@ -227,11 +227,9 @@ class AppRPCServer:
             score_rationale=score_ref.score_rationale,
             score_metadata=score_ref.score_metadata,
             message_piece_id=score_ref.message_piece_id,
-            scorer_class_identifier=ScorerIdentifier(
+            scorer_class_identifier=ComponentIdentifier(
                 class_name="RPCScorer",
                 class_module="pyrit.ui.rpc",
-                class_description="Score received from RPC client",
-                identifier_type="instance",
             ),
         )
 

@@ -13,7 +13,7 @@ def read_csv(file: IO[Any]) -> List[Dict[str, str]]:
         List[Dict[str, str]]: Parsed CSV rows as dictionaries.
     """
     reader = csv.DictReader(file)
-    return [row for row in reader]
+    return list(reader)
 
 
 def write_csv(file: IO[Any], examples: List[Dict[str, str]]) -> None:

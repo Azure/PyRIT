@@ -4,7 +4,7 @@
 from typing import Optional
 
 from pyrit.analytics.text_matching import ExactTextMatching, TextMatching
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -52,16 +52,16 @@ class DecodingScorer(TrueFalseScorer):
 
         super().__init__(score_aggregator=aggregator, validator=validator or self._DEFAULT_VALIDATOR)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            score_aggregator=self._score_aggregator.__name__,
-            scorer_specific_params={
+            params={
+                "score_aggregator": self._score_aggregator.__name__,
                 "text_matcher": self._text_matcher.__class__.__name__,
             },
         )

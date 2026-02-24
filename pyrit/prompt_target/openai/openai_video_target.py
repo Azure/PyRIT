@@ -11,6 +11,7 @@ from openai.types import VideoSeconds, VideoSize
 from pyrit.exceptions import (
     pyrit_target_retry,
 )
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     DataTypeSerializer,
     Message,
@@ -113,6 +114,20 @@ class OpenAIVideoTarget(OpenAITarget):
             ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
             "api.openai.com": "https://api.openai.com/v1",
         }
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier with video generation-specific parameters.
+
+        Returns:
+            ComponentIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            params={
+                "resolution": self._size,
+                "n_seconds": self._n_seconds,
+            },
+        )
 
     def _validate_resolution(self, *, resolution_dimensions: VideoSize) -> VideoSize:
         """

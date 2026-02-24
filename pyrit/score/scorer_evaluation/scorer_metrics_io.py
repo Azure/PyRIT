@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 from pyrit.common.path import (
     SCORER_EVALS_PATH,
 )
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier, config_hash
 from pyrit.score.scorer_evaluation.scorer_metrics import (
     HarmScorerMetrics,
     ObjectiveScorerMetrics,
@@ -31,6 +31,79 @@ logger = logging.getLogger(__name__)
 _file_write_locks: Dict[str, threading.Lock] = {}
 
 M = TypeVar("M", bound=ScorerMetrics)
+
+# Child component params that affect scoring behavior.
+# Operational params (endpoint, max_requests_per_minute, etc.) are excluded
+# so that the same model on different deployments shares cached eval results.
+_BEHAVIORAL_CHILD_PARAMS = frozenset({"model_name", "temperature", "top_p"})
+_TARGET_CHILD_KEYS = frozenset({"prompt_target", "converter_target"})
+
+
+def _build_eval_dict(
+    identifier: ComponentIdentifier,
+    *,
+    param_allowlist: Optional[frozenset[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Build a dictionary for eval hashing.
+
+    This function creates a filtered representation of a component's configuration,
+    including only behavioral parameters. For child components that are targets,
+    only behavioral params are included. For non-target children, full evaluation
+    treatment is applied recursively.
+
+    Args:
+        identifier (ComponentIdentifier): The component identity to process.
+        param_allowlist (Optional[frozenset[str]]): If provided, only include
+            params whose keys are in the allowlist. If None, include all params.
+            Target children are filtered to _BEHAVIORAL_CHILD_PARAMS, while
+            non-target children receive full eval treatment without param filtering.
+
+    Returns:
+        Dict[str, Any]: The filtered dictionary suitable for hashing.
+    """
+    eval_dict: Dict[str, Any] = {
+        ComponentIdentifier.KEY_CLASS_NAME: identifier.class_name,
+        ComponentIdentifier.KEY_CLASS_MODULE: identifier.class_module,
+    }
+
+    for key, value in sorted(identifier.params.items()):
+        if value is not None and (param_allowlist is None or key in param_allowlist):
+            eval_dict[key] = value
+
+    if identifier.children:
+        eval_children: Dict[str, Any] = {}
+        for name in sorted(identifier.children):
+            child_list = identifier.get_child_list(name)
+            if name in _TARGET_CHILD_KEYS:
+                # Targets: filter to behavioral params only
+                hashes = [
+                    config_hash(_build_eval_dict(c, param_allowlist=_BEHAVIORAL_CHILD_PARAMS)) for c in child_list
+                ]
+            else:
+                # Non-targets (e.g., sub-scorers): full eval treatment, recurse without param filtering
+                hashes = [config_hash(_build_eval_dict(c)) for c in child_list]
+            eval_children[name] = hashes[0] if len(hashes) == 1 else hashes
+        if eval_children:
+            eval_dict["children"] = eval_children
+
+    return eval_dict
+
+
+def compute_eval_hash(identifier: ComponentIdentifier) -> str:
+    """
+    Compute a behavioral equivalence hash for scorer evaluation grouping.
+
+    Includes all of the scorer's own params but projects child components
+    down to only behavioral params (model_name, temperature, top_p).
+
+    Args:
+        identifier (ComponentIdentifier): The scorer's full identity.
+
+    Returns:
+        str: A hash suitable for eval registry keying.
+    """
+    return config_hash(_build_eval_dict(identifier))
 
 
 def _metrics_to_registry_dict(metrics: ScorerMetrics) -> Dict[str, Any]:
@@ -126,11 +199,11 @@ def _load_metrics_from_file(
         metrics_dict = {k: v for k, v in metrics_dict.items() if not k.startswith("_")}
 
         # Extract scorer identity (everything except metrics)
-        identity_dict = {k: v for k, v in entry.items() if k != "metrics"}
+        identity_dict = {k: v for k, v in entry.items() if k not in ("metrics", "eval_hash")}
 
         try:
-            # Reconstruct ScorerIdentifier from the stored dict
-            scorer_identifier = ScorerIdentifier.from_dict(identity_dict)
+            # Reconstruct ComponentIdentifier from the stored dict
+            scorer_identifier = ComponentIdentifier.from_dict(identity_dict)
 
             # Create the metrics object
             metrics = metrics_class(**metrics_dict)
@@ -228,7 +301,7 @@ def _find_metrics_by_hash(
 def add_evaluation_results(
     *,
     file_path: Path,
-    scorer_identifier: ScorerIdentifier,
+    scorer_identifier: ComponentIdentifier,
     metrics: "ScorerMetrics",
 ) -> None:
     """
@@ -239,7 +312,7 @@ def add_evaluation_results(
 
     Args:
         file_path (Path): The full path to the JSONL file to append to.
-        scorer_identifier (ScorerIdentifier): The scorer's configuration identifier.
+        scorer_identifier (ComponentIdentifier): The scorer's configuration identifier.
         metrics (ScorerMetrics): The computed metrics (ObjectiveScorerMetrics or HarmScorerMetrics).
     """
     # Get or create lock for this file path
@@ -247,8 +320,11 @@ def add_evaluation_results(
     if file_path_str not in _file_write_locks:
         _file_write_locks[file_path_str] = threading.Lock()
 
+    eval_hash = compute_eval_hash(scorer_identifier)
+
     # Build entry dictionary
     entry = scorer_identifier.to_dict()
+    entry["eval_hash"] = eval_hash
     entry["metrics"] = _metrics_to_registry_dict(metrics)
 
     # Write to file with thread safety
@@ -313,7 +389,7 @@ def _append_jsonl_entry(file_path: Path, lock: threading.Lock, entry: Dict[str, 
 def replace_evaluation_results(
     *,
     file_path: Path,
-    scorer_identifier: ScorerIdentifier,
+    scorer_identifier: ComponentIdentifier,
     metrics: "ScorerMetrics",
 ) -> None:
     """
@@ -325,7 +401,7 @@ def replace_evaluation_results(
 
     Args:
         file_path (Path): The full path to the JSONL file.
-        scorer_identifier (ScorerIdentifier): The scorer's configuration identifier.
+        scorer_identifier (ComponentIdentifier): The scorer's configuration identifier.
         metrics (ScorerMetrics): The computed metrics (ObjectiveScorerMetrics or HarmScorerMetrics).
     """
     # Get or create lock for this file path
@@ -333,10 +409,11 @@ def replace_evaluation_results(
     if file_path_str not in _file_write_locks:
         _file_write_locks[file_path_str] = threading.Lock()
 
-    scorer_hash = scorer_identifier.hash
+    eval_hash = compute_eval_hash(scorer_identifier)
 
     # Build new entry dictionary
     new_entry = scorer_identifier.to_dict()
+    new_entry["eval_hash"] = eval_hash
     new_entry["metrics"] = _metrics_to_registry_dict(metrics)
 
     with _file_write_locks[file_path_str]:
@@ -345,7 +422,7 @@ def replace_evaluation_results(
             existing_entries = _load_jsonl(file_path)
 
             # Filter out entries with the same hash
-            filtered_entries = [e for e in existing_entries if e.get("hash") != scorer_hash]
+            filtered_entries = [e for e in existing_entries if e.get("eval_hash") != eval_hash]
 
             # Add the new entry
             filtered_entries.append(new_entry)
@@ -359,7 +436,7 @@ def replace_evaluation_results(
             replaced = len(existing_entries) != len(filtered_entries)
             action = "Replaced" if replaced else "Added"
             logger.info(
-                f"{action} metrics for {scorer_identifier.class_name} (hash={scorer_hash[:8]}...) in {file_path.name}"
+                f"{action} metrics for {scorer_identifier.class_name} (eval_hash={eval_hash[:8]}...) in {file_path.name}"
             )
 
         except Exception as e:

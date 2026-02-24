@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, overload
+from typing import Any, Dict, List, Optional, Union, overload
 
 import yaml
 
@@ -19,7 +19,7 @@ from pyrit.executor.promptgen.core import (
     PromptGeneratorStrategyContext,
     PromptGeneratorStrategyResult,
 )
-from pyrit.identifiers import AttackIdentifier, Identifiable
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.models import (
     Message,
 )
@@ -70,7 +70,7 @@ class AnecdoctorResult(PromptGeneratorStrategyResult):
 
 class AnecdoctorGenerator(
     PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult],
-    Identifiable[AttackIdentifier],
+    Identifiable,
 ):
     """
     Implementation of the Anecdoctor prompt generation strategy.
@@ -135,20 +135,38 @@ class AnecdoctorGenerator(
         else:
             self._system_prompt_template = self._load_prompt_from_yaml(yaml_filename=self._ANECDOCTOR_USE_FEWSHOT_YAML)
 
-    def _build_identifier(self) -> AttackIdentifier:
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
-        Build the typed identifier for this prompt generator.
+        Construct the identifier for this prompt generator.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
 
         Returns:
-            AttackIdentifier: The constructed identifier.
+            ComponentIdentifier: The identifier for this prompt generator.
         """
-        objective_target_identifier = self._objective_target.get_identifier()
+        all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
+            "objective_target": self._objective_target.get_identifier(),
+        }
+        if children:
+            all_children.update(children)
+        return ComponentIdentifier.of(self, params=params, children=all_children)
 
-        return AttackIdentifier(
-            class_name=self.__class__.__name__,
-            class_module=self.__class__.__module__,
-            objective_target_identifier=objective_target_identifier,
-        )
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this prompt generator.
+
+        Returns:
+            ComponentIdentifier: The constructed identifier.
+        """
+        return self._create_identifier()
 
     def _validate_context(self, *, context: AnecdoctorContext) -> None:
         """

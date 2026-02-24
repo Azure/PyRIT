@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.text_selection_strategy import (
@@ -90,20 +90,22 @@ class SelectiveTextConverter(PromptConverter):
         self._is_word_level = isinstance(selection_strategy, WordSelectionStrategy)
         self._is_token_based = isinstance(selection_strategy, TokenSelectionStrategy)
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with selective text converter parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            sub_converters=[self._converter],
-            converter_specific_params={
+            params={
                 "selection_strategy": self._selection_strategy.__class__.__name__,
                 "preserve_tokens": self._preserve_tokens,
                 "start_token": self._start_token,
                 "end_token": self._end_token,
+            },
+            children={
+                "sub_converters": [self._converter.get_identifier()],
             },
         )
 

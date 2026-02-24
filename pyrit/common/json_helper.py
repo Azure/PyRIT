@@ -33,7 +33,7 @@ def read_jsonl(file: IO[Any]) -> List[Dict[str, str]]:
     Returns:
         List[Dict[str, str]]: Parsed JSONL content.
     """
-    return list(json.loads(line) for line in file)
+    return [json.loads(line) for line in file]
 
 
 def write_jsonl(file: IO[Any], examples: List[Dict[str, str]]) -> None:

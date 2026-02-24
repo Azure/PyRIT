@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 from pyrit.common.path import SCORER_SEED_PROMPT_PATH
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -106,18 +106,22 @@ class SelfAskRefusalScorer(TrueFalseScorer):
         self._system_prompt = SeedPrompt.from_yaml_file(prompt_path).value
         self._score_category = ["refusal"]
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            system_prompt_template=self._system_prompt,
-            user_prompt_template=self._prompt_format_string,
-            prompt_target=self._prompt_target,
-            score_aggregator=self._score_aggregator.__name__,
+            params={
+                "system_prompt_template": self._system_prompt,
+                "user_prompt_template": self._prompt_format_string,
+                "score_aggregator": self._score_aggregator.__name__,
+            },
+            children={
+                "prompt_target": self._prompt_target.get_identifier(),
+            },
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:

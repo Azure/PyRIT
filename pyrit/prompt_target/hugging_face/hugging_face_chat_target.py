@@ -17,7 +17,7 @@ from transformers import (
 from pyrit.common import default_values
 from pyrit.common.download_hf_model import download_specific_files
 from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
@@ -137,17 +137,17 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
         self.load_model_and_tokenizer_task = asyncio.create_task(self.load_model_and_tokenizer())
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with HuggingFace chat-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            temperature=self._temperature,
-            top_p=self._top_p,
-            target_specific_params={
+            params={
+                "temperature": self._temperature,
+                "top_p": self._top_p,
                 "max_new_tokens": self.max_new_tokens,
                 "skip_special_tokens": self.skip_special_tokens,
                 "use_cuda": self.use_cuda,

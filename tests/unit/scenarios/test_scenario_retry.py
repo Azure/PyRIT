@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 import pytest
 
 from pyrit.executor.attack.core import AttackExecutorResult
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenario import DatasetConfiguration, ScenarioResult
@@ -22,13 +22,11 @@ OBJECTIVE_PREFIX = "objective"
 ATTACK_NAME_PREFIX = "attack_"
 
 
-def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module=TEST_MODULE,
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -194,11 +192,9 @@ def mock_atomic_attacks():
 def mock_objective_target():
     """Create a mock objective target for testing."""
     target = MagicMock()
-    target.get_identifier.return_value = TargetIdentifier(
+    target.get_identifier.return_value = ComponentIdentifier(
         class_name="MockTarget",
         class_module=TEST_MODULE,
-        class_description="",
-        identifier_type="instance",
     )
     return target
 

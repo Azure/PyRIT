@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
+class TargetRegistry(BaseInstanceRegistry["PromptTarget", ComponentIdentifier]):
     """
     Registry for managing available prompt target instances.
 
@@ -83,7 +83,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: "PromptTarget") -> TargetIdentifier:
+    def _build_metadata(self, name: str, instance: "PromptTarget") -> ComponentIdentifier:
         """
         Build metadata for a target instance.
 
@@ -92,6 +92,6 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
             instance: The target instance.
 
         Returns:
-            TargetIdentifier describing the target.
+            ComponentIdentifier: The target's identifier.
         """
         return instance.get_identifier()

@@ -13,7 +13,7 @@ from reportlab.lib.utils import simpleSplit
 from reportlab.pdfgen import canvas
 
 from pyrit.common.logger import logger
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
 from pyrit.models.data_type_serializer import DataTypeSerializer
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
@@ -105,12 +105,12 @@ class PDFConverter(PromptConverter):
         if not all(isinstance(item, dict) for item in self._injection_items):
             raise ValueError("Each injection item must be a dictionary.")
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with PDF converter parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         template_hash = None
         if self._prompt_template:
@@ -121,7 +121,7 @@ class PDFConverter(PromptConverter):
             existing_pdf_path = str(self._existing_pdf_path)
 
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "font_type": self._font_type,
                 "font_size": self._font_size,
                 "page_width": self._page_width,

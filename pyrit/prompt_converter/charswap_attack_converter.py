@@ -5,7 +5,7 @@ import random
 import string
 from typing import Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.prompt_converter.text_selection_strategy import (
     WordProportionSelectionStrategy,
     WordSelectionStrategy,
@@ -50,15 +50,15 @@ class CharSwapConverter(WordLevelConverter):
 
         self._max_iterations = max_iterations
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with charswap parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "max_iterations": self._max_iterations,
             },
         )

@@ -13,7 +13,7 @@ from pyrit.executor.attack.core.attack_strategy import (
     _DefaultAttackStrategyEventHandler,
 )
 from pyrit.executor.core import StrategyEvent, StrategyEventData
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -23,13 +23,11 @@ from pyrit.models import (
 from pyrit.prompt_target import PromptTarget
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 

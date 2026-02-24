@@ -24,7 +24,7 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
     PromptGeneratorStrategyResult,
 )
 from pyrit.executor.promptgen.fuzzer.fuzzer_converter_base import FuzzerConverter
-from pyrit.identifiers import AttackIdentifier, Identifiable
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -495,7 +495,7 @@ class FuzzerResultPrinter:
 
 class FuzzerGenerator(
     PromptGeneratorStrategy[FuzzerContext, FuzzerResult],
-    Identifiable[AttackIdentifier],
+    Identifiable,
 ):
     """
     Implementation of the Fuzzer prompt generation strategy using Monte Carlo Tree Search (MCTS).
@@ -679,20 +679,38 @@ class FuzzerGenerator(
         # Initialize utilities
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
 
-    def _build_identifier(self) -> AttackIdentifier:
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
-        Build the typed identifier for this prompt generator.
+        Construct the identifier for this prompt generator.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
 
         Returns:
-            AttackIdentifier: The constructed identifier.
+            ComponentIdentifier: The identifier for this prompt generator.
         """
-        objective_target_identifier = self._objective_target.get_identifier()
+        all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
+            "objective_target": self._objective_target.get_identifier(),
+        }
+        if children:
+            all_children.update(children)
+        return ComponentIdentifier.of(self, params=params, children=all_children)
 
-        return AttackIdentifier(
-            class_name=self.__class__.__name__,
-            class_module=self.__class__.__module__,
-            objective_target_identifier=objective_target_identifier,
-        )
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this prompt generator.
+
+        Returns:
+            ComponentIdentifier: The constructed identifier.
+        """
+        return self._create_identifier()
 
     def _validate_inputs(
         self,
