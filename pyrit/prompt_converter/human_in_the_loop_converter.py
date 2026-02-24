@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 
 from pyrit.common.deprecation import print_deprecation_message
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
