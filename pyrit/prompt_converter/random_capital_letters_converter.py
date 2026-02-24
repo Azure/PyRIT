@@ -78,9 +78,7 @@ class RandomCapitalLettersConverter(PromptConverter):
             )
 
         # Generate a list of unique random positions
-        random_positions = random.sample(range(total_length), set_number)
-
-        return random_positions
+        return random.sample(range(total_length), set_number)
 
     def string_to_upper_case_by_percentage(self, percentage: float, prompt: str) -> str:
         """

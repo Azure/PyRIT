@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""Exception classes, retry helpers, and execution context utilities."""
+
 from pyrit.exceptions.exception_classes import (
     BadRequestException,
     EmptyResponseException,

@@ -86,8 +86,7 @@ class HumanInTheLoopScorerGradio(TrueFalseScorer):
             asyncio.CancelledError: If the scoring operation is cancelled.
         """
         try:
-            score = await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
-            return score
+            return await asyncio.to_thread(self.retrieve_score, message_piece, objective=objective)
         except asyncio.CancelledError:
             self._rpc_server.stop()
             raise

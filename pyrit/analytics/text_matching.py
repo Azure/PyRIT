@@ -69,8 +69,7 @@ class ExactTextMatching(TextMatching):
             text = text.strip()
         if self._case_sensitive:
             return target in text
-        else:
-            return target.lower() in text.lower()
+        return target.lower() in text.lower()
 
 
 class ApproximateTextMatching(TextMatching):
@@ -141,9 +140,7 @@ class ApproximateTextMatching(TextMatching):
         matching_ngrams = sum(int(ngram in text_str) for ngram in target_ngrams)
 
         # Calculate proportion of matching n-grams
-        score = matching_ngrams / len(target_ngrams)
-
-        return score
+        return matching_ngrams / len(target_ngrams)
 
     def get_overlap_score(self, *, target: str, text: str) -> float:
         """

@@ -181,8 +181,7 @@ class SelectiveTextConverter(PromptConverter):
 
         if self._is_word_level:
             return await self._convert_word_level_async(prompt=prompt)
-        else:
-            return await self._convert_char_level_async(prompt=prompt)
+        return await self._convert_char_level_async(prompt=prompt)
 
     async def _convert_word_level_async(self, *, prompt: str) -> ConverterResult:
         """

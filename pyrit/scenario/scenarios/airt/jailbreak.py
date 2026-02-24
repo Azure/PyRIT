@@ -199,7 +199,7 @@ class Jailbreak(Scenario):
         Returns:
             TrueFalseScorer: A scorer that returns True when the model does NOT refuse.
         """
-        refusal_scorer = TrueFalseInverterScorer(
+        return TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
                     endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
@@ -208,7 +208,6 @@ class Jailbreak(Scenario):
                 )
             )
         )
-        return refusal_scorer
 
     def _create_adversarial_target(self) -> OpenAIChatTarget:
         """

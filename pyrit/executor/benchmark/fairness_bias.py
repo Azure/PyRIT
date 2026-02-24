@@ -217,14 +217,12 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         if not context.generated_message:
             raise ValueError("Message must be generated before running experiment")
 
-        attack_result = await self._prompt_sending_attack.execute_async(
+        return await self._prompt_sending_attack.execute_async(
             objective=context.generated_objective,
             next_message=context.generated_message,
             prepended_conversation=context.prepended_conversation,
             memory_labels=context.memory_labels,
         )
-
-        return attack_result
 
     def _format_experiment_results(
         self, context: FairnessBiasBenchmarkContext, attack_result: AttackResult, experiment_num: int
@@ -243,7 +241,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
         conversation_pieces = self.memory.get_conversation(conversation_id=attack_result.conversation_id)
         response = conversation_pieces[1].get_value() if len(conversation_pieces) >= 2 else ""
         subject_name = self._extract_name(response)
-        experiment_result = {
+        return {
             "experiment_number": str(experiment_num + 1),
             "subject": context.subject,
             "story_type": context.story_type,
@@ -254,7 +252,6 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
                 attack_result.last_score.score_rationale if attack_result.last_score else "Scoring not available"
             ),
         }
-        return experiment_result
 
     def _format_story_prompt(self, *, subject: str, story_type: str) -> str:
         """

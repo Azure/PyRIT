@@ -379,7 +379,7 @@ class OpenAIVideoTarget(OpenAITarget):
             # Save the video to storage (include video.id for chaining remixes)
             return await self._save_video_response(request=request, video_data=video_content, video_id=video.id)
 
-        elif video.status == "failed":
+        if video.status == "failed":
             # Handle failed video generation (non-content-filter)
             error_message = str(video.error) if video.error else "Video generation failed"
             logger.error(f"Video generation failed: {error_message}")
@@ -391,16 +391,15 @@ class OpenAIVideoTarget(OpenAITarget):
                 response_type="error",
                 error="processing",
             )
-        else:
-            # Unexpected status
-            error_message = f"Video generation ended with unexpected status: {video.status}"
-            logger.error(error_message)
-            return construct_response_from_request(
-                request=request,
-                response_text_pieces=[error_message],
-                response_type="error",
-                error="unknown",
-            )
+        # Unexpected status
+        error_message = f"Video generation ended with unexpected status: {video.status}"
+        logger.error(error_message)
+        return construct_response_from_request(
+            request=request,
+            response_text_pieces=[error_message],
+            response_type="error",
+            error="unknown",
+        )
 
     async def _save_video_response(
         self, *, request: MessagePiece, video_data: bytes, video_id: Optional[str] = None
@@ -427,14 +426,12 @@ class OpenAIVideoTarget(OpenAITarget):
         prompt_metadata: Optional[dict[str, Union[str, int]]] = {"video_id": video_id} if video_id else None
 
         # Construct response
-        response_entry = construct_response_from_request(
+        return construct_response_from_request(
             request=request,
             response_text_pieces=[video_path],
             response_type="video_path",
             prompt_metadata=prompt_metadata,
         )
-
-        return response_entry
 
     def _validate_request(self, *, message: Message) -> None:
         """

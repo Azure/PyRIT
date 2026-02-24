@@ -81,8 +81,7 @@ class CustomUUID(TypeDecorator[uuid.UUID]):
         """
         if dialect.name == "sqlite":
             return dialect.type_descriptor(CHAR(36))
-        else:
-            return dialect.type_descriptor(Uuid())
+        return dialect.type_descriptor(Uuid())
 
     def process_bind_param(self, value: Optional[uuid.UUID], dialect: Any) -> Optional[str]:
         """

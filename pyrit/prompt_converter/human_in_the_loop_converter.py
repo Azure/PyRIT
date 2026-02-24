@@ -97,10 +97,10 @@ class HumanInTheLoopConverter(PromptConverter):
                 ).strip()
         if user_input == "1":
             return ConverterResult(output_text=prompt, output_type=input_type)
-        elif user_input == "2":
+        if user_input == "2":
             new_input = input("Enter new prompt to send: ")
             return await self.convert_async(prompt=new_input, input_type=input_type)
-        elif user_input == "3":
+        if user_input == "3":
             if self._converters:
                 converters_str = str([converter.__class__.__name__ for converter in self._converters])
                 converter_index = -1
@@ -115,6 +115,5 @@ class HumanInTheLoopConverter(PromptConverter):
                 converter = self._converters[converter_index]
                 new_result = await converter.convert_async(prompt=prompt, input_type=input_type)
                 return await self.convert_async(prompt=new_result.output_text, input_type=new_result.output_type)
-            else:
-                raise ValueError("No converters were passed into the HumanInTheLoopConverter")
+            raise ValueError("No converters were passed into the HumanInTheLoopConverter")
         return ConverterResult(output_text=prompt, output_type=input_type)

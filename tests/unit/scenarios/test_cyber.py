@@ -68,8 +68,7 @@ def slow_cyberstrategy():
 def malware_prompts():
     """The default malware prompts."""
     malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
-    seed_prompts = list(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
-    return seed_prompts
+    return list(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
 
 
 @pytest.fixture

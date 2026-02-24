@@ -72,8 +72,7 @@ class TestFuzzerGenerator:
     @pytest.fixture
     def mock_scorer(self) -> MagicMock:
         """Mock scorer for testing."""
-        scorer = MagicMock(TrueFalseScorer)
-        return scorer
+        return MagicMock(TrueFalseScorer)
 
     @pytest.fixture
     def fuzzer_context(self, simple_prompts: list[str], simple_prompt_templates: list[str]) -> FuzzerContext:

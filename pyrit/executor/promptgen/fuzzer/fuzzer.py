@@ -998,15 +998,13 @@ class FuzzerGenerator(
         """
         requests = self._create_normalizer_requests(prompts)
 
-        responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=requests,
             target=self._objective_target,
             labels=context.memory_labels,
             attack_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
-
-        return responses
 
     def _create_normalizer_requests(self, prompts: List[str]) -> List[NormalizerRequest]:
         """
@@ -1048,11 +1046,9 @@ class FuzzerGenerator(
         response_pieces = [response.message_pieces[0] for response in responses]
 
         # Score with objective scorer
-        scores = await self._scorer.score_prompts_batch_async(
+        return await self._scorer.score_prompts_batch_async(
             messages=[piece.to_message() for piece in response_pieces], objectives=tasks
         )
-
-        return scores
 
     def _process_scoring_results(
         self,
@@ -1165,12 +1161,11 @@ class FuzzerGenerator(
         """
         if isinstance(score_value, bool):
             return 1.0 if score_value else 0.0
-        elif isinstance(score_value, (int, float)):
+        if isinstance(score_value, (int, float)):
             # Ensure value is between 0 and 1
             return max(0.0, min(1.0, float(score_value)))
-        else:
-            self._logger.warning(f"Unexpected score type: {type(score_value)}, treating as 0.0")
-            return 0.0
+        self._logger.warning(f"Unexpected score type: {type(score_value)}, treating as 0.0")
+        return 0.0
 
     def _create_generation_result(self, context: FuzzerContext) -> FuzzerResult:
         """
@@ -1183,14 +1178,12 @@ class FuzzerGenerator(
             FuzzerResult: The generation result.
         """
         # Create result with concrete fields
-        result = FuzzerResult(
+        return FuzzerResult(
             successful_templates=[node.template for node in context.new_prompt_nodes],
             jailbreak_conversation_ids=context.jailbreak_conversation_ids,
             total_queries=context.total_target_query_count,
             templates_explored=len(context.new_prompt_nodes),
         )
-
-        return result
 
     @overload
     async def execute_async(

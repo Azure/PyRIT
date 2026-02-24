@@ -131,8 +131,7 @@ class InsertPunctuationConverter(PromptConverter):
 
         if self._between_words:
             return self._insert_between_words(words, word_indices, num_insertions, punctuation_list)
-        else:
-            return self._insert_within_words(prompt, num_insertions, punctuation_list)
+        return self._insert_within_words(prompt, num_insertions, punctuation_list)
 
     def _insert_between_words(
         self, words: List[str], word_indices: List[int], num_insertions: int, punctuation_list: List[str]

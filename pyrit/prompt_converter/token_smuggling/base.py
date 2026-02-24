@@ -70,9 +70,8 @@ class SmugglerConverter(PromptConverter, abc.ABC):
             summary, encoded = self.encode_message(message=prompt)
             logger.info(f"Encoded message summary: {summary}")
             return ConverterResult(output_text=encoded, output_type="text")
-        else:
-            decoded = self.decode_message(message=prompt)
-            return ConverterResult(output_text=decoded, output_type="text")
+        decoded = self.decode_message(message=prompt)
+        return ConverterResult(output_text=decoded, output_type="text")
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         """

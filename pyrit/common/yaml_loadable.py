@@ -42,5 +42,4 @@ class YamlLoadable(abc.ABC):
         # otherwise, just instantiate directly with **yaml_data
         if hasattr(cls, "from_dict") and callable(getattr(cls, "from_dict")):
             return cls.from_dict(yaml_data)  # type: ignore
-        else:
-            return cls(**yaml_data)
+        return cls(**yaml_data)

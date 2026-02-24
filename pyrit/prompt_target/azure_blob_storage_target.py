@@ -149,9 +149,8 @@ class AzureBlobStorageTarget(PromptTarget):
                     + "enable delegation-based SAS authentication to connect to the storage account"
                 )
                 raise
-            else:
-                logger.exception(msg=f"An unexpected error occurred: {exc}")
-                raise
+            logger.exception(msg=f"An unexpected error occurred: {exc}")
+            raise
 
     def _parse_url(self) -> tuple[str, str]:
         """

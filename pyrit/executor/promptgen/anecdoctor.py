@@ -274,9 +274,8 @@ class AnecdoctorGenerator(
         if self._processing_model:
             # Extract knowledge graph from examples using the processing model
             return await self._extract_knowledge_graph_async(context=context)
-        else:
-            # Use few-shot examples directly without knowledge graph extraction
-            return self._format_few_shot_examples(evaluation_data=context.evaluation_data)
+        # Use few-shot examples directly without knowledge graph extraction
+        return self._format_few_shot_examples(evaluation_data=context.evaluation_data)
 
     async def _send_examples_to_target_async(
         self, *, formatted_examples: str, context: AnecdoctorContext

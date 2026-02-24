@@ -88,12 +88,11 @@ class BinAsciiConverter(WordLevelConverter):
         """
         if self._encoding_func == "hex":
             return word.encode("utf-8").hex().upper()
-        elif self._encoding_func == "quoted-printable":
+        if self._encoding_func == "quoted-printable":
             return binascii.b2a_qp(word.encode("utf-8")).decode("ascii")
-        elif self._encoding_func == "UUencode":
+        if self._encoding_func == "UUencode":
             return self._uuencode_chunk(word)
-        else:
-            raise ValueError(f"Unsupported encoding function: {self._encoding_func}")
+        raise ValueError(f"Unsupported encoding function: {self._encoding_func}")
 
     def _uuencode_chunk(self, text: str) -> str:
         """
@@ -128,10 +127,10 @@ class BinAsciiConverter(WordLevelConverter):
         if all_words_selected:
             if self._encoding_func == "hex":
                 return "20".join(words)  # 20 is the hex representation of space
-            elif self._encoding_func == "quoted-printable":
+            if self._encoding_func == "quoted-printable":
                 # Quoted-printable uses =20 for space
                 return "=20".join(words)
-            elif self._encoding_func == "UUencode":
+            if self._encoding_func == "UUencode":
                 # UUencode: join with encoded space
                 return "".join(words)  # UUencode handles spaces within encoding
         return super().join_words(words=words)

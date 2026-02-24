@@ -1132,7 +1132,7 @@ class TestTreeOfAttacksNode:
         prompt_normalizer = MagicMock()
         prompt_normalizer.send_prompt_async = AsyncMock(return_value=None)
 
-        components = {
+        return {
             "objective_target": builder.objective_target,
             "adversarial_chat": builder.adversarial_chat,
             "objective_scorer": builder.objective_scorer,
@@ -1150,7 +1150,6 @@ class TestTreeOfAttacksNode:
             "parent_id": None,
             "prompt_normalizer": prompt_normalizer,
         }
-        return components
 
     def test_node_initialization(self, node_components):
         """Test _TreeOfAttacksNode initialization."""
@@ -1308,19 +1307,18 @@ class TestTreeOfAttacksNode:
                         )
                     ]
                 )
-            else:
-                # Return normal response for objective target
-                return Message(
-                    message_pieces=[
-                        MessagePiece(
-                            role="assistant",
-                            original_value="Target response",
-                            converted_value="Target response",
-                            conversation_id=node.objective_target_conversation_id,
-                            id=str(uuid.uuid4()),
-                        )
-                    ]
-                )
+            # Return normal response for objective target
+            return Message(
+                message_pieces=[
+                    MessagePiece(
+                        role="assistant",
+                        original_value="Target response",
+                        converted_value="Target response",
+                        conversation_id=node.objective_target_conversation_id,
+                        id=str(uuid.uuid4()),
+                    )
+                ]
+            )
 
         mock_normalizer.send_prompt_async = AsyncMock(side_effect=normalizer_side_effect)
 
