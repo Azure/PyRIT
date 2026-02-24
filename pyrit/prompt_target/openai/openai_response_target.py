@@ -716,6 +716,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             The tool-call section dict, or None if not found.
         """
         for piece in reversed(reply.message_pieces):
+            # Filter on data_type to skip reasoning/message pieces that also have api_role "assistant".
             if piece.api_role == "assistant" and piece.original_value_data_type == "function_call":
                 try:
                     section = json.loads(piece.original_value)
