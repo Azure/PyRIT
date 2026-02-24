@@ -208,7 +208,7 @@ class TestVLSUMultimodalDataset:
             assert len(dataset.seeds) == 4  # 2 pairs of text + image
 
             # Get unique group_ids
-            group_ids = set(s.prompt_group_id for s in dataset.seeds)
+            group_ids = {s.prompt_group_id for s in dataset.seeds}
             assert len(group_ids) == 2  # Two different pairs
 
             # Verify each pair has one text and one image

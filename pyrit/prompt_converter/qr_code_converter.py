@@ -5,7 +5,7 @@ from typing import Optional
 
 import segno
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -61,15 +61,15 @@ class QRCodeConverter(PromptConverter):
         self._border_color = border_color or light_color
         self._img_serializer = data_serializer_factory(category="prompt-memory-entries", data_type="image_path")
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with QR code parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "scale": self._scale,
                 "border": self._border,
                 "dark_color": self._dark_color,

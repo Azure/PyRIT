@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import numpy as np
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -56,15 +56,15 @@ class PlagiarismScorer(FloatScaleScorer):
         self.metric = metric
         self.n = n
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            scorer_specific_params={
+            params={
                 "reference_text": self.reference_text,
                 "metric": self.metric.value,
                 "n": self.n,
@@ -123,7 +123,7 @@ class PlagiarismScorer(FloatScaleScorer):
         Returns:
             set: Set of n-gram tuples.
         """
-        return set(tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1))
+        return {tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)}
 
     def _plagiarism_score(
         self,
@@ -147,27 +147,23 @@ class PlagiarismScorer(FloatScaleScorer):
         # Compute the LCS metric (normalized by reference length)
         if metric.value == "lcs":
             lcs_len = self._lcs_length(tokens_reference, tokens_response)
-            score = lcs_len / reference_len
-            return score
+            return lcs_len / reference_len
 
         # Compute the Levenshtein metric (normalized by max length)
-        elif metric.value == "levenshtein":
+        if metric.value == "levenshtein":
             lev_dist = self._levenshtein_distance(tokens_reference, tokens_response)
             max_len = max(reference_len, response_len)
-            score = 1 - (lev_dist / max_len)
-            return score
+            return 1 - (lev_dist / max_len)
 
         # Compute the Jaccard metric (normalized by number of n-grams in reference)
-        elif metric.value == "jaccard":
+        if metric.value == "jaccard":
             ref_ngrams = self._ngram_set(tokens_reference, n) if reference_len >= n else set()
             res_ngrams = self._ngram_set(tokens_response, n) if response_len >= n else set()
             if not ref_ngrams:
                 return 0.0
-            score = len(ref_ngrams & res_ngrams) / len(ref_ngrams)
-            return score
+            return len(ref_ngrams & res_ngrams) / len(ref_ngrams)
 
-        else:
-            raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
+        raise ValueError("metric must be 'lcs', 'levenshtein', or 'jaccard'")
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
         """

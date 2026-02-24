@@ -81,8 +81,7 @@ class ClassEntry(Generic[T]):
 
         if self.factory is not None:
             return self.factory(**merged_kwargs)
-        else:
-            return self.registered_class(**merged_kwargs)
+        return self.registered_class(**merged_kwargs)
 
 
 class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT]):

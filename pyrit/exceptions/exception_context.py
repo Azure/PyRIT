@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional
 
-from pyrit.identifiers import AttackIdentifier, Identifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 
 
 class ComponentRole(Enum):
@@ -62,10 +62,10 @@ class ExecutionContext:
     attack_strategy_name: Optional[str] = None
 
     # The identifier for the attack strategy
-    attack_identifier: Optional[AttackIdentifier] = None
+    attack_identifier: Optional[ComponentIdentifier] = None
 
     # The identifier from the component's get_identifier() (target, scorer, etc.)
-    component_identifier: Optional[Identifier] = None
+    component_identifier: Optional[ComponentIdentifier] = None
 
     # The objective target conversation ID if available
     objective_target_conversation_id: Optional[str] = None
@@ -85,6 +85,7 @@ class ExecutionContext:
 
         Returns:
             str: A formatted string with component role, component name, and endpoint.
+
         """
         parts = [self.component_role.value]
         if self.component_name:
@@ -99,6 +100,7 @@ class ExecutionContext:
 
         Returns:
             str: A multi-line formatted string with full context details.
+
         """
         lines = []
 
@@ -136,6 +138,7 @@ def get_execution_context() -> Optional[ExecutionContext]:
 
     Returns:
         Optional[ExecutionContext]: The current context, or None if not set.
+
     """
     return _execution_context.get()
 
@@ -146,6 +149,7 @@ def set_execution_context(context: ExecutionContext) -> None:
 
     Args:
         context: The execution context to set.
+
     """
     _execution_context.set(context)
 
@@ -171,7 +175,13 @@ class ExecutionContextManager:
     _token: Any = field(default=None, init=False, repr=False)
 
     def __enter__(self) -> "ExecutionContextManager":
-        """Set the execution context on entry."""
+        """
+        Set the execution context on entry.
+
+        Returns:
+            ExecutionContextManager: The active context manager instance.
+
+        """
         self._token = _execution_context.set(self.context)
         return self
 
@@ -181,6 +191,12 @@ class ExecutionContextManager:
 
         If an exception occurred, the context is preserved so that exception
         handlers higher in the call stack can access it for enhanced error messages.
+
+        Args:
+            exc_type (Any): Exception type if one was raised, otherwise None.
+            exc_val (Any): Exception value if one was raised, otherwise None.
+            exc_tb (Any): Traceback object if an exception was raised, otherwise None.
+
         """
         if exc_type is None:
             # No exception - restore previous context
@@ -192,8 +208,8 @@ def execution_context(
     *,
     component_role: ComponentRole,
     attack_strategy_name: Optional[str] = None,
-    attack_identifier: Optional[AttackIdentifier] = None,
-    component_identifier: Optional[Identifier] = None,
+    attack_identifier: Optional[ComponentIdentifier] = None,
+    component_identifier: Optional[ComponentIdentifier] = None,
     objective_target_conversation_id: Optional[str] = None,
     objective: Optional[str] = None,
 ) -> ExecutionContextManager:
@@ -210,12 +226,13 @@ def execution_context(
 
     Returns:
         ExecutionContextManager: A context manager that sets/clears the context.
+
     """
     # Extract endpoint and component_name from component_identifier if available
     endpoint = None
     component_name = None
     if component_identifier:
-        endpoint = getattr(component_identifier, "endpoint", None)
+        endpoint = component_identifier.params.get("endpoint")
         component_name = component_identifier.class_name
 
     context = ExecutionContext(

@@ -15,8 +15,7 @@ def get_default_data_path(dir: str) -> pathlib.Path:
     """
     if in_git_repo():
         return pathlib.Path(PYRIT_PATH, "..", dir).resolve()
-    else:
-        return pathlib.Path(user_data_dir(dir, "pyrit")).resolve()
+    return pathlib.Path(user_data_dir(dir, "pyrit")).resolve()
 
 
 def in_git_repo() -> bool:

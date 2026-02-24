@@ -83,7 +83,6 @@ def normalize_score_to_float(score: Optional[Score]) -> float:
     score_value = score.get_value()
     if isinstance(score_value, bool):
         return 1.0 if score_value else 0.0
-    elif isinstance(score_value, (int, float)):
+    if isinstance(score_value, (int, float)):
         return float(score_value)
-    else:
-        return 0.0
+    return 0.0

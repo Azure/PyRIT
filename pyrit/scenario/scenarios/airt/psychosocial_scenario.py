@@ -487,7 +487,7 @@ class PsychosocialScenario(Scenario):
                 scoring_config=scoring_config,
                 seed_groups=seed_groups,
             )
-        elif strategy == "multi_turn":
+        if strategy == "multi_turn":
             return [
                 self._create_multi_turn_attack(
                     scoring_config=scoring_config,
@@ -495,8 +495,7 @@ class PsychosocialScenario(Scenario):
                     seed_groups=seed_groups,
                 )
             ]
-        else:
-            raise ValueError(f"Unknown strategy: {strategy}")
+        raise ValueError(f"Unknown strategy: {strategy}")
 
     def _create_single_turn_attacks(
         self,

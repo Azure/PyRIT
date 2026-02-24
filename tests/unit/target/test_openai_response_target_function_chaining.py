@@ -21,12 +21,11 @@ from pyrit.prompt_target import OpenAIResponseTarget
 @pytest.fixture
 def response_target(patch_central_database):
     """Create a test OpenAIResponseTarget."""
-    target = OpenAIResponseTarget(
+    return OpenAIResponseTarget(
         model_name="gpt-4",
         endpoint="https://mock.azure.com",
         api_key="mock-key",
     )
-    return target
 
 
 def create_mock_function_call_response(call_id: str, function_name: str, arguments: dict) -> MagicMock:

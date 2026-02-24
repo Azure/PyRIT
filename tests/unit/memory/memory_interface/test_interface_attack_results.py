@@ -6,7 +6,7 @@ import uuid
 from typing import Optional, Sequence
 
 from pyrit.common.utils import to_sha256
-from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import (
@@ -412,11 +412,9 @@ def test_attack_result_with_last_response_and_score(sqlite_instance: MemoryInter
         score_value="1.0",
         score_type="float_scale",
         score_category=["test_category"],
-        scorer_class_identifier=ScorerIdentifier(
+        scorer_class_identifier=ComponentIdentifier(
             class_name="TestScorer",
             class_module="test_module",
-            class_description="",
-            identifier_type="instance",
         ),
         message_piece_id=message_piece.id,
         score_value_description="Test score description",
@@ -461,7 +459,7 @@ def test_attack_result_all_outcomes(sqlite_instance: MemoryInterface):
         attack_result = AttackResult(
             conversation_id=f"conv_{i}",
             objective=f"Test objective {i}",
-            attack_identifier=AttackIdentifier(class_name=f"TestAttack{i}", class_module="test.module"),
+            attack_identifier=ComponentIdentifier(class_name=f"TestAttack{i}", class_module="test.module"),
             executed_turns=i + 1,
             execution_time_ms=(i + 1) * 100,
             outcome=outcome,
@@ -1002,26 +1000,24 @@ def _make_attack_result_with_identifier(
     class_name: str,
     converter_class_names: Optional[list[str]] = None,
 ) -> AttackResult:
-    """Helper to create an AttackResult with an AttackIdentifier containing converters."""
-    converter_ids = None
+    """Helper to create an AttackResult with a ComponentIdentifier containing converters."""
+    params = {}
     if converter_class_names is not None:
-        converter_ids = [
-            ConverterIdentifier(
+        params["request_converter_identifiers"] = [
+            ComponentIdentifier(
                 class_name=name,
                 class_module="pyrit.converters",
-                supported_input_types=("text",),
-                supported_output_types=("text",),
-            )
+            ).to_dict()
             for name in converter_class_names
         ]
 
     return AttackResult(
         conversation_id=conversation_id,
         objective=f"Objective for {conversation_id}",
-        attack_identifier=AttackIdentifier(
+        attack_identifier=ComponentIdentifier(
             class_name=class_name,
             class_module="pyrit.attacks",
-            request_converter_identifiers=converter_ids,
+            params=params,
         ),
     )
 

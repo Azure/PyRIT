@@ -20,8 +20,7 @@ sample_request = (
 
 @pytest.fixture
 def mock_callback_function() -> Callable:
-    parsing_function = get_http_target_json_response_callback_function(key="mock_key")
-    return parsing_function
+    return get_http_target_json_response_callback_function(key="mock_key")
 
 
 @pytest.fixture

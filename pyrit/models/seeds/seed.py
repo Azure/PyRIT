@@ -30,18 +30,47 @@ T = TypeVar("T", bound="Seed")
 
 
 class PartialUndefined(Undefined):
+    """Jinja undefined value that preserves unresolved placeholders as text."""
+
     # Return the original placeholder format
     def __str__(self) -> str:
+        """
+        Render unresolved variable placeholders in template format.
+
+        Returns:
+            str: Placeholder text or empty string.
+
+        """
         return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
 
     def __repr__(self) -> str:
+        """
+        Return the placeholder representation for debugging contexts.
+
+        Returns:
+            str: Placeholder text or empty string.
+
+        """
         return f"{{{{ {self._undefined_name} }}}}" if self._undefined_name else ""
 
     def __iter__(self) -> Iterator[object]:
-        """Return an empty iterator to prevent Jinja from trying to loop over undefined variables."""
+        """
+        Return an empty iterator to prevent iteration over undefined variables.
+
+        Returns:
+            Iterator[object]: Empty iterator.
+
+        """
         return iter([])
 
     def __bool__(self) -> bool:
+        """
+        Evaluate as truthy to avoid falsey-branch side effects.
+
+        Returns:
+            bool: Always True.
+
+        """
         return True  # Ensures it doesn't evaluate to False
 
 
@@ -106,7 +135,7 @@ class Seed(YamlLoadable):
 
     def render_template_value(self, **kwargs: Any) -> str:
         """
-        Renders self.value as a template, applying provided parameters in kwargs.
+        Render self.value as a template with provided parameters.
 
         Args:
             kwargs:Key-value pairs to replace in the SeedPrompt value.
@@ -116,6 +145,7 @@ class Seed(YamlLoadable):
 
         Raises:
             ValueError: If parameters are missing or invalid in the template.
+
         """
         template_identifier = self.name or "<unnamed template>"
 
@@ -130,7 +160,7 @@ class Seed(YamlLoadable):
 
     def render_template_value_silent(self, **kwargs: Any) -> str:
         """
-        Renders self.value as a template, applying provided parameters in kwargs. For parameters in the template
+        Render self.value as a template with provided parameters. For parameters in the template
         that are not provided as kwargs here, this function will leave them as is instead of raising an error.
 
         Args:
@@ -141,6 +171,7 @@ class Seed(YamlLoadable):
 
         Raises:
             ValueError: If parameters are missing or invalid in the template.
+
         """
         # Check if the template contains Jinja2 control structures (for loops, if statements, etc.)
         # If it does, and we don't have all required parameters, don't render it to preserve the structure
@@ -168,7 +199,7 @@ class Seed(YamlLoadable):
 
     async def set_sha256_value_async(self) -> None:
         """
-        This method computes the SHA256 hash value asynchronously.
+        Compute the SHA256 hash value asynchronously.
         It should be called after prompt `value` is serialized to text,
         as file paths used in the `value` may have changed from local to memory storage paths.
 

@@ -10,7 +10,7 @@ from pyrit.common.utils import combine_dict
 from pyrit.executor.attack.component.prepended_conversation_config import (
     PrependedConversationConfig,
 )
-from pyrit.identifiers import AttackIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.message_normalizer import ConversationContextNormalizer
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
@@ -54,8 +54,8 @@ def get_adversarial_chat_messages(
     prepended_conversation: List[Message],
     *,
     adversarial_chat_conversation_id: str,
-    attack_identifier: AttackIdentifier,
-    adversarial_chat_target_identifier: TargetIdentifier,
+    attack_identifier: ComponentIdentifier,
+    adversarial_chat_target_identifier: ComponentIdentifier,
     labels: Optional[Dict[str, str]] = None,
 ) -> List[Message]:
     """
@@ -72,8 +72,8 @@ def get_adversarial_chat_messages(
     Args:
         prepended_conversation: The original conversation messages to transform.
         adversarial_chat_conversation_id: Conversation ID for the adversarial chat.
-        attack_identifier: Attack identifier to associate with messages.
-        adversarial_chat_target_identifier: Target identifier for the adversarial chat.
+        attack_identifier (ComponentIdentifier): Attack identifier to associate with messages.
+        adversarial_chat_target_identifier (ComponentIdentifier): Target identifier for the adversarial chat.
         labels: Optional labels to associate with the messages.
 
     Returns:
@@ -183,14 +183,14 @@ class ConversationManager:
     def __init__(
         self,
         *,
-        attack_identifier: AttackIdentifier,
+        attack_identifier: ComponentIdentifier,
         prompt_normalizer: Optional[PromptNormalizer] = None,
     ):
         """
         Initialize the conversation manager.
 
         Args:
-            attack_identifier: The identifier of the attack this manager belongs to.
+            attack_identifier (ComponentIdentifier): The identifier of the attack this manager belongs to.
             prompt_normalizer: Optional prompt normalizer for converting prompts.
                 If not provided, a default PromptNormalizer instance will be created.
         """

@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from unit.mocks import MockPromptTarget
 
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_converter import TranslationConverter
 
@@ -80,7 +80,7 @@ async def test_translation_converter_succeeds_after_retries(sqlite_instance):
                 converted_value="hola",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier=TargetIdentifier(class_name="test-identifier", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="test-identifier", class_module="test"),
                 sequence=1,
             )
         ]
