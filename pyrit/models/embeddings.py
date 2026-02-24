@@ -41,7 +41,7 @@ class EmbeddingResponse(BaseModel):
         Save the embedding response to disk and return the path of the new file.
 
         Args:
-            directory_path: The path to save the file to.
+            directory_path (Path): The path to save the file to.
 
         Returns:
             str: The full path to the file that was saved.
@@ -59,7 +59,7 @@ class EmbeddingResponse(BaseModel):
         Load the embedding response from disk.
 
         Args:
-            file_path: The path to load the file from.
+            file_path (Path): The path to load the file from.
 
         Returns:
             EmbeddingResponse: The loaded embedding response.

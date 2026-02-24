@@ -20,10 +20,8 @@ class Message:
 
     This is a single request to a target. It can contain multiple message pieces.
 
-    Parameters
-    ----------
+    Attributes:
         message_pieces (Sequence[MessagePiece]): The list of message pieces.
-
     """
 
     def __init__(self, message_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False) -> None:

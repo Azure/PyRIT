@@ -12,11 +12,9 @@ class QuestionChoice(BaseModel):
     """
     Represents a choice for a question.
 
-    Parameters
-    ----------
+    Attributes:
         index (int): The index of the choice.
         text (str): The text of the choice.
-
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -28,8 +26,7 @@ class QuestionAnsweringEntry(BaseModel):
     """
     Represents a question model.
 
-    Parameters
-    ----------
+    Attributes:
         question (str): The question text.
         answer_type (Literal["int", "float", "str", "bool"]): The type of the answer.
             `int` for integer answers (e.g., when the answer is an index of the correct option in a multiple-choice
@@ -39,7 +36,6 @@ class QuestionAnsweringEntry(BaseModel):
             `bool` for boolean answers.
         correct_answer (Union[int, str, float]): The correct answer.
         choices (list[QuestionChoice]): The list of choices for the question.
-
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -84,8 +80,7 @@ class QuestionAnsweringDataset(BaseModel):
     """
     Represents a dataset for question answering.
 
-    Parameters
-    ----------
+    Attributes:
         name (str): The name of the dataset.
         version (str): The version of the dataset.
         description (str): A description of the dataset.
@@ -93,7 +88,6 @@ class QuestionAnsweringDataset(BaseModel):
         group (str): The group associated with the dataset.
         source (str): The source of the dataset.
         questions (list[QuestionAnsweringEntry]): A list of question models.
-
     """
 
     model_config = ConfigDict(extra="forbid")
