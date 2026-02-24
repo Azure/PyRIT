@@ -227,7 +227,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
-        result = AttackResult(
+        return AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
@@ -238,8 +238,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             outcome_reason=outcome_reason,
             executed_turns=1,
         )
-
-        return result
 
     def _determine_attack_outcome(
         self, *, response: Optional[Message], score: Optional[Score], context: SingleTurnAttackContext[Any]

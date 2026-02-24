@@ -21,5 +21,6 @@ class StrategyResult(ABC):
 
         Returns:
             StrategyResult: A deep copy of the result.
+
         """
         return deepcopy(self)

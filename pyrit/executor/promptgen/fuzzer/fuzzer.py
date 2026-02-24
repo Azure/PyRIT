@@ -24,7 +24,7 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
     PromptGeneratorStrategyResult,
 )
 from pyrit.executor.promptgen.fuzzer.fuzzer_converter_base import FuzzerConverter
-from pyrit.identifiers import AttackIdentifier, Identifiable
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     Message,
@@ -495,7 +495,7 @@ class FuzzerResultPrinter:
 
 class FuzzerGenerator(
     PromptGeneratorStrategy[FuzzerContext, FuzzerResult],
-    Identifiable[AttackIdentifier],
+    Identifiable,
 ):
     """
     Implementation of the Fuzzer prompt generation strategy using Monte Carlo Tree Search (MCTS).
@@ -679,20 +679,38 @@ class FuzzerGenerator(
         # Initialize utilities
         self._prompt_normalizer = prompt_normalizer or PromptNormalizer()
 
-    def _build_identifier(self) -> AttackIdentifier:
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
-        Build the typed identifier for this prompt generator.
+        Construct the identifier for this prompt generator.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
 
         Returns:
-            AttackIdentifier: The constructed identifier.
+            ComponentIdentifier: The identifier for this prompt generator.
         """
-        objective_target_identifier = self._objective_target.get_identifier()
+        all_children: Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]] = {
+            "objective_target": self._objective_target.get_identifier(),
+        }
+        if children:
+            all_children.update(children)
+        return ComponentIdentifier.of(self, params=params, children=all_children)
 
-        return AttackIdentifier(
-            class_name=self.__class__.__name__,
-            class_module=self.__class__.__module__,
-            objective_target_identifier=objective_target_identifier,
-        )
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this prompt generator.
+
+        Returns:
+            ComponentIdentifier: The constructed identifier.
+        """
+        return self._create_identifier()
 
     def _validate_inputs(
         self,
@@ -979,15 +997,13 @@ class FuzzerGenerator(
         """
         requests = self._create_normalizer_requests(prompts)
 
-        responses = await self._prompt_normalizer.send_prompt_batch_to_target_async(
+        return await self._prompt_normalizer.send_prompt_batch_to_target_async(
             requests=requests,
             target=self._objective_target,
             labels=context.memory_labels,
             attack_identifier=self.get_identifier(),
             batch_size=self._batch_size,
         )
-
-        return responses
 
     def _create_normalizer_requests(self, prompts: List[str]) -> List[NormalizerRequest]:
         """
@@ -1029,11 +1045,9 @@ class FuzzerGenerator(
         response_pieces = [response.message_pieces[0] for response in responses]
 
         # Score with objective scorer
-        scores = await self._scorer.score_prompts_batch_async(
+        return await self._scorer.score_prompts_batch_async(
             messages=[piece.to_message() for piece in response_pieces], objectives=tasks
         )
-
-        return scores
 
     def _process_scoring_results(
         self,
@@ -1146,12 +1160,11 @@ class FuzzerGenerator(
         """
         if isinstance(score_value, bool):
             return 1.0 if score_value else 0.0
-        elif isinstance(score_value, (int, float)):
+        if isinstance(score_value, (int, float)):
             # Ensure value is between 0 and 1
             return max(0.0, min(1.0, float(score_value)))
-        else:
-            self._logger.warning(f"Unexpected score type: {type(score_value)}, treating as 0.0")
-            return 0.0
+        self._logger.warning(f"Unexpected score type: {type(score_value)}, treating as 0.0")
+        return 0.0
 
     def _create_generation_result(self, context: FuzzerContext) -> FuzzerResult:
         """
@@ -1164,14 +1177,12 @@ class FuzzerGenerator(
             FuzzerResult: The generation result.
         """
         # Create result with concrete fields
-        result = FuzzerResult(
+        return FuzzerResult(
             successful_templates=[node.template for node in context.new_prompt_nodes],
             jailbreak_conversation_ids=context.jailbreak_conversation_ids,
             total_queries=context.total_target_query_count,
             templates_explored=len(context.new_prompt_nodes),
         )
-
-        return result
 
     @overload
     async def execute_async(

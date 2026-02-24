@@ -10,7 +10,7 @@ import pytest
 from unit.mocks import get_mock_target_identifier
 
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
-from pyrit.identifiers import AttackIdentifier, ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
@@ -62,7 +62,7 @@ class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
         return self._create_identifier()
 
@@ -118,7 +118,7 @@ class MockFloatScorer(Scorer):
         self.scored_piece_ids: list[str] = []
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
         return self._create_identifier()
 
@@ -206,7 +206,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     chat_target.set_system_prompt = MagicMock()
 
     expected_system_prompt = "system_prompt"
-    expected_attack_identifier = AttackIdentifier(class_name="TestAttack", class_module="test.module")
+    expected_attack_identifier = ComponentIdentifier(class_name="TestAttack", class_module="test.module")
     expected_scored_prompt_id = "123"
 
     await scorer._score_value_with_llm(
@@ -1128,7 +1128,7 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
             self.scored_piece_ids = []
             super().__init__(validator=validator)
 
-        def _build_identifier(self) -> ScorerIdentifier:
+        def _build_identifier(self) -> ComponentIdentifier:
             """Build the scorer evaluation identifier for this test scorer."""
             return self._create_identifier()
 
@@ -1219,7 +1219,7 @@ async def test_base_scorer_score_async_implementation(patch_central_database):
 
 
 def test_mock_scorer_get_identifier_returns_type():
-    """Test that get_identifier returns a ScorerIdentifier with the correct class_name."""
+    """Test that get_identifier returns a ComponentIdentifier with the correct class_name."""
     scorer = MockScorer()
     identifier = scorer.get_identifier()
 
@@ -1227,7 +1227,7 @@ def test_mock_scorer_get_identifier_returns_type():
 
 
 def test_mock_scorer_get_identifier_includes_hash():
-    """Test that get_identifier returns an identifier with a hash field."""
+    """Test that get_identifier returns a ComponentIdentifier with a hash field."""
     scorer = MockScorer()
     identifier = scorer.get_identifier()
 
@@ -1256,14 +1256,12 @@ def test_mock_scorer_get_identifier_hash_deterministic():
     assert hash1 == hash2
 
 
-def test_mock_scorer_get_identifier_is_scorer_identifier():
-    """Test that get_identifier returns a ScorerIdentifier."""
-    from pyrit.identifiers import ScorerIdentifier
-
+def test_mock_scorer_get_identifier_is_component_identifier():
+    """Test that get_identifier returns a ComponentIdentifier."""
     scorer = MockScorer()
     sid = scorer.get_identifier()
 
-    assert isinstance(sid, ScorerIdentifier)
+    assert isinstance(sid, ComponentIdentifier)
     assert sid.class_name == "MockScorer"
 
 
@@ -1315,7 +1313,7 @@ class TestTrueFalseScorerEmptyScoreListRationale:
             def __init__(self, validator):
                 super().__init__(validator=validator)
 
-            def _build_identifier(self) -> ScorerIdentifier:
+            def _build_identifier(self) -> ComponentIdentifier:
                 return self._create_identifier()
 
             async def _score_piece_async(

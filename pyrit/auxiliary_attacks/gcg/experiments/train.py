@@ -305,19 +305,18 @@ class GreedyCoordinateGradientAdversarialSuffixGenerator:
                 mpa_batch_size=params.batch_size,
                 mpa_n_steps=params.n_steps,
             )
-        else:
-            return IndividualPromptAttack(
-                train_goals,
-                train_targets,
-                workers,
-                control_init=params.control_init,
-                logfile=f"{params.result_prefix}_{timestamp}.json",
-                managers=managers,
-                test_goals=getattr(params, "test_goals", []),
-                test_targets=getattr(params, "test_targets", []),
-                test_workers=test_workers,
-                mpa_deterministic=params.gbda_deterministic,
-                mpa_lr=params.learning_rate,
-                mpa_batch_size=params.batch_size,
-                mpa_n_steps=params.n_steps,
-            )
+        return IndividualPromptAttack(
+            train_goals,
+            train_targets,
+            workers,
+            control_init=params.control_init,
+            logfile=f"{params.result_prefix}_{timestamp}.json",
+            managers=managers,
+            test_goals=getattr(params, "test_goals", []),
+            test_targets=getattr(params, "test_targets", []),
+            test_workers=test_workers,
+            mpa_deterministic=params.gbda_deterministic,
+            mpa_lr=params.learning_rate,
+            mpa_batch_size=params.batch_size,
+            mpa_n_steps=params.n_steps,
+        )

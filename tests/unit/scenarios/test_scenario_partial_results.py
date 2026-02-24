@@ -8,20 +8,18 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 
 from pyrit.executor.attack.core import AttackExecutorResult
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenario import DatasetConfiguration, ScenarioResult
 from pyrit.scenario.core import AtomicAttack, Scenario, ScenarioStrategy
 
 
-def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -29,11 +27,9 @@ def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
 def mock_objective_target():
     """Create a mock objective target for testing."""
     target = MagicMock()
-    target.get_identifier.return_value = TargetIdentifier(
+    target.get_identifier.return_value = ComponentIdentifier(
         class_name="MockTarget",
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
     return target
 
@@ -149,18 +145,17 @@ class TestScenarioPartialAttackCompletion:
                 save_attack_results_to_memory(completed)
 
                 return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
-            else:
-                # Retry: complete the remaining objective
-                completed = [
-                    AttackResult(
-                        conversation_id="conv-3",
-                        objective="obj3",
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                ]
-                save_attack_results_to_memory(completed)
-                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
+            # Retry: complete the remaining objective
+            completed = [
+                AttackResult(
+                    conversation_id="conv-3",
+                    objective="obj3",
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=1,
+                )
+            ]
+            save_attack_results_to_memory(completed)
+            return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -265,21 +260,20 @@ class TestScenarioPartialAttackCompletion:
                 save_attack_results_to_memory(completed)
 
                 return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
-            else:
-                # Retry: complete remaining objectives
-                completed = [
-                    AttackResult(
-                        conversation_id=f"conv-{i}",
-                        objective=f"obj{i}",
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                    for i in [4, 5]
-                ]
+            # Retry: complete remaining objectives
+            completed = [
+                AttackResult(
+                    conversation_id=f"conv-{i}",
+                    objective=f"obj{i}",
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=1,
+                )
+                for i in [4, 5]
+            ]
 
-                save_attack_results_to_memory(completed)
+            save_attack_results_to_memory(completed)
 
-                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
+            return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -339,25 +333,22 @@ class TestScenarioPartialAttackCompletion:
                     save_attack_results_to_memory(completed)
 
                     return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
-                else:
-                    # All other attempts succeed fully
-                    completed = [
-                        AttackResult(
-                            conversation_id=f"conv-{obj}",
-                            objective=obj,
-                            outcome=AttackOutcome.SUCCESS,
-                            executed_turns=1,
-                        )
-                        for obj in (
-                            attack1
-                            if attack_name == "attack_1"
-                            else (attack2 if attack_name == "attack_2" else attack3)
-                        ).objectives
-                    ]
+                # All other attempts succeed fully
+                completed = [
+                    AttackResult(
+                        conversation_id=f"conv-{obj}",
+                        objective=obj,
+                        outcome=AttackOutcome.SUCCESS,
+                        executed_turns=1,
+                    )
+                    for obj in (
+                        attack1 if attack_name == "attack_1" else (attack2 if attack_name == "attack_2" else attack3)
+                    ).objectives
+                ]
 
-                    save_attack_results_to_memory(completed)
+                save_attack_results_to_memory(completed)
 
-                    return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
+                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
             return mock_run
 

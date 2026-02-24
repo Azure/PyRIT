@@ -323,12 +323,11 @@ class ScorerEvaluator(abc.ABC):
                     f"(requested {num_scorer_trials}). Skipping evaluation."
                 )
                 return (True, existing)
-            else:
-                logger.info(
-                    f"Existing metrics have fewer trials ({existing.num_scorer_trials} < {num_scorer_trials}). "
-                    f"Will re-run evaluation with more trials and replace existing entry."
-                )
-                return (False, None)
+            logger.info(
+                f"Existing metrics have fewer trials ({existing.num_scorer_trials} < {num_scorer_trials}). "
+                f"Will re-run evaluation with more trials and replace existing entry."
+            )
+            return (False, None)
 
         except Exception as e:
             logger.warning(f"Error checking for existing metrics: {e}")

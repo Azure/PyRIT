@@ -14,8 +14,7 @@ from unit.mocks import get_sample_conversation_entries
 
 @pytest.fixture
 def mock_memory_interface():
-    memory_interface = MagicMock(spec=MemoryInterface)
-    return memory_interface
+    return MagicMock(spec=MemoryInterface)
 
 
 @pytest.fixture

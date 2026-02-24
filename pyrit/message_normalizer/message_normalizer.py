@@ -105,15 +105,14 @@ async def apply_system_message_behavior(messages: List[Message], behavior: Syste
     """
     if behavior == "keep":
         return messages
-    elif behavior == "squash":
+    if behavior == "squash":
         # Import here to avoid circular imports
         from pyrit.message_normalizer.generic_system_squash import (
             GenericSystemSquashNormalizer,
         )
 
         return await GenericSystemSquashNormalizer().normalize_async(messages)
-    elif behavior == "ignore":
+    if behavior == "ignore":
         return [msg for msg in messages if msg.role != "system"]
-    else:
-        # This should never happen due to Literal type, but handle it gracefully
-        raise ValueError(f"Unknown system message behavior: {behavior}")
+    # This should never happen due to Literal type, but handle it gracefully
+    raise ValueError(f"Unknown system message behavior: {behavior}")

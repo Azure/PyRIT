@@ -57,7 +57,7 @@ def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDatas
             )
             questions_answers.append(entry)
 
-    dataset = QuestionAnsweringDataset(
+    return QuestionAnsweringDataset(
         name="wmdp",
         description="""The WMDP Benchmark: Measuring and Reducing Malicious Use With Unlearning. The Weapons of Mass
         Destruction Proxy (WMDP) benchmark is a dataset of 4,157 multiple-choice questions surrounding hazardous
@@ -79,5 +79,3 @@ def fetch_wmdp_dataset(category: Optional[str] = None) -> QuestionAnsweringDatas
         source="https://huggingface.co/datasets/cais/wmdp",
         questions=questions_answers,
     )
-
-    return dataset
