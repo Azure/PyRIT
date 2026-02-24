@@ -73,8 +73,7 @@ metadata = registry.list_metadata()
 for item in metadata:
     print(f"\n{item.unique_name}:")
     print(f"  Class: {item.class_name}")
-    print(f"  Type: {item.scorer_type}")
-    print(f"  Description: {item.class_description[:60]}...")
+    print(f"  Type: {item.params.get('scorer_type', 'unknown')}")
 
     ConsoleScorerPrinter().print_objective_scorer(scorer_identifier=item)
 

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Type, cast
 from uuid import UUID
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer import Scorer
@@ -196,15 +196,17 @@ def create_conversation_scorer(
             """Return the wrapped scorer."""
             return self._wrapped_scorer
 
-        def _build_identifier(self) -> ScorerIdentifier:
+        def _build_identifier(self) -> ComponentIdentifier:
             """
             Build the scorer evaluation identifier for this conversation scorer.
 
             Returns:
-                ScorerIdentifier: The identifier for this scorer.
+                ComponentIdentifier: The identifier for this scorer.
             """
             return self._create_identifier(
-                sub_scorers=[self._wrapped_scorer],
+                children={
+                    "sub_scorers": [self._wrapped_scorer.get_identifier()],
+                },
             )
 
     return DynamicConversationScorer()

@@ -185,9 +185,7 @@ def get_updated_endpoint_name(endpoint_name):
     # Generate a 5-char random alphanumeric string and append to '-'
     random_suffix = "-" + "".join(random.choices(string.ascii_letters + string.digits, k=5))
 
-    updated_name = f"{base_name}{random_suffix}"
-
-    return updated_name
+    return f"{base_name}{random_suffix}"
 
 
 # %%

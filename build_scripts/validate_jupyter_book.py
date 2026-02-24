@@ -327,9 +327,8 @@ def main():
             print(f"  • {error}", file=sys.stderr)
         print("=" * 80, file=sys.stderr)
         return 1
-    else:
-        print("\n[OK] All Jupyter Book validations passed!")
-        return 0
+    print("\n[OK] All Jupyter Book validations passed!")
+    return 0
 
 
 if __name__ == "__main__":

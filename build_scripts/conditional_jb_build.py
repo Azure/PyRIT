@@ -27,9 +27,8 @@ def main():
             cwd=os.path.dirname(os.path.dirname(__file__)),  # Repository root
         )
         return result.returncode
-    else:
-        print("RUN_LONG_PRECOMMIT not set: Skipping full Jupyter Book build (fast validation runs instead)")
-        return 0
+    print("RUN_LONG_PRECOMMIT not set: Skipping full Jupyter Book build (fast validation runs instead)")
+    return 0
 
 
 if __name__ == "__main__":

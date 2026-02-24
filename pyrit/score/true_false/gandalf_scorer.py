@@ -9,7 +9,7 @@ import requests
 from openai import BadRequestError
 
 from pyrit.exceptions import PyritException, pyrit_target_retry
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import GandalfLevel, PromptChatTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -55,16 +55,20 @@ class GandalfScorer(TrueFalseScorer):
         self._defender = level.value
         self._endpoint = "https://gandalf-api.lakera.ai/api/guess-password"
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            prompt_target=self._prompt_target,
-            score_aggregator=self._score_aggregator.__name__,
+            params={
+                "score_aggregator": self._score_aggregator.__name__,
+            },
+            children={
+                "prompt_target": self._prompt_target.get_identifier(),
+            },
         )
 
     @pyrit_target_retry

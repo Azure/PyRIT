@@ -11,7 +11,7 @@ from pyrit.exceptions import (
     execution_context,
 )
 from pyrit.executor.core.strategy import Strategy, StrategyContext
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 
 
 @dataclass
@@ -82,7 +82,9 @@ class TestStrategyExecutionContext:
             with execution_context(
                 component_role=ComponentRole.OBJECTIVE_TARGET,
                 attack_strategy_name="MockStrategy",
-                attack_identifier={"id": "test-123"},
+                attack_identifier=ComponentIdentifier(
+                    class_name="MockStrategy", class_module="test_module", params={"id": "test-123"}
+                ),
             ):
                 await strategy.execute_with_context_async(context=context)
 
@@ -161,13 +163,15 @@ class TestStrategyExecutionContextDetails:
             with execution_context(
                 component_role=ComponentRole.ADVERSARIAL_CHAT,
                 attack_strategy_name="TestAttack",
-                attack_identifier={"__type__": "TestAttack", "id": "abc-123"},
+                attack_identifier=ComponentIdentifier(
+                    class_name="TestAttack", class_module="test_module", params={"id": "abc-123"}
+                ),
             ):
                 await strategy.execute_with_context_async(context=context)
 
         error_message = str(exc_info.value)
         assert "Attack identifier:" in error_message
-        assert "abc-123" in error_message
+        assert "TestAttack" in error_message
 
     @pytest.mark.asyncio
     async def test_error_includes_conversation_id(self):
@@ -196,7 +200,7 @@ class TestStrategyExecutionContextDetails:
             with execution_context(
                 component_role=ComponentRole.OBJECTIVE_SCORER,
                 attack_strategy_name="TestAttack",
-                component_identifier=ScorerIdentifier(
+                component_identifier=ComponentIdentifier(
                     class_name="SelfAskTrueFalseScorer",
                     class_module="pyrit.score.true_false.self_ask_true_false_scorer",
                 ),

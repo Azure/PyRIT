@@ -272,15 +272,10 @@ API Reference
     :toctree: _autosummary/
 
     class_name_to_snake_case
-    AttackIdentifier
-    ConverterIdentifier
+    ComponentIdentifier
+    config_hash
     Identifiable
-    Identifier
-    IdentifierT
-    IdentifierType
-    ScorerIdentifier
     snake_case_to_class_name
-    TargetIdentifier
 
 :py:mod:`pyrit.memory`
 ======================
