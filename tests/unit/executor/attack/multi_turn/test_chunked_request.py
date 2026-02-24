@@ -17,17 +17,15 @@ from pyrit.executor.attack.multi_turn import (
     ChunkedRequestAttack,
     ChunkedRequestAttackContext,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.prompt_target import PromptTarget
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test_module",
-        class_description="",
-        identifier_type="instance",
     )
 
 

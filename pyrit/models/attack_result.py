@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Optional, TypeVar
 
-from pyrit.identifiers import AttackIdentifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.message_piece import MessagePiece
 from pyrit.models.score import Score
@@ -46,7 +46,7 @@ class AttackResult(StrategyResult):
     objective: str
 
     # Identifier of the attack strategy that produced this result
-    attack_identifier: Optional[AttackIdentifier] = None
+    attack_identifier: Optional[ComponentIdentifier] = None
 
     # Evidence
     # Model response generated in the final turn of the attack

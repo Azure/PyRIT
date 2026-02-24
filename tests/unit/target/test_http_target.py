@@ -59,7 +59,7 @@ def test_http_target_sets_endpoint_and_rate_limit(mock_callback_function, sqlite
         max_requests_per_minute=25,
     )
     identifier = target.get_identifier()
-    assert identifier.endpoint == "https://example.com/"
+    assert identifier.params["endpoint"] == "https://example.com/"
     assert target._max_requests_per_minute == 25
 
 

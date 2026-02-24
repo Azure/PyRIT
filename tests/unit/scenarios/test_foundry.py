@@ -10,7 +10,7 @@ import pytest
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.multi_turn.crescendo import CrescendoAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_converter import Base64Converter
 from pyrit.prompt_target import PromptTarget
@@ -20,23 +20,19 @@ from pyrit.scenario.foundry import FoundryStrategy, RedTeamAgent
 from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
 
 
-def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 

@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from pyrit.identifiers import ConverterIdentifier
+
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -23,15 +24,15 @@ class UnicodeSubstitutionConverter(PromptConverter):
         """
         self.startValue = start_value
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with unicode substitution parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "start_value": self.startValue,
             }
         )

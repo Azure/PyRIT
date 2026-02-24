@@ -51,7 +51,7 @@ def attack_result_to_summary(
     Returns:
         AttackSummary DTO ready for the API response.
     """
-    message_count = len(set(p.sequence for p in pieces))
+    message_count = len({p.sequence for p in pieces})
     last_preview = _get_preview_from_pieces(pieces)
 
     created_str = ar.metadata.get("created_at")
@@ -61,14 +61,14 @@ def attack_result_to_summary(
 
     aid = ar.attack_identifier
 
-    # Extract only frontend-relevant fields from identifiers
-    target_id = aid.objective_target_identifier if aid else None
-    converter_ids = aid.request_converter_identifiers if aid else None
+    # Extract only frontend-relevant fields from ComponentIdentifier
+    target_id = aid.get_child("objective_target") if aid else None
+    converter_ids = aid.get_child_list("request_converters") if aid else []
 
     return AttackSummary(
         conversation_id=ar.conversation_id,
         attack_type=aid.class_name if aid else "Unknown",
-        attack_specific_params=aid.attack_specific_params if aid else None,
+        attack_specific_params=aid.params or None if aid else None,
         target_unique_name=target_id.unique_name if target_id else None,
         target_type=target_id.class_name if target_id else None,
         converters=[c.class_name for c in converter_ids] if converter_ids else [],

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 import yaml
 
 from pyrit.common.path import HARM_DEFINITION_PATH, SCORER_LIKERT_PATH
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -190,16 +190,20 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         self._set_likert_scale_system_prompt(likert_scale_path=likert_scale.path)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            system_prompt_template=self._system_prompt,
-            prompt_target=self._prompt_target,
+            params={
+                "system_prompt_template": self._system_prompt,
+            },
+            children={
+                "prompt_target": self._prompt_target.get_identifier(),
+            },
         )
 
     def _set_likert_scale_system_prompt(self, likert_scale_path: Path) -> None:

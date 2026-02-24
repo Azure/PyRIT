@@ -119,7 +119,7 @@ class _PKUSafeRLHFDataset(_RemoteDatasetLoader):
                         value=item["prompt"],
                         data_type="text",
                         dataset_name=self.dataset_name,
-                        harm_categories=sorted(list(harm_categories)),
+                        harm_categories=sorted(harm_categories),
                         description=(
                             "This is a Hugging Face dataset that labels a prompt and 2 responses categorizing "
                             "their helpfulness or harmfulness. Only the 'prompt' column is extracted."

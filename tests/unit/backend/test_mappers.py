@@ -8,11 +8,8 @@ These tests verify the domain ↔ DTO translation layer in isolation,
 without any database or service dependencies.
 """
 
-import dataclasses
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
-
-import pytest
 
 from pyrit.backend.mappers.attack_mappers import (
     _collect_labels_from_pieces,
@@ -25,7 +22,7 @@ from pyrit.backend.mappers.attack_mappers import (
 )
 from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.backend.mappers.target_mappers import target_object_to_instance
-from pyrit.identifiers import AttackIdentifier, ConverterIdentifier, ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 
 # ============================================================================
@@ -44,7 +41,7 @@ def _make_attack_result(
     now = datetime.now(timezone.utc)
 
     target_identifier = (
-        TargetIdentifier(
+        ComponentIdentifier(
             class_name="TextTarget",
             class_module="pyrit.prompt_target",
         )
@@ -52,16 +49,20 @@ def _make_attack_result(
         else None
     )
 
+    children = {}
+    if target_identifier:
+        children["objective_target"] = target_identifier
+
     return AttackResult(
         conversation_id=conversation_id,
         objective="test",
-        attack_identifier=AttackIdentifier(
+        attack_identifier=ComponentIdentifier(
             class_name=name,
             class_module="pyrit.backend",
-            objective_target_identifier=target_identifier,
-            attack_specific_params={
+            params={
                 "source": "gui",
             },
+            children=children,
         ),
         outcome=outcome,
         metadata={
@@ -97,10 +98,10 @@ def _make_mock_score():
     """Create a mock score for mapper tests."""
     s = MagicMock()
     s.id = "score-1"
-    s.scorer_class_identifier = ScorerIdentifier(
+    s.scorer_class_identifier = ComponentIdentifier(
         class_name="TrueFalseScorer",
         class_module="pyrit.score",
-        scorer_type="true_false",
+        params={"scorer_type": "true_false"},
     )
     s.score_value = 1.0
     s.score_rationale = "Looks correct"
@@ -193,23 +194,29 @@ class TestAttackResultToSummary:
         ar = AttackResult(
             conversation_id="attack-conv",
             objective="test",
-            attack_identifier=AttackIdentifier(
+            attack_identifier=ComponentIdentifier(
                 class_name="TestAttack",
                 class_module="pyrit.backend",
-                request_converter_identifiers=[
-                    ConverterIdentifier(
-                        class_name="Base64Converter",
-                        class_module="pyrit.converters",
-                        supported_input_types=("text",),
-                        supported_output_types=("text",),
-                    ),
-                    ConverterIdentifier(
-                        class_name="ROT13Converter",
-                        class_module="pyrit.converters",
-                        supported_input_types=("text",),
-                        supported_output_types=("text",),
-                    ),
-                ],
+                children={
+                    "request_converters": [
+                        ComponentIdentifier(
+                            class_name="Base64Converter",
+                            class_module="pyrit.converters",
+                            params={
+                                "supported_input_types": ("text",),
+                                "supported_output_types": ("text",),
+                            },
+                        ),
+                        ComponentIdentifier(
+                            class_name="ROT13Converter",
+                            class_module="pyrit.converters",
+                            params={
+                                "supported_input_types": ("text",),
+                                "supported_output_types": ("text",),
+                            },
+                        ),
+                    ],
+                },
             ),
             outcome=AttackOutcome.UNDETERMINED,
             metadata={"created_at": now.isoformat(), "updated_at": now.isoformat()},
@@ -585,14 +592,15 @@ class TestTargetObjectToInstance:
     def test_maps_target_with_identifier(self) -> None:
         """Test mapping a target object that has get_identifier."""
         target_obj = MagicMock()
-        mock_identifier = MagicMock()
-        mock_identifier.class_name = "OpenAIChatTarget"
-        mock_identifier.endpoint = "http://test"
-        mock_identifier.model_name = "gpt-4"
-        mock_identifier.temperature = 0.7
-        mock_identifier.top_p = None
-        mock_identifier.max_requests_per_minute = None
-        mock_identifier.target_specific_params = None
+        mock_identifier = ComponentIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target",
+            params={
+                "endpoint": "http://test",
+                "model_name": "gpt-4",
+                "temperature": 0.7,
+            },
+        )
         target_obj.get_identifier.return_value = mock_identifier
 
         result = target_object_to_instance("t-1", target_obj)
@@ -606,14 +614,10 @@ class TestTargetObjectToInstance:
     def test_no_endpoint_returns_none(self) -> None:
         """Test that missing endpoint returns None."""
         target_obj = MagicMock()
-        mock_identifier = MagicMock()
-        mock_identifier.class_name = "TextTarget"
-        mock_identifier.endpoint = None
-        mock_identifier.model_name = None
-        mock_identifier.temperature = None
-        mock_identifier.top_p = None
-        mock_identifier.max_requests_per_minute = None
-        mock_identifier.target_specific_params = None
+        mock_identifier = ComponentIdentifier(
+            class_name="TextTarget",
+            class_module="pyrit.prompt_target",
+        )
         target_obj.get_identifier.return_value = mock_identifier
 
         result = target_object_to_instance("t-1", target_obj)
@@ -625,14 +629,7 @@ class TestTargetObjectToInstance:
     def test_no_get_identifier_uses_class_name(self) -> None:
         """Test that target uses class name from identifier."""
         target_obj = MagicMock()
-        mock_identifier = MagicMock()
-        mock_identifier.class_name = "FakeTarget"
-        mock_identifier.endpoint = ""
-        mock_identifier.model_name = ""
-        mock_identifier.temperature = None
-        mock_identifier.top_p = None
-        mock_identifier.max_requests_per_minute = None
-        mock_identifier.target_specific_params = None
+        mock_identifier = ComponentIdentifier(class_name="FakeTarget", class_module="pyrit.prompt_target")
         target_obj.get_identifier.return_value = mock_identifier
 
         result = target_object_to_instance("t-1", target_obj)
@@ -653,12 +650,15 @@ class TestConverterObjectToInstance:
     def test_maps_converter_with_identifier(self) -> None:
         """Test mapping a converter object."""
         converter_obj = MagicMock()
-        identifier = MagicMock()
-        identifier.class_name = "Base64Converter"
-        identifier.supported_input_types = ("text",)
-        identifier.supported_output_types = ("text",)
-        identifier.converter_specific_params = {"param1": "value1"}
-        identifier.sub_identifier = None
+        identifier = ComponentIdentifier(
+            class_name="Base64Converter",
+            class_module="pyrit.converters",
+            params={
+                "supported_input_types": ("text",),
+                "supported_output_types": ("text",),
+                "param1": "value1",
+            },
+        )
         converter_obj.get_identifier.return_value = identifier
 
         result = converter_object_to_instance("c-1", converter_obj)
@@ -674,12 +674,14 @@ class TestConverterObjectToInstance:
     def test_sub_converter_ids_passed_through(self) -> None:
         """Test that sub_converter_ids are passed through when provided."""
         converter_obj = MagicMock()
-        identifier = MagicMock()
-        identifier.class_name = "PipelineConverter"
-        identifier.supported_input_types = ("text",)
-        identifier.supported_output_types = ("text",)
-        identifier.converter_specific_params = None
-        identifier.sub_identifier = None
+        identifier = ComponentIdentifier(
+            class_name="PipelineConverter",
+            class_module="pyrit.converters",
+            params={
+                "supported_input_types": ("text",),
+                "supported_output_types": ("text",),
+            },
+        )
         converter_obj.get_identifier.return_value = identifier
 
         result = converter_object_to_instance("c-1", converter_obj, sub_converter_ids=["sub-1", "sub-2"])
@@ -689,11 +691,10 @@ class TestConverterObjectToInstance:
     def test_none_input_output_types_returns_empty_lists(self) -> None:
         """Test that None supported types produce empty lists."""
         converter_obj = MagicMock()
-        identifier = MagicMock()
-        identifier.class_name = "CustomConverter"
-        identifier.supported_input_types = None
-        identifier.supported_output_types = None
-        identifier.converter_specific_params = None
+        identifier = ComponentIdentifier(
+            class_name="CustomConverter",
+            class_module="pyrit.converters",
+        )
         converter_obj.get_identifier.return_value = identifier
 
         result = converter_object_to_instance("c-1", converter_obj)
@@ -702,77 +703,3 @@ class TestConverterObjectToInstance:
         assert result.supported_output_types == []
         assert result.converter_specific_params is None
         assert result.sub_converter_ids is None
-
-
-# ============================================================================
-# Drift Detection Tests – verify mapper-accessed fields exist on domain models
-# ============================================================================
-
-
-class TestDomainModelFieldsExist:
-    """Lightweight safety-net: ensure fields the mappers access still exist on the domain dataclasses.
-
-    If a domain model field is renamed or removed, these tests fail immediately –
-    before a mapper silently starts returning incorrect data.
-    """
-
-    # -- AttackIdentifier fields used in attack_mappers.py --------------------
-
-    @pytest.mark.parametrize(
-        "field_name",
-        [
-            "class_name",
-            "attack_specific_params",
-            "objective_target_identifier",
-            "request_converter_identifiers",
-        ],
-    )
-    def test_attack_identifier_has_field(self, field_name: str) -> None:
-        from pyrit.identifiers.attack_identifier import AttackIdentifier
-
-        field_names = {f.name for f in dataclasses.fields(AttackIdentifier)}
-        assert field_name in field_names, (
-            f"AttackIdentifier is missing '{field_name}' – attack_mappers.py depends on this field"
-        )
-
-    # -- TargetIdentifier fields used in attack_mappers.py & target_mappers.py
-
-    @pytest.mark.parametrize(
-        "field_name",
-        [
-            "class_name",
-            "unique_name",
-            "endpoint",
-            "model_name",
-            "temperature",
-            "top_p",
-            "max_requests_per_minute",
-            "target_specific_params",
-        ],
-    )
-    def test_target_identifier_has_field(self, field_name: str) -> None:
-        from pyrit.identifiers.target_identifier import TargetIdentifier
-
-        field_names = {f.name for f in dataclasses.fields(TargetIdentifier)}
-        assert field_name in field_names, (
-            f"TargetIdentifier is missing '{field_name}' – target_mappers.py depends on this field"
-        )
-
-    # -- ConverterIdentifier fields used in converter_mappers.py --------------
-
-    @pytest.mark.parametrize(
-        "field_name",
-        [
-            "class_name",
-            "supported_input_types",
-            "supported_output_types",
-            "converter_specific_params",
-        ],
-    )
-    def test_converter_identifier_has_field(self, field_name: str) -> None:
-        from pyrit.identifiers.converter_identifier import ConverterIdentifier
-
-        field_names = {f.name for f in dataclasses.fields(ConverterIdentifier)}
-        assert field_name in field_names, (
-            f"ConverterIdentifier is missing '{field_name}' – converter_mappers.py depends on this field"
-        )
