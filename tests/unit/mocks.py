@@ -9,28 +9,26 @@ from contextlib import AbstractAsyncContextManager
 from typing import Generator, MutableSequence, Optional, Sequence
 from unittest.mock import MagicMock, patch
 
-from pyrit.identifiers import AttackIdentifier, ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import AzureSQLMemory, CentralMemory, PromptMemoryEntry
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptChatTarget, PromptTarget, limit_requests_per_minute
 
 
-def get_mock_scorer_identifier() -> ScorerIdentifier:
+def get_mock_scorer_identifier() -> ComponentIdentifier:
     """
-    Returns a mock ScorerIdentifier for use in tests where the specific
+    Returns a mock ComponentIdentifier for use in tests where the specific
     scorer identity doesn't matter.
     """
-    return ScorerIdentifier(
+    return ComponentIdentifier(
         class_name="MockScorer",
         class_module="tests.unit.mocks",
-        class_description="Mock scorer for testing",
-        identifier_type="instance",
     )
 
 
-def get_mock_target_identifier(name: str = "MockTarget", module: str = "tests.unit.mocks") -> TargetIdentifier:
+def get_mock_target_identifier(name: str = "MockTarget", module: str = "tests.unit.mocks") -> ComponentIdentifier:
     """
-    Returns a mock TargetIdentifier for use in tests where the specific
+    Returns a mock ComponentIdentifier for use in tests where the specific
     target identity doesn't matter.
 
     Args:
@@ -38,19 +36,17 @@ def get_mock_target_identifier(name: str = "MockTarget", module: str = "tests.un
         module: The module path for the mock target. Defaults to "tests.unit.mocks".
 
     Returns:
-        A TargetIdentifier configured with the provided name and module.
+        A ComponentIdentifier configured with the provided name and module.
     """
-    return TargetIdentifier(
+    return ComponentIdentifier(
         class_name=name,
         class_module=module,
-        class_description="Mock target for testing",
-        identifier_type="instance",
     )
 
 
-def get_mock_attack_identifier(name: str = "MockAttack", module: str = "tests.unit.mocks") -> AttackIdentifier:
+def get_mock_attack_identifier(name: str = "MockAttack", module: str = "tests.unit.mocks") -> ComponentIdentifier:
     """
-    Returns a mock AttackIdentifier for use in tests where the specific
+    Returns a mock ComponentIdentifier for use in tests where the specific
     attack identity doesn't matter.
 
     Args:
@@ -58,9 +54,9 @@ def get_mock_attack_identifier(name: str = "MockAttack", module: str = "tests.un
         module: The module path for the mock attack. Defaults to "tests.unit.mocks".
 
     Returns:
-        An AttackIdentifier configured with the provided name and module.
+        A ComponentIdentifier configured with the provided name and module.
     """
-    return AttackIdentifier(
+    return ComponentIdentifier(
         class_name=name,
         class_module=module,
     )
@@ -69,14 +65,14 @@ def get_mock_attack_identifier(name: str = "MockAttack", module: str = "tests.un
 def get_mock_target(name: str = "MockTarget") -> MagicMock:
     """
     Returns a MagicMock target whose ``get_identifier()`` returns a real
-    :class:`TargetIdentifier`. Use this wherever a ``MagicMock(spec=PromptTarget)``
+    :class:`ComponentIdentifier`. Use this wherever a ``MagicMock(spec=PromptTarget)``
     is needed as an ``objective_target``.
 
     Args:
         name: The class name for the mock target. Defaults to "MockTarget".
 
     Returns:
-        A MagicMock configured to return a real TargetIdentifier.
+        A MagicMock configured to return a real ComponentIdentifier.
     """
     target = MagicMock(spec=PromptTarget)
     target.get_identifier.return_value = get_mock_target_identifier(name)
@@ -135,7 +131,7 @@ class MockPromptTarget(PromptChatTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        attack_identifier: Optional[AttackIdentifier] = None,
+        attack_identifier: Optional[ComponentIdentifier] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         self.system_prompt = system_prompt

@@ -118,7 +118,7 @@ class TestLoadDefaultDatasets:
         def get_scenario_side_effect(name: str):
             if name == "scenario1":
                 return mock_scenario1
-            elif name == "scenario2":
+            if name == "scenario2":
                 return mock_scenario2
             return None
 
@@ -158,7 +158,7 @@ class TestLoadDefaultDatasets:
         def get_scenario_side_effect(name: str):
             if name == "good_scenario":
                 return mock_scenario_good
-            elif name == "bad_scenario":
+            if name == "bad_scenario":
                 return mock_scenario_bad
             return None
 

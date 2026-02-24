@@ -59,7 +59,7 @@ from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
 from pyrit.score.true_false.self_ask_general_true_false_scorer import SelfAskGeneralTrueFalseScorer
 from pyrit.score.true_false.self_ask_question_answer_scorer import SelfAskQuestionAnswerScorer
-from pyrit.score.true_false.self_ask_refusal_scorer import SelfAskRefusalScorer
+from pyrit.score.true_false.self_ask_refusal_scorer import RefusalScorerPaths, SelfAskRefusalScorer
 from pyrit.score.true_false.self_ask_true_false_scorer import (
     SelfAskTrueFalseScorer,
     TrueFalseQuestion,
@@ -120,6 +120,7 @@ __all__ = [
     "SelfAskGeneralTrueFalseScorer",
     "SelfAskLikertScorer",
     "SelfAskQuestionAnswerScorer",
+    "RefusalScorerPaths",
     "SelfAskRefusalScorer",
     "SelfAskScaleScorer",
     "SelfAskTrueFalseScorer",

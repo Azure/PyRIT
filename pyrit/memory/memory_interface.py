@@ -1088,7 +1088,7 @@ class MemoryInterface(abc.ABC):
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(seed.prompt_group_id for seed in prompt_group.seeds)
+            group_id_set = {seed.prompt_group_id for seed in prompt_group.seeds}
             if len(group_id_set) > 1:
                 raise ValueError(
                     f"""Inconsistent 'prompt_group_id' attribute between members of the

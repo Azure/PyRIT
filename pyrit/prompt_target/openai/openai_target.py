@@ -505,11 +505,10 @@ class OpenAITarget(PromptChatTarget):
                 retry_after = _extract_retry_after_from_exception(e)
                 logger.warning(f"429 via APIStatusError request_id={request_id} retry_after={retry_after}")
                 raise RateLimitException()
-            else:
-                logger.exception(
-                    f"APIStatusError request_id={request_id} status={getattr(e, 'status_code', None)} error={e}"
-                )
-                raise
+            logger.exception(
+                f"APIStatusError request_id={request_id} status={getattr(e, 'status_code', None)} error={e}"
+            )
+            raise
         except (APITimeoutError, APIConnectionError) as e:
             # Transient infrastructure errors - these are retryable
             request_id = _extract_request_id_from_exception(e)

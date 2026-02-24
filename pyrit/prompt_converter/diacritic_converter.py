@@ -4,7 +4,7 @@
 import logging
 import unicodedata
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -44,15 +44,15 @@ class DiacriticConverter(PromptConverter):
         self._target_chars = set(target_chars)
         self._accent = accent
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with diacritic parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "target_chars": sorted(self._target_chars),
                 "accent": self._accent,
             }

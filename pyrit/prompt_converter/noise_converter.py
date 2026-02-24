@@ -8,7 +8,7 @@ from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedPrompt
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
@@ -64,17 +64,17 @@ class NoiseConverter(LLMGenericTextConverter):
         self._noise = noise
         self._number_errors = number_errors
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with noise parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_target=self._converter_target,
-            converter_specific_params={
+            params={
                 "noise": self._noise,
                 "number_errors": self._number_errors,
             },
+            children={"converter_target": self._converter_target.get_identifier()},
         )

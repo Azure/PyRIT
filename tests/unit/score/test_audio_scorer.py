@@ -8,15 +8,15 @@ from typing import Optional
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from unit.mocks import get_mock_scorer_identifier
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.audio_float_scale_scorer import AudioFloatScaleScorer
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.audio_true_false_scorer import AudioTrueFalseScorer
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
-from tests.unit.mocks import get_mock_scorer_identifier
 
 
 class MockTextTrueFalseScorer(TrueFalseScorer):
@@ -27,7 +27,7 @@ class MockTextTrueFalseScorer(TrueFalseScorer):
         validator = ScorerPromptValidator(supported_data_types=["text"])
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -54,7 +54,7 @@ class MockTextFloatScaleScorer(FloatScaleScorer):
         validator = ScorerPromptValidator(supported_data_types=["text"])
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -115,7 +115,7 @@ class TestAudioTrueFalseScorer:
 
         identifier = audio_scorer._build_identifier()
 
-        assert isinstance(identifier, ScorerIdentifier)
+        assert isinstance(identifier, ComponentIdentifier)
 
     @pytest.mark.asyncio
     async def test_score_piece_with_transcript(self, audio_message_piece):
@@ -190,7 +190,7 @@ class TestAudioFloatScaleScorer:
 
         identifier = audio_scorer._build_identifier()
 
-        assert isinstance(identifier, ScorerIdentifier)
+        assert isinstance(identifier, ComponentIdentifier)
 
     @pytest.mark.asyncio
     async def test_score_piece_with_transcript(self, audio_message_piece):

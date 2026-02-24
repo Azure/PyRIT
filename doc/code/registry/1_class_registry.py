@@ -29,9 +29,8 @@ print(f"Available scenarios: {names[:5]}...")  # Show first 5
 # Get detailed metadata
 metadata = registry.list_metadata()
 for item in metadata[:2]:  # Show first 2
-    print(f"\n{item.name}:")
-    print(f"  Class: {item.class_name}")
-    print(f"  Description: {item.description[:80]}...")
+    print(f"\n{item.class_name}:")
+    print(f"  Description: {item.class_description[:80]}...")
 
 # %% [markdown]
 # ## Getting a Class
@@ -104,6 +103,6 @@ print(f"Available initializers: {initializer_names[:5]}...")  # Show first 5
 
 # Get detailed metadata
 for init_item in initializer_registry.list_metadata()[:2]:  # Show first 2
-    print(f"\n{init_item.name}:")
+    print(f"\n{init_item.display_name}:")
     print(f"  Class: {init_item.class_name}")
-    print(f"  Description: {init_item.description[:80]}...")
+    print(f"  Description: {init_item.class_description[:80]}...")

@@ -327,7 +327,6 @@ class TestPrintFunctions:
         mock_registry = MagicMock()
         mock_registry.list_metadata.return_value = [
             ScenarioMetadata(
-                identifier_type="class",
                 class_name="TestScenario",
                 class_module="test.scenarios",
                 class_description="Test description",
@@ -369,7 +368,6 @@ class TestPrintFunctions:
         mock_registry = MagicMock()
         mock_registry.list_metadata.return_value = [
             InitializerMetadata(
-                identifier_type="class",
                 class_name="TestInit",
                 class_module="test.initializers",
                 class_description="Test initializer",
@@ -410,7 +408,6 @@ class TestFormatFunctions:
         """Test format_scenario_metadata with basic metadata."""
 
         scenario_metadata = ScenarioMetadata(
-            identifier_type="class",
             class_name="TestScenario",
             class_module="test.scenarios",
             class_description="",
@@ -432,7 +429,6 @@ class TestFormatFunctions:
         """Test format_scenario_metadata with description."""
 
         scenario_metadata = ScenarioMetadata(
-            identifier_type="class",
             class_name="TestScenario",
             class_module="test.scenarios",
             class_description="This is a test scenario",
@@ -451,7 +447,6 @@ class TestFormatFunctions:
     def test_format_scenario_metadata_with_strategies(self, capsys):
         """Test format_scenario_metadata with strategies."""
         scenario_metadata = ScenarioMetadata(
-            identifier_type="class",
             class_name="TestScenario",
             class_module="test.scenarios",
             class_description="",
@@ -472,7 +467,6 @@ class TestFormatFunctions:
     def test_format_initializer_metadata_basic(self, capsys) -> None:
         """Test format_initializer_metadata with basic metadata."""
         initializer_metadata = InitializerMetadata(
-            identifier_type="class",
             class_name="TestInit",
             class_module="test.initializers",
             class_description="",
@@ -491,7 +485,6 @@ class TestFormatFunctions:
     def test_format_initializer_metadata_with_env_vars(self, capsys) -> None:
         """Test format_initializer_metadata with environment variables."""
         initializer_metadata = InitializerMetadata(
-            identifier_type="class",
             class_name="TestInit",
             class_module="test.initializers",
             class_description="",
@@ -509,7 +502,6 @@ class TestFormatFunctions:
     def test_format_initializer_metadata_with_description(self, capsys) -> None:
         """Test format_initializer_metadata with description."""
         initializer_metadata = InitializerMetadata(
-            identifier_type="class",
             class_name="TestInit",
             class_module="test.initializers",
             class_description="Test description",

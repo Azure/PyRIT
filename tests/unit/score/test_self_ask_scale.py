@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from unit.mocks import get_mock_target_identifier
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece, UnvalidatedScore
 from pyrit.score import ContentClassifierPaths, SelfAskScaleScorer
 
@@ -218,11 +218,9 @@ async def test_scale_scorer_score_calls_send_chat(patch_central_database):
         score_category=["jailbreak"],
         score_value_description="description",
         score_metadata={"meta": "metadata"},
-        scorer_class_identifier=ScorerIdentifier(
+        scorer_class_identifier=ComponentIdentifier(
             class_name="SelfAskScaleScorer",
             class_module="pyrit.score",
-            class_description="",
-            identifier_type="instance",
         ),
         message_piece_id=str(uuid.uuid4()),
         objective="task",

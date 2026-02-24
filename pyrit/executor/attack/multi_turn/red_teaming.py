@@ -445,7 +445,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
                 prompt_text += f"\n\n{context.last_score.score_rationale}"
             return prompt_text
 
-        elif response_piece.is_blocked():
+        if response_piece.is_blocked():
             return RedTeamingAttack.DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED
 
         return f"Request to target failed: {response_piece.response_error}"

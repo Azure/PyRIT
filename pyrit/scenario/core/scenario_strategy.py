@@ -263,9 +263,7 @@ class ScenarioStrategy(Enum):
             )
 
         # Normalize compositions (expands aggregates, validates compositions)
-        normalized = ScenarioCompositeStrategy.normalize_compositions(composite_strategies, strategy_type=cls)
-
-        return normalized
+        return ScenarioCompositeStrategy.normalize_compositions(composite_strategies, strategy_type=cls)
 
     @classmethod
     def supports_composition(cls: type[T]) -> bool:
