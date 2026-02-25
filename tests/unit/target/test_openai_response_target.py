@@ -3,8 +3,9 @@
 
 import json
 import os
+from collections.abc import MutableSequence
 from tempfile import NamedTemporaryFile
-from typing import Any, MutableSequence
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

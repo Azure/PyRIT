@@ -3,7 +3,7 @@
 
 import abc
 from pathlib import Path
-from typing import Type, TypeVar, Union
+from typing import TypeVar, Union
 
 import yaml
 
@@ -18,7 +18,7 @@ class YamlLoadable(abc.ABC):
     """
 
     @classmethod
-    def from_yaml_file(cls: Type[T], file: Union[Path | str]) -> T:
+    def from_yaml_file(cls: type[T], file: Union[Path | str]) -> T:
         """
         Create a new object from a YAML file.
 

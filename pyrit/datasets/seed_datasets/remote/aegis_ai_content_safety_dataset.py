@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from datasets import load_dataset
 
@@ -64,7 +64,7 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
         self,
         *,
         harm_categories: Optional[
-            List[
+            list[
                 Literal[
                     "Controlled/Regulated Substances",
                     "Copyright/Trademark/Plagiarism",

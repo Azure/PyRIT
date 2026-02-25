@@ -3,7 +3,7 @@
 
 import ast
 import logging
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
@@ -46,7 +46,7 @@ class _AyaRedteamingDataset(_RemoteDatasetLoader):
             "English", "Hindi", "French", "Spanish", "Arabic", "Russian", "Serbian", "Tagalog"
         ] = "English",
         harm_categories: Optional[
-            List[
+            list[
                 Literal[
                     "Bullying & Harassment",
                     "Discrimination & Injustice",

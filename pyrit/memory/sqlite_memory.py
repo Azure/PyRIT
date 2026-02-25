@@ -3,10 +3,11 @@
 
 import logging
 import uuid
+from collections.abc import MutableSequence, Sequence
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
-from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 from sqlalchemy import and_, create_engine, func, or_, text
 from sqlalchemy.engine.base import Engine
@@ -58,7 +59,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             verbose (bool): Whether to enable verbose logging.
                 Defaults to False.
         """
-        super(SQLiteMemory, self).__init__()
+        super().__init__()
 
         if db_path == ":memory:":
             self.db_path: Union[Path, str] = ":memory:"

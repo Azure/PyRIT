@@ -3,7 +3,7 @@
 
 import os
 import uuid
-from typing import MutableSequence
+from collections.abc import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -157,7 +157,7 @@ async def test_tts_send_prompt_async_exception_adds_to_memory(
     with patch.object(tts_target._async_client.audio.speech, "create", new_callable=AsyncMock) as mock_create:
         mock_create.side_effect = sdk_exception
 
-        with pytest.raises((exception_class)):
+        with pytest.raises(exception_class):
             await tts_target.send_prompt_async(message=request)
 
 

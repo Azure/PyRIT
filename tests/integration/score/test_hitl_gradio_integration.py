@@ -3,8 +3,9 @@
 
 import importlib.util
 import time
+from collections.abc import Callable
 from threading import Event, Thread
-from typing import Callable, Optional
+from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest

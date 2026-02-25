@@ -3,7 +3,7 @@
 
 """Tests for the PsychosocialScenario class."""
 
-from typing import Dict, List, Sequence
+from collections.abc import Sequence
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -29,7 +29,7 @@ SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "psychos
 
 
 @pytest.fixture
-def mock_memory_seed_groups() -> List[SeedGroup]:
+def mock_memory_seed_groups() -> list[SeedGroup]:
     """Create mock seed groups that _get_default_seed_groups() would return."""
     return [SeedGroup(seeds=[SeedObjective(value=prompt)]) for prompt in SEED_PROMPT_LIST]
 
@@ -50,7 +50,7 @@ def imminent_crisis_strategy() -> PsychosocialStrategy:
 
 
 @pytest.fixture
-def psychosocial_prompts() -> List[str]:
+def psychosocial_prompts() -> list[str]:
     return SEED_PROMPT_LIST
 
 
@@ -92,7 +92,7 @@ def mock_adversarial_target() -> PromptChatTarget:
 
 
 @pytest.fixture
-def sample_objectives_by_harm() -> Dict[str, Sequence[SeedGroup]]:
+def sample_objectives_by_harm() -> dict[str, Sequence[SeedGroup]]:
     return {
         "psychosocial_imminent_crisis": [
             SeedGroup(
@@ -116,7 +116,7 @@ def sample_objectives_by_harm() -> Dict[str, Sequence[SeedGroup]]:
 
 
 @pytest.fixture
-def sample_objectives() -> List[str]:
+def sample_objectives() -> list[str]:
     return ["psychosocial prompt 1", "psychosocial prompt 2"]
 
 
@@ -131,7 +131,7 @@ class TestPsychosocialScenarioInitialization:
         self,
         *,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test initialization with custom objectives (deprecated parameter)."""
         scenario = PsychosocialScenario(
@@ -230,7 +230,7 @@ class TestPsychosocialScenarioAttackGeneration:
         self,
         mock_objective_target,
         mock_objective_scorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ):
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = PsychosocialScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
@@ -248,7 +248,7 @@ class TestPsychosocialScenarioAttackGeneration:
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
         single_turn_strategy: PsychosocialStrategy,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test that the single turn strategy attack generation works."""
         scenario = PsychosocialScenario(
@@ -270,7 +270,7 @@ class TestPsychosocialScenarioAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
         multi_turn_strategy: PsychosocialStrategy,
     ) -> None:
         """Test that the multi turn attack generation works."""
@@ -293,7 +293,7 @@ class TestPsychosocialScenarioAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
         imminent_crisis_strategy: PsychosocialStrategy,
     ) -> None:
         """Test that the imminent crisis strategy generates both single and multi-turn attacks."""
@@ -318,7 +318,7 @@ class TestPsychosocialScenarioAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test that attack runs include objectives for each seed prompt."""
         scenario = PsychosocialScenario(
@@ -341,7 +341,7 @@ class TestPsychosocialScenarioAttackGeneration:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test that _get_atomic_attacks_async returns atomic attacks."""
         scenario = PsychosocialScenario(
@@ -365,7 +365,7 @@ class TestPsychosocialHarmsLifecycle:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test initialization with custom max_concurrency."""
         scenario = PsychosocialScenario(objectives=sample_objectives, objective_scorer=mock_objective_scorer)
@@ -378,7 +378,7 @@ class TestPsychosocialHarmsLifecycle:
         *,
         mock_objective_target: PromptChatTarget,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test initialization with memory labels."""
         memory_labels = {"type": "psychosocial", "category": "crisis"}
@@ -399,7 +399,7 @@ class TestPsychosocialProperties:
         self,
         *,
         mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test that scenario version is properly set."""
         scenario = PsychosocialScenario(
@@ -422,7 +422,7 @@ class TestPsychosocialProperties:
         self,
         *,
         mock_objective_target: PromptChatTarget,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         """Test that all three targets (adversarial, objective, scorer) are distinct."""
         scenario = PsychosocialScenario(objectives=sample_objectives)

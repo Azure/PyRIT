@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import enum
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator, Optional, Union
+from typing import Any, Optional, Union
 
 import yaml
 

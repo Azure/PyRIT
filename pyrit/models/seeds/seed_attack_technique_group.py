@@ -11,7 +11,8 @@ Extends SeedGroup to enforce that all seeds have is_general_technique=True.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Sequence, Union
+from collections.abc import Sequence
+from typing import Any, Union
 
 from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_group import SeedGroup
@@ -31,7 +32,7 @@ class SeedAttackTechniqueGroup(SeedGroup):
     def __init__(
         self,
         *,
-        seeds: Sequence[Union[Seed, Dict[str, Any]]],
+        seeds: Sequence[Union[Seed, dict[str, Any]]],
     ):
         """
         Initialize a SeedAttackTechniqueGroup.

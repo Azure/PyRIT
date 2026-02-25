@@ -254,6 +254,7 @@ select = [
     "I",  # isort
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "W",  # https://docs.astral.sh/ruff/rules/#pycodestyle-w
 ]
 ignore = [
@@ -264,6 +265,8 @@ ignore = [
     "D301",  # Use r""" if any backslashes in a docstring
     "DOC502",  # Raised exception is not explicitly raised
     "SIM117",  # multiple-with-statements (combining often exceeds line length)
+    "UP007",  # non-pep604-annotation-union (keep Union[X, Y] syntax)
+    "UP045",  # non-pep604-annotation-optional (keep Optional[X] syntax)
 ]
 extend-select = [
     "D204",  # 1 blank line required after class docstring
