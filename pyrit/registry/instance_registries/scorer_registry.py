@@ -4,7 +4,7 @@
 """
 Scorer registry for discovering and managing PyRIT scorers.
 
-scorers are registered explicitly via initializers as pre-configured instances.
+Scorers are registered explicitly via initializers as pre-configured instances.
 """
 
 from __future__ import annotations
@@ -12,8 +12,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import ScorerIdentifier
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
@@ -24,7 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
+class ScorerRegistry(BaseInstanceRegistry["Scorer", ComponentIdentifier]):
     """
     Registry for managing available scorer instances.
 
@@ -61,14 +60,10 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
         Args:
             scorer: The pre-configured scorer instance (not a class).
             name: Optional custom registry name. If not provided,
-                derived from class name with identifier hash appended
-                (e.g., SelfAskRefusalScorer -> self_ask_refusal_abc123).
+                derived from the scorer's unique identifier.
         """
         if name is None:
-            base_name = class_name_to_snake_case(scorer.__class__.__name__, suffix="Scorer")
-            # Append identifier hash if available for uniqueness
-            identifier_hash = scorer.get_identifier().hash[:8]
-            name = f"{base_name}_{identifier_hash}"
+            name = scorer.get_identifier().unique_name
 
         self.register(scorer, name=name)
         logger.debug(f"Registered scorer instance: {name} ({scorer.__class__.__name__})")
@@ -87,7 +82,7 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: Scorer) -> ScorerIdentifier:
+    def _build_metadata(self, name: str, instance: Scorer) -> ComponentIdentifier:
         """
         Build metadata for a scorer instance.
 
@@ -96,6 +91,6 @@ class ScorerRegistry(BaseInstanceRegistry["Scorer", ScorerIdentifier]):
             instance: The scorer instance.
 
         Returns:
-            ScorerIdentifier: The scorer's identifier
+            ComponentIdentifier: The scorer's identifier
         """
         return instance.get_identifier()

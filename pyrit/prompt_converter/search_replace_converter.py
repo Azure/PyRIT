@@ -4,7 +4,7 @@
 import random
 import re
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -31,15 +31,15 @@ class SearchReplaceConverter(PromptConverter):
         self._replace_list = [replace] if isinstance(replace, str) else replace
         self._regex_flags = regex_flags
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with search/replace parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "pattern": self._pattern,
                 "replace_list": self._replace_list,
             },

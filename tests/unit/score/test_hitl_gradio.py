@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece, Score
@@ -18,13 +18,11 @@ def if_gradio_installed():
     return importlib.util.find_spec("gradio") is not None
 
 
-def _make_scorer_id(name: str = "TestScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _make_scorer_id(name: str = "TestScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test_module",
-        class_description="",
-        identifier_type="instance",
     )
 
 

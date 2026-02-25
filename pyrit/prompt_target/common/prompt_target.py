@@ -3,16 +3,16 @@
 
 import abc
 import logging
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
-from pyrit.identifiers import Identifiable, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Message
 
 logger = logging.getLogger(__name__)
 
 
-class PromptTarget(Identifiable[TargetIdentifier]):
+class PromptTarget(Identifiable):
     """
     Abstract base class for prompt targets.
 
@@ -26,7 +26,7 @@ class PromptTarget(Identifiable[TargetIdentifier]):
     #: An empty list implies that the prompt target supports all converters.
     supported_converters: List[Any]
 
-    _identifier: Optional[TargetIdentifier] = None
+    _identifier: Optional[ComponentIdentifier] = None
 
     def __init__(
         self,
@@ -96,59 +96,55 @@ class PromptTarget(Identifiable[TargetIdentifier]):
     def _create_identifier(
         self,
         *,
-        temperature: Optional[float] = None,
-        top_p: Optional[float] = None,
-        target_specific_params: Optional[dict[str, Any]] = None,
-    ) -> TargetIdentifier:
+        params: Optional[Dict[str, Any]] = None,
+        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
         Construct the target identifier.
+
+        Builds a ComponentIdentifier with the base target parameters (endpoint,
+        model_name, max_requests_per_minute) and merges in any additional params
+        or children provided by subclasses.
 
         Subclasses should call this method in their _build_identifier() implementation
         to set the identifier with their specific parameters.
 
         Args:
-            temperature (Optional[float]): The temperature parameter for generation. Defaults to None.
-            top_p (Optional[float]): The top_p parameter for generation. Defaults to None.
-            target_specific_params (Optional[dict[str, Any]]): Additional target-specific parameters
-                that should be included in the identifier. Defaults to None.
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters from
+                the subclass (e.g., temperature, top_p). Merged into the base params.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
 
         Returns:
-            TargetIdentifier: The identifier for this prompt target.
+            ComponentIdentifier: The identifier for this prompt target.
         """
-        # Determine the model name to use
-        model_name = ""
-        if self._underlying_model:
-            model_name = self._underlying_model
-        elif self._model_name:
-            model_name = self._model_name
+        model_name = self._underlying_model or self._model_name or ""
 
-        # Late import to avoid circular dependency
+        # Late import to avoid circular dependency (PromptChatTarget inherits from PromptTarget)
         from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 
-        return TargetIdentifier(
-            class_name=self.__class__.__name__,
-            class_module=self.__class__.__module__,
-            class_description=" ".join(self.__class__.__doc__.split()) if self.__class__.__doc__ else "",
-            endpoint=self._endpoint,
-            model_name=model_name,
-            temperature=temperature,
-            top_p=top_p,
-            max_requests_per_minute=self._max_requests_per_minute,
-            supports_conversation_history=isinstance(self, PromptChatTarget),
-            target_specific_params=target_specific_params,
-        )
+        all_params: Dict[str, Any] = {
+            "endpoint": self._endpoint,
+            "model_name": model_name,
+            "max_requests_per_minute": self._max_requests_per_minute,
+            "supports_conversation_history": isinstance(self, PromptChatTarget),
+        }
+        if params:
+            all_params.update(params)
 
-    def _build_identifier(self) -> TargetIdentifier:
+        return ComponentIdentifier.of(self, params=all_params, children=children)
+
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier for this target.
 
         Subclasses can override this method to call _create_identifier() with
-        their specific parameters (temperature, top_p, target_specific_params).
+        their specific params and children.
 
-        The base implementation calls _create_identifier() with no parameters,
+        The base implementation calls _create_identifier() with no extra parameters,
         which works for targets that don't have model-specific settings.
 
         Returns:
-            TargetIdentifier: The identifier for this prompt target.
+            ComponentIdentifier: The identifier for this prompt target.
         """
         return self._create_identifier()

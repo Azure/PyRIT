@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 from pyrit.auth.azure_auth import get_speech_config
 from pyrit.common import default_values
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -87,15 +87,15 @@ class AzureSpeechAudioToTextConverter(PromptConverter):
         # Create a flag to indicate when recognition is finished
         self.done = False
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with speech recognition parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "recognition_language": self._recognition_language,
             }
         )

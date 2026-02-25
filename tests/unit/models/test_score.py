@@ -6,17 +6,15 @@ from datetime import datetime
 
 import pytest
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Score
 
 
 @pytest.mark.asyncio
 async def test_score_to_dict():
-    scorer_identifier = ScorerIdentifier(
+    scorer_identifier = ComponentIdentifier(
         class_name="TestScorer",
         class_module="pyrit.score",
-        class_description="",
-        identifier_type="instance",
     )
     sample_score = Score(
         id=str(uuid.uuid4()),

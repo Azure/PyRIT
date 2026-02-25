@@ -275,7 +275,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
-        result = AttackResult(
+        return AttackResult(
             conversation_id=context.session.conversation_id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
@@ -286,8 +286,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
             outcome_reason=outcome_reason,
             executed_turns=context.executed_turns,
         )
-
-        return result
 
     def _determine_attack_outcome(
         self,

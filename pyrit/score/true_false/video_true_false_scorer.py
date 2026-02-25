@@ -3,7 +3,7 @@
 
 from typing import Optional
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseScoreAggregator
@@ -73,24 +73,26 @@ class VideoTrueFalseScorer(TrueFalseScorer, _BaseVideoScorer):
             self._validate_audio_scorer(audio_scorer)
         self.audio_scorer = audio_scorer
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the scorer evaluation identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
-        sub_scorers = [self.image_scorer]
+        sub_scorer_ids = [self.image_scorer.get_identifier()]
         if self.audio_scorer:
-            sub_scorers.append(self.audio_scorer)
+            sub_scorer_ids.append(self.audio_scorer.get_identifier())
 
         return self._create_identifier(
-            sub_scorers=sub_scorers,
-            scorer_specific_params={
+            params={
                 "num_sampled_frames": self.num_sampled_frames,
                 "has_audio_scorer": self.audio_scorer is not None,
                 "image_objective_template": self.image_objective_template,
                 "audio_objective_template": self.audio_objective_template,
+            },
+            children={
+                "sub_scorers": sub_scorer_ids,
             },
         )
 

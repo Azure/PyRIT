@@ -39,7 +39,7 @@ from pyrit.backend.models.attacks import (
 from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
-from pyrit.identifiers import AttackIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -205,7 +205,7 @@ class AttackService:
         if not target_instance:
             raise ValueError(f"Target instance '{request.target_unique_name}' not found")
 
-        # Get the actual target object so we can capture its TargetIdentifier
+        # Get the actual target object so we can capture its ComponentIdentifier
         target_obj = target_service.get_target_object(target_unique_name=request.target_unique_name)
         target_identifier = target_obj.get_identifier() if target_obj else None
 
@@ -217,10 +217,10 @@ class AttackService:
         attack_result = AttackResult(
             conversation_id=conversation_id,
             objective=request.name or "Manual attack via GUI",
-            attack_identifier=AttackIdentifier(
+            attack_identifier=ComponentIdentifier(
                 class_name=request.name or "ManualAttack",
                 class_module="pyrit.backend",
-                objective_target_identifier=target_identifier,
+                children={"objective_target": target_identifier} if target_identifier else {},
             ),
             outcome=AttackOutcome.UNDETERMINED,
             metadata={
@@ -296,9 +296,10 @@ class AttackService:
 
         ar = results[0]
         aid = ar.attack_identifier
-        if not aid or not aid.objective_target_identifier:
+        objective_target = aid.get_child("objective_target") if aid else None
+        if not aid or not objective_target:
             raise ValueError(f"Attack '{conversation_id}' has no target configured")
-        target_unique_name = aid.objective_target_identifier.unique_name
+        target_unique_name = objective_target.unique_name
 
         # Get existing messages to determine sequence.
         # NOTE: This read-then-write is not atomic (TOCTOU). Fine for the

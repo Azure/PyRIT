@@ -189,7 +189,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     total_urls = sum(len(urls) for urls in file_urls.values())
-    unique_urls = len(set(url for urls in file_urls.values() for url in urls))
+    unique_urls = len({url for urls in file_urls.values() for url in urls})
     print(f"Checking {unique_urls} unique URL(s) across {len(file_urls)} file(s) (total: {total_urls})...")
 
     all_broken_urls = check_all_links_parallel(file_urls, max_workers=30)

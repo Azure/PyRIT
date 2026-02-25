@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, List, Tuple, Union
 
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -130,15 +130,15 @@ class PlaywrightCopilotTarget(PromptTarget):
         if page and self.M365_URL_IDENTIFIER not in page.url and copilot_type == CopilotType.M365:
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with Copilot-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "copilot_type": self._type.value,
             },
         )
@@ -160,18 +160,18 @@ class PlaywrightCopilotTarget(PromptTarget):
                 plus_button_dropdown_selector='button[aria-label="Open"]',
                 file_picker_selector='button[aria-label="Add images or files"]',
             )
-        else:  # M365 Copilot
-            return CopilotSelectors(
-                input_selector='span[role="textbox"][contenteditable="true"][aria-label="Message Copilot"]',
-                send_button_selector='button[type="submit"]',
-                ai_messages_selector='div[data-testid="copilot-message-div"]',
-                ai_messages_group_selector=(
-                    'div[data-testid="copilot-message-div"] > div > div > div > div > div > div > div > div > div > div'
-                ),
-                text_content_selector="div > p",
-                plus_button_dropdown_selector='button[aria-label="Add content"]',
-                file_picker_selector='span.fui-MenuItem__content:has-text("Upload images and files")',
-            )
+        # M365 Copilot
+        return CopilotSelectors(
+            input_selector='span[role="textbox"][contenteditable="true"][aria-label="Message Copilot"]',
+            send_button_selector='button[type="submit"]',
+            ai_messages_selector='div[data-testid="copilot-message-div"]',
+            ai_messages_group_selector=(
+                'div[data-testid="copilot-message-div"] > div > div > div > div > div > div > div > div > div > div'
+            ),
+            text_content_selector="div > p",
+            plus_button_dropdown_selector='button[aria-label="Add content"]',
+            file_picker_selector='span.fui-MenuItem__content:has-text("Upload images and files")',
+        )
 
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """
@@ -337,9 +337,8 @@ class PlaywrightCopilotTarget(PromptTarget):
             if content_ready:
                 logger.debug("Content is ready!")
                 return test_content
-            else:
-                logger.debug("Message exists but content not ready yet, continuing to wait...")
-                return None
+            logger.debug("Message exists but content not ready yet, continuing to wait...")
+            return None
         except Exception as e:
             # Continue waiting if extraction fails
             logger.debug(f"Error checking content readiness: {e}")
@@ -714,12 +713,11 @@ class PlaywrightCopilotTarget(PromptTarget):
             # Single text response - maintain backward compatibility
             logger.debug(f"Returning single text response: '{response_pieces[0][0]}'")
             return response_pieces[0][0]
-        elif response_pieces:
+        if response_pieces:
             # Multimodal or multiple pieces
             logger.debug(f"Returning {len(response_pieces)} response pieces")
             return response_pieces
-        else:
-            return ""
+        return ""
 
     async def _extract_multimodal_content_async(
         self, selectors: CopilotSelectors, initial_group_count: int = 0
@@ -761,8 +759,7 @@ class PlaywrightCopilotTarget(PromptTarget):
         # Return appropriate format, with fallback if needed
         if response_pieces:
             return self._assemble_response(response_pieces=response_pieces)
-        else:
-            return await self._extract_fallback_text_async(ai_message_groups=ai_message_groups)
+        return await self._extract_fallback_text_async(ai_message_groups=ai_message_groups)
 
     async def _send_text_async(self, *, text: str, input_selector: str) -> None:
         """

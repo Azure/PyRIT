@@ -172,9 +172,9 @@ def test_build_identifier_without_template() -> None:
     """_build_identifier should return correct params when no template is set."""
     converter = WordDocConverter()
     identifier = converter._build_identifier()
-    assert identifier.converter_specific_params["prompt_template_hash"] is None
-    assert identifier.converter_specific_params["existing_docx_path"] is None
-    assert identifier.converter_specific_params["placeholder"] == "{{INJECTION_PLACEHOLDER}}"
+    assert "prompt_template_hash" not in identifier.params
+    assert "existing_docx_path" not in identifier.params
+    assert identifier.params["placeholder"] == "{{INJECTION_PLACEHOLDER}}"
 
 
 def test_build_identifier_with_template() -> None:
@@ -182,8 +182,8 @@ def test_build_identifier_with_template() -> None:
     template = SeedPrompt(value="Hello {{ name }}", data_type="text", name="test", parameters=["name"])
     converter = WordDocConverter(prompt_template=template)
     identifier = converter._build_identifier()
-    assert identifier.converter_specific_params["prompt_template_hash"] is not None
-    assert len(identifier.converter_specific_params["prompt_template_hash"]) == 16
+    assert identifier.params["prompt_template_hash"] is not None
+    assert len(identifier.params["prompt_template_hash"]) == 16
 
 
 def test_build_identifier_with_existing_docx(tmp_path: Path) -> None:
@@ -192,7 +192,7 @@ def test_build_identifier_with_existing_docx(tmp_path: Path) -> None:
     Document().save(docx_path)
     converter = WordDocConverter(existing_docx=docx_path)
     identifier = converter._build_identifier()
-    assert identifier.converter_specific_params["existing_docx_path"] == str(docx_path)
+    assert identifier.params["existing_docx_path"] == str(docx_path)
 
 
 def test_prepare_content_raw_string() -> None:

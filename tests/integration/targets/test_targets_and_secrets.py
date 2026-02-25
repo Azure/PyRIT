@@ -55,8 +55,7 @@ explanation, or additional text. Output only the word "test" and nothing else.
     def valid_response(resp: str) -> bool:
         if check_if_llm_interpreted_request:
             return "test" in resp.strip().lower()
-        else:
-            return True
+        return True
 
     attempt = 0
     while attempt < max_retries:

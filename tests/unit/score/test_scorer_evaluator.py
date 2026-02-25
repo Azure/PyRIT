@@ -604,7 +604,7 @@ async def test_run_evaluation_async_combines_dataset_versions_with_duplicates(
     entry = HarmHumanLabeledEntry(responses, [0.2], "hate_speech")
 
     def make_dataset(version, harm_def_version):
-        dataset = HumanLabeledDataset(
+        return HumanLabeledDataset(
             name="test",
             metrics_type=MetricsType.HARM,
             entries=[entry],
@@ -612,7 +612,6 @@ async def test_run_evaluation_async_combines_dataset_versions_with_duplicates(
             harm_definition="hate_speech.yaml",
             harm_definition_version=harm_def_version,
         )
-        return dataset
 
     # All three files have dataset_version "1.0" - should concatenate to "1.0_1.0_1.0"
     # All have same harm_definition_version "1.0" - should stay as "1.0" (unique)

@@ -219,11 +219,10 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         # Convert ChatMessage objects to dicts
         messages_list = [msg.model_dump(exclude_none=True) for msg in chat_messages]
 
-        formatted_messages = str(
+        return str(
             self.tokenizer.apply_chat_template(
                 messages_list,
                 tokenize=False,
                 add_generation_prompt=True,
             )
         )
-        return formatted_messages
