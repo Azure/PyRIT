@@ -126,9 +126,8 @@ class TopKBeamReviewer(BeamReviewer):
         new_beams = list(sorted_beams[: self.k])
         for i in range(len(beams) - len(new_beams)):
             nxt = copy.deepcopy(new_beams[i % self.k])
-            if self.drop_chars > 0:
-                if len(nxt.text) > self.drop_chars:
-                    nxt.text = nxt.text[: -self.drop_chars]
+            if self.drop_chars > 0 and len(nxt.text) > self.drop_chars:
+                nxt.text = nxt.text[: -self.drop_chars]
             new_beams.append(nxt)
         assert len(beams) == len(new_beams)
         return new_beams
