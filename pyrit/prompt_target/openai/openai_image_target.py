@@ -176,11 +176,10 @@ class OpenAIImageTarget(OpenAITarget):
             image_generation_args["style"] = self.style
 
         # Use unified error handler for consistent error handling
-        response = await self._handle_openai_request(
+        return await self._handle_openai_request(
             api_call=lambda: self._async_client.images.generate(**image_generation_args),
             request=message,
         )
-        return response
 
     async def _send_edit_request_async(self, message: Message) -> Message:
         """
@@ -227,12 +226,10 @@ class OpenAIImageTarget(OpenAITarget):
         if self.style:
             image_edit_args["style"] = self.style
 
-        response = await self._handle_openai_request(
+        return await self._handle_openai_request(
             api_call=lambda: self._async_client.images.edit(**image_edit_args),
             request=message,
         )
-
-        return response
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """

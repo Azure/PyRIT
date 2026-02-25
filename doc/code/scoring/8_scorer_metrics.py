@@ -286,7 +286,7 @@ metrics = await refusal_scorer.evaluate_async(  # type: ignore
 )
 
 if metrics:
-    objective_metrics = cast(ObjectiveScorerMetrics, metrics)
+    objective_metrics = cast("ObjectiveScorerMetrics", metrics)
     print(f" Accuracy: {objective_metrics.accuracy}")
 else:
     raise RuntimeError("Evaluation failed, no metrics returned")
@@ -318,7 +318,7 @@ metrics = await likert_scorer.evaluate_async(  # type: ignore
 )
 
 if metrics:
-    harm_metrics = cast(HarmScorerMetrics, metrics)
+    harm_metrics = cast("HarmScorerMetrics", metrics)
     print(f'Metrics for harm category "{harm_metrics.harm_category}" created')
 else:
     raise RuntimeError("Evaluation failed, no metrics returned")

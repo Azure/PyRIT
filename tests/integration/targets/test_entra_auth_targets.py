@@ -241,6 +241,57 @@ async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, mod
 @pytest.mark.parametrize(
     ("endpoint", "model_name"),
     [
+        ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
+    ],
+)
+async def test_openai_responses_target_reasoning_effort_entra_auth(sqlite_instance, endpoint, model_name):
+    endpoint_value = os.environ[endpoint]
+    args = {
+        "endpoint": endpoint_value,
+        "model_name": os.environ[model_name],
+        "api_key": get_azure_openai_auth(endpoint_value),
+        "reasoning_effort": "low",
+    }
+
+    target = OpenAIResponseTarget(**args)
+
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective="What is 2 + 2?")
+    assert result is not None
+    assert result.last_response is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "model_name"),
+    [
+        ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
+    ],
+)
+async def test_openai_responses_target_reasoning_summary_entra_auth(sqlite_instance, endpoint, model_name):
+    endpoint_value = os.environ[endpoint]
+    args = {
+        "endpoint": endpoint_value,
+        "model_name": os.environ[model_name],
+        "api_key": get_azure_openai_auth(endpoint_value),
+        "reasoning_effort": "low",
+        "reasoning_summary": "auto",
+    }
+
+    target = OpenAIResponseTarget(**args)
+
+    attack = PromptSendingAttack(objective_target=target)
+    result = await attack.execute_async(objective="What is 2 + 2?")
+    assert result is not None
+    assert result.last_response is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "model_name"),
+    [
         ("OPENAI_REALTIME_ENDPOINT", "OPENAI_REALTIME_MODEL"),
     ],
 )

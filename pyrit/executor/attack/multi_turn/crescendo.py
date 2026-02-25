@@ -77,7 +77,7 @@ class CrescendoAttackResult(AttackResult):
         Returns:
             int: The number of backtracks.
         """
-        return cast(int, self.metadata.get("backtrack_count", 0))
+        return cast("int", self.metadata.get("backtrack_count", 0))
 
     @backtrack_count.setter
     def backtrack_count(self, value: int) -> None:

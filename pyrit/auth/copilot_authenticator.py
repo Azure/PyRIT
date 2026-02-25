@@ -208,7 +208,7 @@ class CopilotAuthenticator(Authenticator):
             if not cached_user:
                 logger.info("No user associated with cached token. Token invalidated.")
                 return None
-            elif cached_user != self._username:
+            if cached_user != self._username:
                 logger.info(
                     f"Cached token is for different user (cached: {cached_user}, current: {self._username}). "
                     "Token invalidated."

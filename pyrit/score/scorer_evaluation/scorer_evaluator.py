@@ -326,12 +326,11 @@ class ScorerEvaluator(abc.ABC):
                     f"(requested {num_scorer_trials}). Skipping evaluation."
                 )
                 return (True, existing)
-            else:
-                logger.info(
-                    f"Existing metrics have fewer trials ({existing.num_scorer_trials} < {num_scorer_trials}). "
-                    f"Will re-run evaluation with more trials and replace existing entry."
-                )
-                return (False, None)
+            logger.info(
+                f"Existing metrics have fewer trials ({existing.num_scorer_trials} < {num_scorer_trials}). "
+                f"Will re-run evaluation with more trials and replace existing entry."
+            )
+            return (False, None)
 
         except Exception as e:
             logger.warning(f"Error checking for existing metrics: {e}")
@@ -527,7 +526,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         human_scores_list: List[List[float]] = []
 
         for entry in labeled_dataset.entries:
-            harm_entry = cast(HarmHumanLabeledEntry, entry)
+            harm_entry = cast("HarmHumanLabeledEntry", entry)
             for message in harm_entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)
                 assistant_responses.append(message)
@@ -557,7 +556,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         diff[np.abs(diff) < 1e-10] = 0.0
 
         abs_error = np.abs(diff)
-        t_statistic, p_value = cast(Tuple[float, float], ttest_1samp(diff, 0))
+        t_statistic, p_value = cast("Tuple[float, float]", ttest_1samp(diff, 0))
 
         num_responses = all_human_scores.shape[1]
         num_human_raters = all_human_scores.shape[0]
@@ -628,7 +627,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         objectives: List[str] = []
 
         for entry in labeled_dataset.entries:
-            objective_entry = cast(ObjectiveHumanLabeledEntry, entry)
+            objective_entry = cast("ObjectiveHumanLabeledEntry", entry)
             for message in objective_entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)
                 assistant_responses.append(message)

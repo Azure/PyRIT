@@ -37,7 +37,7 @@ from pyrit.models import (
     ScoreType,
     UnvalidatedScore,
 )
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptChatTarget, PromptTarget  # noqa: TC001
 from pyrit.prompt_target.batch_helper import batch_task_async
 
 if TYPE_CHECKING:
@@ -87,10 +87,9 @@ class Scorer(Identifiable, abc.ABC):
 
         if isinstance(self, TrueFalseScorer):
             return "true_false"
-        elif isinstance(self, FloatScaleScorer):
+        if isinstance(self, FloatScaleScorer):
             return "float_scale"
-        else:
-            return "unknown"
+        return "unknown"
 
     @property
     def _memory(self) -> MemoryInterface:
@@ -413,7 +412,7 @@ class Scorer(Identifiable, abc.ABC):
         results = await batch_task_async(
             task_func=self.score_async,
             task_arguments=["message", "objective"],
-            prompt_target=cast(PromptTarget, prompt_target),
+            prompt_target=cast("PromptTarget", prompt_target),
             batch_size=batch_size,
             items_to_batch=[messages, objectives],
             role_filter=role_filter,
@@ -475,8 +474,7 @@ class Scorer(Identifiable, abc.ABC):
         if max_value == min_value:
             return 0.0
 
-        normalized_value = (value - min_value) / (max_value - min_value)
-        return normalized_value
+        return (value - min_value) / (max_value - min_value)
 
     @pyrit_json_retry
     async def _score_value_with_llm(
@@ -669,15 +667,13 @@ class Scorer(Identifiable, abc.ABC):
         last_prompt = max(conversation, key=lambda x: x.sequence)
 
         # Every text message piece from the last turn
-        last_turn_text = "\n".join(
+        return "\n".join(
             [
                 piece.original_value
                 for piece in conversation
                 if piece.sequence == last_prompt.sequence - 1 and piece.original_value_data_type == "text"
             ]
         )
-
-        return last_turn_text
 
     @staticmethod
     async def score_response_async(

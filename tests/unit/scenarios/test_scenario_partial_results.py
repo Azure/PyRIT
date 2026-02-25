@@ -145,18 +145,17 @@ class TestScenarioPartialAttackCompletion:
                 save_attack_results_to_memory(completed)
 
                 return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
-            else:
-                # Retry: complete the remaining objective
-                completed = [
-                    AttackResult(
-                        conversation_id="conv-3",
-                        objective="obj3",
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                ]
-                save_attack_results_to_memory(completed)
-                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
+            # Retry: complete the remaining objective
+            completed = [
+                AttackResult(
+                    conversation_id="conv-3",
+                    objective="obj3",
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=1,
+                )
+            ]
+            save_attack_results_to_memory(completed)
+            return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -261,21 +260,20 @@ class TestScenarioPartialAttackCompletion:
                 save_attack_results_to_memory(completed)
 
                 return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
-            else:
-                # Retry: complete remaining objectives
-                completed = [
-                    AttackResult(
-                        conversation_id=f"conv-{i}",
-                        objective=f"obj{i}",
-                        outcome=AttackOutcome.SUCCESS,
-                        executed_turns=1,
-                    )
-                    for i in [4, 5]
-                ]
+            # Retry: complete remaining objectives
+            completed = [
+                AttackResult(
+                    conversation_id=f"conv-{i}",
+                    objective=f"obj{i}",
+                    outcome=AttackOutcome.SUCCESS,
+                    executed_turns=1,
+                )
+                for i in [4, 5]
+            ]
 
-                save_attack_results_to_memory(completed)
+            save_attack_results_to_memory(completed)
 
-                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
+            return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run
 
@@ -335,25 +333,22 @@ class TestScenarioPartialAttackCompletion:
                     save_attack_results_to_memory(completed)
 
                     return AttackExecutorResult(completed_results=completed, incomplete_objectives=incomplete)
-                else:
-                    # All other attempts succeed fully
-                    completed = [
-                        AttackResult(
-                            conversation_id=f"conv-{obj}",
-                            objective=obj,
-                            outcome=AttackOutcome.SUCCESS,
-                            executed_turns=1,
-                        )
-                        for obj in (
-                            attack1
-                            if attack_name == "attack_1"
-                            else (attack2 if attack_name == "attack_2" else attack3)
-                        ).objectives
-                    ]
+                # All other attempts succeed fully
+                completed = [
+                    AttackResult(
+                        conversation_id=f"conv-{obj}",
+                        objective=obj,
+                        outcome=AttackOutcome.SUCCESS,
+                        executed_turns=1,
+                    )
+                    for obj in (
+                        attack1 if attack_name == "attack_1" else (attack2 if attack_name == "attack_2" else attack3)
+                    ).objectives
+                ]
 
-                    save_attack_results_to_memory(completed)
+                save_attack_results_to_memory(completed)
 
-                    return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
+                return AttackExecutorResult(completed_results=completed, incomplete_objectives=[])
 
             return mock_run
 

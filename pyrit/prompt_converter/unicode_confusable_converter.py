@@ -169,7 +169,6 @@ class UnicodeConfusableConverter(PromptConverter):
         confusable_options = confusable_characters(char)
         if not confusable_options or char == " ":
             return char
-        elif self._deterministic or len(confusable_options) == 1:
+        if self._deterministic or len(confusable_options) == 1:
             return str(confusable_options[-1])
-        else:
-            return str(random.choice(confusable_options))
+        return str(random.choice(confusable_options))

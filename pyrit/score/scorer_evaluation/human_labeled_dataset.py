@@ -310,7 +310,7 @@ class HumanLabeledDataset:
                         MessagePiece(
                             role="assistant",
                             original_value=response_to_score,
-                            original_value_data_type=cast(PromptDataType, data_type),
+                            original_value_data_type=cast("PromptDataType", data_type),
                         )
                     ],
                 )

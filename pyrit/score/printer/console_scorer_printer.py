@@ -78,16 +78,15 @@ class ConsoleScorerPrinter(ScorerPrinter):
         if higher_is_better:
             if value >= good_threshold:
                 return Fore.GREEN  # type: ignore[no-any-return]
-            elif value < bad_threshold:
+            if value < bad_threshold:
                 return Fore.RED  # type: ignore[no-any-return]
             return Fore.CYAN  # type: ignore[no-any-return]
-        else:
-            # Lower is better (e.g., MAE, score time)
-            if value <= good_threshold:
-                return Fore.GREEN  # type: ignore[no-any-return]
-            elif value > bad_threshold:
-                return Fore.RED  # type: ignore[no-any-return]
-            return Fore.CYAN  # type: ignore[no-any-return]
+        # Lower is better (e.g., MAE, score time)
+        if value <= good_threshold:
+            return Fore.GREEN  # type: ignore[no-any-return]
+        if value > bad_threshold:
+            return Fore.RED  # type: ignore[no-any-return]
+        return Fore.CYAN  # type: ignore[no-any-return]
 
     def print_objective_scorer(self, *, scorer_identifier: ComponentIdentifier) -> None:
         """

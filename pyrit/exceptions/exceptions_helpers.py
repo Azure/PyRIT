@@ -22,6 +22,7 @@ def log_exception(retry_state: RetryCallState) -> None:
 
     Args:
         retry_state: The tenacity retry state containing attempt information.
+
     """
     # Validate retry_state has required attributes before proceeding
     if not retry_state:
@@ -67,13 +68,14 @@ def log_exception(retry_state: RetryCallState) -> None:
 
 def remove_start_md_json(response_msg: str) -> str:
     """
-    Checks the message for the listed start patterns and removes them if present.
+    Check the message for supported start markers and remove them if present.
 
     Args:
         response_msg (str): The response message to check.
 
     Returns:
         str: The response message without the start marker (if one was present).
+
     """
     start_pattern = re.compile(r"^(```json\n|`json\n|```\n|`\n|```json|`json|```|`|json|json\n)")
     match = start_pattern.match(response_msg)
@@ -85,13 +87,14 @@ def remove_start_md_json(response_msg: str) -> str:
 
 def remove_end_md_json(response_msg: str) -> str:
     """
-    Checks the message for the listed end patterns and removes them if present.
+    Check the message for supported end markers and remove them if present.
 
     Args:
         response_msg (str): The response message to check.
 
     Returns:
         str: The response message without the end marker (if one was present).
+
     """
     end_pattern = re.compile(r"(\n```|\n`|```|`)$")
     match = end_pattern.search(response_msg)
@@ -103,13 +106,14 @@ def remove_end_md_json(response_msg: str) -> str:
 
 def extract_json_from_string(response_msg: str) -> str:
     """
-    Attempts to extract JSON (object or array) from within a larger string, not specific to markdown.
+    Extract JSON (object or array) from within a larger string.
 
     Args:
         response_msg (str): The response message to check.
 
     Returns:
         str: The extracted JSON string if found, otherwise the original string.
+
     """
     json_pattern = re.compile(r"\{.*\}|\[.*\]")
     match = json_pattern.search(response_msg)
@@ -121,13 +125,14 @@ def extract_json_from_string(response_msg: str) -> str:
 
 def remove_markdown_json(response_msg: str) -> str:
     """
-    Checks if the response message is in JSON format and removes Markdown formatting if present.
+    Remove markdown wrappers and return a JSON payload when possible.
 
     Args:
         response_msg (str): The response message to check.
 
     Returns:
         str: The response message without Markdown formatting if present.
+
     """
     response_msg = remove_start_md_json(response_msg)
     response_msg = remove_end_md_json(response_msg)

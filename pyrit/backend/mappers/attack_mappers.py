@@ -193,9 +193,9 @@ def request_piece_to_pyrit_message_piece(
     return PyritMessagePiece(
         role=role,
         original_value=piece.original_value,
-        original_value_data_type=cast(PromptDataType, piece.data_type),
+        original_value_data_type=cast("PromptDataType", piece.data_type),
         converted_value=piece.converted_value or piece.original_value,
-        converted_value_data_type=cast(PromptDataType, piece.data_type),
+        converted_value_data_type=cast("PromptDataType", piece.data_type),
         conversation_id=conversation_id,
         sequence=sequence,
         prompt_metadata=metadata,

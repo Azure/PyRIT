@@ -28,6 +28,7 @@ class ScaleDescription:
     Args:
         score_value: The score value (e.g., "1", "2", etc.)
         description: The description for this score level.
+
     """
 
     score_value: str
@@ -48,6 +49,7 @@ class HarmDefinition:
         category: The harm category name (e.g., "violence", "hate_speech").
         scale_descriptions: List of scale descriptions defining score levels.
         source_path: The path to the YAML file this was loaded from.
+
     """
 
     version: str
@@ -64,6 +66,7 @@ class HarmDefinition:
 
         Returns:
             The description for the score value, or None if not found.
+
         """
         for scale in self.scale_descriptions:
             if scale.score_value == score_value:
@@ -87,6 +90,7 @@ class HarmDefinition:
         Returns:
             True if the category is valid (and exists if check_exists is True),
             False otherwise.
+
         """
         # Check if category matches pattern: only lowercase letters and underscores
         if not re.match(r"^[a-z_]+$", category):
@@ -119,6 +123,7 @@ class HarmDefinition:
         Raises:
             FileNotFoundError: If the harm definition file does not exist.
             ValueError: If the YAML file is invalid or missing required fields.
+
         """
         path = Path(harm_definition_path)
 
@@ -187,6 +192,7 @@ def get_all_harm_definitions() -> Dict[str, HarmDefinition]:
 
     Raises:
         ValueError: If any YAML file in the directory is invalid.
+
     """
     harm_definitions: Dict[str, HarmDefinition] = {}
 

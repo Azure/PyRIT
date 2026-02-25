@@ -81,7 +81,7 @@ class SubStringScorer(TrueFalseScorer):
         """
         substring_present = self._text_matcher.is_match(target=self._substring, text=message_piece.converted_value)
 
-        score = [
+        return [
             Score(
                 score_value=str(substring_present),
                 score_value_description="",
@@ -94,5 +94,3 @@ class SubStringScorer(TrueFalseScorer):
                 objective=objective,
             )
         ]
-
-        return score

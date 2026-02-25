@@ -91,7 +91,7 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         self._validate_file_type(file_type)
         with cache_file.open("r", encoding="utf-8") as file:
-            return cast(List[Dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](file))
+            return cast("List[Dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](file))
 
     def _write_cache(self, *, cache_file: Path, examples: List[Dict[str, str]], file_type: str) -> None:
         """
@@ -129,19 +129,14 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         if response.status_code == 200:
             if file_type in FILE_TYPE_HANDLERS:
                 if file_type == "json":
-                    return cast(
-                        "List[Dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text))
-                    )
-                else:
-                    return cast(
-                        "List[Dict[str, str]]",
-                        FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines()))),
-                    )
-            else:
-                valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-                raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
-        else:
-            raise Exception(f"Failed to fetch examples from public URL. Status code: {response.status_code}")
+                    return cast("List[Dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text)))
+                return cast(
+                    "List[Dict[str, str]]",
+                    FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines()))),
+                )
+            valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+            raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+        raise Exception(f"Failed to fetch examples from public URL. Status code: {response.status_code}")
 
     def _fetch_from_file(self, *, source: str, file_type: str) -> List[Dict[str, str]]:
         """
@@ -159,10 +154,9 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         with open(source, "r", encoding="utf-8") as file:
             if file_type in FILE_TYPE_HANDLERS:
-                return cast(List[Dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](file))
-            else:
-                valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
-                raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
+                return cast("List[Dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](file))
+            valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
+            raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 
     def _fetch_from_url(
         self,
@@ -272,7 +266,7 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
             cache_dir = str(DB_DATA_PATH / "huggingface") if cache else None
 
             # Explicitly set download_mode to reuse cached data and never re-download
-            dataset = load_dataset(
+            return load_dataset(
                 dataset_name,
                 config,
                 split=split,
@@ -281,12 +275,10 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
                 token=token,
                 **kwargs,
             )
-            return dataset
 
         try:
             # Run the synchronous load_dataset in a thread pool to avoid blocking the event loop
-            dataset = await asyncio.to_thread(_load_dataset_sync)
-            return dataset
+            return await asyncio.to_thread(_load_dataset_sync)
         except Exception as e:
             logger.error(f"Failed to load HuggingFace dataset {dataset_name}: {e}")
             raise

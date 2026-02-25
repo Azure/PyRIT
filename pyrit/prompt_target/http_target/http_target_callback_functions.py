@@ -71,10 +71,8 @@ def get_http_target_regex_matching_callback_function(
         if match:
             if url:
                 return url + match.group()
-            else:
-                return match.group()
-        else:
-            return str(response.content)
+            return match.group()
+        return str(response.content)
 
     return parse_using_regex
 

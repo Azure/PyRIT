@@ -120,14 +120,13 @@ class HTTPTarget(PromptTarget):
         Returns:
             HTTPTarget: an instance of HTTPTarget
         """
-        instance = cls(
+        return cls(
             http_request=http_request,
             prompt_regex_string=prompt_regex_string,
             callback_function=callback_function,
             max_requests_per_minute=max_requests_per_minute,
             client=client,
         )
-        return instance
 
     def _inject_prompt_into_request(self, request: MessagePiece) -> str:
         """

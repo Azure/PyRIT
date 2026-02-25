@@ -415,12 +415,11 @@ class TestScenarioResumption:
                 results = [create_attack_result(i, objective=f"obj{i}") for i in [1, 2]]
                 save_attack_results_to_memory(results)
                 raise Exception("Failed after 2 objectives")
-            else:
-                # Retry: should only execute remaining objectives (obj3, obj4)
-                executed_objectives.extend(["obj3", "obj4"])
-                results = [create_attack_result(i, objective=f"obj{i}") for i in [3, 4]]
-                save_attack_results_to_memory(results)
-                return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
+            # Retry: should only execute remaining objectives (obj3, obj4)
+            executed_objectives.extend(["obj3", "obj4"])
+            results = [create_attack_result(i, objective=f"obj{i}") for i in [3, 4]]
+            save_attack_results_to_memory(results)
+            return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run_with_partial_completion
 
@@ -466,18 +465,16 @@ class TestScenarioResumption:
                 results = [create_attack_result(2, objective="objective2")]
                 save_attack_results_to_memory(results)
                 return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
-            else:
-                raise AssertionError("Attack 2 should not be retried after completion")
+            raise AssertionError("Attack 2 should not be retried after completion")
 
         # Attack 3: Fails on first attempt, succeeds on retry
         async def mock_run_attack3(*args, **kwargs):
             call_count["attack_3"] += 1
             if call_count["attack_3"] == 1:
                 raise Exception("Attack 3 failed on first attempt")
-            else:
-                results = [create_attack_result(3, objective="objective3")]
-                save_attack_results_to_memory(results)
-                return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
+            results = [create_attack_result(3, objective="objective3")]
+            save_attack_results_to_memory(results)
+            return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
 
         attack1.run_async = mock_run_attack1
         attack2.run_async = mock_run_attack2

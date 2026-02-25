@@ -464,7 +464,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
         from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
 
-        targeted_harm_categories_subquery = exists().where(
+        return exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 # Exclude empty strings, None, and empty lists
@@ -479,7 +479,6 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 ),
             )
         )
-        return targeted_harm_categories_subquery
 
     def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
@@ -493,7 +492,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
         from pyrit.memory.memory_models import AttackResultEntry, PromptMemoryEntry
 
-        labels_subquery = exists().where(
+        return exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.labels.isnot(None),
@@ -502,7 +501,6 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 ),
             )
         )
-        return labels_subquery
 
     def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
         """

@@ -78,8 +78,7 @@ def role_play_strategy():
 def leakage_prompts():
     """The default leakage prompts."""
     leakage_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
-    seed_prompts = list(SeedDataset.from_yaml_file(leakage_path / "leakage.prompt").get_values())
-    return seed_prompts
+    return list(SeedDataset.from_yaml_file(leakage_path / "leakage.prompt").get_values())
 
 
 @pytest.fixture

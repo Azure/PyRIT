@@ -93,7 +93,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
                 matching_text = text
                 break
 
-        scores = [
+        return [
             Score(
                 score_value=str(result),
                 score_value_description="",
@@ -110,5 +110,3 @@ class QuestionAnswerScorer(TrueFalseScorer):
                 objective=objective,
             )
         ]
-
-        return scores
