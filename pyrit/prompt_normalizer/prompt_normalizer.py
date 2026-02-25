@@ -14,7 +14,7 @@ from pyrit.exceptions import (
     execution_context,
     get_execution_context,
 )
-from pyrit.identifiers import AttackIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import (
     Message,
@@ -51,10 +51,10 @@ class PromptNormalizer:
         message: Message,
         target: PromptTarget,
         conversation_id: Optional[str] = None,
-        request_converter_configurations: list[PromptConverterConfiguration] = None,
-        response_converter_configurations: list[PromptConverterConfiguration] = None,
+        request_converter_configurations: list[PromptConverterConfiguration] | None = None,
+        response_converter_configurations: list[PromptConverterConfiguration] | None = None,
         labels: Optional[dict[str, str]] = None,
-        attack_identifier: Optional[AttackIdentifier] = None,
+        attack_identifier: Optional[ComponentIdentifier] = None,
     ) -> Message:
         """
         Send a single request to a target.
@@ -68,7 +68,7 @@ class PromptNormalizer:
             response_converter_configurations (list[PromptConverterConfiguration], optional): Configurations for
                 converting the response. Defaults to an empty list.
             labels (Optional[dict[str, str]], optional): Labels associated with the request. Defaults to None.
-            attack_identifier (Optional[AttackIdentifier], optional): Identifier for the attack. Defaults to
+            attack_identifier (Optional[ComponentIdentifier], optional): Identifier for the attack. Defaults to
                 None.
 
         Raises:
@@ -79,11 +79,9 @@ class PromptNormalizer:
             Message: The response received from the target.
         """
         # Validates that the MessagePieces in the Message are part of the same sequence
-        if response_converter_configurations is None:
-            response_converter_configurations = []
-        if request_converter_configurations is None:
-            request_converter_configurations = []
-        if len(set(piece.sequence for piece in message.message_pieces)) > 1:
+        request_converter_configurations = request_converter_configurations or []
+        response_converter_configurations = response_converter_configurations or []
+        if len({piece.sequence for piece in message.message_pieces}) > 1:
             raise ValueError("All MessagePieces in the Message must have the same sequence.")
 
         # Prepare the request by updating conversation ID, labels, and attack identifier
@@ -160,7 +158,7 @@ class PromptNormalizer:
         requests: list[NormalizerRequest],
         target: PromptTarget,
         labels: Optional[dict[str, str]] = None,
-        attack_identifier: Optional[AttackIdentifier] = None,
+        attack_identifier: Optional[ComponentIdentifier] = None,
         batch_size: int = 10,
     ) -> list[Message]:
         """
@@ -171,7 +169,7 @@ class PromptNormalizer:
             target (PromptTarget): The target to which the prompts are sent.
             labels (Optional[dict[str, str]], optional): A dictionary of labels to be included with the request.
                 Defaults to None.
-            attack_identifier (Optional[AttackIdentifier], optional): The attack identifier.
+            attack_identifier (Optional[ComponentIdentifier], optional): The attack identifier.
                 Defaults to None.
             batch_size (int, optional): The number of prompts to include in each batch. Defaults to 10.
 
@@ -279,7 +277,7 @@ class PromptNormalizer:
         conversation_id: str,
         should_convert: bool = True,
         converter_configurations: Optional[list[PromptConverterConfiguration]] = None,
-        attack_identifier: Optional[AttackIdentifier] = None,
+        attack_identifier: Optional[ComponentIdentifier] = None,
         prepended_conversation: Optional[list[Message]] = None,
     ) -> Optional[list[Message]]:
         """
@@ -290,7 +288,7 @@ class PromptNormalizer:
             should_convert (bool): Whether to convert the prepended conversation
             converter_configurations (Optional[list[PromptConverterConfiguration]]): Configurations for converting the
                 request
-            attack_identifier (Optional[AttackIdentifier]): Identifier for the attack
+            attack_identifier (Optional[ComponentIdentifier]): Identifier for the attack
             prepended_conversation (Optional[list[Message]]): The conversation to prepend
 
         Returns:

@@ -42,5 +42,4 @@ class YamlLoadable(abc.ABC):  # noqa: B024
         # otherwise, just instantiate directly with **yaml_data
         if hasattr(cls, "from_dict") and callable(getattr(cls, "from_dict")):  # noqa: B009
             return cls.from_dict(yaml_data)  # type: ignore
-        else:
-            return cls(**yaml_data)
+        return cls(**yaml_data)

@@ -4,7 +4,7 @@
 import re
 from typing import Literal, Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -82,15 +82,15 @@ class RepeatTokenConverter(PromptConverter):
 
                 self.insert = insert
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with repeat token parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "token_to_repeat": self._token_to_repeat.strip(),
                 "times_to_repeat": self._times_to_repeat,
                 "token_insert_mode": self._token_insert_mode,

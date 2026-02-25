@@ -221,8 +221,7 @@ def get_azure_token_provider(scope: str) -> Callable[[], str]:
         >>> token = token_provider()  # Get current token
     """
     try:
-        token_provider = get_bearer_token_provider(DefaultAzureCredential(), scope)
-        return token_provider
+        return get_bearer_token_provider(DefaultAzureCredential(), scope)
     except Exception as e:
         logger.error(f"Failed to obtain token provider for '{scope}': {e}")
         raise
@@ -246,8 +245,7 @@ def get_azure_async_token_provider(scope: str):  # type: ignore[no-untyped-def]
         >>> token = await token_provider()  # Get current token (in async context)
     """
     try:
-        token_provider = get_async_bearer_token_provider(AsyncDefaultAzureCredential(), scope)
-        return token_provider
+        return get_async_bearer_token_provider(AsyncDefaultAzureCredential(), scope)
     except Exception as e:
         logger.error(f"Failed to obtain async token provider for '{scope}': {e}")
         raise
@@ -334,13 +332,12 @@ def get_speech_config(resource_id: Union[str, None], key: Union[str, None], regi
             subscription=key,
             region=region,
         )
-    elif resource_id and region:
+    if resource_id and region:
         return get_speech_config_from_default_azure_credential(
             resource_id=resource_id,
             region=region,
         )
-    else:
-        raise ValueError("Insufficient information provided for Azure Speech service.")
+    raise ValueError("Insufficient information provided for Azure Speech service.")
 
 
 def get_speech_config_from_default_azure_credential(resource_id: str, region: str) -> speechsdk.SpeechConfig:
@@ -370,11 +367,10 @@ def get_speech_config_from_default_azure_credential(resource_id: str, region: st
         azure_auth = AzureAuth(token_scope=get_default_azure_scope(""))
         token = azure_auth.get_token()
         authorization_token = "aad#" + resource_id + "#" + token
-        speech_config = speechsdk.SpeechConfig(
+        return speechsdk.SpeechConfig(
             auth_token=authorization_token,
             region=region,
         )
-        return speech_config
     except Exception as e:
         logger.error(f"Failed to get speech config for resource ID '{resource_id}' and region '{region}': {e}")
         raise

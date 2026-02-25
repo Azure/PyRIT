@@ -10,7 +10,7 @@ from typing import Tuple
 import numpy
 from PIL import Image
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -185,15 +185,15 @@ class TransparencyAttackConverter(PromptConverter):
 
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with transparency attack parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "benign_image_path": str(self.benign_image_path),
                 "size": self.size,
                 "steps": self.steps,

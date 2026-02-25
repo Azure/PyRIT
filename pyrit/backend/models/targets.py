@@ -26,7 +26,9 @@ class TargetInstance(BaseModel):
     Also used as the create-target response (same shape as GET).
     """
 
-    target_unique_name: str = Field(..., description="Unique target instance identifier (TargetIdentifier.unique_name)")
+    target_unique_name: str = Field(
+        ..., description="Unique target instance identifier (ComponentIdentifier.unique_name)"
+    )
     target_type: str = Field(..., description="Target class name (e.g., 'OpenAIChatTarget')")
     endpoint: Optional[str] = Field(None, description="Target endpoint URL")
     model_name: Optional[str] = Field(None, description="Model or deployment name")

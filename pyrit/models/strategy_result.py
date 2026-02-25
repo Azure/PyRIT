@@ -21,5 +21,6 @@ class StrategyResult(ABC):  # noqa: B024
 
         Returns:
             StrategyResult: A deep copy of the result.
+
         """
         return deepcopy(self)

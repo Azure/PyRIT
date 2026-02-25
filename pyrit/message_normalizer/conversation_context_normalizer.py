@@ -81,8 +81,7 @@ class ConversationContextNormalizer(MessageStringNormalizer):
             if piece.prompt_metadata and "context_description" in piece.prompt_metadata:
                 description = piece.prompt_metadata["context_description"]
                 return f"[{data_type.capitalize()} - {description}]"
-            else:
-                return f"[{data_type.capitalize()}]"
+            return f"[{data_type.capitalize()}]"
 
         # For text pieces, include both original and converted if different
         original = piece.original_value
@@ -90,5 +89,4 @@ class ConversationContextNormalizer(MessageStringNormalizer):
 
         if original != converted:
             return f"{converted} (original: {original})"
-        else:
-            return converted
+        return converted

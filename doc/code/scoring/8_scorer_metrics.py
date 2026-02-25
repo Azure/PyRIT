@@ -28,7 +28,7 @@
 # Every scorer has a unique **identity hash** computed from its complete configuration:
 # - Scorer type (e.g., `SelfAskRefusalScorer`)
 # - System and user prompt templates
-# - Target model information (endpoint, model name)
+# - Target model information (model name)
 # - Temperature and other generation parameters
 # - Any scorer-specific configuration
 #
@@ -50,10 +50,10 @@ refusal_scorer = SelfAskRefusalScorer(chat_target=OpenAIChatTarget(temperature=0
 scorer_identity = refusal_scorer.get_identifier()
 print("Scorer Identity:")
 print(f"  Type: {scorer_identity.class_name}")
-print(
-    f"  System Prompt: {scorer_identity.system_prompt_template[:50] if scorer_identity.system_prompt_template else 'None'}..."
-)
-print(f"  Target Info: {scorer_identity.target_info}")
+system_prompt = scorer_identity.params.get("system_prompt_template")
+print(f"  System Prompt: {system_prompt[:50] if system_prompt else 'None'}...")
+prompt_target = scorer_identity.get_child("prompt_target")
+print(f"  Target Info: {prompt_target}")
 print(f"  Identity Hash: {scorer_identity.hash}")
 
 # %% [markdown]

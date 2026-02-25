@@ -210,13 +210,13 @@ class _JBBBehaviorsDataset(_RemoteDatasetLoader):
         # Special handling for common patterns
         if any(term in jbb_category_lower for term in ["violent", "kill", "murder", "bomb"]):
             return ["violence"]
-        elif any(term in jbb_category_lower for term in ["hate", "racist", "sexist"]):
+        if any(term in jbb_category_lower for term in ["hate", "racist", "sexist"]):
             return ["hate", "discrimination"]
-        elif any(term in jbb_category_lower for term in ["sexual", "porn", "nsfw"]):
+        if any(term in jbb_category_lower for term in ["sexual", "porn", "nsfw"]):
             return ["sexual"]
-        elif any(term in jbb_category_lower for term in ["illegal", "crime", "criminal"]):
+        if any(term in jbb_category_lower for term in ["illegal", "crime", "criminal"]):
             return ["criminal_planning", "illegal_activity"]
-        elif any(term in jbb_category_lower for term in ["harm", "hurt", "damage"]):
+        if any(term in jbb_category_lower for term in ["harm", "hurt", "damage"]):
             return ["violence", "harm"]
 
         # Default: use the original JBB category

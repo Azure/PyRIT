@@ -119,8 +119,7 @@ class GCGPromptManager(PromptManager):
         new_token_val = torch.gather(
             top_indices[new_token_pos], 1, torch.randint(0, topk, (batch_size, 1), device=grad.device)
         )
-        new_control_toks = original_control_toks.scatter_(1, new_token_pos.unsqueeze(-1), new_token_val)
-        return new_control_toks
+        return original_control_toks.scatter_(1, new_token_pos.unsqueeze(-1), new_token_val)
 
 
 class GCGMultiPromptAttack(MultiPromptAttack):
@@ -204,19 +203,15 @@ class GCGMultiPromptAttack(MultiPromptAttack):
                 for i in progress:
                     for k, worker in enumerate(self.workers):
                         worker(self.prompts[k][i], "logits", worker.model, cand, return_ids=True)
-                    logits, ids = zip(*[worker.results.get() for worker in self.workers], strict=False)
+                    logits, ids = zip(*[worker.results.get() for worker in self.workers])
                     loss[j * batch_size : (j + 1) * batch_size] += sum(
-                        [
-                            target_weight * self.prompts[k][i].target_loss(logit, id).mean(dim=-1).to(main_device)
-                            for k, (logit, id) in enumerate(zip(logits, ids, strict=False))
-                        ]
+                        target_weight * self.prompts[k][i].target_loss(logit, id).mean(dim=-1).to(main_device)
+                        for k, (logit, id) in enumerate(zip(logits, ids))
                     )
                     if control_weight != 0:
                         loss[j * batch_size : (j + 1) * batch_size] += sum(
-                            [
-                                control_weight * self.prompts[k][i].control_loss(logit, id).mean(dim=-1).to(main_device)
-                                for k, (logit, id) in enumerate(zip(logits, ids, strict=False))
-                            ]
+                            control_weight * self.prompts[k][i].control_loss(logit, id).mean(dim=-1).to(main_device)
+                            for k, (logit, id) in enumerate(zip(logits, ids))
                         )
                     del logits, ids
                     gc.collect()

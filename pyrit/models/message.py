@@ -19,12 +19,20 @@ class Message:
     Represents a message in a conversation, for example a prompt or a response to a prompt.
 
     This is a single request to a target. It can contain multiple message pieces.
-
-    Parameters:
-        message_pieces (Sequence[MessagePiece]): The list of message pieces.
     """
 
     def __init__(self, message_pieces: Sequence[MessagePiece], *, skip_validation: Optional[bool] = False) -> None:
+        """
+        Initialize a Message from one or more message pieces.
+
+        Args:
+            message_pieces (Sequence[MessagePiece]): Pieces belonging to the same message turn.
+            skip_validation (Optional[bool]): Whether to skip consistency validation.
+
+        Raises:
+            ValueError: If no message pieces are provided.
+
+        """
         if not message_pieces:
             raise ValueError("Message must have at least one message piece.")
         self.message_pieces = message_pieces
@@ -32,17 +40,48 @@ class Message:
             self.validate()
 
     def get_value(self, n: int = 0) -> str:
-        """Return the converted value of the nth message piece."""
+        """
+        Return the converted value of the nth message piece.
+
+        Args:
+            n (int): Zero-based index of the piece to read.
+
+        Returns:
+            str: Converted value of the selected message piece.
+
+        Raises:
+            IndexError: If the index is out of bounds.
+
+        """
         if n >= len(self.message_pieces):
             raise IndexError(f"No message piece at index {n}.")
         return self.message_pieces[n].converted_value
 
     def get_values(self) -> list[str]:
-        """Return the converted values of all message pieces."""
+        """
+        Return the converted values of all message pieces.
+
+        Returns:
+            list[str]: Converted values for all message pieces.
+
+        """
         return [message_piece.converted_value for message_piece in self.message_pieces]
 
     def get_piece(self, n: int = 0) -> MessagePiece:
-        """Return the nth message piece."""
+        """
+        Return the nth message piece.
+
+        Args:
+            n (int): Zero-based index of the piece to return.
+
+        Returns:
+            MessagePiece: Selected message piece.
+
+        Raises:
+            ValueError: If the message has no pieces.
+            IndexError: If the index is out of bounds.
+
+        """
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
 
@@ -68,6 +107,7 @@ class Message:
 
         Returns:
             A list of matching MessagePiece objects (may be empty).
+
         """
         effective_converted = converted_value_data_type or data_type
         results = self.message_pieces
@@ -94,6 +134,7 @@ class Message:
 
         Returns:
             The first matching MessagePiece, or None if no match is found.
+
         """
         pieces = self.get_pieces_by_type(
             data_type=data_type,
@@ -109,6 +150,13 @@ class Message:
 
         Maps simulated_assistant to assistant for API compatibility.
         All message pieces in a Message should have the same role.
+
+        Returns:
+            ChatMessageRole: Role compatible with external API calls.
+
+        Raises:
+            ValueError: If the message has no pieces.
+
         """
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
@@ -143,21 +191,43 @@ class Message:
 
     @property
     def conversation_id(self) -> str:
-        """Return the conversation ID of the first request piece (they should all be the same)."""
+        """
+        Return the conversation ID of the first request piece.
+
+        Returns:
+            str: Conversation identifier.
+
+        Raises:
+            ValueError: If the message has no pieces.
+
+        """
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
         return self.message_pieces[0].conversation_id
 
     @property
     def sequence(self) -> int:
-        """Return the sequence of the first request piece (they should all be the same)."""
+        """
+        Return the sequence value of the first request piece.
+
+        Returns:
+            int: Sequence number for the message turn.
+
+        Raises:
+            ValueError: If the message has no pieces.
+
+        """
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
         return self.message_pieces[0].sequence
 
     def is_error(self) -> bool:
         """
-        Returns True if any of the message pieces have an error response.
+        Check whether any message piece indicates an error.
+
+        Returns:
+            bool: True when any piece has a non-none error flag or error data type.
+
         """
         for piece in self.message_pieces:
             if piece.response_error != "none" or piece.converted_value_data_type == "error":
@@ -186,7 +256,12 @@ class Message:
 
     def validate(self) -> None:
         """
-        Validates the request response.
+        Validate that all message pieces are internally consistent.
+
+        Raises:
+            ValueError: If piece collection is empty or contains mismatched conversation IDs,
+                sequence numbers, roles, or missing converted values.
+
         """
         if len(self.message_pieces) == 0:
             raise ValueError("Empty message pieces.")
@@ -208,6 +283,13 @@ class Message:
                 raise ValueError("Inconsistent roles within the same message entry.")
 
     def __str__(self) -> str:
+        """
+        Return a newline-delimited string representation of message pieces.
+
+        Returns:
+            str: Concatenated string representation.
+
+        """
         ret = ""
         for message_piece in self.message_pieces:
             ret += str(message_piece) + "\n"
@@ -220,6 +302,7 @@ class Message:
         Returns:
             dict: A dictionary with 'role', 'converted_value', 'conversation_id', 'sequence',
                 and 'converted_value_data_type' keys.
+
         """
         if len(self.message_pieces) == 1:
             converted_value: str | list[str] = self.message_pieces[0].converted_value
@@ -238,7 +321,16 @@ class Message:
 
     @staticmethod
     def get_all_values(messages: Sequence[Message]) -> list[str]:
-        """Return all converted values across the provided messages."""
+        """
+        Return all converted values across the provided messages.
+
+        Args:
+            messages (Sequence[Message]): Messages to aggregate.
+
+        Returns:
+            list[str]: Flattened list of converted values.
+
+        """
         values: list[str] = []
         for message in messages:
             values.extend(message.get_values())
@@ -248,6 +340,16 @@ class Message:
     def flatten_to_message_pieces(
         messages: Sequence[Message],
     ) -> MutableSequence[MessagePiece]:
+        """
+        Flatten messages into a single list of message pieces.
+
+        Args:
+            messages (Sequence[Message]): Messages to flatten.
+
+        Returns:
+            MutableSequence[MessagePiece]: Flattened message pieces.
+
+        """
         if not messages:
             return []
         message_pieces: MutableSequence[MessagePiece] = []
@@ -265,11 +367,33 @@ class Message:
         role: ChatMessageRole,
         prompt_metadata: Optional[Dict[str, Union[str, int]]] = None,
     ) -> Message:
+        """
+        Build a single-piece message from prompt text.
+
+        Args:
+            prompt (str): Prompt text.
+            role (ChatMessageRole): Role assigned to the message piece.
+            prompt_metadata (Optional[Dict[str, Union[str, int]]]): Optional prompt metadata.
+
+        Returns:
+            Message: Constructed message instance.
+
+        """
         piece = MessagePiece(original_value=prompt, role=role, prompt_metadata=prompt_metadata)
         return cls(message_pieces=[piece])
 
     @classmethod
     def from_system_prompt(cls, system_prompt: str) -> Message:
+        """
+        Build a message from a system prompt.
+
+        Args:
+            system_prompt (str): System instruction text.
+
+        Returns:
+            Message: Constructed system-role message.
+
+        """
         return cls.from_prompt(prompt=system_prompt, role="system")
 
     def duplicate_message(self) -> Message:
@@ -284,6 +408,7 @@ class Message:
 
         Returns:
             Message: A new Message with deep-copied message pieces, new IDs, and fresh timestamp.
+
         """
         new_pieces = copy.deepcopy(self.message_pieces)
         new_timestamp = datetime.now()
@@ -298,7 +423,7 @@ def group_conversation_message_pieces_by_sequence(
     message_pieces: Sequence[MessagePiece],
 ) -> MutableSequence[Message]:
     """
-    Groups message pieces from the same conversation into Messages.
+    Group message pieces from the same conversation into messages.
 
     This is done using the sequence number and conversation ID.
 
@@ -334,6 +459,7 @@ def group_conversation_message_pieces_by_sequence(
     ...         MessagePiece(conversation_id=1, sequence=2, text="I'd have to say raccoons are my favorite!")
     ...     ])
     ... ]
+
     """
     if not message_pieces:
         return []
@@ -362,7 +488,7 @@ def group_message_pieces_into_conversations(
     message_pieces: Sequence[MessagePiece],
 ) -> list[list[Message]]:
     """
-    Groups message pieces from multiple conversations into separate conversation groups.
+    Group message pieces from multiple conversations into separate conversation groups.
 
     This function first groups pieces by conversation ID, then groups each conversation's
     pieces by sequence number. Each conversation is returned as a separate list of
@@ -389,6 +515,7 @@ def group_message_pieces_into_conversations(
     >>> #   [Message(seq=1), Message(seq=2)],  # conv1
     >>> #   [Message(seq=1), Message(seq=2)]   # conv2
     >>> # ]
+
     """
     if not message_pieces:
         return []
@@ -418,7 +545,18 @@ def construct_response_from_request(
     error: PromptResponseError = "none",
 ) -> Message:
     """
-    Constructs a response entry from a request.
+    Construct a response message from a request message piece.
+
+    Args:
+        request (MessagePiece): Source request message piece.
+        response_text_pieces (list[str]): Response values to include.
+        response_type (PromptDataType): Data type for original and converted response values.
+        prompt_metadata (Optional[Dict[str, Union[str, int]]]): Additional metadata to merge.
+        error (PromptResponseError): Error classification for the response.
+
+    Returns:
+        Message: Constructed response message.
+
     """
     if request.prompt_metadata:
         prompt_metadata = combine_dict(request.prompt_metadata, prompt_metadata or {})

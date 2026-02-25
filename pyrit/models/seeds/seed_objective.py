@@ -44,5 +44,6 @@ class SeedObjective(Seed):
 
         Returns:
             SeedObjective: The loaded and validated seed of the specific subclass type.
+
         """
         return cls.from_yaml_file(template_path)

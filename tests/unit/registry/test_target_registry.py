@@ -4,7 +4,7 @@
 
 import pytest
 
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -119,7 +119,7 @@ class TestTargetRegistryRegisterInstance:
         # Name should be derived from class name with hash suffix
         names = self.registry.get_names()
         assert len(names) == 1
-        assert names[0].startswith("mock_prompt_")
+        assert names[0].startswith("MockPromptTarget::")
 
     def test_register_instance_multiple_targets_unique_names(self):
         """Test registering multiple targets generates unique names."""
@@ -183,13 +183,13 @@ class TestTargetRegistryBuildMetadata:
         TargetRegistry.reset_instance()
 
     def test_build_metadata_includes_class_name(self):
-        """Test that metadata (TargetIdentifier) includes the class name."""
+        """Test that metadata (ComponentIdentifier) includes the class name."""
         target = MockPromptTarget()
         self.registry.register_instance(target, name="mock_target")
 
         metadata = self.registry.list_metadata()
         assert len(metadata) == 1
-        assert isinstance(metadata[0], TargetIdentifier)
+        assert isinstance(metadata[0], ComponentIdentifier)
         assert metadata[0].class_name == "MockPromptTarget"
 
     def test_build_metadata_includes_model_name(self):
@@ -198,16 +198,7 @@ class TestTargetRegistryBuildMetadata:
         self.registry.register_instance(target, name="mock_target")
 
         metadata = self.registry.list_metadata()
-        assert metadata[0].model_name == "test_model"
-
-    def test_build_metadata_description_from_docstring(self):
-        """Test that class_description is derived from the target's docstring."""
-        target = MockPromptTarget()
-        self.registry.register_instance(target, name="mock_target")
-
-        metadata = self.registry.list_metadata()
-        # MockPromptTarget has a docstring
-        assert "Mock PromptTarget for testing" in metadata[0].class_description
+        assert metadata[0].params["model_name"] == "test_model"
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -243,35 +234,3 @@ class TestTargetRegistryListMetadata:
         assert len(mock_metadata) == 2
         for m in mock_metadata:
             assert m.class_name == "MockPromptTarget"
-
-
-@pytest.mark.usefixtures("patch_central_database")
-class TestTargetRegistrySupportsConversationHistory:
-    """Tests for supports_conversation_history field in TargetIdentifier."""
-
-    def setup_method(self):
-        """Reset and get a fresh registry for each test."""
-        TargetRegistry.reset_instance()
-        self.registry = TargetRegistry.get_registry_singleton()
-
-    def teardown_method(self):
-        """Reset the singleton after each test."""
-        TargetRegistry.reset_instance()
-
-    def test_registered_chat_target_has_supports_conversation_history_true(self):
-        """Test that registered chat targets have supports_conversation_history=True in metadata."""
-        chat_target = MockPromptChatTarget()
-        self.registry.register_instance(chat_target, name="chat_target")
-
-        metadata = self.registry.list_metadata()
-        assert len(metadata) == 1
-        assert metadata[0].supports_conversation_history is True
-
-    def test_registered_non_chat_target_has_supports_conversation_history_false(self):
-        """Test that registered non-chat targets have supports_conversation_history=False in metadata."""
-        target = MockPromptTarget()
-        self.registry.register_instance(target, name="prompt_target")
-
-        metadata = self.registry.list_metadata()
-        assert len(metadata) == 1
-        assert metadata[0].supports_conversation_history is False

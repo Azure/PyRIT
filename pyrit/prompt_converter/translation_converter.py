@@ -16,7 +16,7 @@ from tenacity import (
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -82,18 +82,18 @@ class TranslationConverter(PromptConverter):
 
         self.system_prompt = prompt_template.render_template_value(languages=language)
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with translation parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_target=self.converter_target,
-            converter_specific_params={
+            params={
                 "language": self.language,
             },
+            children={"converter_target": self.converter_target.get_identifier()},
         )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
