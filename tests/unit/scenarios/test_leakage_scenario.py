@@ -4,7 +4,6 @@
 """Tests for the LeakageScenario class."""
 
 import pathlib
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -119,7 +118,7 @@ def mock_adversarial_target():
 
 
 @pytest.fixture
-def sample_objectives() -> List[str]:
+def sample_objectives() -> list[str]:
     return ["test leakage prompt 1", "test leakage prompt 2"]
 
 

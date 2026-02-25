@@ -3,7 +3,7 @@
 
 import os
 import uuid
-from typing import Generator, MutableSequence, Sequence
+from collections.abc import Generator, MutableSequence, Sequence
 
 import pytest
 

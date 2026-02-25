@@ -12,8 +12,9 @@ The one exception is `attack_result_to_summary` which receives pre-fetched piece
 
 import mimetypes
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Sequence, cast
+from typing import Optional, cast
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
@@ -81,7 +82,7 @@ def attack_result_to_summary(
     )
 
 
-def pyrit_scores_to_dto(scores: List[PyritScore]) -> List[Score]:
+def pyrit_scores_to_dto(scores: list[PyritScore]) -> list[Score]:
     """
     Translate PyRIT score objects to backend Score DTOs.
 
@@ -121,7 +122,7 @@ def _infer_mime_type(*, value: Optional[str], data_type: PromptDataType) -> Opti
     return mime_type
 
 
-def pyrit_messages_to_dto(pyrit_messages: List[PyritMessage]) -> List[Message]:
+def pyrit_messages_to_dto(pyrit_messages: list[PyritMessage]) -> list[Message]:
     """
     Translate PyRIT messages to backend Message DTOs.
 
@@ -173,7 +174,7 @@ def request_piece_to_pyrit_message_piece(
     role: ChatMessageRole,
     conversation_id: str,
     sequence: int,
-    labels: Optional[Dict[str, str]] = None,
+    labels: Optional[dict[str, str]] = None,
 ) -> PyritMessagePiece:
     """
     Convert a single request piece DTO to a PyRIT MessagePiece domain object.
@@ -188,7 +189,7 @@ def request_piece_to_pyrit_message_piece(
     Returns:
         PyritMessagePiece domain object.
     """
-    metadata: Optional[Dict[str, str | int]] = {"mime_type": piece.mime_type} if piece.mime_type else None
+    metadata: Optional[dict[str, str | int]] = {"mime_type": piece.mime_type} if piece.mime_type else None
     original_prompt_id = uuid.UUID(piece.original_prompt_id) if piece.original_prompt_id else None
     return PyritMessagePiece(
         role=role,
@@ -209,7 +210,7 @@ def request_to_pyrit_message(
     request: AddMessageRequest,
     conversation_id: str,
     sequence: int,
-    labels: Optional[Dict[str, str]] = None,
+    labels: Optional[dict[str, str]] = None,
 ) -> PyritMessage:
     """
     Build a PyRIT Message from an AddMessageRequest DTO.
@@ -255,7 +256,7 @@ def _get_preview_from_pieces(pieces: Sequence[PyritMessagePiece]) -> Optional[st
     return text[:100] + "..." if len(text) > 100 else text
 
 
-def _collect_labels_from_pieces(pieces: Sequence[PyritMessagePiece]) -> Dict[str, str]:
+def _collect_labels_from_pieces(pieces: Sequence[PyritMessagePiece]) -> dict[str, str]:
     """
     Collect labels from message pieces.
 

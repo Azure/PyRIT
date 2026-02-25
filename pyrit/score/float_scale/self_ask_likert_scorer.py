@@ -5,7 +5,7 @@ import enum
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import yaml
 
@@ -31,7 +31,7 @@ class LikertScaleEvalFiles:
             The harm definition path is derived as "{harm_category}.yaml".
     """
 
-    human_labeled_datasets_files: List[str]
+    human_labeled_datasets_files: list[str]
     result_file: str
     harm_category: Optional[str] = None
 
@@ -233,7 +233,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
             likert_scale=likert_scale_str, category=self._score_category
         )
 
-    def _likert_scale_description_to_string(self, descriptions: list[Dict[str, str]]) -> str:
+    def _likert_scale_description_to_string(self, descriptions: list[dict[str, str]]) -> str:
         """
         Convert the Likert scales to a string representation to be put in a system prompt.
 

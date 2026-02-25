@@ -4,7 +4,6 @@
 """Tests for the Cyber class."""
 
 import pathlib
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -112,7 +111,7 @@ def mock_adversarial_target():
 
 
 @pytest.fixture
-def sample_objectives() -> List[str]:
+def sample_objectives() -> list[str]:
     """Create sample objectives for testing."""
     return ["test prompt 1", "test prompt 2"]
 

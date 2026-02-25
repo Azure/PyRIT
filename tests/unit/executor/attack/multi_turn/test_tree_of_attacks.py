@@ -6,7 +6,7 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -55,7 +55,7 @@ class NodeMockConfig:
     completed: bool = True
     off_topic: bool = False
     objective_score_value: Optional[float] = None
-    auxiliary_scores: Dict[str, float] = field(default_factory=dict)
+    auxiliary_scores: dict[str, float] = field(default_factory=dict)
     objective_target_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     adversarial_chat_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
@@ -135,7 +135,7 @@ class MockNodeFactory:
         return node
 
     @staticmethod
-    def create_nodes_with_scores(scores: List[float]) -> List[_TreeOfAttacksNode]:
+    def create_nodes_with_scores(scores: list[float]) -> list[_TreeOfAttacksNode]:
         """Create multiple nodes with the given objective scores."""
         return [
             MockNodeFactory.create_node(NodeMockConfig(node_id=f"node_{i}", objective_score_value=score))
@@ -150,8 +150,8 @@ class AttackBuilder:
         self.objective_target: Optional[PromptTarget] = None
         self.adversarial_chat: Optional[PromptChatTarget] = None
         self.objective_scorer: Optional[Scorer] = None
-        self.auxiliary_scorers: List[Scorer] = []
-        self.tree_params: Dict[str, Any] = {}
+        self.auxiliary_scorers: list[Scorer] = []
+        self.tree_params: dict[str, Any] = {}
         self.converters: Optional[AttackConverterConfig] = None
         self.successful_threshold: float = 0.8
         self.prompt_normalizer: Optional[PromptNormalizer] = None
@@ -378,7 +378,7 @@ class TestHelpers:
         )
 
     @staticmethod
-    def add_nodes_to_tree(context: TAPAttackContext, nodes: List[_TreeOfAttacksNode], parent: str = "root"):
+    def add_nodes_to_tree(context: TAPAttackContext, nodes: list[_TreeOfAttacksNode], parent: str = "root"):
         """Add nodes to the context's tree visualization."""
         for i, node in enumerate(nodes):
             score_str = ""

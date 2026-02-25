@@ -5,7 +5,8 @@ import json
 import logging
 import os
 from abc import ABC
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from openai import RateLimitError
 from tenacity import (

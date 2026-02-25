@@ -3,7 +3,6 @@
 
 """Tests for the Jailbreak class."""
 
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -21,7 +20,7 @@ from pyrit.score.true_false.true_false_inverter_scorer import TrueFalseInverterS
 
 
 @pytest.fixture
-def mock_templates() -> List[str]:
+def mock_templates() -> list[str]:
     """Mock constant for jailbreak subset."""
     return ["aim", "dan_1", "tuo"]
 
@@ -44,7 +43,7 @@ def mock_scenario_result_id() -> str:
 
 
 @pytest.fixture
-def mock_memory_seed_groups() -> List[SeedGroup]:
+def mock_memory_seed_groups() -> list[SeedGroup]:
     """Create mock seed groups that _get_default_seed_groups() would return."""
     return [
         SeedGroup(seeds=[SeedObjective(value=prompt)])
@@ -384,7 +383,7 @@ class TestJailbreakLifecycle:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseInverterScorer,
-        mock_memory_seed_groups: List[SeedGroup],
+        mock_memory_seed_groups: list[SeedGroup],
     ) -> None:
         """Test initialization with custom max_concurrency."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
@@ -398,7 +397,7 @@ class TestJailbreakLifecycle:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseInverterScorer,
-        mock_memory_seed_groups: List[SeedGroup],
+        mock_memory_seed_groups: list[SeedGroup],
     ) -> None:
         """Test initialization with memory labels."""
         memory_labels = {"type": "jailbreak", "category": "scenario"}
@@ -435,7 +434,7 @@ class TestJailbreakProperties:
 
     @pytest.mark.asyncio
     async def test_no_target_duplication_async(
-        self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: List[SeedGroup]
+        self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: list[SeedGroup]
     ) -> None:
         """Test that all three targets (adversarial, object, scorer) are distinct."""
         with patch.object(Jailbreak, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
@@ -478,7 +477,7 @@ class TestJailbreakAdversarialTarget:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseInverterScorer,
-        mock_memory_seed_groups: List[SeedGroup],
+        mock_memory_seed_groups: list[SeedGroup],
         roleplay_jailbreak_strategy: JailbreakStrategy,
     ) -> None:
         """Test that multiple role-play attacks share the same adversarial target instance."""

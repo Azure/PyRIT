@@ -3,7 +3,6 @@
 
 import os
 from datetime import datetime
-from typing import List
 
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
@@ -31,7 +30,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         self._memory = CentralMemory.get_memory_instance()
         self._display_inline = display_inline
 
-    def _render_markdown(self, markdown_lines: List[str]) -> None:
+    def _render_markdown(self, markdown_lines: list[str]) -> None:
         """
         Render the markdown content using appropriate display method.
 
@@ -209,7 +208,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
     async def _get_conversation_markdown_async(
         self, *, result: AttackResult, include_scores: bool = False
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Generate markdown lines for the conversation history.
 
@@ -260,7 +259,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return markdown_lines
 
-    def _format_system_message(self, message: Message) -> List[str]:
+    def _format_system_message(self, message: Message) -> list[str]:
         """
         Format a system message as markdown.
 
@@ -278,7 +277,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             lines.append(f"{piece.converted_value}\n")
         return lines
 
-    async def _format_user_message_async(self, *, message: Message, turn_number: int) -> List[str]:
+    async def _format_user_message_async(self, *, message: Message, turn_number: int) -> list[str]:
         """
         Format a user message as markdown with turn numbering.
 
@@ -300,7 +299,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    async def _format_assistant_message_async(self, *, message: Message) -> List[str]:
+    async def _format_assistant_message_async(self, *, message: Message) -> list[str]:
         """
         Format an assistant or system response message as markdown.
 
@@ -343,7 +342,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             return "audio/mp4"
         return "audio/mpeg"  # Default fallback for .mp3, .mpeg, and unknown formats
 
-    def _format_image_content(self, *, image_path: str) -> List[str]:
+    def _format_image_content(self, *, image_path: str) -> list[str]:
         """
         Format image content as markdown.
 
@@ -357,7 +356,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         posix_path = relative_path.replace("\\", "/")
         return [f"![Image]({posix_path})\n"]
 
-    def _format_audio_content(self, *, audio_path: str) -> List[str]:
+    def _format_audio_content(self, *, audio_path: str) -> list[str]:
         """
         Format audio content as HTML5 audio player.
 
@@ -378,7 +377,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    def _format_error_content(self, *, piece: MessagePiece) -> List[str]:
+    def _format_error_content(self, *, piece: MessagePiece) -> list[str]:
         """
         Format error response content with proper styling.
 
@@ -397,7 +396,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    def _format_text_content(self, *, piece: MessagePiece, show_original: bool) -> List[str]:
+    def _format_text_content(self, *, piece: MessagePiece, show_original: bool) -> list[str]:
         """
         Format regular text content.
 
@@ -419,7 +418,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return lines
 
-    async def _format_piece_content_async(self, *, piece: MessagePiece, show_original: bool) -> List[str]:
+    async def _format_piece_content_async(self, *, piece: MessagePiece, show_original: bool) -> list[str]:
         """
         Format a single piece content based on its data type.
 
@@ -442,7 +441,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             return self._format_error_content(piece=piece)
         return self._format_text_content(piece=piece, show_original=show_original)
 
-    def _format_message_scores(self, message: Message) -> List[str]:
+    def _format_message_scores(self, message: Message) -> list[str]:
         """
         Format scores for all pieces in a message as markdown.
 
@@ -467,7 +466,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
                 lines.append("")
         return lines
 
-    async def _get_summary_markdown_async(self, result: AttackResult) -> List[str]:
+    async def _get_summary_markdown_async(self, result: AttackResult) -> list[str]:
         """
         Generate markdown lines for the attack summary.
 
@@ -517,7 +516,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return markdown_lines
 
-    async def _get_pruned_conversations_markdown_async(self, result: AttackResult) -> List[str]:
+    async def _get_pruned_conversations_markdown_async(self, result: AttackResult) -> list[str]:
         """
         Generate markdown lines for pruned conversations.
 
@@ -578,7 +577,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         return markdown_lines
 
-    async def _get_adversarial_conversation_markdown_async(self, result: AttackResult) -> List[str]:
+    async def _get_adversarial_conversation_markdown_async(self, result: AttackResult) -> list[str]:
         """
         Generate markdown lines for the adversarial conversation.
 

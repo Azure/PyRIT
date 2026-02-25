@@ -3,9 +3,10 @@
 
 import logging
 import struct
+from collections.abc import MutableSequence, Sequence
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 from azure.core.credentials import AccessToken
 from sqlalchemy import and_, create_engine, event, exists, text
@@ -100,7 +101,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
 
-        super(AzureSQLMemory, self).__init__()
+        super().__init__()
 
     @staticmethod
     def _resolve_sas_token(env_var_name: str, passed_value: Optional[str] = None) -> Optional[str]:

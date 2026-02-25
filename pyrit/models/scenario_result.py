@@ -4,7 +4,7 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import pyrit
 from pyrit.models import AttackOutcome, AttackResult
@@ -60,9 +60,9 @@ class ScenarioResult:
         self,
         *,
         scenario_identifier: ScenarioIdentifier,
-        objective_target_identifier: Union[Dict[str, Any], "ComponentIdentifier"],
-        attack_results: dict[str, List[AttackResult]],
-        objective_scorer_identifier: Union[Dict[str, Any], "ComponentIdentifier"],
+        objective_target_identifier: Union[dict[str, Any], "ComponentIdentifier"],
+        attack_results: dict[str, list[AttackResult]],
+        objective_scorer_identifier: Union[dict[str, Any], "ComponentIdentifier"],
         scenario_run_state: ScenarioRunState = "CREATED",
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,
@@ -115,7 +115,7 @@ class ScenarioResult:
         self.completion_time = completion_time if completion_time is not None else datetime.now(timezone.utc)
         self.number_tries = number_tries
 
-    def get_strategies_used(self) -> List[str]:
+    def get_strategies_used(self) -> list[str]:
         """
         Get the list of strategies used in this scenario.
 
@@ -125,7 +125,7 @@ class ScenarioResult:
         """
         return list(self.attack_results.keys())
 
-    def get_objectives(self, *, atomic_attack_name: Optional[str] = None) -> List[str]:
+    def get_objectives(self, *, atomic_attack_name: Optional[str] = None) -> list[str]:
         """
         Get the list of unique objectives for this scenario.
 
@@ -137,8 +137,8 @@ class ScenarioResult:
             List[str]: Deduplicated list of objectives.
 
         """
-        objectives: List[str] = []
-        strategies_to_process: List[List[AttackResult]]
+        objectives: list[str] = []
+        strategies_to_process: list[list[AttackResult]]
 
         if not atomic_attack_name:
             # Include all atomic attacks

@@ -4,7 +4,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import (
@@ -130,7 +130,7 @@ class Scam(Scenario):
     def __init__(
         self,
         *,
-        objectives: Optional[List[str]] = None,
+        objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         adversarial_chat: Optional[PromptChatTarget] = None,
         include_baseline: bool = True,
@@ -177,7 +177,7 @@ class Scam(Scenario):
         # Store deprecated objectives for later resolution in _resolve_seed_groups
         self._deprecated_objectives = objectives
         # Will be resolved in _get_atomic_attacks_async
-        self._seed_groups: Optional[List[SeedAttackGroup]] = None
+        self._seed_groups: Optional[list[SeedAttackGroup]] = None
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
@@ -226,7 +226,7 @@ class Scam(Scenario):
             temperature=1.2,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
+    def _resolve_seed_groups(self) -> list[SeedAttackGroup]:
         """
         Resolve seed groups from deprecated objectives or dataset configuration.
 
@@ -313,7 +313,7 @@ class Scam(Scenario):
             memory_labels=self._memory_labels,
         )
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Generate atomic attacks for each strategy.
 
@@ -323,7 +323,7 @@ class Scam(Scenario):
         # Resolve seed groups from deprecated objectives or dataset config
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks: List[AtomicAttack] = []
+        atomic_attacks: list[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=ScamStrategy
         )

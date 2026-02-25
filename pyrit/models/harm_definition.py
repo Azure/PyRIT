@@ -11,7 +11,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 import yaml
 
@@ -54,7 +54,7 @@ class HarmDefinition:
 
     version: str
     category: str
-    scale_descriptions: List[ScaleDescription] = field(default_factory=list)
+    scale_descriptions: list[ScaleDescription] = field(default_factory=list)
     source_path: Optional[str] = field(default=None, kw_only=True)
 
     def get_scale_description(self, score_value: str) -> Optional[str]:
@@ -140,7 +140,7 @@ class HarmDefinition:
             )
 
         try:
-            with open(resolved_path, "r", encoding="utf-8") as f:
+            with open(resolved_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
         except yaml.YAMLError as e:
             raise ValueError(f"Invalid YAML in harm definition file {resolved_path}: {e}")
@@ -178,7 +178,7 @@ class HarmDefinition:
         )
 
 
-def get_all_harm_definitions() -> Dict[str, HarmDefinition]:
+def get_all_harm_definitions() -> dict[str, HarmDefinition]:
     """
     Load all harm definitions from the standard harm_definition directory.
 
@@ -194,7 +194,7 @@ def get_all_harm_definitions() -> Dict[str, HarmDefinition]:
         ValueError: If any YAML file in the directory is invalid.
 
     """
-    harm_definitions: Dict[str, HarmDefinition] = {}
+    harm_definitions: dict[str, HarmDefinition] = {}
 
     if not HARM_DEFINITION_PATH.exists():
         logger.warning(f"Harm definition directory does not exist: {HARM_DEFINITION_PATH}")
