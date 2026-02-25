@@ -16,8 +16,7 @@ def text_image_converter_sample_image_bytes():
     img = Image.new("RGB", (100, 100), color=(125, 125, 125))
     img_bytes = BytesIO()
     img.save(img_bytes, format="PNG")
-    img_bytes = img_bytes.getvalue()
-    return img_bytes
+    return img_bytes.getvalue()
 
 
 def test_add_text_image_converter_initialization():

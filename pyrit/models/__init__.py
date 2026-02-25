@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+"""Public model exports for PyRIT core data structures and helpers."""
+
 from pyrit.models.attack_result import AttackOutcome, AttackResult, AttackResultT
 from pyrit.models.chat_message import (
     ALLOWED_CHAT_MESSAGE_ROLES,
@@ -40,6 +42,7 @@ from pyrit.models.seeds import (
     NextMessageSystemPromptPaths,
     Seed,
     SeedAttackGroup,
+    SeedAttackTechniqueGroup,
     SeedDataset,
     SeedGroup,
     SeedObjective,
@@ -97,6 +100,7 @@ __all__ = [
     "ScenarioResult",
     "Seed",
     "SeedAttackGroup",
+    "SeedAttackTechniqueGroup",
     "SeedObjective",
     "SeedPrompt",
     "SeedDataset",

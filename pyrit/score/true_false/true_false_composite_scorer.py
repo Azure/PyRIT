@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 import asyncio
-from typing import List, Optional
+from typing import Optional
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import ChatMessageRole, Message, MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import TrueFalseAggregatorFunc
@@ -25,7 +25,7 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
         self,
         *,
         aggregator: TrueFalseAggregatorFunc,
-        scorers: List[TrueFalseScorer],
+        scorers: list[TrueFalseScorer],
     ) -> None:
         """
         Initialize the composite scorer.
@@ -53,16 +53,20 @@ class TrueFalseCompositeScorer(TrueFalseScorer):
 
         self._scorers = scorers
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            sub_scorers=self._scorers,
-            score_aggregator=self._score_aggregator.__name__,
+            params={
+                "score_aggregator": self._score_aggregator.__name__,
+            },
+            children={
+                "sub_scorers": [s.get_identifier() for s in self._scorers],
+            },
         )
 
     async def _score_async(

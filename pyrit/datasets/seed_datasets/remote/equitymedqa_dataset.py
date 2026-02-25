@@ -2,7 +2,8 @@
 # Licensed under the MIT license.
 
 import logging
-from typing import Literal, Sequence
+from collections.abc import Sequence
+from typing import Literal
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,

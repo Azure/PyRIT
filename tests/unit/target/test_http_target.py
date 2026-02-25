@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Callable
+from collections.abc import Callable
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -16,8 +16,7 @@ from pyrit.prompt_target.http_target.http_target_callback_functions import (
 
 @pytest.fixture
 def mock_callback_function() -> Callable:
-    parsing_function = get_http_target_json_response_callback_function(key="mock_key")
-    return parsing_function
+    return get_http_target_json_response_callback_function(key="mock_key")
 
 
 @pytest.fixture
@@ -59,7 +58,7 @@ def test_http_target_sets_endpoint_and_rate_limit(mock_callback_function, sqlite
         max_requests_per_minute=25,
     )
     identifier = target.get_identifier()
-    assert identifier.endpoint == "https://example.com/"
+    assert identifier.params["endpoint"] == "https://example.com/"
     assert target._max_requests_per_minute == 25
 
 

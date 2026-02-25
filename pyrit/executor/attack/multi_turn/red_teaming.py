@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import enum
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Optional, Union
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
@@ -445,7 +446,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
                 prompt_text += f"\n\n{context.last_score.score_rationale}"
             return prompt_text
 
-        elif response_piece.is_blocked():
+        if response_piece.is_blocked():
             return RedTeamingAttack.DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED
 
         return f"Request to target failed: {response_piece.response_error}"

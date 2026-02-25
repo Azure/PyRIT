@@ -8,7 +8,7 @@ import logging
 import time
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, overload
+from typing import Any, Generic, Optional, TypeVar, Union, overload
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
@@ -20,7 +20,7 @@ from pyrit.executor.core import (
     StrategyEventData,
     StrategyEventHandler,
 )
-from pyrit.identifiers import AttackIdentifier, Identifiable
+from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -59,8 +59,8 @@ class AttackContext(StrategyContext, ABC, Generic[AttackParamsT]):
 
     # Mutable overrides for attacks that generate these values internally
     _next_message_override: Optional[Message] = None
-    _prepended_conversation_override: Optional[List[Message]] = None
-    _memory_labels_override: Optional[Dict[str, str]] = None
+    _prepended_conversation_override: Optional[list[Message]] = None
+    _memory_labels_override: Optional[dict[str, str]] = None
 
     # Convenience properties that delegate to params or overrides
     @property
@@ -69,7 +69,7 @@ class AttackContext(StrategyContext, ABC, Generic[AttackParamsT]):
         return self.params.objective
 
     @property
-    def memory_labels(self) -> Dict[str, str]:
+    def memory_labels(self) -> dict[str, str]:
         """Additional labels that can be applied to the prompts throughout the attack."""
         # Check override first (for attacks that merge labels)
         if self._memory_labels_override is not None:
@@ -77,12 +77,12 @@ class AttackContext(StrategyContext, ABC, Generic[AttackParamsT]):
         return self.params.memory_labels or {}
 
     @memory_labels.setter
-    def memory_labels(self, value: Dict[str, str]) -> None:
+    def memory_labels(self, value: dict[str, str]) -> None:
         """Set the memory labels (for attacks that merge strategy + context labels)."""
         self._memory_labels_override = value
 
     @property
-    def prepended_conversation(self) -> List[Message]:
+    def prepended_conversation(self) -> list[Message]:
         """Conversation that is automatically prepended to the target model."""
         # Check override first (for attacks that generate internally)
         if self._prepended_conversation_override is not None:
@@ -93,7 +93,7 @@ class AttackContext(StrategyContext, ABC, Generic[AttackParamsT]):
         return []
 
     @prepended_conversation.setter
-    def prepended_conversation(self, value: List[Message]) -> None:
+    def prepended_conversation(self, value: list[Message]) -> None:
         """Set the prepended conversation (for attacks that generate internally)."""
         self._prepended_conversation_override = value
 
@@ -225,7 +225,7 @@ class _DefaultAttackStrategyEventHandler(StrategyEventHandler[AttackStrategyCont
         self._logger.info(message)
 
 
-class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Identifiable[AttackIdentifier], ABC):
+class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Identifiable, ABC):
     """
     Abstract base class for attack strategies.
     Defines the interface for executing attacks and handling results.
@@ -236,7 +236,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
         *,
         objective_target: PromptTarget,
         context_type: type[AttackStrategyContextT],
-        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        params_type: type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         logger: logging.Logger = logger,
     ):
         """
@@ -265,51 +265,68 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
         if not hasattr(self, "_response_converters"):
             self._response_converters: list[Any] = []
 
-    def _build_identifier(self) -> AttackIdentifier:
+    def _create_identifier(
+        self,
+        *,
+        params: Optional[dict[str, Any]] = None,
+        children: Optional[dict[str, Union[ComponentIdentifier, list[ComponentIdentifier]]]] = None,
+    ) -> ComponentIdentifier:
         """
-        Build the typed identifier for this attack strategy.
+        Construct the attack strategy identifier.
 
-        Captures the objective target, optional scorer, and converter pipeline.
-        This is the *stable* strategy-level identifier that does not change
-        between calls to ``execute_async``.
+        Builds a ComponentIdentifier with the objective target, optional scorer,
+        and converter pipeline as children. Subclasses can extend by passing
+        additional params or children.
+
+        Args:
+            params (Optional[Dict[str, Any]]): Additional behavioral parameters from
+                the subclass.
+            children (Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]):
+                Named child component identifiers.
 
         Returns:
-            AttackIdentifier: The constructed identifier.
+            ComponentIdentifier: The identifier for this attack strategy.
         """
-        # Get target identifier
-        objective_target_identifier = self.get_objective_target().get_identifier()
+        all_children: dict[str, Union[ComponentIdentifier, list[ComponentIdentifier]]] = {
+            "objective_target": self.get_objective_target().get_identifier(),
+        }
 
-        # Get scorer identifier if present
-        scorer_identifier = None
+        # Add scorer if present
         scoring_config = self.get_attack_scoring_config()
         if scoring_config and scoring_config.objective_scorer:
-            scorer_identifier = scoring_config.objective_scorer.get_identifier()
+            all_children["objective_scorer"] = scoring_config.objective_scorer.get_identifier()
 
-        # Get request converter identifiers if present
-        request_converter_ids = None
+        # Add request converter identifiers if present
         if self._request_converters:
-            request_converter_ids = [
+            all_children["request_converters"] = [
                 converter.get_identifier() for config in self._request_converters for converter in config.converters
             ]
 
-        # Get response converter identifiers if present
-        response_converter_ids = None
+        # Add response converter identifiers if present
         if self._response_converters:
-            response_converter_ids = [
+            all_children["response_converters"] = [
                 converter.get_identifier() for config in self._response_converters for converter in config.converters
             ]
 
-        return AttackIdentifier(
-            class_name=self.__class__.__name__,
-            class_module=self.__class__.__module__,
-            objective_target_identifier=objective_target_identifier,
-            objective_scorer_identifier=scorer_identifier,
-            request_converter_identifiers=request_converter_ids or None,
-            response_converter_identifiers=response_converter_ids or None,
-        )
+        if children:
+            all_children.update(children)
+
+        return ComponentIdentifier.of(self, params=params, children=all_children)
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier for this attack strategy.
+
+        Subclasses can override this method to call _create_identifier() with
+        their specific params and children.
+
+        Returns:
+            ComponentIdentifier: The identifier for this attack strategy.
+        """
+        return self._create_identifier()
 
     @property
-    def params_type(self) -> Type[AttackParameters]:
+    def params_type(self) -> type[AttackParameters]:
         """
         Get the parameters type for this attack strategy.
 
@@ -355,7 +372,7 @@ class AttackStrategy(Strategy[AttackStrategyContextT, AttackStrategyResultT], Id
         *,
         objective: str,
         next_message: Optional[Message] = None,
-        prepended_conversation: Optional[List[Message]] = None,
+        prepended_conversation: Optional[list[Message]] = None,
         memory_labels: Optional[dict[str, str]] = None,
         **kwargs: Any,
     ) -> AttackStrategyResultT: ...

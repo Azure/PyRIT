@@ -18,7 +18,11 @@ from pyrit.prompt_converter.ansi_escape.ansi_attack_converter import AnsiAttackC
 from pyrit.prompt_converter.ascii_art_converter import AsciiArtConverter
 from pyrit.prompt_converter.ask_to_decode_converter import AskToDecodeConverter
 from pyrit.prompt_converter.atbash_converter import AtbashConverter
+from pyrit.prompt_converter.audio_echo_converter import AudioEchoConverter
 from pyrit.prompt_converter.audio_frequency_converter import AudioFrequencyConverter
+from pyrit.prompt_converter.audio_speed_converter import AudioSpeedConverter
+from pyrit.prompt_converter.audio_volume_converter import AudioVolumeConverter
+from pyrit.prompt_converter.audio_white_noise_converter import AudioWhiteNoiseConverter
 from pyrit.prompt_converter.azure_speech_audio_to_text_converter import AzureSpeechAudioToTextConverter
 from pyrit.prompt_converter.azure_speech_text_to_audio_converter import AzureSpeechTextToAudioConverter
 from pyrit.prompt_converter.base64_converter import Base64Converter
@@ -98,6 +102,7 @@ from pyrit.prompt_converter.unicode_replacement_converter import UnicodeReplacem
 from pyrit.prompt_converter.unicode_sub_converter import UnicodeSubstitutionConverter
 from pyrit.prompt_converter.url_converter import UrlConverter
 from pyrit.prompt_converter.variation_converter import VariationConverter
+from pyrit.prompt_converter.word_doc_converter import WordDocConverter
 from pyrit.prompt_converter.zalgo_converter import ZalgoConverter
 from pyrit.prompt_converter.zero_width_converter import ZeroWidthConverter
 
@@ -111,7 +116,11 @@ __all__ = [
     "AsciiSmugglerConverter",
     "AskToDecodeConverter",
     "AtbashConverter",
+    "AudioEchoConverter",
     "AudioFrequencyConverter",
+    "AudioSpeedConverter",
+    "AudioVolumeConverter",
+    "AudioWhiteNoiseConverter",
     "AzureSpeechAudioToTextConverter",
     "AzureSpeechTextToAudioConverter",
     "Base2048Converter",
@@ -180,6 +189,7 @@ __all__ = [
     "UrlConverter",
     "VariationConverter",
     "VariationSelectorSmugglerConverter",
+    "WordDocConverter",
     "WordIndexSelectionStrategy",
     "WordKeywordSelectionStrategy",
     "WordPositionSelectionStrategy",

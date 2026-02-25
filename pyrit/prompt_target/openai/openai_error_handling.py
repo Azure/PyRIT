@@ -10,7 +10,7 @@ hint extraction for consistent error handling across OpenAI-based prompt targets
 
 import json
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -79,13 +79,12 @@ def _is_content_filter_error(data: Union[dict[str, object], str]) -> bool:
             return True
         # Heuristic: Azure sometimes uses other codes with policy-related content
         return "content_filter" in json.dumps(data).lower()
-    else:
-        # String-based heuristic search
-        lower = str(data).lower()
-        return "content_filter" in lower or "policy_violation" in lower or "moderation_blocked" in lower
+    # String-based heuristic search
+    lower = str(data).lower()
+    return "content_filter" in lower or "policy_violation" in lower or "moderation_blocked" in lower
 
 
-def _extract_error_payload(exc: Exception) -> Tuple[Union[dict[str, object], str], bool]:
+def _extract_error_payload(exc: Exception) -> tuple[Union[dict[str, object], str], bool]:
     """
     Extract error payload and detect content filter from an OpenAI SDK exception.
 
@@ -129,7 +128,7 @@ def _extract_error_payload(exc: Exception) -> Tuple[Union[dict[str, object], str
     if body is not None:
         if isinstance(body, dict):
             return body, _is_content_filter_error(body)
-        elif isinstance(body, str):
+        if isinstance(body, str):
             try:
                 data = json.loads(body)
                 return data, _is_content_filter_error(data)

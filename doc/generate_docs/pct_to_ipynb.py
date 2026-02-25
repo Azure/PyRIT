@@ -52,7 +52,7 @@ def main():
     cache_file = os.path.join(cache_dir, f"pct_to_ipynb_{args.run_id}.cache")
     processed_files = set()
     if os.path.isfile(cache_file):
-        with open(cache_file, "r") as f:
+        with open(cache_file) as f:
             for file_path in f:
                 processed_files.add(file_path.strip())
 
@@ -62,7 +62,7 @@ def main():
         if file in processed_files:
             print(f"Skipping already processed file: {file}")
             continue
-        if any([skip_file in file for skip_file in skip_files]):
+        if any(skip_file in file for skip_file in skip_files):
             print(f"Skipping configured skipped file: {file}")
             continue
         print(f"Processing {file}")

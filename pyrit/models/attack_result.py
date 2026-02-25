@@ -5,9 +5,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
-from pyrit.identifiers import AttackIdentifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
 from pyrit.models.message_piece import MessagePiece
 from pyrit.models.score import Score
@@ -46,7 +46,7 @@ class AttackResult(StrategyResult):
     objective: str
 
     # Identifier of the attack strategy that produced this result
-    attack_identifier: Optional[AttackIdentifier] = None
+    attack_identifier: Optional[ComponentIdentifier] = None
 
     # Evidence
     # Model response generated in the final turn of the attack
@@ -73,7 +73,7 @@ class AttackResult(StrategyResult):
     related_conversations: set[ConversationReference] = field(default_factory=set)
 
     # Arbitrary metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_conversations_by_type(self, conversation_type: ConversationType) -> list[ConversationReference]:
         """
@@ -84,8 +84,16 @@ class AttackResult(StrategyResult):
 
         Returns:
             list: A list of related conversations matching the specified type.
+
         """
         return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
 
     def __str__(self) -> str:
+        """
+        Return a concise string representation of this attack result.
+
+        Returns:
+            str: Summary containing conversation ID, outcome, and objective preview.
+
+        """
         return f"AttackResult: {self.conversation_id}: {self.outcome.value}: {self.objective[:50]}..."

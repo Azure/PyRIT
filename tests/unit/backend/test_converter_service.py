@@ -15,6 +15,7 @@ from pyrit.backend.models.converters import (
     CreateConverterRequest,
 )
 from pyrit.backend.services.converter_service import ConverterService, get_converter_service
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.prompt_converter import (
     Base64Converter,
     CaesarConverter,
@@ -52,12 +53,16 @@ class TestListConverters:
 
         mock_converter = MagicMock()
         mock_converter.__class__.__name__ = "MockConverter"
-        mock_identifier = MagicMock()
-        mock_identifier.class_name = "MockConverter"
-        mock_identifier.supported_input_types = ("text",)
-        mock_identifier.supported_output_types = ("text",)
-        mock_identifier.converter_specific_params = {"param1": "value1", "param2": 42}
-        mock_identifier.sub_identifier = None
+        mock_identifier = ComponentIdentifier(
+            class_name="MockConverter",
+            class_module="tests.unit.backend.test_converter_service",
+            params={
+                "supported_input_types": ("text",),
+                "supported_output_types": ("text",),
+                "param1": "value1",
+                "param2": 42,
+            },
+        )
         mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 
@@ -90,12 +95,15 @@ class TestGetConverter:
 
         mock_converter = MagicMock()
         mock_converter.__class__.__name__ = "MockConverter"
-        mock_identifier = MagicMock()
-        mock_identifier.class_name = "MockConverter"
-        mock_identifier.supported_input_types = ("text",)
-        mock_identifier.supported_output_types = ("text",)
-        mock_identifier.converter_specific_params = {"param1": "value1"}
-        mock_identifier.sub_identifier = None
+        mock_identifier = ComponentIdentifier(
+            class_name="MockConverter",
+            class_module="tests.unit.backend.test_converter_service",
+            params={
+                "supported_input_types": ("text",),
+                "supported_output_types": ("text",),
+                "param1": "value1",
+            },
+        )
         mock_converter.get_identifier.return_value = mock_identifier
         service._registry.register_instance(mock_converter, name="conv-1")
 

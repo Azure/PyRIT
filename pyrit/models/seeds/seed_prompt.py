@@ -10,9 +10,10 @@ from __future__ import annotations
 import logging
 import os
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from tinytag import TinyTag
 
@@ -46,7 +47,13 @@ class SeedPrompt(Seed):
     parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
 
     def __post_init__(self) -> None:
-        """Post-initialization to render the template to replace existing values."""
+        """
+        Render template placeholders and infer data_type after initialization.
+
+        Raises:
+            ValueError: If file-based data type cannot be inferred from extension.
+
+        """
         self.value = self.render_template_value_silent(**PATHS_DICT)
 
         if not self.data_type:
@@ -68,7 +75,7 @@ class SeedPrompt(Seed):
 
     def set_encoding_metadata(self) -> None:
         """
-        This method sets the encoding data for the prompt within metadata dictionary. For images, this is just the
+        Set encoding metadata for the prompt within metadata dictionary. For images, this is just the
         file format. For audio and video, this also includes bitrate (kBits/s as int), samplerate (samples/second
         as int), bitdepth (as int), filesize (bytes as int), and duration (seconds as int) if the file type is
         supported by TinyTag. Example supported file types include: MP3, MP4, M4A, and WAV.
@@ -108,7 +115,7 @@ class SeedPrompt(Seed):
         template_path: Union[str, Path],
         required_parameters: list[str],
         error_message: Optional[str] = None,
-    ) -> "SeedPrompt":
+    ) -> SeedPrompt:
         """
         Load a Seed from a YAML file and validate that it contains specific parameters.
 
@@ -122,6 +129,7 @@ class SeedPrompt(Seed):
 
         Raises:
             ValueError: If the template doesn't contain all required parameters.
+
         """
         sp = cls.from_yaml_file(template_path)
 
@@ -134,11 +142,11 @@ class SeedPrompt(Seed):
 
     @staticmethod
     def from_messages(
-        messages: list["Message"],
+        messages: list[Message],
         *,
         starting_sequence: int = 0,
         prompt_group_id: Optional[uuid.UUID] = None,
-    ) -> list["SeedPrompt"]:
+    ) -> list[SeedPrompt]:
         """
         Convert a list of Messages to a list of SeedPrompts.
 
@@ -152,6 +160,7 @@ class SeedPrompt(Seed):
 
         Returns:
             List of SeedPrompts with incrementing sequence numbers per message.
+
         """
         seed_prompts: list[SeedPrompt] = []
         current_sequence = starting_sequence

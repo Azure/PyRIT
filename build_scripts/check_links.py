@@ -34,7 +34,7 @@ GRID_LINK_PATTERN = re.compile(r"^:link:\s+(.+)$", re.MULTILINE)
 
 
 def extract_urls(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         content = file.read()
     matches = URL_PATTERN.findall(content)
     # Flatten the list of tuples and filter out empty strings
@@ -189,7 +189,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     total_urls = sum(len(urls) for urls in file_urls.values())
-    unique_urls = len(set(url for urls in file_urls.values() for url in urls))
+    unique_urls = len({url for urls in file_urls.values() for url in urls})
     print(f"Checking {unique_urls} unique URL(s) across {len(file_urls)} file(s) (total: {total_urls})...")
 
     all_broken_urls = check_all_links_parallel(file_urls, max_workers=30)

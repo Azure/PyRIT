@@ -4,7 +4,8 @@
 import base64
 import json
 import logging
-from typing import Any, Dict, MutableSequence, Optional
+from collections.abc import MutableSequence
+from typing import Any, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -12,7 +13,7 @@ from pyrit.exceptions import (
     PyritException,
     pyrit_target_retry,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     ChatMessage,
     DataTypeSerializer,
@@ -164,17 +165,17 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
         self._extra_body_parameters = extra_body_parameters
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with OpenAI chat-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            temperature=self._temperature,
-            top_p=self._top_p,
-            target_specific_params={
+            params={
+                "temperature": self._temperature,
+                "top_p": self._top_p,
                 "max_completion_tokens": self._max_completion_tokens,
                 "max_tokens": self._max_tokens,
                 "frequency_penalty": self._frequency_penalty,
@@ -497,8 +498,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         """
         if self._is_text_message_format(conversation):
             return self._build_chat_messages_for_text(conversation)
-        else:
-            return await self._build_chat_messages_for_multi_modal_async(conversation)
+        return await self._build_chat_messages_for_multi_modal_async(conversation)
 
     def _is_text_message_format(self, conversation: MutableSequence[Message]) -> bool:
         """
@@ -677,7 +677,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                     f"This target only supports text, image_path, and audio_path. Received: {prompt_data_type}."
                 )
 
-    def _build_response_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
+    def _build_response_format(self, json_config: _JsonResponseConfig) -> Optional[dict[str, Any]]:
         if not json_config.enabled:
             return None
 

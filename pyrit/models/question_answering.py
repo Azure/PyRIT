@@ -11,10 +11,6 @@ from pydantic import BaseModel, ConfigDict
 class QuestionChoice(BaseModel):
     """
     Represents a choice for a question.
-
-    Parameters:
-        index (int): The index of the choice.
-        text (str): The text of the choice.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -25,17 +21,6 @@ class QuestionChoice(BaseModel):
 class QuestionAnsweringEntry(BaseModel):
     """
     Represents a question model.
-
-    Parameters:
-        question (str): The question text.
-        answer_type (Literal["int", "float", "str", "bool"]): The type of the answer.
-            `int` for integer answers (e.g., when the answer is an index of the correct option in a multiple-choice
-            question).
-            `float` for answers that are floating-point numbers.
-            `str` for text-based answers.
-            `bool` for boolean answers.
-        correct_answer (Union[int, str, float]): The correct answer.
-        choices (list[QuestionChoice]): The list of choices for the question.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -45,7 +30,16 @@ class QuestionAnsweringEntry(BaseModel):
     choices: list[QuestionChoice]
 
     def get_correct_answer_text(self) -> str:
-        """Get the text of the correct answer."""
+        """
+        Get the text of the correct answer.
+
+        Returns:
+            str: Text corresponding to the configured correct answer index.
+
+        Raises:
+            ValueError: If no choice matches the configured correct answer.
+
+        """
         correct_answer_index = self.correct_answer
         try:
             # Match using the explicit choice.index (not enumerate position) so non-sequential indices are supported
@@ -57,21 +51,19 @@ class QuestionAnsweringEntry(BaseModel):
             )
 
     def __hash__(self) -> int:
+        """
+        Return a stable hash for this question entry.
+
+        Returns:
+            int: Hash computed from serialized model content.
+
+        """
         return hash(self.model_dump_json())
 
 
 class QuestionAnsweringDataset(BaseModel):
     """
     Represents a dataset for question answering.
-
-    Parameters:
-        name (str): The name of the dataset.
-        version (str): The version of the dataset.
-        description (str): A description of the dataset.
-        author (str): The author of the dataset.
-        group (str): The group associated with the dataset.
-        source (str): The source of the dataset.
-        questions (list[QuestionAnsweringEntry]): A list of question models.
     """
 
     model_config = ConfigDict(extra="forbid")

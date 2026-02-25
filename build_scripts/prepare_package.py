@@ -110,9 +110,8 @@ def copy_frontend_to_package(frontend_dist: Path, backend_frontend: Path) -> boo
     if index_html.exists():
         print("✓ Frontend successfully copied to package")
         return True
-    else:
-        print("ERROR: index.html not found after copy")
-        return False
+    print("ERROR: index.html not found after copy")
+    return False
 
 
 def main():

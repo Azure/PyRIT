@@ -14,7 +14,7 @@ import importlib.util
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pyrit.registry.base import ClassRegistryEntry
 from pyrit.registry.class_registries.base_class_registry import (
@@ -91,7 +91,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         assert self._discovery_path is not None
 
         # Track file paths for collision detection and resolution
-        self._initializer_paths: Dict[str, Path] = {}
+        self._initializer_paths: dict[str, Path] = {}
 
         super().__init__(lazy_discovery=lazy_discovery)
 
@@ -197,7 +197,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
         except Exception as e:
             logger.warning(f"Failed to register initializer {initializer_class.__name__}: {e}")
 
-    def _build_metadata(self, name: str, entry: ClassEntry["PyRITInitializer"]) -> InitializerMetadata:
+    def _build_metadata(self, name: str, entry: ClassEntry[PyRITInitializer]) -> InitializerMetadata:
         """
         Build metadata for an initializer class.
 

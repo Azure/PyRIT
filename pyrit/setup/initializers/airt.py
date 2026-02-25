@@ -9,7 +9,6 @@ AIRT configuration including converters, scorers, and targets using Azure OpenAI
 """
 
 import os
-from typing import List
 
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
 from pyrit.executor.attack import (
@@ -78,7 +77,7 @@ class AIRTInitializer(PyRITInitializer):
         )
 
     @property
-    def required_env_vars(self) -> List[str]:
+    def required_env_vars(self) -> list[str]:
         """Get list of required environment variables."""
         return [
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",

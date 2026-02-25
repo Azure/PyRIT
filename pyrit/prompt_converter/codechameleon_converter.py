@@ -6,10 +6,11 @@ import json
 import pathlib
 import re
 import textwrap
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -101,15 +102,15 @@ class CodeChameleonConverter(PromptConverter):
 
         self._encrypt_type = encrypt_type
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with encryption type.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "encrypt_type": self._encrypt_type,
             }
         )
@@ -213,16 +214,14 @@ class CodeChameleonConverter(PromptConverter):
         return json.dumps(tree_representation)
 
     def _encrypt_reverse(self, sentence: str) -> str:
-        reverse_sentence = " ".join(sentence.split(" ")[::-1])
-        return reverse_sentence
+        return " ".join(sentence.split(" ")[::-1])
 
     def _encrypt_odd_even(self, sentence: str) -> str:
         words = sentence.split()
         odd_words = words[::2]
         even_words = words[1::2]
         encrypted_words = odd_words + even_words
-        encrypted_sentence = " ".join(encrypted_words)
-        return encrypted_sentence
+        return " ".join(encrypted_words)
 
     def _encrypt_length(self, sentence: str) -> str:
         class WordData:
