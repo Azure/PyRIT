@@ -19,6 +19,17 @@ logger = logging.getLogger(__name__)
 TranslationMode = Literal["academic", "technical", "smiles", "math", "research", "reaction", "combined"]
 TRANSLATION_MODES = set(get_args(TranslationMode))
 
+# Mapping from mode to YAML file name
+MODE_YAML_FILES: dict[str, str] = {
+    "academic": "academic_science_converter.yaml",
+    "technical": "technical_science_converter.yaml",
+    "smiles": "smiles_science_converter.yaml",
+    "math": "math_science_converter.yaml",
+    "research": "research_science_converter.yaml",
+    "reaction": "reaction_science_converter.yaml",
+    "combined": "combined_science_converter.yaml",
+}
+
 
 class ScientificTranslationConverter(LLMGenericTextConverter):
     """
@@ -34,7 +45,7 @@ class ScientificTranslationConverter(LLMGenericTextConverter):
         self,
         *,
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
-        mode: TranslationMode = "combined",
+        mode: str = "combined",
         prompt_template: Optional[SeedPrompt] = None,
     ) -> None:
         """
@@ -42,7 +53,7 @@ class ScientificTranslationConverter(LLMGenericTextConverter):
 
         Args:
             converter_target (PromptChatTarget): The LLM target to perform the conversion.
-            mode (TranslationMode): The translation mode to use. Options are:
+            mode (str): The translation mode to use. Built-in options are:
                 - ``academic``: Use academic/homework style framing
                 - ``technical``: Use technical jargon and terminology
                 - ``smiles``: Uses chemical notation
@@ -52,28 +63,28 @@ class ScientificTranslationConverter(LLMGenericTextConverter):
                 - ``reaction``: Frame as a step-by-step chemistry mechanism problem
                 - ``math``: Frame as the answer key to a mathematical problem or equation for a homework/exam setting
                 - ``combined``: Use combination of above techniques together (default)
-            prompt_template (SeedPrompt, Optional): Custom prompt template. If not provided,
-                the default scientific_translation_converter.yaml template will be used.
+                You can also use a custom mode name if you provide a prompt_template.
+            prompt_template (SeedPrompt, Optional): Custom prompt template.
+                Required if using a custom mode not in the built-in list.
 
         Raises:
-            ValueError: If an invalid mode is provided.
+            ValueError: If using a custom mode without providing a prompt_template.
         """
-        if mode not in TRANSLATION_MODES:
-            raise ValueError(f"Invalid mode '{mode}'. Must be one of: {TRANSLATION_MODES}")
-
-        # Load default template if not provided
-        prompt_template = (
-            prompt_template
-            if prompt_template
-            else SeedPrompt.from_yaml_file(
-                pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "scientific_translation_converter.yaml"
+        # Resolve template: use provided, or load from mode, or error
+        if prompt_template is not None:
+            resolved_template = prompt_template
+        elif mode in TRANSLATION_MODES:
+            yaml_file = MODE_YAML_FILES[mode]
+            resolved_template = SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / yaml_file)
+        else:
+            raise ValueError(
+                f"Custom mode '{mode}' requires a prompt_template. "
+                f"Either use a built-in mode {TRANSLATION_MODES} or provide a prompt_template."
             )
-        )
 
         super().__init__(
             converter_target=converter_target,
-            system_prompt_template=prompt_template,
-            mode=mode,
+            system_prompt_template=resolved_template,
         )
         self._mode = mode
 

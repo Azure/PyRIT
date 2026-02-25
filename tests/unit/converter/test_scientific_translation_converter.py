@@ -34,13 +34,13 @@ def test_scientific_translation_converter_raises_when_converter_target_is_none()
 
 def test_scientific_translation_converter_raises_on_invalid_mode(sqlite_instance):
     prompt_target = MockPromptTarget()
-    with pytest.raises(ValueError, match="Invalid mode"):
+    with pytest.raises(ValueError, match="Custom mode.*requires a prompt_template"):
         ScientificTranslationConverter(converter_target=prompt_target, mode="invalid_mode")
 
 
 def test_scientific_translation_converter_raises_on_bad_input_mode(sqlite_instance):
     prompt_target = MockPromptTarget()
-    with pytest.raises(ValueError, match="Invalid mode 'bad input'"):
+    with pytest.raises(ValueError, match="Custom mode 'bad input' requires a prompt_template"):
         ScientificTranslationConverter(converter_target=prompt_target, mode="bad input")
 
 
@@ -91,7 +91,7 @@ async def test_scientific_translation_converter_sets_system_prompt_combined(mock
 
     system_arg = mock_target.set_system_prompt.call_args[1]["system_prompt"]
     assert isinstance(system_arg, str)
-    assert "combined" in system_arg.lower()
+    assert "combination" in system_arg.lower()
 
 
 @pytest.mark.asyncio
