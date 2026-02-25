@@ -5,16 +5,14 @@ import os
 import tempfile
 import time
 import uuid
-import warnings
+from collections.abc import MutableSequence
 from datetime import datetime, timedelta
-from typing import MutableSequence
-from unittest.mock import MagicMock
 
 import pytest
-from unit.mocks import MockPromptTarget, get_sample_conversations
+from unit.mocks import MockPromptTarget, get_mock_target, get_sample_conversations
 
 from pyrit.executor.attack import PromptSendingAttack
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -83,7 +81,7 @@ def test_prompt_targets_serialize(patch_central_database):
 
 
 def test_executors_serialize():
-    attack = PromptSendingAttack(objective_target=MagicMock())
+    attack = PromptSendingAttack(objective_target=get_mock_target())
 
     entry = MessagePiece(
         role="user",
@@ -92,9 +90,9 @@ def test_executors_serialize():
         attack_identifier=attack.get_identifier(),
     )
 
-    assert entry.attack_identifier["id"] is not None
-    assert entry.attack_identifier["__type__"] == "PromptSendingAttack"
-    assert entry.attack_identifier["__module__"] == "pyrit.executor.attack.single_turn.prompt_sending"
+    assert entry.attack_identifier.hash is not None
+    assert entry.attack_identifier.class_name == "PromptSendingAttack"
+    assert entry.attack_identifier.class_module == "pyrit.executor.attack.single_turn.prompt_sending"
 
 
 @pytest.mark.asyncio
@@ -664,19 +662,23 @@ def test_message_piece_to_dict():
         targeted_harm_categories=["violence", "illegal"],
         prompt_metadata={"key": "metadata"},
         converter_identifiers=[
-            {"__type__": "Base64Converter", "__module__": "pyrit.prompt_converter.base64_converter"}
+            ComponentIdentifier(
+                class_name="Base64Converter",
+                class_module="pyrit.prompt_converter.base64_converter",
+                params={"supported_input_types": ["text"], "supported_output_types": ["text"]},
+            )
         ],
-        prompt_target_identifier={"__type__": "MockPromptTarget", "__module__": "unit.mocks"},
-        attack_identifier={
-            "id": str(uuid.uuid4()),
-            "__type__": "PromptSendingAttack",
-            "__module__": "pyrit.executor.attack.single_turn.prompt_sending_attack",
-        },
-        scorer_identifier=ScorerIdentifier(
+        prompt_target_identifier=ComponentIdentifier(
+            class_name="MockPromptTarget",
+            class_module="unit.mocks",
+        ),
+        attack_identifier=ComponentIdentifier(
+            class_name="PromptSendingAttack",
+            class_module="pyrit.executor.attack.single_turn.prompt_sending_attack",
+        ),
+        scorer_identifier=ComponentIdentifier(
             class_name="TestScorer",
             class_module="pyrit.score.test_scorer",
-            class_description="A test scorer",
-            identifier_type="instance",
         ),
         original_value_data_type="text",
         converted_value_data_type="text",
@@ -693,11 +695,9 @@ def test_message_piece_to_dict():
                 score_category=["Category1"],
                 score_rationale="Rationale text",
                 score_metadata={"key": "value"},
-                scorer_class_identifier=ScorerIdentifier(
+                scorer_class_identifier=ComponentIdentifier(
                     class_name="Scorer1",
                     class_module="pyrit.score",
-                    class_description="",
-                    identifier_type="instance",
                 ),
                 message_piece_id=str(uuid.uuid4()),
                 timestamp=datetime.now(),
@@ -746,7 +746,7 @@ def test_message_piece_to_dict():
     assert result["prompt_metadata"] == entry.prompt_metadata
     assert result["converter_identifiers"] == [conv.to_dict() for conv in entry.converter_identifiers]
     assert result["prompt_target_identifier"] == entry.prompt_target_identifier.to_dict()
-    assert result["attack_identifier"] == entry.attack_identifier
+    assert result["attack_identifier"] == entry.attack_identifier.to_dict()
     assert result["scorer_identifier"] == entry.scorer_identifier.to_dict()
     assert result["original_value_data_type"] == entry.original_value_data_type
     assert result["original_value"] == entry.original_value
@@ -761,30 +761,21 @@ def test_message_piece_to_dict():
 
 
 def test_message_piece_scorer_identifier_dict_backward_compatibility():
-    """Test that passing a dict for scorer_identifier works with deprecation warning."""
+    """Test that passing a dict for scorer_identifier normalizes to ComponentIdentifier."""
 
     scorer_dict = {
         "class_name": "TestScorer",
         "class_module": "pyrit.score.test_scorer",
-        "class_description": "A test scorer",
-        "identifier_type": "instance",
     }
 
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        entry = MessagePiece(
-            role="user",
-            original_value="Hello",
-            scorer_identifier=scorer_dict,
-        )
+    entry = MessagePiece(
+        role="user",
+        original_value="Hello",
+        scorer_identifier=scorer_dict,
+    )
 
-        # Check that a deprecation warning was issued
-        assert len(w) == 1
-        assert "deprecated" in str(w[0].message).lower()
-        assert "0.14.0" in str(w[0].message)
-
-    # Check that scorer_identifier is now a ScorerIdentifier
-    assert isinstance(entry.scorer_identifier, ScorerIdentifier)
+    # Check that scorer_identifier is now a ComponentIdentifier
+    assert isinstance(entry.scorer_identifier, ComponentIdentifier)
     assert entry.scorer_identifier.class_name == "TestScorer"
     assert entry.scorer_identifier.class_module == "pyrit.score.test_scorer"
 

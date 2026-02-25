@@ -15,8 +15,7 @@ def get_default_data_path(dir: str) -> pathlib.Path:
     """
     if in_git_repo():
         return pathlib.Path(PYRIT_PATH, "..", dir).resolve()
-    else:
-        return pathlib.Path(user_data_dir(dir, "pyrit")).resolve()
+    return pathlib.Path(user_data_dir(dir, "pyrit")).resolve()
 
 
 def in_git_repo() -> bool:
@@ -32,6 +31,10 @@ def in_git_repo() -> bool:
 PYRIT_PATH = pathlib.Path(__file__, "..", "..").resolve()
 
 CONFIGURATION_DIRECTORY_PATH = pathlib.Path.home() / ".pyrit"
+
+# Default configuration file name and path
+DEFAULT_CONFIG_FILENAME = ".pyrit_conf"
+DEFAULT_CONFIG_PATH = CONFIGURATION_DIRECTORY_PATH / DEFAULT_CONFIG_FILENAME
 
 # Points to the root of the project
 HOME_PATH = pathlib.Path(PYRIT_PATH, "..").resolve()

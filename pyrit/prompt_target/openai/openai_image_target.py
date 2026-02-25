@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 import base64
 import logging
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
 
 import httpx
 
@@ -10,7 +10,7 @@ from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     construct_response_from_request,
@@ -102,15 +102,15 @@ class OpenAIImageTarget(OpenAITarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with image generation-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "image_size": self.image_size,
                 "quality": self.quality,
                 "style": self.style,
@@ -162,7 +162,7 @@ class OpenAIImageTarget(OpenAITarget):
         prompt = message.message_pieces[0].converted_value
 
         # Construct request parameters
-        image_generation_args: Dict[str, Any] = {
+        image_generation_args: dict[str, Any] = {
             "model": self._model_name,
             "prompt": prompt,
             "size": self.image_size,
@@ -176,11 +176,10 @@ class OpenAIImageTarget(OpenAITarget):
             image_generation_args["style"] = self.style
 
         # Use unified error handler for consistent error handling
-        response = await self._handle_openai_request(
+        return await self._handle_openai_request(
             api_call=lambda: self._async_client.images.generate(**image_generation_args),
             request=message,
         )
-        return response
 
     async def _send_edit_request_async(self, message: Message) -> Message:
         """
@@ -213,7 +212,7 @@ class OpenAIImageTarget(OpenAITarget):
             image_files.append((image_name, image_bytes, image_type))
 
         # Construct request parameters for image editing
-        image_edit_args: Dict[str, Any] = {
+        image_edit_args: dict[str, Any] = {
             "model": self._model_name,
             "image": image_files,
             "prompt": text_prompt,
@@ -227,12 +226,10 @@ class OpenAIImageTarget(OpenAITarget):
         if self.style:
             image_edit_args["style"] = self.style
 
-        response = await self._handle_openai_request(
+        return await self._handle_openai_request(
             api_call=lambda: self._async_client.images.edit(**image_edit_args),
             request=message,
         )
-
-        return response
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """

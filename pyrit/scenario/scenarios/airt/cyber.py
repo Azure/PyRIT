@@ -3,7 +3,7 @@
 
 import logging
 import os
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
@@ -60,7 +60,7 @@ class Cyber(Scenario):
     techniques.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
     def get_strategy_class(cls) -> type[ScenarioStrategy]:
@@ -97,7 +97,7 @@ class Cyber(Scenario):
         self,
         *,
         adversarial_chat: Optional[PromptChatTarget] = None,
-        objectives: Optional[List[str]] = None,
+        objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -141,7 +141,7 @@ class Cyber(Scenario):
 
         super().__init__(
             name="Cyber",
-            version=self.version,
+            version=self.VERSION,
             strategy_class=CyberStrategy,
             objective_scorer=objective_scorer,
             include_default_baseline=include_baseline,
@@ -151,7 +151,7 @@ class Cyber(Scenario):
         # Store deprecated objectives for later resolution in _resolve_seed_groups
         self._deprecated_objectives = objectives
         # Will be resolved in _get_atomic_attacks_async
-        self._seed_groups: Optional[List[SeedAttackGroup]] = None
+        self._seed_groups: Optional[list[SeedAttackGroup]] = None
 
     def _get_default_objective_scorer(self) -> TrueFalseCompositeScorer:
         """
@@ -201,7 +201,7 @@ class Cyber(Scenario):
             temperature=1.2,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
+    def _resolve_seed_groups(self) -> list[SeedAttackGroup]:
         """
         Resolve seed groups from deprecated objectives or dataset configuration.
 
@@ -241,10 +241,13 @@ class Cyber(Scenario):
             AtomicAttack: configured for the specified strategy.
 
         Raises:
-            ValueError: if an unknown CyberStrategy is passed.
+            ValueError: If scenario is not properly initialized or an unknown CyberStrategy is passed.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
+        if self._objective_target is None:
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+            )
         attack_strategy: Optional[AttackStrategy[Any, Any]] = None
         if strategy == "single_turn":
             attack_strategy = PromptSendingAttack(
@@ -261,7 +264,8 @@ class Cyber(Scenario):
             raise ValueError(f"Unknown CyberStrategy: {strategy}")
 
         # _seed_groups is guaranteed to be set by _get_atomic_attacks_async before this method is called
-        assert self._seed_groups is not None, "_seed_groups must be resolved before creating atomic attacks"
+        if self._seed_groups is None:
+            raise ValueError("_seed_groups must be resolved before creating atomic attacks")
 
         return AtomicAttack(
             atomic_attack_name=f"cyber_{strategy}",
@@ -272,7 +276,7 @@ class Cyber(Scenario):
             memory_labels=self._memory_labels,
         )
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Generate atomic attacks for each strategy.
 
@@ -282,7 +286,7 @@ class Cyber(Scenario):
         # Resolve seed groups from deprecated objectives or dataset config
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks: List[AtomicAttack] = []
+        atomic_attacks: list[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=CyberStrategy
         )

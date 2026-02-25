@@ -23,16 +23,17 @@ RUN apt-get update && apt-get install -y \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install the Azure CLI, Microsoft ODBC Driver 18 & SQL tools
+# Note: Debian Trixie's sqv rejects SHA1 signatures, so we use gpg directly to import the Microsoft key
 RUN apt-get update && apt-get install -y \
       apt-transport-https \
       ca-certificates \
       gnupg \
       lsb-release \
  && curl -sL https://packages.microsoft.com/keys/microsoft.asc \
- | gpg --dearmor \
- > /usr/share/keyrings/microsoft-archive-keyring.gpg \
+      | gpg --dearmor \
+      > /usr/share/keyrings/microsoft-archive-keyring.gpg \
  && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" \
- > /etc/apt/sources.list.d/microsoft.list \
+      > /etc/apt/sources.list.d/microsoft.list \
  && apt-get update \
  && ACCEPT_EULA=Y apt-get install -y \
       msodbcsql18 \

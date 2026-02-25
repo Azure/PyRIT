@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
+class TargetRegistry(BaseInstanceRegistry["PromptTarget", ComponentIdentifier]):
     """
     Registry for managing available prompt target instances.
 
@@ -36,7 +36,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
     """
 
     @classmethod
-    def get_registry_singleton(cls) -> "TargetRegistry":
+    def get_registry_singleton(cls) -> TargetRegistry:
         """
         Get the singleton instance of the TargetRegistry.
 
@@ -47,7 +47,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
 
     def register_instance(
         self,
-        target: "PromptTarget",
+        target: PromptTarget,
         *,
         name: Optional[str] = None,
     ) -> None:
@@ -69,7 +69,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
         self.register(target, name=name)
         logger.debug(f"Registered target instance: {name} ({target.__class__.__name__})")
 
-    def get_instance_by_name(self, name: str) -> Optional["PromptTarget"]:
+    def get_instance_by_name(self, name: str) -> Optional[PromptTarget]:
         """
         Get a registered target instance by name.
 
@@ -83,7 +83,7 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: "PromptTarget") -> TargetIdentifier:
+    def _build_metadata(self, name: str, instance: PromptTarget) -> ComponentIdentifier:
         """
         Build metadata for a target instance.
 
@@ -92,6 +92,6 @@ class TargetRegistry(BaseInstanceRegistry["PromptTarget", TargetIdentifier]):
             instance: The target instance.
 
         Returns:
-            TargetIdentifier describing the target.
+            ComponentIdentifier: The target's identifier.
         """
         return instance.get_identifier()

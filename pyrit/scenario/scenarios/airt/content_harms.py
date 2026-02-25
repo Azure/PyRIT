@@ -2,7 +2,8 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar
+from collections.abc import Sequence
+from typing import Any, Optional, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import (
@@ -37,7 +38,7 @@ class ContentHarmsDatasetConfiguration(DatasetConfiguration):
     it filters datasets to only those matching the selected harm strategies.
     """
 
-    def get_seed_groups(self) -> Dict[str, List[SeedGroup]]:
+    def get_seed_groups(self) -> dict[str, list[SeedGroup]]:
         """
         Get seed groups filtered by harm strategies from stored scenario_composites.
 
@@ -59,7 +60,7 @@ class ContentHarmsDatasetConfiguration(DatasetConfiguration):
         )
 
         # Filter to matching datasets and map keys to harm names
-        mapped_result: Dict[str, List[SeedGroup]] = {}
+        mapped_result: dict[str, list[SeedGroup]] = {}
         for name, groups in result.items():
             matched_harm = next((harm for harm in selected_harms if harm in name), None)
             if matched_harm:
@@ -104,10 +105,10 @@ class ContentHarms(Scenario):
     with respect to certain harm categories.
     """
 
-    version: int = 1
+    VERSION: int = 1
 
     @classmethod
-    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+    def get_strategy_class(cls) -> type[ScenarioStrategy]:
         """
         Get the strategy enum class for this scenario.
 
@@ -154,7 +155,7 @@ class ContentHarms(Scenario):
         adversarial_chat: Optional[PromptChatTarget] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         scenario_result_id: Optional[str] = None,
-        objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None,
+        objectives_by_harm: Optional[dict[str, Sequence[SeedGroup]]] = None,
     ):
         """
         Initialize the Content Harms Scenario.
@@ -179,7 +180,7 @@ class ContentHarms(Scenario):
 
         super().__init__(
             name="Content Harms",
-            version=self.version,
+            version=self.VERSION,
             objective_scorer=self._objective_scorer,
             strategy_class=ContentHarmsStrategy,
             scenario_result_id=scenario_result_id,
@@ -206,7 +207,7 @@ class ContentHarms(Scenario):
             ),
         )
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances for harm strategies.
 
@@ -219,7 +220,7 @@ class ContentHarms(Scenario):
         # Get seed attack groups by harm strategy, already filtered by scenario_composites
         seed_groups_by_harm = self._dataset_config.get_seed_attack_groups()
 
-        atomic_attacks: List[AtomicAttack] = []
+        atomic_attacks: list[AtomicAttack] = []
         for strategy, seed_groups in seed_groups_by_harm.items():
             atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=seed_groups))
         return atomic_attacks
@@ -228,7 +229,7 @@ class ContentHarms(Scenario):
         self,
         strategy: str,
         seed_groups: Sequence[SeedAttackGroup],
-    ) -> List[AtomicAttack]:
+    ) -> list[AtomicAttack]:
         """
         Create AtomicAttack instances for a given harm strategy. RolePlayAttack, ManyShotJailbreakAttack,
         PromptSendingAttack, and RedTeamingAttack are run for all harm strategies.
@@ -239,9 +240,15 @@ class ContentHarms(Scenario):
 
         Returns:
             List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
+
+        Raises:
+            ValueError: If scenario is not properly initialized.
         """
         # objective_target is guaranteed to be non-None by parent class validation
-        assert self._objective_target is not None
+        if self._objective_target is None:
+            raise ValueError(
+                "Scenario not properly initialized. Call await scenario.initialize_async() before running."
+            )
 
         prompt_sending_attack = PromptSendingAttack(
             objective_target=self._objective_target,

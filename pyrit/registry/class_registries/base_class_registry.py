@@ -17,9 +17,9 @@ Terminology:
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Generic, Iterator, List, Optional, Type, TypeVar
+from collections.abc import Callable, Iterator
+from typing import Generic, Optional, TypeVar
 
-from pyrit.identifiers import Identifier
 from pyrit.identifiers.class_name_utils import class_name_to_snake_case
 from pyrit.registry.base import RegistryProtocol
 
@@ -49,9 +49,9 @@ class ClassEntry(Generic[T]):
     def __init__(
         self,
         *,
-        registered_class: Type[T],
+        registered_class: type[T],
         factory: Optional[Callable[..., T]] = None,
-        default_kwargs: Optional[Dict[str, object]] = None,
+        default_kwargs: Optional[dict[str, object]] = None,
         description: Optional[str] = None,
     ) -> None:
         """
@@ -82,8 +82,7 @@ class ClassEntry(Generic[T]):
 
         if self.factory is not None:
             return self.factory(**merged_kwargs)
-        else:
-            return self.registered_class(**merged_kwargs)
+        return self.registered_class(**merged_kwargs)
 
 
 class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT]):
@@ -108,7 +107,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
     """
 
     # Class-level singleton instances, keyed by registry class
-    _instances: Dict[type, "BaseClassRegistry[object, object]"] = {}
+    _instances: dict[type, "BaseClassRegistry[object, object]"] = {}
 
     def __init__(self, *, lazy_discovery: bool = True) -> None:
         """
@@ -119,8 +118,8 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
                 If False, discovery runs immediately in constructor.
         """
         # Maps registry names to ClassEntry wrappers
-        self._class_entries: Dict[str, ClassEntry[T]] = {}
-        self._metadata_cache: Optional[List[MetadataT]] = None
+        self._class_entries: dict[str, ClassEntry[T]] = {}
+        self._metadata_cache: Optional[list[MetadataT]] = None
         self._discovered = False
         self._lazy_discovery = lazy_discovery
 
@@ -183,37 +182,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         """
         pass
 
-    def _build_base_metadata(self, name: str, entry: ClassEntry[T]) -> Identifier:
-        """
-        Build the common base metadata for a registered class.
-
-        This helper extracts fields common to all registries: name, class_name, class_description.
-        Subclasses can use this for building common fields if needed.
-
-        Args:
-            name: The registry name (snake_case identifier).
-            entry: The ClassEntry containing the registered class.
-
-        Returns:
-            An Identifier dataclass with common fields.
-        """
-        registered_class = entry.registered_class
-
-        # Extract description from docstring, clean up whitespace
-        doc = registered_class.__doc__ or ""
-        if doc:
-            description = " ".join(doc.split())
-        else:
-            description = entry.description or "No description available"
-
-        return Identifier(
-            identifier_type="class",
-            class_name=registered_class.__name__,
-            class_module=registered_class.__module__,
-            class_description=description,
-        )
-
-    def get_class(self, name: str) -> Type[T]:
+    def get_class(self, name: str) -> type[T]:
         """
         Get a registered class by name.
 
@@ -249,7 +218,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         self._ensure_discovered()
         return self._class_entries.get(name)
 
-    def get_names(self) -> List[str]:
+    def get_names(self) -> list[str]:
         """
         Get a sorted list of all registered names.
 
@@ -265,9 +234,9 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
     def list_metadata(
         self,
         *,
-        include_filters: Optional[Dict[str, object]] = None,
-        exclude_filters: Optional[Dict[str, object]] = None,
-    ) -> List[MetadataT]:
+        include_filters: Optional[dict[str, object]] = None,
+        exclude_filters: Optional[dict[str, object]] = None,
+    ) -> list[MetadataT]:
         """
         List metadata for all registered classes, optionally filtered.
 
@@ -307,11 +276,11 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
 
     def register(
         self,
-        cls: Type[T],
+        cls: type[T],
         *,
         name: Optional[str] = None,
         factory: Optional[Callable[..., T]] = None,
-        default_kwargs: Optional[Dict[str, object]] = None,
+        default_kwargs: Optional[dict[str, object]] = None,
         description: Optional[str] = None,
     ) -> None:
         """
@@ -357,7 +326,7 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
             raise KeyError(f"'{name}' not found in registry. Available: {available}")
         return entry.create_instance(**kwargs)
 
-    def _get_registry_name(self, cls: Type[T]) -> str:
+    def _get_registry_name(self, cls: type[T]) -> str:
         """
         Get the registry name for a class.
 

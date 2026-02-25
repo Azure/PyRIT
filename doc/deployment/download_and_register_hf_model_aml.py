@@ -262,8 +262,7 @@ def get_max_model_version(models: list) -> str:
 
     # Find the model with the maximum version number
     max_version = max(models, key=lambda x: int(x.version)).version
-    model_max_version = str(int(max_version))
-    return model_max_version
+    return str(int(max_version))
 
 
 # %%

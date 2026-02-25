@@ -75,21 +75,18 @@ def sample_attack_results():
         AttackResult(
             conversation_id="conv-1",
             objective="objective1",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
         ),
         AttackResult(
             conversation_id="conv-2",
             objective="objective2",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "2"},
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
         ),
         AttackResult(
             conversation_id="conv-3",
             objective="objective3",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "3"},
             outcome=AttackOutcome.FAILURE,
             executed_turns=1,
         ),
@@ -431,7 +428,6 @@ class TestAtomicAttackIntegration:
             AttackResult(
                 conversation_id=f"conv-{i}",
                 objective=f"objective{i + 1}",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
@@ -476,7 +472,6 @@ class TestAtomicAttackIntegration:
             AttackResult(
                 conversation_id="conv-1",
                 objective="single_objective",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
@@ -513,7 +508,6 @@ class TestAtomicAttackIntegration:
             AttackResult(
                 conversation_id=f"conv-{i}",
                 objective=f"objective_{i}",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
@@ -682,7 +676,6 @@ class TestAtomicAttackWithMessages:
             AttackResult(
                 conversation_id=f"conv-{i}",
                 objective=seed_groups_with_messages[i].objective.value,
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=len(seed_groups_with_messages[i].user_messages),
             )

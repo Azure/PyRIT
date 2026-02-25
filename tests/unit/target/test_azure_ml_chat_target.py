@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import os
-from typing import MutableSequence
+from collections.abc import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -23,13 +23,12 @@ def sample_conversations() -> MutableSequence[MessagePiece]:
 
 @pytest.fixture
 def aml_online_chat(patch_central_database) -> AzureMLChatTarget:
-    aml_online_chat = AzureMLChatTarget(
+    return AzureMLChatTarget(
         endpoint="http://aml-test-endpoint.com",
         api_key="valid_api_key",
         extra_param1="sample",
         extra_param2=1.0,
     )
-    return aml_online_chat
 
 
 def test_initialization_with_required_parameters(

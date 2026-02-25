@@ -3,8 +3,8 @@
 
 import os
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 from unittest.mock import MagicMock, patch
 
 from pyrit.common.path import DB_DATA_PATH
@@ -15,7 +15,7 @@ from pyrit.models import MessagePiece
 def test_export_conversation_by_attack_id_file_created(
     sqlite_instance: MemoryInterface, sample_conversations: Sequence[MessagePiece]
 ):
-    attack1_id = sample_conversations[0].attack_identifier["id"]
+    attack1_id = sample_conversations[0].attack_identifier.hash
 
     # Default path in export_conversations()
     file_name = f"{attack1_id}.json"
@@ -105,7 +105,7 @@ def test_export_all_conversations_with_scores_correct_data(sqlite_instance: Memo
             # Read and verify the exported JSON content
             import json
 
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 exported_data = json.load(f)
 
             assert len(exported_data) == 1
@@ -143,7 +143,7 @@ def test_export_all_conversations_with_scores_empty_data(sqlite_instance: Memory
             # Read and verify the exported JSON content is empty
             import json
 
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 exported_data = json.load(f)
 
             assert exported_data == []

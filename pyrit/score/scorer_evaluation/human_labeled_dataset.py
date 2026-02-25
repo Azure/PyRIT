@@ -5,7 +5,7 @@
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 import pandas as pd
 
@@ -42,8 +42,8 @@ class HumanLabeledEntry:
             a different person's score for the same response/conversation.
     """
 
-    conversation: List[Message]
-    human_scores: List[Any]
+    conversation: list[Message]
+    human_scores: list[Any]
 
     def __post_init__(self) -> None:
         """
@@ -67,7 +67,7 @@ class HarmHumanLabeledEntry(HumanLabeledEntry):
     string that represents the type of harm (e.g., "hate_speech", "misinformation", etc.).
     """
 
-    human_scores: List[float]
+    human_scores: list[float]
     # For now, this is a string, but may be enum or Literal in the future.
     harm_category: str
 
@@ -96,7 +96,7 @@ class ObjectiveHumanLabeledEntry(HumanLabeledEntry):
     string that represents the objective (e.g., "how to make a Molotov cocktail?).
     """
 
-    human_scores: List[bool]
+    human_scores: list[bool]
     objective: str
 
     def __post_init__(self) -> None:
@@ -123,7 +123,7 @@ class HumanLabeledDataset:
         self,
         *,
         name: str,
-        entries: List[HumanLabeledEntry],
+        entries: list[HumanLabeledEntry],
         metrics_type: MetricsType,
         version: str,
         harm_definition: Optional[str] = None,
@@ -156,7 +156,7 @@ class HumanLabeledDataset:
         self.version = version
         self.harm_definition = harm_definition
         self.harm_definition_version = harm_definition_version
-        self._harm_definition_obj: Optional["HarmDefinition"] = None
+        self._harm_definition_obj: Optional[HarmDefinition] = None
 
     def get_harm_definition(self) -> Optional["HarmDefinition"]:
         """
@@ -233,7 +233,7 @@ class HumanLabeledDataset:
         parsed_version = None
         parsed_harm_definition = None
         parsed_harm_definition_version = None
-        with open(csv_path, "r", encoding="utf-8") as f:
+        with open(csv_path, encoding="utf-8") as f:
             first_line = f.readline().strip()
             if first_line.startswith("#"):
                 # Parse key=value pairs from the comment line
@@ -294,7 +294,7 @@ class HumanLabeledDataset:
         else:
             data_types = ["text"] * len(eval_df[STANDARD_ASSISTANT_RESPONSE_COL])
 
-        entries: List[HumanLabeledEntry] = []
+        entries: list[HumanLabeledEntry] = []
         for response_to_score, human_scores, objective_or_harm, data_type in zip(
             responses_to_score, all_human_scores, objectives_or_harms, data_types
         ):
@@ -437,13 +437,13 @@ class HumanLabeledDataset:
                 raise ValueError(f"Human score column '{col}' contains NaN values.")
 
     @staticmethod
-    def _construct_harm_entry(*, messages: List[Message], harm: str, human_scores: List[Any]) -> HarmHumanLabeledEntry:
+    def _construct_harm_entry(*, messages: list[Message], harm: str, human_scores: list[Any]) -> HarmHumanLabeledEntry:
         float_scores = [float(score) for score in human_scores]
         return HarmHumanLabeledEntry(messages, float_scores, harm)
 
     @staticmethod
     def _construct_objective_entry(
-        *, messages: List[Message], objective: str, human_scores: List[Any]
+        *, messages: list[Message], objective: str, human_scores: list[Any]
     ) -> "ObjectiveHumanLabeledEntry":
         # Convert scores to int before casting to bool in case the values (0, 1) are parsed as strings
         bool_scores = [bool(int(score)) for score in human_scores]

@@ -272,14 +272,10 @@ API Reference
     :toctree: _autosummary/
 
     class_name_to_snake_case
-    ConverterIdentifier
+    ComponentIdentifier
+    config_hash
     Identifiable
-    Identifier
-    IdentifierT
-    IdentifierType
-    ScorerIdentifier
     snake_case_to_class_name
-    TargetIdentifier
 
 :py:mod:`pyrit.memory`
 ======================
@@ -374,6 +370,7 @@ API Reference
     ScoreType
     Seed
     SeedAttackGroup
+    SeedAttackTechniqueGroup
     SeedDataset
     SeedGroup
     SeedObjective
@@ -408,7 +405,11 @@ API Reference
     AsciiSmugglerConverter
     AskToDecodeConverter
     AtbashConverter
+    AudioEchoConverter
     AudioFrequencyConverter
+    AudioSpeedConverter
+    AudioVolumeConverter
+    AudioWhiteNoiseConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base2048Converter
@@ -477,6 +478,7 @@ API Reference
     UrlConverter
     VariationConverter
     VariationSelectorSmugglerConverter
+    WordDocConverter
     WordIndexSelectionStrategy
     WordKeywordSelectionStrategy
     WordPositionSelectionStrategy
@@ -553,6 +555,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    AudioFloatScaleScorer
+    AudioTrueFalseScorer
     AzureContentFilterScorer
     BatchScorer
     ConsoleScorerPrinter
@@ -584,6 +588,7 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RefusalScorerPaths
     RegistryUpdateBehavior
     Scorer
     ScorerEvalDatasetFiles

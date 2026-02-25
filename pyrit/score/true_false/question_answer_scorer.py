@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.true_false.true_false_score_aggregator import (
@@ -22,7 +22,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
 
     CORRECT_ANSWER_MATCHING_PATTERNS = ["{correct_answer_index}:", "{correct_answer}"]
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(
         supported_data_types=["text"], required_metadata=["correct_answer_index", "correct_answer"]
     )
 
@@ -49,18 +49,18 @@ class QuestionAnswerScorer(TrueFalseScorer):
         self._correct_answer_matching_patterns = correct_answer_matching_patterns
         self._score_category = category if category is not None else []
 
-        super().__init__(validator=validator or self._default_validator, score_aggregator=score_aggregator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            score_aggregator=self._score_aggregator.__name__,
-            scorer_specific_params={
+            params={
+                "score_aggregator": self._score_aggregator.__name__,
                 "correct_answer_matching_patterns": self._correct_answer_matching_patterns,
             },
         )
@@ -91,7 +91,7 @@ class QuestionAnswerScorer(TrueFalseScorer):
                 matching_text = text
                 break
 
-        scores = [
+        return [
             Score(
                 score_value=str(result),
                 score_value_description="",
@@ -108,5 +108,3 @@ class QuestionAnswerScorer(TrueFalseScorer):
                 objective=objective,
             )
         ]
-
-        return scores

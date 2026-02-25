@@ -4,7 +4,6 @@
 """Tests for the Scam class."""
 
 import pathlib
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -16,7 +15,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
 )
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedAttackGroup, SeedDataset, SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario import DatasetConfiguration
@@ -27,28 +26,24 @@ SEED_DATASETS_PATH = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "
 SEED_PROMPT_LIST = list(SeedDataset.from_yaml_file(SEED_DATASETS_PATH / "scams.prompt").get_values())
 
 
-def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
 @pytest.fixture
-def mock_memory_seed_groups() -> List[SeedGroup]:
+def mock_memory_seed_groups() -> list[SeedGroup]:
     """Create mock seed groups that _get_default_seed_groups() would return."""
     return [SeedGroup(seeds=[SeedObjective(value=prompt)]) for prompt in SEED_PROMPT_LIST]
 
@@ -81,7 +76,7 @@ def multi_turn_strategy() -> ScamStrategy:
 
 
 @pytest.fixture
-def scam_prompts() -> List[str]:
+def scam_prompts() -> list[str]:
     return SEED_PROMPT_LIST
 
 
@@ -123,7 +118,7 @@ def mock_adversarial_target() -> PromptChatTarget:
 
 
 @pytest.fixture
-def sample_objectives() -> List[str]:
+def sample_objectives() -> list[str]:
     return ["scam prompt 1", "scam prompt 2"]
 
 
@@ -138,7 +133,7 @@ class TestScamInitialization:
         self,
         *,
         mock_objective_scorer: TrueFalseCompositeScorer,
-        sample_objectives: List[str],
+        sample_objectives: list[str],
     ) -> None:
         scenario = Scam(
             objectives=sample_objectives,
@@ -148,13 +143,13 @@ class TestScamInitialization:
         # objectives are stored as _deprecated_objectives; _seed_groups is resolved lazily
         assert scenario._deprecated_objectives == sample_objectives
         assert scenario.name == "Scam"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_objectives(
         self,
         *,
         mock_objective_scorer: TrueFalseCompositeScorer,
-        mock_memory_seed_groups: List[SeedGroup],
+        mock_memory_seed_groups: list[SeedGroup],
     ) -> None:
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Scam(objective_scorer=mock_objective_scorer)
@@ -162,7 +157,7 @@ class TestScamInitialization:
             # seed_groups are resolved lazily; _deprecated_objectives should be None
             assert scenario._deprecated_objectives is None
             assert scenario.name == "Scam"
-            assert scenario.version == 1
+            assert scenario.VERSION == 1
 
     def test_init_with_default_scorer(self, mock_memory_seed_groups) -> None:
         """Test initialization with default scorer."""
@@ -170,7 +165,7 @@ class TestScamInitialization:
             scenario = Scam()
             assert scenario._objective_scorer_identifier
 
-    def test_init_with_custom_scorer(self, *, mock_memory_seed_groups: List[SeedGroup]) -> None:
+    def test_init_with_custom_scorer(self, *, mock_memory_seed_groups: list[SeedGroup]) -> None:
         """Test initialization with custom scorer."""
         scorer = MagicMock(spec=TrueFalseCompositeScorer)
 
@@ -179,7 +174,7 @@ class TestScamInitialization:
             assert isinstance(scenario._scorer_config, AttackScoringConfig)
 
     def test_init_default_adversarial_chat(
-        self, *, mock_objective_scorer: TrueFalseCompositeScorer, mock_memory_seed_groups: List[SeedGroup]
+        self, *, mock_objective_scorer: TrueFalseCompositeScorer, mock_memory_seed_groups: list[SeedGroup]
     ) -> None:
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):
             scenario = Scam(objective_scorer=mock_objective_scorer)
@@ -188,7 +183,7 @@ class TestScamInitialization:
             assert scenario._adversarial_chat._temperature == 1.2
 
     def test_init_with_adversarial_chat(
-        self, *, mock_objective_scorer: TrueFalseCompositeScorer, mock_memory_seed_groups: List[SeedGroup]
+        self, *, mock_objective_scorer: TrueFalseCompositeScorer, mock_memory_seed_groups: list[SeedGroup]
     ) -> None:
         adversarial_chat = MagicMock(OpenAIChatTarget)
         adversarial_chat.get_identifier.return_value = _mock_target_id("CustomAdversary")
@@ -326,7 +321,7 @@ class TestScamLifecycle:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseCompositeScorer,
-        mock_memory_seed_groups: List[SeedGroup],
+        mock_memory_seed_groups: list[SeedGroup],
         mock_dataset_config,
     ) -> None:
         """Test initialization with custom max_concurrency."""
@@ -343,7 +338,7 @@ class TestScamLifecycle:
         *,
         mock_objective_target: PromptTarget,
         mock_objective_scorer: TrueFalseCompositeScorer,
-        mock_memory_seed_groups: List[SeedGroup],
+        mock_memory_seed_groups: list[SeedGroup],
         mock_dataset_config,
     ) -> None:
         """Test initialization with memory labels."""
@@ -373,11 +368,11 @@ class TestScamProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     @pytest.mark.asyncio
     async def test_no_target_duplication_async(
-        self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: List[SeedGroup], mock_dataset_config
+        self, *, mock_objective_target: PromptTarget, mock_memory_seed_groups: list[SeedGroup], mock_dataset_config
     ) -> None:
         """Test that all three targets (adversarial, object, scorer) are distinct."""
         with patch.object(Scam, "_resolve_seed_groups", return_value=mock_memory_seed_groups):

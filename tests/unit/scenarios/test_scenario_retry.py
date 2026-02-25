@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock
 import pytest
 
 from pyrit.executor.attack.core import AttackExecutorResult
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.scenario import DatasetConfiguration, ScenarioResult
@@ -22,13 +22,11 @@ OBJECTIVE_PREFIX = "objective"
 ATTACK_NAME_PREFIX = "attack_"
 
 
-def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module=TEST_MODULE,
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -69,7 +67,6 @@ def create_attack_result(
     return AttackResult(
         conversation_id=conversation_id or f"{CONV_ID_PREFIX}{index}",
         objective=objective or f"{OBJECTIVE_PREFIX}{index}",
-        attack_identifier={"__type__": TEST_ATTACK_TYPE, "__module__": TEST_MODULE, "id": str(index)},
         outcome=outcome,
         executed_turns=executed_turns,
     )
@@ -195,11 +192,9 @@ def mock_atomic_attacks():
 def mock_objective_target():
     """Create a mock objective target for testing."""
     target = MagicMock()
-    target.get_identifier.return_value = TargetIdentifier(
+    target.get_identifier.return_value = ComponentIdentifier(
         class_name="MockTarget",
         class_module=TEST_MODULE,
-        class_description="",
-        identifier_type="instance",
     )
     return target
 
@@ -420,12 +415,11 @@ class TestScenarioResumption:
                 results = [create_attack_result(i, objective=f"obj{i}") for i in [1, 2]]
                 save_attack_results_to_memory(results)
                 raise Exception("Failed after 2 objectives")
-            else:
-                # Retry: should only execute remaining objectives (obj3, obj4)
-                executed_objectives.extend(["obj3", "obj4"])
-                results = [create_attack_result(i, objective=f"obj{i}") for i in [3, 4]]
-                save_attack_results_to_memory(results)
-                return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
+            # Retry: should only execute remaining objectives (obj3, obj4)
+            executed_objectives.extend(["obj3", "obj4"])
+            results = [create_attack_result(i, objective=f"obj{i}") for i in [3, 4]]
+            save_attack_results_to_memory(results)
+            return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
 
         atomic_attack.run_async = mock_run_with_partial_completion
 
@@ -471,18 +465,16 @@ class TestScenarioResumption:
                 results = [create_attack_result(2, objective="objective2")]
                 save_attack_results_to_memory(results)
                 return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
-            else:
-                raise AssertionError("Attack 2 should not be retried after completion")
+            raise AssertionError("Attack 2 should not be retried after completion")
 
         # Attack 3: Fails on first attempt, succeeds on retry
         async def mock_run_attack3(*args, **kwargs):
             call_count["attack_3"] += 1
             if call_count["attack_3"] == 1:
                 raise Exception("Attack 3 failed on first attempt")
-            else:
-                results = [create_attack_result(3, objective="objective3")]
-                save_attack_results_to_memory(results)
-                return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
+            results = [create_attack_result(3, objective="objective3")]
+            save_attack_results_to_memory(results)
+            return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
 
         attack1.run_async = mock_run_attack1
         attack2.run_async = mock_run_attack2

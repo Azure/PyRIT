@@ -4,7 +4,7 @@
 import logging
 import uuid
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import Literal, Optional
 
 from pyrit.common.net_utility import make_request_and_raise_if_error_async
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
@@ -55,8 +55,8 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         *,
         source: str = "https://raw.githubusercontent.com/apple/ml-vlsu/main/data/VLSU.csv",
         source_type: Literal["public_url", "file"] = "public_url",
-        categories: Optional[List[VLSUCategory]] = None,
-        unsafe_grades: Optional[List[str]] = ["unsafe", "borderline"],
+        categories: Optional[list[VLSUCategory]] = None,
+        unsafe_grades: Optional[list[str]] = ["unsafe", "borderline"],
         max_examples: Optional[int] = None,
     ):
         """
@@ -86,9 +86,9 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         # Validate categories if provided
         if categories is not None:
             valid_categories = {category.value for category in VLSUCategory}
-            invalid_categories = (
-                set(cat.value if isinstance(cat, VLSUCategory) else cat for cat in categories) - valid_categories
-            )
+            invalid_categories = {
+                cat.value if isinstance(cat, VLSUCategory) else cat for cat in categories
+            } - valid_categories
             if invalid_categories:
                 raise ValueError(f"Invalid VLSU categories: {', '.join(invalid_categories)}")
 

@@ -5,12 +5,12 @@ import enum
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 import yaml
 
 from pyrit.common.path import HARM_DEFINITION_PATH, SCORER_LIKERT_PATH
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score, SeedPrompt, UnvalidatedScore
 from pyrit.prompt_target import PromptChatTarget
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -31,7 +31,7 @@ class LikertScaleEvalFiles:
             The harm definition path is derived as "{harm_category}.yaml".
     """
 
-    human_labeled_datasets_files: List[str]
+    human_labeled_datasets_files: list[str]
     result_file: str
     harm_category: Optional[str] = None
 
@@ -153,7 +153,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
     A class that represents a "self-ask" score for text scoring for a likert scale.
     """
 
-    _default_validator: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
+    _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
 
     def __init__(
         self,
@@ -170,7 +170,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
             likert_scale (LikertScalePaths): The Likert scale configuration to use for scoring.
             validator (Optional[ScorerPromptValidator]): Custom validator for the scorer. Defaults to None.
         """
-        super().__init__(validator=validator or self._default_validator)
+        super().__init__(validator=validator or self._DEFAULT_VALIDATOR)
 
         self._prompt_target = chat_target
         self._likert_scale = likert_scale
@@ -190,16 +190,20 @@ class SelfAskLikertScorer(FloatScaleScorer):
 
         self._set_likert_scale_system_prompt(likert_scale_path=likert_scale.path)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            system_prompt_template=self._system_prompt,
-            prompt_target=self._prompt_target,
+            params={
+                "system_prompt_template": self._system_prompt,
+            },
+            children={
+                "prompt_target": self._prompt_target.get_identifier(),
+            },
         )
 
     def _set_likert_scale_system_prompt(self, likert_scale_path: Path) -> None:
@@ -229,7 +233,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
             likert_scale=likert_scale_str, category=self._score_category
         )
 
-    def _likert_scale_description_to_string(self, descriptions: list[Dict[str, str]]) -> str:
+    def _likert_scale_description_to_string(self, descriptions: list[dict[str, str]]) -> str:
         """
         Convert the Likert scales to a string representation to be put in a system prompt.
 
@@ -280,6 +284,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
             message_data_type=message_piece.converted_value_data_type,
             scored_prompt_id=message_piece.id,
             category=self._score_category,
+            attack_identifier=message_piece.attack_identifier,
             objective=objective,
         )
 

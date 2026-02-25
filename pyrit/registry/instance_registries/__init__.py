@@ -14,6 +14,9 @@ For registries that store classes (Type[T]), see class_registries/.
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
+from pyrit.registry.instance_registries.converter_registry import (
+    ConverterRegistry,
+)
 from pyrit.registry.instance_registries.scorer_registry import (
     ScorerRegistry,
 )
@@ -25,6 +28,7 @@ __all__ = [
     # Base class
     "BaseInstanceRegistry",
     # Concrete registries
+    "ConverterRegistry",
     "ScorerRegistry",
     "TargetRegistry",
 ]

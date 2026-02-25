@@ -4,7 +4,6 @@
 """Tests for the LeakageScenario class."""
 
 import pathlib
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,7 +11,7 @@ import pytest
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import CrescendoAttack, PromptSendingAttack, RolePlayAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedAttackGroup, SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario import DatasetConfiguration
@@ -20,23 +19,19 @@ from pyrit.scenario.airt import LeakageScenario, LeakageStrategy
 from pyrit.score import TrueFalseCompositeScorer
 
 
-def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -82,8 +77,7 @@ def role_play_strategy():
 def leakage_prompts():
     """The default leakage prompts."""
     leakage_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
-    seed_prompts = list(SeedDataset.from_yaml_file(leakage_path / "leakage.prompt").get_values())
-    return seed_prompts
+    return list(SeedDataset.from_yaml_file(leakage_path / "leakage.prompt").get_values())
 
 
 @pytest.fixture
@@ -124,7 +118,7 @@ def mock_adversarial_target():
 
 
 @pytest.fixture
-def sample_objectives() -> List[str]:
+def sample_objectives() -> list[str]:
     return ["test leakage prompt 1", "test leakage prompt 2"]
 
 
@@ -144,7 +138,7 @@ class TestLeakageScenarioInitialization:
 
         assert len(scenario._objectives) == len(sample_objectives)
         assert scenario.name == "Leakage Scenario"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_objectives(self, mock_objective_scorer, leakage_prompts, mock_memory_seeds):
         """Test initialization with default objectives."""
@@ -153,7 +147,7 @@ class TestLeakageScenarioInitialization:
 
             assert scenario._objectives == leakage_prompts
             assert scenario.name == "Leakage Scenario"
-            assert scenario.version == 1
+            assert scenario.VERSION == 1
 
     def test_init_with_default_scorer(self, mock_memory_seeds):
         """Test initialization with default scorer."""
@@ -434,7 +428,7 @@ class TestLeakageScenarioProperties:
             objective_scorer=mock_objective_scorer,
         )
 
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_get_strategy_class_returns_leakage_strategy(self):
         """Test that get_strategy_class returns LeakageStrategy."""

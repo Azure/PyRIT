@@ -9,7 +9,7 @@ and memory_labels consistently according to the established contracts.
 """
 
 import uuid
-from typing import List, Optional
+from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -23,7 +23,7 @@ from pyrit.executor.attack import (
     TreeOfAttacksWithPruningAttack,
 )
 from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     ChatMessageRole,
@@ -37,23 +37,19 @@ from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
 
 
-def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test_module",
-        class_description="",
-        identifier_type="instance",
     )
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test_module",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -111,7 +107,7 @@ def multimodal_audio_message() -> Message:
 
 
 @pytest.fixture
-def prepended_conversation_text() -> List[Message]:
+def prepended_conversation_text() -> list[Message]:
     """Create a text-only prepended conversation."""
     return [
         Message.from_prompt(prompt="Hello, I need help with something.", role="user"),
@@ -122,7 +118,7 @@ def prepended_conversation_text() -> List[Message]:
 
 
 @pytest.fixture
-def prepended_conversation_multimodal() -> List[Message]:
+def prepended_conversation_multimodal() -> list[Message]:
     """Create a multimodal prepended conversation with image content."""
     conv_id = str(uuid.uuid4())
     return [
@@ -576,7 +572,7 @@ class TestPrependedConversationInMemory:
     def _assert_assistant_translated_to_simulated(
         self,
         *,
-        conversation: List[Message],
+        conversation: list[Message],
         prepended_count: int,
     ) -> None:
         """
@@ -610,7 +606,7 @@ class TestPrependedConversationInMemory:
         self,
         mock_chat_target: MagicMock,
         sample_response: Message,
-        prepended_conversation_multimodal: List[Message],
+        prepended_conversation_multimodal: list[Message],
         sqlite_instance,
     ) -> None:
         """Test that prepended conversation is preserved in memory with correct role translation."""
@@ -653,7 +649,7 @@ class TestPrependedConversationInMemory:
     async def test_red_teaming_attack_adds_prepended_to_memory(
         self,
         red_teaming_attack: RedTeamingAttack,
-        prepended_conversation_multimodal: List[Message],
+        prepended_conversation_multimodal: list[Message],
         sqlite_instance,
     ) -> None:
         """Test that RedTeamingAttack preserves prepended conversation in memory with role translation."""
@@ -687,7 +683,7 @@ class TestPrependedConversationInMemory:
     async def test_crescendo_attack_adds_prepended_to_memory(
         self,
         crescendo_attack: CrescendoAttack,
-        prepended_conversation_multimodal: List[Message],
+        prepended_conversation_multimodal: list[Message],
         multimodal_text_message: Message,
         sqlite_instance,
     ) -> None:
@@ -727,7 +723,7 @@ class TestPrependedConversationInMemory:
         mock_objective_scorer: MagicMock,
         sample_response: Message,
         success_score: Score,
-        prepended_conversation_multimodal: List[Message],
+        prepended_conversation_multimodal: list[Message],
         multimodal_text_message: Message,
         sqlite_instance,
     ) -> None:
@@ -805,7 +801,7 @@ class TestMultiTurnTurnCounting:
     async def test_red_teaming_starts_with_prepended_turn_count(
         self,
         red_teaming_attack: RedTeamingAttack,
-        prepended_conversation_text: List[Message],
+        prepended_conversation_text: list[Message],
     ) -> None:
         """Test that RedTeamingAttack starts executed_turns at prepended turn count."""
         # The prepended_conversation_text has 2 assistant messages
@@ -822,7 +818,7 @@ class TestMultiTurnTurnCounting:
     async def test_crescendo_starts_with_prepended_turn_count(
         self,
         crescendo_attack: CrescendoAttack,
-        prepended_conversation_text: List[Message],
+        prepended_conversation_text: list[Message],
         multimodal_text_message: Message,
     ) -> None:
         """Test that CrescendoAttack starts executed_turns at prepended turn count."""
@@ -840,7 +836,7 @@ class TestMultiTurnTurnCounting:
     async def test_tap_starts_with_prepended_turn_count(
         self,
         tap_attack: TreeOfAttacksWithPruningAttack,
-        prepended_conversation_text: List[Message],
+        prepended_conversation_text: list[Message],
         multimodal_text_message: Message,
     ) -> None:
         """Test that TreeOfAttacksWithPruningAttack starts executed_turns at prepended turn count."""
@@ -898,7 +894,7 @@ class TestMemoryLabelsPropagation:
 # =============================================================================
 
 
-def _get_adversarial_chat_text_values(*, adversarial_chat_conversation_id: str) -> List[str]:
+def _get_adversarial_chat_text_values(*, adversarial_chat_conversation_id: str) -> list[str]:
     """
     Get all text values from the adversarial chat conversation in memory.
 
@@ -924,7 +920,7 @@ def _get_adversarial_chat_text_values(*, adversarial_chat_conversation_id: str) 
 
 def _assert_prepended_text_in_adversarial_context(
     *,
-    prepended_conversation: List[Message],
+    prepended_conversation: list[Message],
     adversarial_chat_conversation_id: str,
     adversarial_chat_mock: Optional[MagicMock] = None,
 ) -> None:
@@ -985,7 +981,7 @@ class TestAdversarialChatContextInjection:
         self,
         red_teaming_attack: RedTeamingAttack,
         mock_adversarial_chat: MagicMock,
-        prepended_conversation_text: List[Message],
+        prepended_conversation_text: list[Message],
         sqlite_instance,
     ) -> None:
         """Test that RedTeamingAttack injects prepended conversation into adversarial chat context."""
@@ -1011,7 +1007,7 @@ class TestAdversarialChatContextInjection:
         self,
         crescendo_attack: CrescendoAttack,
         mock_adversarial_chat: MagicMock,
-        prepended_conversation_text: List[Message],
+        prepended_conversation_text: list[Message],
         multimodal_text_message: Message,
         sqlite_instance,
     ) -> None:
@@ -1039,7 +1035,7 @@ class TestAdversarialChatContextInjection:
         self,
         tap_attack: TreeOfAttacksWithPruningAttack,
         mock_adversarial_chat: MagicMock,
-        prepended_conversation_text: List[Message],
+        prepended_conversation_text: list[Message],
         multimodal_text_message: Message,
         sqlite_instance,
     ) -> None:

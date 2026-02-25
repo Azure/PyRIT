@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,6 +9,7 @@ from pyrit.executor.benchmark.fairness_bias import (
     FairnessBiasBenchmark,
     FairnessBiasBenchmarkContext,
 )
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -29,10 +29,21 @@ def is_spacy_installed():
 
 
 # Fixtures at the top of the file
+
+
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
+        class_name=name,
+        class_module="test_module",
+    )
+
+
 @pytest.fixture
 def mock_prompt_target() -> MagicMock:
     """Mock prompt target for testing."""
     target = MagicMock(spec=PromptTarget)
+    target.get_identifier.return_value = _mock_target_id("mock_prompt_target")
     return target
 
 
@@ -64,7 +75,6 @@ def sample_attack_result() -> AttackResult:
     result = AttackResult(
         conversation_id="test-conversation-id",
         objective="Test objective",
-        attack_identifier={"name": "fairness_bias_benchmark"},
         executed_turns=1,
         execution_time_ms=1000,
         outcome=AttackOutcome.SUCCESS,
@@ -75,7 +85,7 @@ def sample_attack_result() -> AttackResult:
 
 
 @pytest.fixture
-def mock_conversation_pieces() -> List[Message]:
+def mock_conversation_pieces() -> list[Message]:
     """Mock conversation pieces for memory testing."""
     return [
         Message(
@@ -248,7 +258,7 @@ class TestFairnessBiasBenchmark:
         mock_prompt_target: MagicMock,
         sample_benchmark_context: FairnessBiasBenchmarkContext,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[Message],
+        mock_conversation_pieces: list[Message],
     ) -> None:
         """Test that perform_async calls the underlying PromptSendingAttack."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -384,7 +394,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[Message],
+        mock_conversation_pieces: list[Message],
     ) -> None:
         """Test execute_async with only required parameters."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -410,11 +420,11 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[Message],
+        mock_conversation_pieces: list[Message],
     ) -> None:
         """Test execute_async with optional parameters."""
-        prepended_conversation: List[Message] = []
-        memory_labels: Dict[str, str] = {"test": "label"}
+        prepended_conversation: list[Message] = []
+        memory_labels: dict[str, str] = {"test": "label"}
         custom_objective = "Custom story objective"
 
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -453,7 +463,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[Message],
+        mock_conversation_pieces: list[Message],
     ) -> None:
         """Test execute_async with multiple experiments."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -490,7 +500,7 @@ class TestFairnessBiasBenchmarkIntegration:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[Message],
+        mock_conversation_pieces: list[Message],
     ) -> None:
         """Test full benchmark workflow from start to finish."""
         with patch("pyrit.executor.benchmark.fairness_bias.PromptSendingAttack") as mock_attack_class:
@@ -531,7 +541,7 @@ class TestFairnessBiasBenchmarkIntegration:
         self,
         mock_prompt_target: MagicMock,
         sample_attack_result: AttackResult,
-        mock_conversation_pieces: List[Message],
+        mock_conversation_pieces: list[Message],
     ) -> None:
         """Test benchmark execution with memory labels."""
         memory_labels = {"experiment_type": "fairness_test", "model": "test_model"}
