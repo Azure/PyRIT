@@ -236,11 +236,7 @@ class TestJailbreakAttackGeneration:
             )
             atomic_attacks = await scenario._get_atomic_attacks_async()
             for run in atomic_attacks:
-                assert (
-                    isinstance(run._attack, RolePlayAttack)
-                    or isinstance(run._attack, ManyShotJailbreakAttack)
-                    or isinstance(run._attack, SkeletonKeyAttack)
-                )
+                assert isinstance(run._attack, (RolePlayAttack, ManyShotJailbreakAttack, SkeletonKeyAttack))
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_manyshot(

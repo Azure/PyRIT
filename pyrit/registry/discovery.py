@@ -74,10 +74,13 @@ def _process_file(*, file_path: Path, base_class: type[T]) -> Iterator[tuple[str
 
         for attr_name in dir(module):
             attr = getattr(module, attr_name)
-            if inspect.isclass(attr) and issubclass(attr, base_class) and attr is not base_class:
-                # Check it's not abstract
-                if not inspect.isabstract(attr):
-                    yield (file_path.stem, file_path, attr)
+            if (
+                inspect.isclass(attr)
+                and issubclass(attr, base_class)
+                and attr is not base_class
+                and not inspect.isabstract(attr)
+            ):
+                yield (file_path.stem, file_path, attr)
 
     except Exception as e:
         logger.warning(f"Failed to load module from {file_path}: {e}")
@@ -125,11 +128,10 @@ def discover_in_package(
             # For non-package modules, find and yield subclasses
             if not is_pkg:
                 for name, obj in inspect.getmembers(module, inspect.isclass):
-                    if issubclass(obj, base_class) and obj is not base_class:
-                        if not inspect.isabstract(obj):
-                            # Build the registry name including any prefix
-                            registry_name = name_builder(_prefix, module_name)
-                            yield (registry_name, obj)
+                    if issubclass(obj, base_class) and obj is not base_class and not inspect.isabstract(obj):
+                        # Build the registry name including any prefix
+                        registry_name = name_builder(_prefix, module_name)
+                        yield (registry_name, obj)
 
             # Recursively discover in subpackages
             if recursive and is_pkg:
@@ -185,6 +187,5 @@ def discover_subclasses_in_loaded_modules(
             continue
 
         for name, obj in inspect.getmembers(module, inspect.isclass):
-            if issubclass(obj, base_class) and obj is not base_class:
-                if not inspect.isabstract(obj):
-                    yield (module_name, obj)
+            if issubclass(obj, base_class) and obj is not base_class and not inspect.isabstract(obj):
+                yield (module_name, obj)

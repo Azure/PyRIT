@@ -92,9 +92,7 @@ class AppRPCServer:
             self._client_ready_semaphore.release()
 
         def is_client_ready(self) -> bool:
-            if self._callback_score_prompt is None:
-                return False
-            return True
+            return self._callback_score_prompt is not None
 
         def send_score_prompt(self, prompt: MessagePiece, task: Optional[str] = None) -> None:
             if not self.is_client_ready():

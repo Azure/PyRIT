@@ -299,10 +299,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             try:
                 for entry in entries:
                     # Ensure the entry is attached to the session. If it's detached, merge it.
-                    if not session.is_modified(entry):
-                        entry_in_session = session.merge(entry)
-                    else:
-                        entry_in_session = entry
+                    entry_in_session = session.merge(entry) if not session.is_modified(entry) else entry
                     for field, value in update_fields.items():
                         if field in vars(entry_in_session):
                             setattr(entry_in_session, field, value)

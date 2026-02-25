@@ -55,7 +55,7 @@ class TestAzureSpeechTextToAudioConverter:
             file_path = converted_output.output_text
             assert file_path
             assert os.path.exists(file_path)
-            data = open(file_path, "rb").read()
+            data = open(file_path, "rb").read()  # noqa: SIM115
             assert data == b"dummy_audio_data"
             os.remove(file_path)
             MockSpeechConfig.assert_called_once_with(subscription="dummy_value", region="dummy_value")

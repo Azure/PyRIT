@@ -463,7 +463,7 @@ def _try_instantiate_converter(converter_name: str):
             kwargs[pname] = TextJailBreak(string_template="Test {{ prompt }}")
         # Path — use a temp JPEG file
         elif ann is Path or "Path" in ann_str:
-            tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+            tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)  # noqa: SIM115
             # Minimal valid JPEG header
             tmp.write(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00")
             tmp.close()
