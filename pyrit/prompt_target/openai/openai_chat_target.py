@@ -4,7 +4,8 @@
 import base64
 import json
 import logging
-from typing import Any, Dict, MutableSequence, Optional
+from collections.abc import MutableSequence
+from typing import Any, Optional
 
 from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
@@ -676,7 +677,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                     f"This target only supports text, image_path, and audio_path. Received: {prompt_data_type}."
                 )
 
-    def _build_response_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
+    def _build_response_format(self, json_config: _JsonResponseConfig) -> Optional[dict[str, Any]]:
         if not json_config.enabled:
             return None
 

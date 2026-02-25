@@ -3,7 +3,7 @@
 
 import os
 import tempfile
-from typing import Sequence
+from collections.abc import Sequence
 from unittest.mock import patch
 from uuid import uuid4
 

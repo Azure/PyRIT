@@ -3,7 +3,8 @@
 
 
 import uuid
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 from pyrit.common.utils import to_sha256
 from pyrit.identifiers import ComponentIdentifier

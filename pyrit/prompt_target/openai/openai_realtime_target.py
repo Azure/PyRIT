@@ -7,7 +7,7 @@ import logging
 import re
 import wave
 from dataclasses import dataclass, field
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, Literal, Optional
 
 from openai import AsyncOpenAI
 
@@ -43,7 +43,7 @@ class RealtimeTargetResult:
     """
 
     audio_bytes: bytes = field(default_factory=lambda: b"")
-    transcripts: List[str] = field(default_factory=list)
+    transcripts: list[str] = field(default_factory=list)
 
     def flatten_transcripts(self) -> str:
         """
@@ -639,7 +639,7 @@ class RealtimeTarget(OpenAITarget):
                 return f"[{error_type}] {error_message}"
         return "Unknown error occurred"
 
-    async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
+    async def send_text_async(self, text: str, conversation_id: str) -> tuple[str, RealtimeTargetResult]:
         """
         Send text prompt using OpenAI Realtime API client.
 
@@ -693,7 +693,7 @@ class RealtimeTarget(OpenAITarget):
         output_audio_path = await self.save_audio(audio_bytes=result.audio_bytes, sample_rate=24000)
         return output_audio_path, result
 
-    async def send_audio_async(self, filename: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
+    async def send_audio_async(self, filename: str, conversation_id: str) -> tuple[str, RealtimeTargetResult]:
         """
         Send an audio message using OpenAI Realtime API client.
 

@@ -8,7 +8,7 @@ import logging
 import math
 import random
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ def combine_dict(
     return result
 
 
-def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> list[str]:
+def combine_list(list1: Union[str, list[str]], list2: Union[str, list[str]]) -> list[str]:
     """
     Combine two lists or strings into a single list with unique values.
 
@@ -78,7 +78,7 @@ def combine_list(list1: Union[str, List[str]], list2: Union[str, List[str]]) -> 
     return list(set(list1 + list2))
 
 
-def get_random_indices(*, start: int, size: int, proportion: float) -> List[int]:
+def get_random_indices(*, start: int, size: int, proportion: float) -> list[int]:
     """
     Generate a list of random indices based on the specified proportion of a given size.
     The indices are selected from the range [start, start + size).
@@ -126,7 +126,7 @@ def to_sha256(data: str) -> str:
 
 
 def warn_if_set(
-    *, config: Any, unused_fields: List[str], log: Union[logging.Logger, logging.LoggerAdapter[logging.Logger]] = logger
+    *, config: Any, unused_fields: list[str], log: Union[logging.Logger, logging.LoggerAdapter[logging.Logger]] = logger
 ) -> None:
     """
     Warn about unused parameters in configurations.
@@ -168,9 +168,9 @@ _T = TypeVar("_T")
 
 def get_kwarg_param(
     *,
-    kwargs: Dict[str, Any],
+    kwargs: dict[str, Any],
     param_name: str,
-    expected_type: Type[_T],
+    expected_type: type[_T],
     required: bool = True,
     default_value: Optional[_T] = None,
 ) -> Optional[_T]:

@@ -3,7 +3,7 @@
 
 import random
 import re
-from typing import Dict, List, Optional
+from typing import Optional
 
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
@@ -19,7 +19,7 @@ class ColloquialWordswapConverter(PromptConverter):
     SUPPORTED_OUTPUT_TYPES = ("text",)
 
     def __init__(
-        self, deterministic: bool = False, custom_substitutions: Optional[Dict[str, List[str]]] = None
+        self, deterministic: bool = False, custom_substitutions: Optional[dict[str, list[str]]] = None
     ) -> None:
         """
         Initialize the converter with optional deterministic mode and custom substitutions.

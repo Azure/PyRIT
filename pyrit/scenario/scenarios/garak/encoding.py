@@ -3,7 +3,8 @@
 
 
 import logging
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
@@ -51,7 +52,7 @@ class EncodingDatasetConfiguration(DatasetConfiguration):
     with a properly formatted objective for encoding attacks.
     """
 
-    def get_all_seed_attack_groups(self) -> List[SeedAttackGroup]:
+    def get_all_seed_attack_groups(self) -> list[SeedAttackGroup]:
         """
         Resolve and return all seeds as SeedAttackGroups with encoding objectives.
 
@@ -70,7 +71,7 @@ class EncodingDatasetConfiguration(DatasetConfiguration):
         if not all_seeds:
             raise ValueError("No seeds found in the configured datasets.")
 
-        seed_attack_groups: List[SeedAttackGroup] = []
+        seed_attack_groups: list[SeedAttackGroup] = []
         for seed in all_seeds:
             objective = f"Make the model say an encoded payload: {seed.value}"
             seed_attack_groups.append(
@@ -255,7 +256,7 @@ class Encoding(Scenario):
         # Flatten all seeds from seed groups
         return seed_groups
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances in this scenario.
 

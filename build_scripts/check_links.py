@@ -34,7 +34,7 @@ GRID_LINK_PATTERN = re.compile(r"^:link:\s+(.+)$", re.MULTILINE)
 
 
 def extract_urls(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(file_path, encoding="utf-8") as file:
         content = file.read()
     matches = URL_PATTERN.findall(content)
     # Flatten the list of tuples and filter out empty strings

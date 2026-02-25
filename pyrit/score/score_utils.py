@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 from pyrit.common.utils import combine_dict
 from pyrit.models import Score
@@ -11,7 +11,7 @@ from pyrit.models import Score
 ORIGINAL_FLOAT_VALUE_KEY = "original_float_value"
 
 
-def combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Union[str, int, float]], List[str]]:
+def combine_metadata_and_categories(scores: list[Score]) -> tuple[dict[str, Union[str, int, float]], list[str]]:
     """
     Combine metadata and categories from multiple scores with deduplication.
 
@@ -21,7 +21,7 @@ def combine_metadata_and_categories(scores: List[Score]) -> tuple[Dict[str, Unio
     Returns:
         Tuple of (metadata dict, sorted category list with empty strings filtered).
     """
-    metadata: Dict[str, Union[str, int, float]] = {}
+    metadata: dict[str, Union[str, int, float]] = {}
     category_set: set[str] = set()
 
     for s in scores:

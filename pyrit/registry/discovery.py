@@ -13,8 +13,9 @@ import importlib.util
 import inspect
 import logging
 import pkgutil
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Callable, Iterator, Optional, Tuple, Type, TypeVar
+from typing import Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -24,9 +25,9 @@ T = TypeVar("T")
 def discover_in_directory(
     *,
     directory: Path,
-    base_class: Type[T],
+    base_class: type[T],
     recursive: bool = True,
-) -> Iterator[Tuple[str, Path, Type[T]]]:
+) -> Iterator[tuple[str, Path, type[T]]]:
     """
     Discover all subclasses of base_class in a directory by loading Python files.
 
@@ -52,7 +53,7 @@ def discover_in_directory(
             yield from discover_in_directory(directory=item, base_class=base_class, recursive=True)
 
 
-def _process_file(*, file_path: Path, base_class: Type[T]) -> Iterator[Tuple[str, Path, Type[T]]]:
+def _process_file(*, file_path: Path, base_class: type[T]) -> Iterator[tuple[str, Path, type[T]]]:
     """
     Process a Python file and yield subclasses of the base class.
 
@@ -86,11 +87,11 @@ def discover_in_package(
     *,
     package_path: Path,
     package_name: str,
-    base_class: Type[T],
+    base_class: type[T],
     recursive: bool = True,
     name_builder: Optional[Callable[[str, str], str]] = None,
     _prefix: str = "",
-) -> Iterator[Tuple[str, Type[T]]]:
+) -> Iterator[tuple[str, type[T]]]:
     """
     Discover all subclasses using pkgutil.iter_modules on a package.
 
@@ -150,9 +151,9 @@ def discover_in_package(
 
 def discover_subclasses_in_loaded_modules(
     *,
-    base_class: Type[T],
-    exclude_module_prefixes: Optional[Tuple[str, ...]] = None,
-) -> Iterator[Tuple[str, Type[T]]]:
+    base_class: type[T],
+    exclude_module_prefixes: Optional[tuple[str, ...]] = None,
+) -> Iterator[tuple[str, type[T]]]:
     """
     Discover subclasses of a base class from already-loaded modules.
 

@@ -370,6 +370,7 @@ API Reference
     ScoreType
     Seed
     SeedAttackGroup
+    SeedAttackTechniqueGroup
     SeedDataset
     SeedGroup
     SeedObjective
@@ -404,7 +405,11 @@ API Reference
     AsciiSmugglerConverter
     AskToDecodeConverter
     AtbashConverter
+    AudioEchoConverter
     AudioFrequencyConverter
+    AudioSpeedConverter
+    AudioVolumeConverter
+    AudioWhiteNoiseConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base2048Converter

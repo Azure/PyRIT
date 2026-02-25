@@ -5,8 +5,9 @@ import os
 import shutil
 import tempfile
 import uuid
+from collections.abc import Generator, MutableSequence, Sequence
 from contextlib import AbstractAsyncContextManager
-from typing import Generator, MutableSequence, Optional, Sequence
+from typing import Optional
 from unittest.mock import MagicMock, patch
 
 from pyrit.identifiers import ComponentIdentifier
