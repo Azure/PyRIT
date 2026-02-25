@@ -5,7 +5,6 @@ import base64
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Tuple
 
 import numpy
 from PIL import Image
@@ -129,7 +128,7 @@ class TransparencyAttackConverter(PromptConverter):
         self,
         *,
         benign_image_path: Path,
-        size: Tuple[int, int] = (150, 150),
+        size: tuple[int, int] = (150, 150),
         steps: int = 1500,
         learning_rate: float = 0.001,
         convergence_threshold: float = 1e-6,

@@ -282,7 +282,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
         objective="task",
     )
 
-    assert chat_target.send_prompt_async.call_count == int(1)
+    assert chat_target.send_prompt_async.call_count == 1
 
 
 @pytest.mark.asyncio

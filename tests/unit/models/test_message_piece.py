@@ -5,8 +5,8 @@ import os
 import tempfile
 import time
 import uuid
+from collections.abc import MutableSequence
 from datetime import datetime, timedelta
-from typing import MutableSequence
 
 import pytest
 from unit.mocks import MockPromptTarget, get_mock_target, get_sample_conversations

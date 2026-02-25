@@ -11,7 +11,6 @@ are documented in doc/api.rst to prevent accidentally missing items in the docum
 import importlib
 import re
 from pathlib import Path
-from typing import Set
 
 import pytest
 
@@ -25,7 +24,7 @@ def get_api_rst_path() -> Path:
     return workspace_root / "doc" / "api.rst"
 
 
-def get_documented_items_from_rst() -> dict[str, Set[str]]:
+def get_documented_items_from_rst() -> dict[str, set[str]]:
     """
     Parse api.rst and extract all documented items by module.
 
@@ -35,7 +34,7 @@ def get_documented_items_from_rst() -> dict[str, Set[str]]:
     api_rst = get_api_rst_path()
     content = api_rst.read_text()
 
-    documented: dict[str, Set[str]] = {}
+    documented: dict[str, set[str]] = {}
     current_module = None
 
     # Find module definitions like :py:mod:`pyrit.prompt_converter`
@@ -75,7 +74,7 @@ def get_documented_items_from_rst() -> dict[str, Set[str]]:
     return documented
 
 
-def get_module_exports(module_path: str) -> Set[str]:
+def get_module_exports(module_path: str) -> set[str]:
     """
     Get all exported items from a module's __all__ list.
 

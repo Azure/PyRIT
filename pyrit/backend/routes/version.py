@@ -49,7 +49,7 @@ async def get_version_async() -> VersionResponse:
     build_info_path = Path("/app/build_info.json")
     if build_info_path.exists():
         try:
-            with open(build_info_path, "r") as f:
+            with open(build_info_path) as f:
                 build_info = json.load(f)
                 source = build_info.get("source")
                 commit = build_info.get("commit")

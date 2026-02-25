@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, Union, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Union, cast
 from urllib.parse import urlparse
 
 import msal

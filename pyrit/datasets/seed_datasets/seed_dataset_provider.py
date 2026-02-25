@@ -5,7 +5,7 @@ import asyncio
 import inspect
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Optional
 
 from tqdm import tqdm
 
@@ -27,7 +27,7 @@ class SeedDatasetProvider(ABC):
     - dataset_name property: Human-readable name for the dataset
     """
 
-    _registry: Dict[str, Type["SeedDatasetProvider"]] = {}
+    _registry: dict[str, type["SeedDatasetProvider"]] = {}
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """
@@ -70,7 +70,7 @@ class SeedDatasetProvider(ABC):
         pass
 
     @classmethod
-    def get_all_providers(cls) -> Dict[str, Type["SeedDatasetProvider"]]:
+    def get_all_providers(cls) -> dict[str, type["SeedDatasetProvider"]]:
         """
         Get all registered dataset provider classes.
 
@@ -80,7 +80,7 @@ class SeedDatasetProvider(ABC):
         return cls._registry.copy()
 
     @classmethod
-    def get_all_dataset_names(cls) -> List[str]:
+    def get_all_dataset_names(cls) -> list[str]:
         """
         Get the names of all registered datasets.
 
@@ -108,7 +108,7 @@ class SeedDatasetProvider(ABC):
     async def fetch_datasets_async(
         cls,
         *,
-        dataset_names: Optional[List[str]] = None,
+        dataset_names: Optional[list[str]] = None,
         cache: bool = True,
         max_concurrency: int = 5,
     ) -> list[SeedDataset]:
@@ -149,8 +149,8 @@ class SeedDatasetProvider(ABC):
                 raise ValueError(f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
 
         async def fetch_single_dataset(
-            provider_name: str, provider_class: Type["SeedDatasetProvider"]
-        ) -> Optional[Tuple[str, SeedDataset]]:
+            provider_name: str, provider_class: type["SeedDatasetProvider"]
+        ) -> Optional[tuple[str, SeedDataset]]:
             """
             Fetch a single dataset with error handling.
 
@@ -176,8 +176,8 @@ class SeedDatasetProvider(ABC):
         pbar = tqdm(total=total_count, desc="Loading datasets - this can take a few minutes", unit="dataset")
 
         async def fetch_with_semaphore(
-            provider_name: str, provider_class: Type["SeedDatasetProvider"]
-        ) -> Optional[Tuple[str, SeedDataset]]:
+            provider_name: str, provider_class: type["SeedDatasetProvider"]
+        ) -> Optional[tuple[str, SeedDataset]]:
             """
             Enforce concurrency limit and update progress during dataset fetch.
 
@@ -199,7 +199,7 @@ class SeedDatasetProvider(ABC):
         pbar.close()
 
         # Merge datasets with the same name
-        datasets: Dict[str, SeedDataset] = {}
+        datasets: dict[str, SeedDataset] = {}
         for result in results:
             # Skip None results (filtered datasets)
             if result is None:

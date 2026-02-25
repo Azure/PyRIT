@@ -61,7 +61,7 @@ class TestRemoteDatasetLoader:
         loader._write_cache(cache_file=cache_file, examples=data, file_type="json")
 
         assert cache_file.exists()
-        with open(cache_file, "r", encoding="utf-8") as f:
+        with open(cache_file, encoding="utf-8") as f:
             loaded = json.load(f)
         assert loaded == data
 

@@ -5,7 +5,7 @@ import asyncio
 import copy
 import logging
 import traceback
-from typing import Any, List, Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from pyrit.exceptions import (
@@ -175,7 +175,7 @@ class PromptNormalizer:
             list[Message]: A list of Message objects representing the responses
                 received for each prompt.
         """
-        batch_items: List[List[Any]] = [
+        batch_items: list[list[Any]] = [
             [request.message for request in requests],
             [request.request_converter_configurations for request in requests],
             [request.response_converter_configurations for request in requests],

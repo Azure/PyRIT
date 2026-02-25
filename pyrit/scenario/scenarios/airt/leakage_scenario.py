@@ -3,7 +3,7 @@
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from PIL import Image
 
@@ -131,7 +131,7 @@ class LeakageScenario(Scenario):
         self,
         *,
         adversarial_chat: Optional[PromptChatTarget] = None,
-        objectives: Optional[List[str]] = None,
+        objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -354,7 +354,7 @@ class LeakageScenario(Scenario):
             attack_scoring_config=self._scorer_config,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
+    def _resolve_seed_groups(self) -> list[SeedAttackGroup]:
         """
         Resolve objectives to SeedAttackGroup format required by AtomicAttack.
 
@@ -363,7 +363,7 @@ class LeakageScenario(Scenario):
         """
         return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Generate atomic attacks for each strategy.
 
@@ -373,7 +373,7 @@ class LeakageScenario(Scenario):
         # Resolve objectives to seed groups format
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks: List[AtomicAttack] = []
+        atomic_attacks: list[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=LeakageStrategy
         )

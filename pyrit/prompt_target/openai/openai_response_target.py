@@ -3,16 +3,12 @@
 
 import json
 import logging
+from collections.abc import Awaitable, Callable, MutableSequence
 from copy import deepcopy
 from enum import Enum
 from typing import (
     Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
     Literal,
-    MutableSequence,
     Optional,
     cast,
 )
@@ -75,7 +71,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     def __init__(
         self,
         *,
-        custom_functions: Optional[Dict[str, ToolExecutor]] = None,
+        custom_functions: Optional[dict[str, ToolExecutor]] = None,
         max_output_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         top_p: Optional[float] = None,
@@ -152,7 +148,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         self._extra_body_parameters = extra_body_parameters
 
         # Per-instance tool/func registries:
-        self._custom_functions: Dict[str, ToolExecutor] = custom_functions or {}
+        self._custom_functions: dict[str, ToolExecutor] = custom_functions or {}
         self._fail_on_missing_function: bool = fail_on_missing_function
 
         # Extract the grammar 'tool' if one is present
@@ -223,7 +219,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
-    async def _construct_input_item_from_piece(self, piece: MessagePiece) -> Dict[str, Any]:
+    async def _construct_input_item_from_piece(self, piece: MessagePiece) -> dict[str, Any]:
         """
         Convert a single inline piece into a Responses API content item.
 
@@ -247,7 +243,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             return {"type": "input_image", "image_url": {"url": data_url}}
         raise ValueError(f"Unsupported piece type for inline content: {piece.converted_value_data_type}")
 
-    async def _build_input_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> List[Dict[str, Any]]:
+    async def _build_input_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict[str, Any]]:
         """
         Build the Responses API `input` array.
 
@@ -270,7 +266,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         if not conversation:
             raise ValueError("Conversation cannot be empty")
 
-        input_items: List[Dict[str, Any]] = []
+        input_items: list[dict[str, Any]] = []
 
         for msg_idx, message in enumerate(conversation):
             pieces = message.message_pieces
@@ -289,7 +285,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
             # All pieces in a Message share the same role
             role = pieces[0].api_role
-            content: List[Dict[str, Any]] = []
+            content: list[dict[str, Any]] = []
 
             for piece in pieces:
                 dtype = piece.converted_value_data_type
@@ -403,7 +399,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
 
-    def _build_reasoning_config(self) -> Optional[Dict[str, Any]]:
+    def _build_reasoning_config(self) -> Optional[dict[str, Any]]:
         """
         Build the reasoning configuration dict for the Responses API.
 
@@ -413,14 +409,14 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         if self._reasoning_effort is None and self._reasoning_summary is None:
             return None
 
-        reasoning: Dict[str, Any] = {}
+        reasoning: dict[str, Any] = {}
         if self._reasoning_effort is not None:
             reasoning["effort"] = self._reasoning_effort
         if self._reasoning_summary is not None:
             reasoning["summary"] = self._reasoning_summary
         return reasoning
 
-    def _build_text_format(self, json_config: _JsonResponseConfig) -> Optional[Dict[str, Any]]:
+    def _build_text_format(self, json_config: _JsonResponseConfig) -> Optional[dict[str, Any]]:
         if not json_config.enabled:
             return None
 
@@ -501,7 +497,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             Message: Constructed message with extracted content from output sections.
         """
         # Extract and parse message pieces from validated output sections
-        extracted_response_pieces: List[MessagePiece] = []
+        extracted_response_pieces: list[MessagePiece] = []
         for section in response.output:
             piece = self._parse_response_output_section(
                 section=section,

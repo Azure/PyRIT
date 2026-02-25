@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional, Sequence, get_args
+from collections.abc import Sequence
+from typing import Optional, get_args
 
 from pyrit.models import ChatMessageRole, Message, MessagePiece, PromptDataType
 
