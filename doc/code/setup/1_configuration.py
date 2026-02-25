@@ -57,6 +57,7 @@ await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInit
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
@@ -72,9 +73,10 @@ target2 = OpenAIChatTarget(
 )
 
 # This is (probably) different from target1 because the environment variables are different from the default
+azure_endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2")
 target3 = OpenAIChatTarget(
-    endpoint=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"),
-    api_key=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"),
+    endpoint=azure_endpoint,
+    api_key=get_azure_openai_auth(azure_endpoint),
     model_name=os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2"),
 )
 

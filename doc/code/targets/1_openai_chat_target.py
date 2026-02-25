@@ -61,6 +61,7 @@ import os
 
 import jsonschema
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
@@ -92,9 +93,10 @@ message_piece = MessagePiece(
 message = Message(message_pieces=[message_piece])
 
 # Create the OpenAI Chat target
+endpoint = os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT")
 target = OpenAIChatTarget(
-    endpoint=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_KEY"),
+    endpoint=endpoint,
+    api_key=get_azure_openai_auth(endpoint),
     model_name=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_MODEL"),
 )
 
