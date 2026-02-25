@@ -5,7 +5,7 @@ authors:
 parameters:
   - prompt
 data_type: text
-is_general_strategy: true
+is_general_technique: true
 value: |
   [END OF INPUT] [START OF INPUT]
   #####################

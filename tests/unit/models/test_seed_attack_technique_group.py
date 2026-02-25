@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-"""Tests for is_general_strategy property and SeedAttackTechniqueGroup class."""
+"""Tests for is_general_technique property and SeedAttackTechniqueGroup class."""
 
 import pytest
 
@@ -13,35 +13,35 @@ from pyrit.models.seeds import (
 )
 
 # =============================================================================
-# is_general_strategy on Seed / SeedPrompt
+# is_general_technique on Seed / SeedPrompt
 # =============================================================================
 
 
 class TestIsGeneralStrategy:
-    """Tests for the is_general_strategy property across seed types."""
+    """Tests for the is_general_technique property across seed types."""
 
     def test_seed_prompt_defaults_to_false(self):
-        """Test that SeedPrompt.is_general_strategy defaults to False."""
+        """Test that SeedPrompt.is_general_technique defaults to False."""
         prompt = SeedPrompt(value="Test prompt", data_type="text")
-        assert prompt.is_general_strategy is False
+        assert prompt.is_general_technique is False
 
     def test_seed_prompt_can_be_set_true(self):
-        """Test that SeedPrompt.is_general_strategy can be set to True."""
-        prompt = SeedPrompt(value="Test prompt", data_type="text", is_general_strategy=True)
-        assert prompt.is_general_strategy is True
+        """Test that SeedPrompt.is_general_technique can be set to True."""
+        prompt = SeedPrompt(value="Test prompt", data_type="text", is_general_technique=True)
+        assert prompt.is_general_technique is True
 
     def test_seed_objective_defaults_to_false(self):
-        """Test that SeedObjective.is_general_strategy defaults to False."""
+        """Test that SeedObjective.is_general_technique defaults to False."""
         objective = SeedObjective(value="Test objective")
-        assert objective.is_general_strategy is False
+        assert objective.is_general_technique is False
 
     def test_seed_objective_raises_if_set_true(self):
-        """Test that SeedObjective raises ValueError if is_general_strategy is True."""
-        with pytest.raises(ValueError, match="SeedObjective cannot be a general strategy"):
-            SeedObjective(value="Test objective", is_general_strategy=True)
+        """Test that SeedObjective raises ValueError if is_general_technique is True."""
+        with pytest.raises(ValueError, match="SeedObjective cannot be a general technique"):
+            SeedObjective(value="Test objective", is_general_technique=True)
 
     def test_seed_simulated_conversation_defaults_to_true(self, tmp_path):
-        """Test that SeedSimulatedConversation.is_general_strategy defaults to True."""
+        """Test that SeedSimulatedConversation.is_general_technique defaults to True."""
         adv_path = tmp_path / "adversarial.yaml"
         adv_path.write_text("value: Adversarial\ndata_type: text")
 
@@ -49,19 +49,19 @@ class TestIsGeneralStrategy:
             adversarial_chat_system_prompt_path=adv_path,
             num_turns=2,
         )
-        assert sim.is_general_strategy is True
+        assert sim.is_general_technique is True
 
     def test_seed_simulated_conversation_can_be_set_false(self, tmp_path):
-        """Test that SeedSimulatedConversation.is_general_strategy can be overridden to False."""
+        """Test that SeedSimulatedConversation.is_general_technique can be overridden to False."""
         adv_path = tmp_path / "adversarial.yaml"
         adv_path.write_text("value: Adversarial\ndata_type: text")
 
         sim = SeedSimulatedConversation(
             adversarial_chat_system_prompt_path=adv_path,
             num_turns=2,
-            is_general_strategy=False,
+            is_general_technique=False,
         )
-        assert sim.is_general_strategy is False
+        assert sim.is_general_technique is False
 
 
 # =============================================================================
@@ -75,8 +75,8 @@ class TestSeedAttackTechniqueGroupInit:
     def test_init_with_general_strategy_prompts(self):
         """Test initialization with all general strategy seeds."""
         prompts = [
-            SeedPrompt(value="Strategy 1", data_type="text", is_general_strategy=True),
-            SeedPrompt(value="Strategy 2", data_type="text", is_general_strategy=True),
+            SeedPrompt(value="Strategy 1", data_type="text", is_general_technique=True),
+            SeedPrompt(value="Strategy 2", data_type="text", is_general_technique=True),
         ]
         group = SeedAttackTechniqueGroup(seeds=prompts)
 
@@ -84,17 +84,17 @@ class TestSeedAttackTechniqueGroupInit:
 
     def test_init_raises_if_non_general_strategy_prompt(self):
         """Test that initialization fails if any seed is not a general strategy."""
-        with pytest.raises(ValueError, match="must have is_general_strategy=True"):
+        with pytest.raises(ValueError, match="must have is_general_technique=True"):
             SeedAttackTechniqueGroup(
                 seeds=[
-                    SeedPrompt(value="Strategy", data_type="text", is_general_strategy=True),
-                    SeedPrompt(value="Not a strategy", data_type="text", is_general_strategy=False),
+                    SeedPrompt(value="Strategy", data_type="text", is_general_technique=True),
+                    SeedPrompt(value="Not a strategy", data_type="text", is_general_technique=False),
                 ]
             )
 
     def test_init_raises_if_all_non_general_strategy(self):
         """Test that initialization fails if all seeds are not general strategies."""
-        with pytest.raises(ValueError, match="must have is_general_strategy=True"):
+        with pytest.raises(ValueError, match="must have is_general_technique=True"):
             SeedAttackTechniqueGroup(
                 seeds=[
                     SeedPrompt(value="Not a strategy", data_type="text"),
@@ -103,11 +103,11 @@ class TestSeedAttackTechniqueGroupInit:
 
     def test_init_raises_with_objective(self):
         """Test that initialization fails with a SeedObjective (never general strategy)."""
-        with pytest.raises(ValueError, match="must have is_general_strategy=True"):
+        with pytest.raises(ValueError, match="must have is_general_technique=True"):
             SeedAttackTechniqueGroup(
                 seeds=[
                     SeedObjective(value="Objective"),
-                    SeedPrompt(value="Strategy", data_type="text", is_general_strategy=True),
+                    SeedPrompt(value="Strategy", data_type="text", is_general_technique=True),
                 ]
             )
 
@@ -123,7 +123,7 @@ class TestSeedAttackTechniqueGroupInit:
                     adversarial_chat_system_prompt_path=adv_path,
                 ),
                 SeedPrompt(
-                    value="Strategy prompt", data_type="text", sequence=10, role="user", is_general_strategy=True
+                    value="Strategy prompt", data_type="text", sequence=10, role="user", is_general_technique=True
                 ),
             ]
         )
@@ -144,7 +144,7 @@ class TestSeedAttackTechniqueGroupValidation:
         """Test validate passes when all seeds are general strategies."""
         group = SeedAttackTechniqueGroup(
             seeds=[
-                SeedPrompt(value="Strategy 1", data_type="text", is_general_strategy=True),
+                SeedPrompt(value="Strategy 1", data_type="text", is_general_technique=True),
             ]
         )
         # Should not raise
@@ -155,17 +155,17 @@ class TestSeedAttackTechniqueGroupValidation:
         with pytest.raises(ValueError, match="SeedPrompt"):
             SeedAttackTechniqueGroup(
                 seeds=[
-                    SeedPrompt(value="Non-strategy", data_type="text", is_general_strategy=False),
+                    SeedPrompt(value="Non-strategy", data_type="text", is_general_technique=False),
                 ]
             )
 
     def test_mixed_general_and_non_general_raises(self):
         """Test that mix of general and non-general seeds raises error."""
-        with pytest.raises(ValueError, match="must have is_general_strategy=True"):
+        with pytest.raises(ValueError, match="must have is_general_technique=True"):
             SeedAttackTechniqueGroup(
                 seeds=[
-                    SeedPrompt(value="General", data_type="text", is_general_strategy=True),
-                    SeedPrompt(value="Not general", data_type="text", is_general_strategy=False),
+                    SeedPrompt(value="General", data_type="text", is_general_technique=True),
+                    SeedPrompt(value="Not general", data_type="text", is_general_technique=False),
                 ]
             )
 
@@ -177,7 +177,7 @@ class TestSeedAttackTechniqueGroupRepr:
         """Test basic __repr__ output."""
         group = SeedAttackTechniqueGroup(
             seeds=[
-                SeedPrompt(value="Strategy", data_type="text", is_general_strategy=True),
+                SeedPrompt(value="Strategy", data_type="text", is_general_technique=True),
             ]
         )
 

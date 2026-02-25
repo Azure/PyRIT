@@ -6,7 +6,7 @@ SeedAttackTechniqueGroup - A group of seeds representing a general attack techni
 For example, this includes jailbreaks, roleplays, or other reusable techniques that
 can be applied to multiple objectives.
 
-Extends SeedGroup to enforce that all seeds have is_general_strategy=True.
+Extends SeedGroup to enforce that all seeds have is_general_technique=True.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ class SeedAttackTechniqueGroup(SeedGroup):
     A group of seeds representing a general attack technique.
 
     This class extends SeedGroup with technique-specific validation:
-    - Requires all seeds to have is_general_strategy=True
+    - Requires all seeds to have is_general_technique=True
 
     All other functionality (simulated conversation, prepended conversation,
     next_message, etc.) is inherited from SeedGroup.
@@ -37,11 +37,11 @@ class SeedAttackTechniqueGroup(SeedGroup):
         Initialize a SeedAttackTechniqueGroup.
 
         Args:
-            seeds: Sequence of seeds. All seeds must have is_general_strategy=True.
+            seeds: Sequence of seeds. All seeds must have is_general_technique=True.
 
         Raises:
             ValueError: If seeds is empty.
-            ValueError: If any seed does not have is_general_strategy=True.
+            ValueError: If any seed does not have is_general_technique=True.
         """
         super().__init__(seeds=seeds)
 
@@ -59,15 +59,15 @@ class SeedAttackTechniqueGroup(SeedGroup):
 
     def _enforce_all_general_strategy(self) -> None:
         """
-        Ensure all seeds have is_general_strategy=True.
+        Ensure all seeds have is_general_technique=True.
 
         Raises:
-            ValueError: If any seed does not have is_general_strategy=True.
+            ValueError: If any seed does not have is_general_technique=True.
         """
-        non_general = [seed for seed in self.seeds if not seed.is_general_strategy]
+        non_general = [seed for seed in self.seeds if not seed.is_general_technique]
         if non_general:
             non_general_types = [type(s).__name__ for s in non_general]
             raise ValueError(
-                f"All seeds in SeedAttackTechniqueGroup must have is_general_strategy=True. "
+                f"All seeds in SeedAttackTechniqueGroup must have is_general_technique=True. "
                 f"Found {len(non_general)} seed(s) without it: {non_general_types}"
             )

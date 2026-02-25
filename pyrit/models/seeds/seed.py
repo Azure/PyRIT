@@ -123,8 +123,8 @@ class Seed(YamlLoadable):
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
 
-    # Whether this seed represents a general attack strategy (not tied to a specific objective)
-    is_general_strategy: bool = False
+    # Whether this seed represents a general attack technique (not tied to a specific objective)
+    is_general_technique: bool = False
 
     @property
     def data_type(self) -> PromptDataType:
