@@ -87,15 +87,9 @@ class VariationSelectorSmugglerConverter(SmugglerConverter):
         payload = ""
         data = message.encode("utf-8")
         for byte in data:
-            if byte < 16:
-                code_point = 0xFE00 + byte
-            else:
-                code_point = 0xE0100 + (byte - 16)
+            code_point = 65024 + byte if byte < 16 else 917760 + (byte - 16)
             payload += chr(code_point)
-        if self.embed_in_base:
-            encoded = self.utf8_base_char + payload
-        else:
-            encoded = self.utf8_base_char + " " + payload
+        encoded = self.utf8_base_char + payload if self.embed_in_base else self.utf8_base_char + " " + payload
         summary_parts = [f"Base char: U+{ord(self.utf8_base_char):X}"]
         for byte in data:
             if byte < 16:

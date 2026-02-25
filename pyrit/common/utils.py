@@ -154,10 +154,7 @@ def warn_if_set(
         is_set = False
         if param_value is not None:
             # For collections, also check if they are not empty
-            if hasattr(param_value, "__len__"):
-                is_set = len(param_value) > 0
-            else:
-                is_set = True
+            is_set = len(param_value) > 0 if hasattr(param_value, "__len__") else True
 
         if is_set:
             log.warning(f"{field_name} was provided in {config_name} but is not used. This parameter will be ignored.")

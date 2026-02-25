@@ -146,12 +146,11 @@ class ScorerEvaluator(abc.ABC):
         metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
 
         # Validate harm_category for harm scorers
-        if metrics_type == MetricsType.HARM:
-            if dataset_files.harm_category is None:
-                raise ValueError(
-                    f"harm_category must be specified in ScorerEvalDatasetFiles for harm scorer evaluations. "
-                    f"Missing for result_file: {dataset_files.result_file}"
-                )
+        if metrics_type == MetricsType.HARM and dataset_files.harm_category is None:
+            raise ValueError(
+                f"harm_category must be specified in ScorerEvalDatasetFiles for harm scorer evaluations. "
+                f"Missing for result_file: {dataset_files.result_file}"
+            )
 
         # Collect all matching files
         csv_files: list[Path] = []
@@ -306,14 +305,17 @@ class ScorerEvaluator(abc.ABC):
                 return (False, None)
 
             # Check if harm_definition_version differs - if so, run and replace (scoring criteria changed)
-            if harm_definition_version is not None and isinstance(existing, HarmScorerMetrics):
-                if existing.harm_definition_version != harm_definition_version:
-                    logger.info(
-                        f"Harm definition version changed "
-                        f"({existing.harm_definition_version} -> {harm_definition_version}). "
-                        f"Will re-run evaluation and replace existing entry."
-                    )
-                    return (False, None)
+            if (
+                harm_definition_version is not None
+                and isinstance(existing, HarmScorerMetrics)
+                and existing.harm_definition_version != harm_definition_version
+            ):
+                logger.info(
+                    f"Harm definition version changed "
+                    f"({existing.harm_definition_version} -> {harm_definition_version}). "
+                    f"Will re-run evaluation and replace existing entry."
+                )
+                return (False, None)
 
             # Versions match - check num_scorer_trials
             if existing.num_scorer_trials >= num_scorer_trials:

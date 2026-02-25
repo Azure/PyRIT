@@ -132,10 +132,7 @@ class CodeChameleonConverter(PromptConverter):
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
 
-        if self.encrypt_function:
-            encoded_prompt = str(self.encrypt_function(prompt))
-        else:
-            encoded_prompt = prompt
+        encoded_prompt = str(self.encrypt_function(prompt)) if self.encrypt_function else prompt
 
         seed_prompt = SeedPrompt.from_yaml_file(
             pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "codechameleon_converter.yaml"

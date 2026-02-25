@@ -262,7 +262,7 @@ class TestPsychosocialScenarioAttackGeneration:
         atomic_attacks = scenario._atomic_attacks
 
         for run in atomic_attacks:
-            assert isinstance(run._attack, PromptSendingAttack) or isinstance(run._attack, RolePlayAttack)
+            assert isinstance(run._attack, (PromptSendingAttack, RolePlayAttack))
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_multiturn_async(

@@ -49,9 +49,8 @@ class TestRemoteDatasetLoader:
 
     def test_read_cache_invalid_type(self):
         loader = ConcreteRemoteLoader()
-        with patch("pathlib.Path.open", mock_open()):
-            with pytest.raises(ValueError, match="Invalid file_type"):
-                loader._read_cache(cache_file=Path("test.xyz"), file_type="xyz")
+        with patch("pathlib.Path.open", mock_open()), pytest.raises(ValueError, match="Invalid file_type"):
+            loader._read_cache(cache_file=Path("test.xyz"), file_type="xyz")
 
     def test_write_cache_json(self, tmp_path):
         loader = ConcreteRemoteLoader()

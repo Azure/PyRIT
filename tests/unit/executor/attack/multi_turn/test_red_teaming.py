@@ -1395,19 +1395,21 @@ class TestAttackExecution:
         )
 
         # Mock methods to always fail
-        with patch.object(
-            attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"
-        ) as mock_generate:
-            with patch.object(
+        with (
+            patch.object(
+                attack, "_generate_next_prompt_async", new_callable=AsyncMock, return_value="Attack prompt"
+            ) as mock_generate,
+            patch.object(
                 attack,
                 "_send_prompt_to_objective_target_async",
                 new_callable=AsyncMock,
                 return_value=sample_response,
-            ) as mock_send:
-                with patch.object(
-                    attack, "_score_response_async", new_callable=AsyncMock, return_value=failure_score
-                ) as mock_score:
-                    result = await attack._perform_async(context=basic_context)
+            ) as mock_send,
+            patch.object(
+                attack, "_score_response_async", new_callable=AsyncMock, return_value=failure_score
+            ) as mock_score,
+        ):
+            result = await attack._perform_async(context=basic_context)
 
         assert result.outcome == AttackOutcome.FAILURE
         assert result.executed_turns == 3

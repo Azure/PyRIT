@@ -43,10 +43,7 @@ def format_score_for_rationale(score: Score) -> str:
     Returns:
         Formatted string with scorer class, value, and rationale.
     """
-    if score.scorer_class_identifier:
-        class_type = score.scorer_class_identifier.class_name or "Unknown"
-    else:
-        class_type = "Unknown"
+    class_type = score.scorer_class_identifier.class_name or "Unknown" if score.scorer_class_identifier else "Unknown"
     return f"   - {class_type} {score.score_value}: {score.score_rationale or ''}"
 
 
