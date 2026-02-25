@@ -13,7 +13,8 @@ import logging
 import textwrap
 import uuid
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional, Union, cast
 
 from tqdm.auto import tqdm
 
@@ -54,7 +55,7 @@ class Scenario(ABC):
         *,
         name: str,
         version: int,
-        strategy_class: Type[ScenarioStrategy],
+        strategy_class: type[ScenarioStrategy],
         objective_scorer: Scorer,
         include_default_baseline: bool = True,
         scenario_result_id: Optional[Union[uuid.UUID, str]] = None,
@@ -96,7 +97,7 @@ class Scenario(ABC):
         # These will be set in initialize_async
         self._objective_target: Optional[PromptTarget] = None
         self._objective_target_identifier: Optional[ComponentIdentifier] = None
-        self._memory_labels: Dict[str, str] = {}
+        self._memory_labels: dict[str, str] = {}
         self._max_concurrency: int = 1
         self._max_retries: int = 0
 
@@ -105,18 +106,18 @@ class Scenario(ABC):
 
         self._name = name
         self._memory = CentralMemory.get_memory_instance()
-        self._atomic_attacks: List[AtomicAttack] = []
+        self._atomic_attacks: list[AtomicAttack] = []
         self._scenario_result_id: Optional[str] = str(scenario_result_id) if scenario_result_id else None
         self._result_lock = asyncio.Lock()
 
         self._include_baseline = include_default_baseline
 
         # Store prepared strategy composites for use in _get_atomic_attacks_async
-        self._scenario_composites: List[ScenarioCompositeStrategy] = []
+        self._scenario_composites: list[ScenarioCompositeStrategy] = []
 
         # Store original objectives for each atomic attack (before any mutations)
         # Key: atomic_attack_name, Value: tuple of original objectives
-        self._original_objectives_map: Dict[str, tuple[str, ...]] = {}
+        self._original_objectives_map: dict[str, tuple[str, ...]] = {}
 
     @property
     def name(self) -> str:
@@ -130,7 +131,7 @@ class Scenario(ABC):
 
     @classmethod
     @abstractmethod
-    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+    def get_strategy_class(cls) -> type[ScenarioStrategy]:
         """
         Get the strategy enum class for this scenario.
 
@@ -182,7 +183,7 @@ class Scenario(ABC):
         dataset_config: Optional[DatasetConfiguration] = None,
         max_concurrency: int = 10,
         max_retries: int = 0,
-        memory_labels: Optional[Dict[str, str]] = None,
+        memory_labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
         Initialize the scenario by populating self._atomic_attacks and creating the ScenarioResult.
@@ -269,7 +270,7 @@ class Scenario(ABC):
                 self._scenario_result_id = None
 
         # Create new scenario result
-        attack_results: Dict[str, List[AttackResult]] = {
+        attack_results: dict[str, list[AttackResult]] = {
             atomic_attack.atomic_attack_name: [] for atomic_attack in self._atomic_attacks
         }
 
@@ -315,7 +316,7 @@ class Scenario(ABC):
             memory_labels=self._memory_labels,
         )
 
-    def _get_baseline_data(self) -> Tuple[List["SeedAttackGroup"], "AttackScoringConfig", PromptTarget]:
+    def _get_baseline_data(self) -> tuple[list["SeedAttackGroup"], "AttackScoringConfig", PromptTarget]:
         """
         Get the data needed to create a baseline attack.
 
@@ -398,7 +399,7 @@ class Scenario(ABC):
         )
         return True
 
-    def _get_completed_objectives_for_attack(self, *, atomic_attack_name: str) -> Set[str]:
+    def _get_completed_objectives_for_attack(self, *, atomic_attack_name: str) -> set[str]:
         """
         Get the set of objectives that have already been completed for a specific atomic attack.
 
@@ -411,7 +412,7 @@ class Scenario(ABC):
         if not self._scenario_result_id:
             return set()
 
-        completed_objectives: Set[str] = set()
+        completed_objectives: set[str] = set()
 
         try:
             # Retrieve the scenario result from memory
@@ -431,7 +432,7 @@ class Scenario(ABC):
 
         return completed_objectives
 
-    async def _get_remaining_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_remaining_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Get the list of atomic attacks that still have objectives to complete.
 
@@ -445,7 +446,7 @@ class Scenario(ABC):
             # No scenario result yet, return all atomic attacks
             return self._atomic_attacks
 
-        remaining_attacks: List[AtomicAttack] = []
+        remaining_attacks: list[AtomicAttack] = []
 
         for atomic_attack in self._atomic_attacks:
             # Get completed objectives for this atomic attack name
@@ -478,7 +479,7 @@ class Scenario(ABC):
         return remaining_attacks
 
     async def _update_scenario_result_async(
-        self, *, atomic_attack_name: str, attack_results: List[AttackResult]
+        self, *, atomic_attack_name: str, attack_results: list[AttackResult]
     ) -> None:
         """
         Update the scenario result in memory with new attack results (thread-safe).
@@ -507,7 +508,7 @@ class Scenario(ABC):
                 )
 
     @abstractmethod
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances in this scenario.
 

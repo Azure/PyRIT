@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional, TypeVar
+from typing import Any, Optional, TypeVar
 
 from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models.conversation_reference import ConversationReference, ConversationType
@@ -73,7 +73,7 @@ class AttackResult(StrategyResult):
     related_conversations: set[ConversationReference] = field(default_factory=set)
 
     # Arbitrary metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_conversations_by_type(self, conversation_type: ConversationType) -> list[ConversationReference]:
         """

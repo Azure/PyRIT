@@ -3,7 +3,7 @@
 
 import csv
 import json
-from typing import Sequence
+from collections.abc import Sequence
 
 import pytest
 from sqlalchemy.inspection import inspect
@@ -26,10 +26,10 @@ def model_to_dict(instance):
 
 def read_file(file_path, export_type):
     if export_type == "json":
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             return json.load(f)
     elif export_type == "csv":
-        with open(file_path, "r", newline="") as f:
+        with open(file_path, newline="") as f:
             reader = csv.DictReader(f)
             return list(reader)
     else:

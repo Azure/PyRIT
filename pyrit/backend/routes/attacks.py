@@ -8,7 +8,7 @@ All interactions are modeled as "attacks" - including manual conversations.
 This is the attack-centric API design.
 """
 
-from typing import Dict, List, Literal, Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 
@@ -30,7 +30,7 @@ from pyrit.backend.services.attack_service import get_attack_service
 router = APIRouter(prefix="/attacks", tags=["attacks"])
 
 
-def _parse_labels(label_params: Optional[List[str]]) -> Optional[Dict[str, str]]:
+def _parse_labels(label_params: Optional[list[str]]) -> Optional[dict[str, str]]:
     """
     Parse label query params in 'key:value' format to a dict.
 
@@ -53,12 +53,12 @@ def _parse_labels(label_params: Optional[List[str]]) -> Optional[Dict[str, str]]
 )
 async def list_attacks(
     attack_class: Optional[str] = Query(None, description="Filter by exact attack class name"),
-    converter_classes: Optional[List[str]] = Query(
+    converter_classes: Optional[list[str]] = Query(
         None,
         description="Filter by converter class names (repeatable, AND logic). Pass empty to match no-converter attacks.",
     ),
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Query(None, description="Filter by outcome"),
-    label: Optional[List[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
+    label: Optional[list[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
     min_turns: Optional[int] = Query(None, ge=0, description="Filter by minimum executed turns"),
     max_turns: Optional[int] = Query(None, ge=0, description="Filter by maximum executed turns"),
     limit: int = Query(20, ge=1, le=100, description="Maximum items per page"),

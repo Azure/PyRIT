@@ -3,8 +3,8 @@
 
 import io
 import os
+from collections.abc import MutableSequence
 from tempfile import NamedTemporaryFile
-from typing import MutableSequence
 
 import pytest
 from unit.mocks import get_sample_conversations

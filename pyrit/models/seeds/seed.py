@@ -13,10 +13,11 @@ import abc
 import logging
 import re
 import uuid
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Sequence, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 
@@ -115,13 +116,16 @@ class Seed(YamlLoadable):
     added_by: Optional[str] = None
 
     # Arbitrary metadata that can be attached to the prompt
-    metadata: Optional[Dict[str, Union[str, int]]] = field(default_factory=lambda: {})
+    metadata: Optional[dict[str, Union[str, int]]] = field(default_factory=lambda: {})
 
     # Unique identifier for the prompt group
     prompt_group_id: Optional[uuid.UUID] = None
 
     # Alias for the prompt group
     prompt_group_alias: Optional[str] = None
+
+    # Whether this seed represents a general attack technique (not tied to a specific objective)
+    is_general_technique: bool = False
 
     @property
     def data_type(self) -> PromptDataType:

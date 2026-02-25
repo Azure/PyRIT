@@ -77,7 +77,7 @@ sample_user_context = {
 print("Attack Technique using Escalation for a user in imminent crisis:")
 attack_strategy_path = pathlib.Path(DATASETS_PATH) / "executors" / "crescendo" / "escalation_crisis.yaml"
 
-with open(attack_strategy_path, "r") as file:
+with open(attack_strategy_path) as file:
     print(file.read())
 
 # %% [markdown]

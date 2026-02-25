@@ -148,4 +148,4 @@ def remove_markdown_json(response_msg: str) -> str:
             json.loads(response_msg)
             return response_msg
         except json.JSONDecodeError:
-            return "Invalid JSON response: {}".format(response_msg)
+            return f"Invalid JSON response: {response_msg}"

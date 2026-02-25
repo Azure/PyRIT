@@ -52,7 +52,7 @@ def main():
     cache_file = os.path.join(cache_dir, f"pct_to_ipynb_{args.run_id}.cache")
     processed_files = set()
     if os.path.isfile(cache_file):
-        with open(cache_file, "r") as f:
+        with open(cache_file) as f:
             for file_path in f:
                 processed_files.add(file_path.strip())
 

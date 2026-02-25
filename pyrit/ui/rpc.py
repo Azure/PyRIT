@@ -3,8 +3,9 @@
 
 import logging
 import time
+from collections.abc import Callable
 from threading import Semaphore, Thread
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models import MessagePiece, Score

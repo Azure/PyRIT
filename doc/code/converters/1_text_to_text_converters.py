@@ -279,7 +279,7 @@ print("Tone (angry):", await tone_converter.convert_async(prompt=prompt))  # typ
 translation_converter = TranslationConverter(converter_target=attack_llm, language="French")
 print("Translation (French):", await translation_converter.convert_async(prompt=prompt))  # type: ignore
 
-# Random translation through multiple languages
+# Random translation translates each word to a random language
 random_translation_converter = RandomTranslationConverter(
     converter_target=attack_llm, languages=["French", "German", "Spanish", "English"]
 )

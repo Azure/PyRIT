@@ -13,7 +13,7 @@ Targets can be:
 """
 
 from functools import lru_cache
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from pyrit import prompt_target
 from pyrit.backend.mappers.target_mappers import target_object_to_instance
@@ -119,7 +119,7 @@ class TargetService:
         )
 
     @staticmethod
-    def _paginate(items: List[TargetInstance], cursor: Optional[str], limit: int) -> tuple[List[TargetInstance], bool]:
+    def _paginate(items: list[TargetInstance], cursor: Optional[str], limit: int) -> tuple[list[TargetInstance], bool]:
         """
         Apply cursor-based pagination.
 

@@ -18,7 +18,7 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 import pyrit
 from pyrit.common.path import EXECUTOR_SIMULATED_TARGET_PATH
@@ -121,6 +121,8 @@ class SeedSimulatedConversation(Seed):
         # Compute value and pass to parent
         # Remove 'value' from kwargs if present since we compute it
         kwargs.pop("value", None)
+        # Default is_general_technique to True for simulated conversations
+        kwargs.setdefault("is_general_technique", True)
         super().__init__(value=self._compute_value(), **kwargs)
 
     def _compute_value(self) -> str:
@@ -144,7 +146,7 @@ class SeedSimulatedConversation(Seed):
         return json.dumps(config, sort_keys=True, separators=(",", ":"))
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SeedSimulatedConversation":
+    def from_dict(cls, data: dict[str, Any]) -> SeedSimulatedConversation:
         """
         Create a SeedSimulatedConversation from a dictionary, typically from YAML.
 
@@ -181,7 +183,7 @@ class SeedSimulatedConversation(Seed):
         template_path: Union[str, Path],
         required_parameters: list[str],
         error_message: Optional[str] = None,
-    ) -> "SeedSimulatedConversation":
+    ) -> SeedSimulatedConversation:
         """
         Load a SeedSimulatedConversation from a YAML file and validate required parameters.
 
@@ -207,7 +209,7 @@ class SeedSimulatedConversation(Seed):
 
         return instance
 
-    def get_identifier(self) -> Dict[str, Any]:
+    def get_identifier(self) -> dict[str, Any]:
         """
         Get an identifier dict capturing this configuration for comparison/storage.
 

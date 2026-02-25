@@ -5,8 +5,8 @@ import base64
 import json
 import logging
 import os
+from collections.abc import MutableSequence
 from tempfile import NamedTemporaryFile
-from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx

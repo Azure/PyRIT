@@ -3,7 +3,7 @@
 
 import abc
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory, MemoryInterface
@@ -24,7 +24,7 @@ class PromptTarget(Identifiable):
 
     #: A list of PromptConverters that are supported by the prompt target.
     #: An empty list implies that the prompt target supports all converters.
-    supported_converters: List[Any]
+    supported_converters: list[Any]
 
     _identifier: Optional[ComponentIdentifier] = None
 
@@ -96,8 +96,8 @@ class PromptTarget(Identifiable):
     def _create_identifier(
         self,
         *,
-        params: Optional[Dict[str, Any]] = None,
-        children: Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]] = None,
+        params: Optional[dict[str, Any]] = None,
+        children: Optional[dict[str, Union[ComponentIdentifier, list[ComponentIdentifier]]]] = None,
     ) -> ComponentIdentifier:
         """
         Construct the target identifier.
@@ -123,7 +123,7 @@ class PromptTarget(Identifiable):
         # Late import to avoid circular dependency (PromptChatTarget inherits from PromptTarget)
         from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 
-        all_params: Dict[str, Any] = {
+        all_params: dict[str, Any] = {
             "endpoint": self._endpoint,
             "model_name": model_name,
             "max_requests_per_minute": self._max_requests_per_minute,
