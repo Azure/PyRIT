@@ -25,7 +25,7 @@ from pyrit.datasets import TextJailBreak
 from pyrit.models import Message, MessagePiece
 
 # Read basic HTML file with template slot for the XPIA.
-with open(Path().cwd() / "example" / "index.html", "r") as f:
+with open(Path().cwd() / "example" / "index.html") as f:
     html_template = f.read()
 jailbreak_template = TextJailBreak(string_template=html_template)
 

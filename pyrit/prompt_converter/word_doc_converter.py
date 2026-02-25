@@ -7,7 +7,7 @@ import ast
 import hashlib
 from dataclasses import dataclass
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from docx import Document
 
@@ -183,7 +183,7 @@ class WordDocConverter(PromptConverter):
         if self._prompt_template:
             logger.debug(f"Preparing Word content with template: {self._prompt_template.value}")
             try:
-                dynamic_data: Dict[str, Any] = ast.literal_eval(prompt)
+                dynamic_data: dict[str, Any] = ast.literal_eval(prompt)
 
                 if not isinstance(dynamic_data, dict):
                     raise ValueError("Prompt must be a dictionary-compatible object after parsing.")

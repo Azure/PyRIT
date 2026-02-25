@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
@@ -149,7 +149,7 @@ class VideoFloatScaleScorer(
         piece_id = message_piece.id if message_piece.id is not None else message_piece.original_prompt_id
 
         # Call the aggregator - all aggregators now return List[ScoreAggregatorResult]
-        aggregator_results: List[ScoreAggregatorResult] = self._score_aggregator(all_scores)
+        aggregator_results: list[ScoreAggregatorResult] = self._score_aggregator(all_scores)
 
         # Build rationale prefix
         rationale_prefix = f"Video scored by analyzing {len(frame_scores)} frames"
@@ -157,7 +157,7 @@ class VideoFloatScaleScorer(
             rationale_prefix += " and audio transcript"
 
         # Create Score objects from aggregator results
-        aggregate_scores: List[Score] = []
+        aggregate_scores: list[Score] = []
         for result in aggregator_results:
             aggregate_score = Score(
                 score_value=str(result.value),

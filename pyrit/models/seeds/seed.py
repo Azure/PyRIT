@@ -15,13 +15,14 @@ import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 
 from pyrit.common.yaml_loadable import YamlLoadable
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
     from pathlib import Path
 
     from pyrit.models.literals import PromptDataType
@@ -118,7 +119,7 @@ class Seed(YamlLoadable):
     added_by: Optional[str] = None
 
     # Arbitrary metadata that can be attached to the prompt
-    metadata: Optional[Dict[str, Union[str, int]]] = field(default_factory=lambda: {})
+    metadata: Optional[dict[str, Union[str, int]]] = field(default_factory=lambda: {})
 
     # Unique identifier for the prompt group
     prompt_group_id: Optional[uuid.UUID] = None

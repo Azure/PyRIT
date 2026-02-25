@@ -13,7 +13,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
@@ -24,6 +24,8 @@ from pyrit.models.seeds.seed_prompt import SeedPrompt
 from pyrit.models.seeds.seed_simulated_conversation import SeedSimulatedConversation
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pydantic.types import PositiveInt
 
     from pyrit.models.literals import PromptDataType, SeedType
@@ -51,12 +53,12 @@ class SeedDataset(YamlLoadable):
     added_by: Optional[str]
 
     # Now the actual prompts
-    seeds: Sequence["Seed"]
+    seeds: Sequence[Seed]
 
     def __init__(
         self,
         *,
-        seeds: Optional[Union[Sequence[Dict[str, Any]], Sequence[Seed]]] = None,
+        seeds: Optional[Union[Sequence[dict[str, Any]], Sequence[Seed]]] = None,
         data_type: Optional[PromptDataType] = "text",
         name: Optional[str] = None,
         dataset_name: Optional[str] = None,
@@ -259,7 +261,7 @@ class SeedDataset(YamlLoadable):
         return random.sample(prompts, min(len(prompts), number))
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> SeedDataset:
+    def from_dict(cls, data: dict[str, Any]) -> SeedDataset:
         """
         Build a SeedDataset by merging top-level defaults into each item in `seeds`.
 
@@ -364,7 +366,7 @@ class SeedDataset(YamlLoadable):
 
         """
         # Group seeds by `prompt_group_id`
-        grouped_seeds: Dict[uuid.UUID, list[Seed]] = defaultdict(list)
+        grouped_seeds: dict[uuid.UUID, list[Seed]] = defaultdict(list)
         for seed in seeds:
             if seed.prompt_group_id:
                 grouped_seeds[seed.prompt_group_id].append(seed)

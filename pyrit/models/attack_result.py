@@ -5,12 +5,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from pyrit.models.strategy_result import StrategyResult
 
 if TYPE_CHECKING:
-    from pyrit.identifiers import ComponentIdentifier
+    from pyrit.identifiers.component_identifier import ComponentIdentifier
     from pyrit.models.conversation_reference import ConversationReference, ConversationType
     from pyrit.models.message_piece import MessagePiece
     from pyrit.models.score import Score
@@ -75,7 +75,7 @@ class AttackResult(StrategyResult):
     related_conversations: set[ConversationReference] = field(default_factory=set)
 
     # Arbitrary metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_conversations_by_type(self, conversation_type: ConversationType) -> list[ConversationReference]:
         """

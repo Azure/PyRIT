@@ -5,7 +5,7 @@ import json
 import logging
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
@@ -170,8 +170,8 @@ class PromptMemoryEntry(Base):
     timestamp = mapped_column(DateTime, nullable=False)
     labels: Mapped[dict[str, str]] = mapped_column(JSON)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON)
-    targeted_harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON)
-    converter_identifiers: Mapped[Optional[List[Dict[str, str]]]] = mapped_column(JSON)
+    targeted_harm_categories: Mapped[Optional[list[str]]] = mapped_column(JSON)
+    converter_identifiers: Mapped[Optional[list[dict[str, str]]]] = mapped_column(JSON)
     prompt_target_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     attack_identifier: Mapped[dict[str, str]] = mapped_column(JSON)
     response_error: Mapped[Literal["blocked", "none", "processing", "unknown"]] = mapped_column(String, nullable=True)
@@ -196,7 +196,7 @@ class PromptMemoryEntry(Base):
     # Nullable for backwards compatibility with existing databases
     pyrit_version = mapped_column(String, nullable=True)
 
-    scores: Mapped[List["ScoreEntry"]] = relationship(
+    scores: Mapped[list["ScoreEntry"]] = relationship(
         "ScoreEntry",
         primaryjoin="ScoreEntry.prompt_request_response_id == PromptMemoryEntry.original_prompt_id",
         back_populates="prompt_request_piece",
@@ -254,7 +254,7 @@ class PromptMemoryEntry(Base):
             MessagePiece: The reconstructed message piece with all its data and scores.
         """
         # Reconstruct ComponentIdentifiers with the stored pyrit_version
-        converter_ids: Optional[List[Union[ComponentIdentifier, Dict[str, str]]]] = None
+        converter_ids: Optional[list[Union[ComponentIdentifier, dict[str, str]]]] = None
         stored_version = self.pyrit_version or LEGACY_PYRIT_VERSION
         if self.converter_identifiers:
             converter_ids = [
@@ -527,15 +527,15 @@ class SeedEntry(Base):
     data_type: Mapped[PromptDataType] = mapped_column(String, nullable=False)
     name = mapped_column(String, nullable=True)
     dataset_name = mapped_column(String, nullable=True)
-    harm_categories: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    harm_categories: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     description = mapped_column(String, nullable=True)
-    authors: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
-    groups: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    authors: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
+    groups: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     source = mapped_column(String, nullable=True)
     date_added = mapped_column(DateTime, nullable=False)
     added_by = mapped_column(String, nullable=False)
     prompt_metadata: Mapped[dict[str, Union[str, int]]] = mapped_column(JSON, nullable=True)
-    parameters: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    parameters: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     prompt_group_id: Mapped[Optional[uuid.UUID]] = mapped_column(CustomUUID, nullable=True)
     sequence: Mapped[Optional[int]] = mapped_column(INTEGER, nullable=True)
     role: Mapped[ChatMessageRole] = mapped_column(String, nullable=True)
@@ -724,8 +724,8 @@ class AttackResultEntry(Base):
     )
     outcome_reason = mapped_column(String, nullable=True)
     attack_metadata: Mapped[dict[str, Union[str, int, float, bool]]] = mapped_column(JSON, nullable=True)
-    pruned_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
-    adversarial_chat_conversation_ids: Mapped[Optional[List[str]]] = mapped_column(JSON, nullable=True)
+    pruned_conversation_ids: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
+    adversarial_chat_conversation_ids: Mapped[Optional[list[str]]] = mapped_column(JSON, nullable=True)
     timestamp = mapped_column(DateTime, nullable=False)
     # Version of PyRIT used when this attack result was created
     # Nullable for backwards compatibility with existing databases
@@ -798,7 +798,7 @@ class AttackResultEntry(Base):
         return None
 
     @staticmethod
-    def filter_json_serializable_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    def filter_json_serializable_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         """
         Filter a dictionary to only include JSON-serializable values.
 

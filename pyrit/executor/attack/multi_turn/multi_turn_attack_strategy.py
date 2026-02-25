@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
@@ -74,7 +74,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         *,
         objective_target: PromptTarget,
         context_type: type[MultiTurnAttackStrategyContextT],
-        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        params_type: type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         logger: logging.Logger = logger,
     ):
         """

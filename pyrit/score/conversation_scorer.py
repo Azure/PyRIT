@@ -3,7 +3,7 @@
 
 import uuid
 from abc import ABC, abstractmethod
-from typing import Optional, Type, cast
+from typing import Optional, cast
 from uuid import UUID
 
 from pyrit.identifiers import ComponentIdentifier
@@ -171,7 +171,7 @@ def create_conversation_scorer(
         >>> isinstance(conversation_scorer, ConversationScorer)  # True
     """
     # Determine the base class of the wrapped scorer
-    scorer_base_class: Optional[Type[Scorer]] = None
+    scorer_base_class: Optional[type[Scorer]] = None
 
     if isinstance(scorer, FloatScaleScorer):
         scorer_base_class = FloatScaleScorer

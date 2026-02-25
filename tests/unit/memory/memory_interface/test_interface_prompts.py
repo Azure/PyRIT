@@ -3,8 +3,8 @@
 
 
 import uuid
+from collections.abc import MutableSequence, Sequence
 from datetime import datetime
-from typing import MutableSequence, Sequence
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 

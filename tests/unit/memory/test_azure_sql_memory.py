@@ -3,7 +3,8 @@
 
 import os
 import uuid
-from typing import TYPE_CHECKING, Generator, MutableSequence, Sequence
+from collections.abc import Generator, MutableSequence, Sequence
+from typing import TYPE_CHECKING
 
 import pytest
 

@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 import base64
 import logging
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
 
 import httpx
 
@@ -162,7 +162,7 @@ class OpenAIImageTarget(OpenAITarget):
         prompt = message.message_pieces[0].converted_value
 
         # Construct request parameters
-        image_generation_args: Dict[str, Any] = {
+        image_generation_args: dict[str, Any] = {
             "model": self._model_name,
             "prompt": prompt,
             "size": self.image_size,
@@ -212,7 +212,7 @@ class OpenAIImageTarget(OpenAITarget):
             image_files.append((image_name, image_bytes, image_type))
 
         # Construct request parameters for image editing
-        image_edit_args: Dict[str, Any] = {
+        image_edit_args: dict[str, Any] = {
             "model": self._model_name,
             "image": image_files,
             "prompt": text_prompt,

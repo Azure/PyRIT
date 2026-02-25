@@ -14,7 +14,7 @@ have a common interface for scenarios.
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
 from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
@@ -66,10 +66,10 @@ class AtomicAttack:
         *,
         atomic_attack_name: str,
         attack: AttackStrategy[Any, Any],
-        seed_groups: List[SeedAttackGroup],
+        seed_groups: list[SeedAttackGroup],
         adversarial_chat: Optional["PromptChatTarget"] = None,
         objective_scorer: Optional["TrueFalseScorer"] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
+        memory_labels: Optional[dict[str, str]] = None,
         **attack_execute_params: Any,
     ) -> None:
         """
@@ -119,7 +119,7 @@ class AtomicAttack:
         )
 
     @property
-    def objectives(self) -> List[str]:
+    def objectives(self) -> list[str]:
         """
         Get the objectives from the seed groups.
 
@@ -129,7 +129,7 @@ class AtomicAttack:
         return [sg.objective.value for sg in self._seed_groups if sg.objective is not None]
 
     @property
-    def seed_groups(self) -> List[SeedAttackGroup]:
+    def seed_groups(self) -> list[SeedAttackGroup]:
         """
         Get a copy of the seed groups list for this atomic attack.
 
@@ -138,7 +138,7 @@ class AtomicAttack:
         """
         return list(self._seed_groups)
 
-    def filter_seed_groups_by_objectives(self, *, remaining_objectives: List[str]) -> None:
+    def filter_seed_groups_by_objectives(self, *, remaining_objectives: list[str]) -> None:
         """
         Filter seed groups to only those with objectives in the remaining list.
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
@@ -51,7 +51,7 @@ class SingleTurnAttackStrategy(AttackStrategy[SingleTurnAttackContext[Any], Atta
         *,
         objective_target: PromptTarget,
         context_type: type[SingleTurnAttackContext[Any]] = SingleTurnAttackContext,
-        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        params_type: type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         logger: logging.Logger = logger,
     ):
         """

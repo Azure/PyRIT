@@ -11,8 +11,9 @@ available attacks against specified datasets.
 
 import logging
 import os
+from collections.abc import Sequence
 from inspect import signature
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
@@ -219,7 +220,7 @@ class RedTeamAgent(Scenario):
     VERSION: int = 1
 
     @classmethod
-    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+    def get_strategy_class(cls) -> type[ScenarioStrategy]:
         """
         Get the strategy enum class for this scenario.
 
@@ -248,7 +249,7 @@ class RedTeamAgent(Scenario):
         self,
         *,
         adversarial_chat: Optional[PromptChatTarget] = None,
-        objectives: Optional[List[str]] = None,
+        objectives: Optional[list[str]] = None,
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -306,7 +307,7 @@ class RedTeamAgent(Scenario):
             scenario_result_id=scenario_result_id,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
+    def _resolve_seed_groups(self) -> list[SeedAttackGroup]:
         """
         Resolve seed groups from the configuration. This can be removed once objectives is removed.
 
@@ -334,7 +335,7 @@ class RedTeamAgent(Scenario):
         # Use dataset_config (always set by initialize_async)
         return self._dataset_config.get_all_seed_attack_groups()
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances in this scenario.
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, Union, cast
+from typing import TYPE_CHECKING, Any, Union, cast
 from urllib.parse import urlparse
 
 import msal
@@ -23,6 +23,8 @@ from azure.identity.aio import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC

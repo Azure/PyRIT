@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from tinytag import TinyTag
 
@@ -20,6 +20,7 @@ from pyrit.models.seeds.seed import Seed
 
 if TYPE_CHECKING:
     import uuid
+    from collections.abc import Sequence
     from pathlib import Path
 
     from pyrit.models import Message
@@ -115,7 +116,7 @@ class SeedPrompt(Seed):
         template_path: Union[str, Path],
         required_parameters: list[str],
         error_message: Optional[str] = None,
-    ) -> "SeedPrompt":
+    ) -> SeedPrompt:
         """
         Load a Seed from a YAML file and validate that it contains specific parameters.
 
@@ -142,11 +143,11 @@ class SeedPrompt(Seed):
 
     @staticmethod
     def from_messages(
-        messages: list["Message"],
+        messages: list[Message],
         *,
         starting_sequence: int = 0,
         prompt_group_id: Optional[uuid.UUID] = None,
-    ) -> list["SeedPrompt"]:
+    ) -> list[SeedPrompt]:
         """
         Convert a list of Messages to a list of SeedPrompts.
 

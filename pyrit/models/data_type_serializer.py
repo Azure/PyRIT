@@ -33,7 +33,7 @@ def data_serializer_factory(
     value: Optional[str] = None,
     extension: Optional[str] = None,
     category: AllowedCategories,
-) -> "DataTypeSerializer":
+) -> DataTypeSerializer:
     """
     Create a DataTypeSerializer instance.
 

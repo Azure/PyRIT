@@ -7,7 +7,7 @@ import abc
 import logging
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import numpy as np
 from scipy.stats import ttest_1samp
@@ -68,7 +68,7 @@ class ScorerEvalDatasetFiles:
             Required for harm evaluations, ignored for objective evaluations. Defaults to None.
     """
 
-    human_labeled_datasets_files: List[str]
+    human_labeled_datasets_files: list[str]
     result_file: str
     harm_category: Optional[str] = None
 
@@ -92,7 +92,7 @@ class ScorerEvaluator(abc.ABC):
         self.scorer = scorer
 
     @classmethod
-    def from_scorer(cls, scorer: Scorer, metrics_type: Optional[MetricsType] = None) -> "ScorerEvaluator":
+    def from_scorer(cls, scorer: Scorer, metrics_type: Optional[MetricsType] = None) -> ScorerEvaluator:
         """
         Create a ScorerEvaluator based on the type of scoring.
 
@@ -157,7 +157,7 @@ class ScorerEvaluator(abc.ABC):
                 )
 
         # Collect all matching files
-        csv_files: List[Path] = []
+        csv_files: list[Path] = []
         for pattern in dataset_files.human_labeled_datasets_files:
             matched = list(SCORER_EVALS_PATH.glob(pattern))
             csv_files.extend(matched)
@@ -252,7 +252,7 @@ class ScorerEvaluator(abc.ABC):
         num_scorer_trials: int,
         harm_category: Optional[str] = None,
         result_file_path: Path,
-    ) -> Tuple[bool, Optional[ScorerMetrics]]:
+    ) -> tuple[bool, Optional[ScorerMetrics]]:
         """
         Determine whether to skip evaluation based on existing registry entries.
 
@@ -423,7 +423,7 @@ class ScorerEvaluator(abc.ABC):
     def _validate_and_extract_data(
         self,
         labeled_dataset: HumanLabeledDataset,
-    ) -> Tuple[List[Message], List[List[float]], Optional[List[str]]]:
+    ) -> tuple[list[Message], list[list[float]], Optional[list[str]]]:
         """
         Validate the dataset and extract data for evaluation.
 
@@ -503,7 +503,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
     def _validate_and_extract_data(
         self,
         labeled_dataset: HumanLabeledDataset,
-    ) -> Tuple[List[Message], List[List[float]], Optional[List[str]]]:
+    ) -> tuple[list[Message], list[list[float]], Optional[list[str]]]:
         """
         Validate harm dataset and extract evaluation data.
 
@@ -522,8 +522,8 @@ class HarmScorerEvaluator(ScorerEvaluator):
 
         labeled_dataset.validate()
 
-        assistant_responses: List[Message] = []
-        human_scores_list: List[List[float]] = []
+        assistant_responses: list[Message] = []
+        human_scores_list: list[list[float]] = []
 
         for entry in labeled_dataset.entries:
             harm_entry = cast("HarmHumanLabeledEntry", entry)
@@ -556,7 +556,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         diff[np.abs(diff) < 1e-10] = 0.0
 
         abs_error = np.abs(diff)
-        t_statistic, p_value = cast("Tuple[float, float]", ttest_1samp(diff, 0))
+        t_statistic, p_value = cast("tuple[float, float]", ttest_1samp(diff, 0))
 
         num_responses = all_human_scores.shape[1]
         num_human_raters = all_human_scores.shape[0]
@@ -604,7 +604,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     def _validate_and_extract_data(
         self,
         labeled_dataset: HumanLabeledDataset,
-    ) -> Tuple[List[Message], List[List[float]], Optional[List[str]]]:
+    ) -> tuple[list[Message], list[list[float]], Optional[list[str]]]:
         """
         Validate objective dataset and extract evaluation data.
 
@@ -622,9 +622,9 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
 
         labeled_dataset.validate()
 
-        assistant_responses: List[Message] = []
-        human_scores_list: List[List[float]] = []
-        objectives: List[str] = []
+        assistant_responses: list[Message] = []
+        human_scores_list: list[list[float]] = []
+        objectives: list[str] = []
 
         for entry in labeled_dataset.entries:
             objective_entry = cast("ObjectiveHumanLabeledEntry", entry)
