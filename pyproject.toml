@@ -253,6 +253,7 @@ select = [
     "F401",  # unused-import
     "I",  # isort
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
+    "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "W",  # https://docs.astral.sh/ruff/rules/#pycodestyle-w
 ]
@@ -263,6 +264,7 @@ ignore = [
     "D212",  # Multi-line docstring summary should start at the first line
     "D301",  # Use r""" if any backslashes in a docstring
     "DOC502",  # Raised exception is not explicitly raised
+    "SIM117",  # multiple-with-statements (combining often exceeds line length)
     "UP007",  # non-pep604-annotation-union (keep Union[X, Y] syntax)
     "UP045",  # non-pep604-annotation-optional (keep Optional[X] syntax)
 ]
@@ -288,7 +290,7 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 # Temporary ignores for pyrit/ subdirectories until issue #1176
 # https://github.com/Azure/PyRIT/issues/1176 is fully resolved
 # TODO: Remove these ignores once the issues are fixed
-"pyrit/{auxiliary_attacks,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501"]
+"pyrit/{auxiliary_attacks,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501", "SIM101", "SIM108"]
 # Backend API routes raise HTTPException handled by FastAPI, not true exceptions
 "pyrit/backend/**/*.py" = ["DOC501"]
 "pyrit/__init__.py" = ["D104"]

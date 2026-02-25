@@ -694,10 +694,7 @@ class MemoryInterface(abc.ABC):
 
         length_of_sequence_to_remove = 0
 
-        if last_message.api_role == "system" or last_message.api_role == "user":
-            length_of_sequence_to_remove = 1
-        else:
-            length_of_sequence_to_remove = 2
+        length_of_sequence_to_remove = 1 if last_message.api_role == "system" or last_message.api_role == "user" else 2
 
         messages_to_duplicate = [
             message for message in messages if message.sequence <= last_message.sequence - length_of_sequence_to_remove

@@ -128,10 +128,7 @@ class HarmDefinition:
         path = Path(harm_definition_path)
 
         # If it's just a filename (no directory separators), look in the standard directory
-        if path.parent == Path("."):
-            resolved_path = HARM_DEFINITION_PATH / path
-        else:
-            resolved_path = path
+        resolved_path = HARM_DEFINITION_PATH / path if path.parent == Path(".") else path
 
         if not resolved_path.exists():
             raise FileNotFoundError(

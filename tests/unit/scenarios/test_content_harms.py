@@ -131,7 +131,7 @@ class TestContentHarmsStrategy:
 
     def test_all_strategies_can_be_accessed_by_name(self):
         """Test that all strategies can be accessed by their name."""
-        assert ContentHarmsStrategy.ALL == ContentHarmsStrategy["ALL"]
+        assert ContentHarmsStrategy["ALL"] == ContentHarmsStrategy.ALL
         assert ContentHarmsStrategy.Hate == ContentHarmsStrategy["Hate"]
         assert ContentHarmsStrategy.Fairness == ContentHarmsStrategy["Fairness"]
         assert ContentHarmsStrategy.Violence == ContentHarmsStrategy["Violence"]
@@ -167,7 +167,7 @@ class TestContentHarmsStrategy:
         """Test that strategy comparison works correctly."""
         assert ContentHarmsStrategy.Hate == ContentHarmsStrategy.Hate
         assert ContentHarmsStrategy.Hate != ContentHarmsStrategy.Violence
-        assert ContentHarmsStrategy.ALL != ContentHarmsStrategy.Hate
+        assert ContentHarmsStrategy.Hate != ContentHarmsStrategy.ALL
 
     def test_strategy_hash(self):
         """Test that strategies can be hashed and used in sets/dicts."""

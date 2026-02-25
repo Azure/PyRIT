@@ -63,10 +63,13 @@ def get_documented_items_from_rst() -> dict[str, set[str]]:
                     item_match = re.match(item_pattern, lines[j])
                     if item_match:
                         documented[current_module].add(item_match.group(1))
-                    elif lines[j].strip() and not lines[j].strip().startswith(":"):
-                        # End of autosummary section - but keep going if it's just continuing the list
-                        if not lines[j].strip().startswith("..") and not lines[j].startswith("    "):
-                            break
+                    elif (
+                        lines[j].strip()
+                        and not lines[j].strip().startswith(":")
+                        and not lines[j].strip().startswith("..")
+                        and not lines[j].startswith("    ")
+                    ):
+                        break
                 j += 1
 
         i += 1
@@ -171,7 +174,7 @@ def test_documented_modules_have_all_list():
     """
     missing_all = []
 
-    for module_path in MODULES_TO_CHECK.keys():
+    for module_path in MODULES_TO_CHECK:
         try:
             module = importlib.import_module(module_path)
             if not hasattr(module, "__all__"):
