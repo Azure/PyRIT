@@ -1022,7 +1022,7 @@ class ProgressiveMultiPromptAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs
@@ -1262,7 +1262,7 @@ class IndividualPromptAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs
@@ -1477,7 +1477,7 @@ class EvaluateAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs

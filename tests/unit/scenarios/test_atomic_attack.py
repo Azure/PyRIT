@@ -238,16 +238,16 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(AttackExecutor, "__init__", return_value=None) as mock_init:
-            with patch.object(
-                AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-            ) as mock_exec:
-                mock_exec.return_value = wrap_results(sample_attack_results)
+        with (
+            patch.object(AttackExecutor, "__init__", return_value=None) as mock_init,
+            patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec,
+        ):
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
-                result = await atomic_attack.run_async(max_concurrency=5)
+            result = await atomic_attack.run_async(max_concurrency=5)
 
-                mock_init.assert_called_once_with(max_concurrency=5)
-                assert len(result.completed_results) == 3
+            mock_init.assert_called_once_with(max_concurrency=5)
+            assert len(result.completed_results) == 3
 
     @pytest.mark.asyncio
     async def test_run_async_with_default_concurrency(self, mock_attack, sample_seed_groups, sample_attack_results):
@@ -258,15 +258,15 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(AttackExecutor, "__init__", return_value=None) as mock_init:
-            with patch.object(
-                AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-            ) as mock_exec:
-                mock_exec.return_value = wrap_results(sample_attack_results)
+        with (
+            patch.object(AttackExecutor, "__init__", return_value=None) as mock_init,
+            patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec,
+        ):
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
-                await atomic_attack.run_async()
+            await atomic_attack.run_async()
 
-                mock_init.assert_called_once_with(max_concurrency=1)
+            mock_init.assert_called_once_with(max_concurrency=1)
 
     @pytest.mark.asyncio
     async def test_run_async_passes_memory_labels(self, mock_attack, sample_seed_groups, sample_attack_results):

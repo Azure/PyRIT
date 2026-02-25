@@ -9,6 +9,7 @@ and memory_labels consistently according to the established contracts.
 """
 
 import uuid
+from contextlib import suppress
 from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
@@ -948,12 +949,15 @@ def _assert_prepended_text_in_adversarial_context(
     )
 
     # If memory is empty but we have a mock, check set_system_prompt calls
-    if not adversarial_text_values and adversarial_chat_mock is not None:
-        if adversarial_chat_mock.set_system_prompt.called:
-            for call in adversarial_chat_mock.set_system_prompt.call_args_list:
-                system_prompt = call.kwargs.get("system_prompt", "")
-                if system_prompt:
-                    adversarial_text_values.append(system_prompt)
+    if (
+        not adversarial_text_values
+        and adversarial_chat_mock is not None
+        and adversarial_chat_mock.set_system_prompt.called
+    ):
+        for call in adversarial_chat_mock.set_system_prompt.call_args_list:
+            system_prompt = call.kwargs.get("system_prompt", "")
+            if system_prompt:
+                adversarial_text_values.append(system_prompt)
 
     combined_adversarial_text = " ".join(adversarial_text_values)
 
@@ -1041,14 +1045,12 @@ class TestAdversarialChatContextInjection:
     ) -> None:
         """Test that TreeOfAttacksWithPruningAttack injects prepended conversation into adversarial context."""
         # TAP may fail due to JSON parsing, but set_system_prompt should be called before the error
-        try:
+        with suppress(Exception):
             await tap_attack.execute_async(
                 objective="Test objective",
                 prepended_conversation=prepended_conversation_text,
                 next_message=multimodal_text_message,
             )
-        except Exception:
-            pass  # Expected - JSON parsing may fail, but set_system_prompt should have been called
 
         # Verify prepended text appears in adversarial context (checks mock's set_system_prompt calls)
         _assert_prepended_text_in_adversarial_context(

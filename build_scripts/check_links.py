@@ -161,7 +161,7 @@ def check_all_links_parallel(file_urls, max_workers=20):
     # Check all unique URLs in parallel
     url_results = {}
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(check_url, url): url for url in url_to_files.keys()}
+        futures = {executor.submit(check_url, url): url for url in url_to_files}
         for future in as_completed(futures):
             url = futures[future]
             _, is_valid = future.result()

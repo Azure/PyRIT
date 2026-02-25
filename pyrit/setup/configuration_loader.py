@@ -314,10 +314,7 @@ class ConfigurationLoader(YamlLoadable):
                 )
 
             # Instantiate with args if provided
-            if config.args:
-                instance = initializer_class(**config.args)
-            else:
-                instance = initializer_class()
+            instance = initializer_class(**config.args) if config.args else initializer_class()
 
             resolved.append(instance)
 

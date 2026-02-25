@@ -439,9 +439,8 @@ class Scorer(Identifiable, abc.ABC):
         Raises:
             ValueError: If the number of objectives does not match the number of image_paths.
         """
-        if objectives:
-            if len(objectives) != len(image_paths):
-                raise ValueError("The number of objectives must match the number of image_paths.")
+        if objectives and len(objectives) != len(image_paths):
+            raise ValueError("The number of objectives must match the number of image_paths.")
 
         if len(image_paths) == 0:
             return []
