@@ -26,7 +26,6 @@ class TextSelectionStrategy(abc.ABC):
             tuple[int, int]: A tuple of (start_index, end_index) representing the character range.
                 The range is inclusive of start_index and exclusive of end_index.
         """
-        pass
 
 
 class TokenSelectionStrategy(TextSelectionStrategy):
@@ -87,7 +86,6 @@ class WordSelectionStrategy(TextSelectionStrategy):
         Returns:
             List[int]: A list of indices representing which words should be converted.
         """
-        pass
 
     def select_range(self, *, text: str, word_separator: str = " ") -> tuple[int, int]:
         """

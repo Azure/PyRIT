@@ -127,7 +127,6 @@ class ConversationScorer(Scorer, ABC):
 
         This must be implemented by the factory-created subclass.
         """
-        pass
 
     def validate_return_scores(self, scores: list[Score]) -> None:
         """

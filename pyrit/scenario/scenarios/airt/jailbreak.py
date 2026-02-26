@@ -334,7 +334,7 @@ class Jailbreak(Scenario):
 
         for strategy in strategies:
             for template_name in self._jailbreaks:
-                for _ in range(0, self._num_attempts):
+                for _ in range(self._num_attempts):
                     atomic_attack = await self._get_atomic_attack_from_strategy_async(
                         strategy=strategy, jailbreak_template_name=template_name
                     )
