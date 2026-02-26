@@ -28,7 +28,7 @@ class ColloquialWordswapConverter(PromptConverter):
 
     def __init__(
         self,
-        *args,
+        *args: bool,
         deterministic: bool = False,
         custom_substitutions: Optional[dict[str, list[str]]] = None,
         wordswap_path: Optional[str] = None,
