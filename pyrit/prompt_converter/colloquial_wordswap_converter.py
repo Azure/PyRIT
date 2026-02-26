@@ -37,6 +37,7 @@ class ColloquialWordswapConverter(PromptConverter):
         Initialize the converter with optional deterministic mode and substitutions source.
 
         Args:
+            *args: Deprecated positional argument for deterministic. Use deterministic=... instead.
             deterministic (bool): If True, use the first substitution for each wordswap.
                 If False, randomly choose a substitution for each wordswap. Defaults to False.
             custom_substitutions (Optional[dict[str, list[str]]]): A dictionary of custom substitutions
