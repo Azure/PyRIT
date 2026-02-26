@@ -1546,7 +1546,6 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
                 state after execution.
         """
         # No specific teardown needed for TAP attack
-        pass
 
     async def _prepare_nodes_for_iteration_async(self, context: TAPAttackContext) -> None:
         """

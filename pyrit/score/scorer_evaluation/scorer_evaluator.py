@@ -436,7 +436,6 @@ class ScorerEvaluator(abc.ABC):
         Raises:
             ValueError: If the dataset is invalid for this evaluator.
         """
-        pass
 
     @abc.abstractmethod
     def _compute_metrics(
@@ -467,7 +466,6 @@ class ScorerEvaluator(abc.ABC):
         Returns:
             ScorerMetrics subclass with computed metrics.
         """
-        pass
 
     def _write_metrics_to_registry(
         self,

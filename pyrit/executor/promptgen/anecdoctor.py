@@ -255,7 +255,6 @@ class AnecdoctorGenerator(
             context (AnecdoctorContext): The generation context.
         """
         # Nothing to clean up for this prompt generation
-        pass
 
     async def _prepare_examples_async(self, *, context: AnecdoctorContext) -> str:
         """

@@ -97,7 +97,6 @@ class StrategyEventHandler(ABC, Generic[StrategyContextT, StrategyResultT]):
         Args:
             event_data: Data about the event that occurred.
         """
-        pass
 
 
 class StrategyLogAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
@@ -199,7 +198,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Raises:
             Exception: If the context is invalid for this strategy.
         """
-        pass
 
     @abstractmethod
     async def _setup_async(self, *, context: StrategyContextT) -> None:
@@ -211,7 +209,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Args:
             context (StrategyContextT): The context for the strategy.
         """
-        pass
 
     @abstractmethod
     async def _perform_async(self, *, context: StrategyContextT) -> StrategyResultT:
@@ -225,7 +222,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Returns:
             StrategyResultT: The result of the strategy execution.
         """
-        pass
 
     @abstractmethod
     async def _teardown_async(self, *, context: StrategyContextT) -> None:
@@ -237,7 +233,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Args:
             context (StrategyContextT): The context for the strategy.
         """
-        pass
 
     async def _handle_event(
         self,

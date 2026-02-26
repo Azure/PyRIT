@@ -258,6 +258,7 @@ select = [
     "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
     "F401",  # unused-import
     "I",  # isort
+    "PIE",  # https://docs.astral.sh/ruff/rules/#flake8-pie-pie
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up

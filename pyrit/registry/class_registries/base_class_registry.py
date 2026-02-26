@@ -164,7 +164,6 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
 
         Subclasses implement this to populate self._class_entries with discovered classes.
         """
-        pass
 
     @abstractmethod
     def _build_metadata(self, name: str, entry: ClassEntry[T]) -> MetadataT:
@@ -180,7 +179,6 @@ class BaseClassRegistry(ABC, RegistryProtocol[MetadataT], Generic[T, MetadataT])
         Returns:
             A metadata dataclass with descriptive information about the registered class.
         """
-        pass
 
     def get_class(self, name: str) -> type[T]:
         """

@@ -326,7 +326,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
     async def _teardown_async(self, *, context: MultiTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
-        pass
 
     async def _send_prompt_to_objective_target_async(
         self, *, current_message: Message, context: MultiTurnAttackContext[Any]
