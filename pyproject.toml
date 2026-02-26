@@ -177,6 +177,12 @@ strict_optional = false
 disable_error_code = ["empty-body"]
 exclude = ["doc/code/"]
 
+[tool.uv]
+constraint-dependencies = [
+    "cryptography>=46.0.5",
+    "werkzeug>=3.1.6",
+]
+
 [build-system]
 requires = ["setuptools>=64.0.0", "wheel>=0.46.2"]
 build-backend = "setuptools.build_meta"
@@ -252,6 +258,7 @@ select = [
     "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
     "F401",  # unused-import
     "I",  # isort
+    "PIE",  # https://docs.astral.sh/ruff/rules/#flake8-pie-pie
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
