@@ -4,6 +4,7 @@
 import pathlib
 import random
 import re
+import warnings
 from typing import Optional
 
 import yaml
@@ -27,8 +28,8 @@ class ColloquialWordswapConverter(PromptConverter):
 
     def __init__(
         self,
+        *args,
         deterministic: bool = False,
-        *,
         custom_substitutions: Optional[dict[str, list[str]]] = None,
         wordswap_path: Optional[str] = None,
     ) -> None:
@@ -49,6 +50,15 @@ class ColloquialWordswapConverter(PromptConverter):
                 or if the YAML file has an invalid format.
             FileNotFoundError: If the specified wordswap YAML file does not exist.
         """
+        if args:
+            warnings.warn(
+                "Passing 'deterministic' as a positional argument is deprecated. "
+                "Use deterministic=... as a keyword argument. "
+                "It will be keyword-only starting in version 0.13.0.",
+                FutureWarning,
+                stacklevel=2,
+            )
+            deterministic = args[0]
         if custom_substitutions is not None and wordswap_path is not None:
             raise ValueError("Provide either custom_substitutions or wordswap_path, not both.")
 
