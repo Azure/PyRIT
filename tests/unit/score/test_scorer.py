@@ -1419,3 +1419,42 @@ class TestTrueFalseScorerEmptyScoreListRationale:
         assert "blocked" in scores[0].score_rationale.lower()
         # The description should also mention blocked, not just "error"
         assert "blocked" in scores[0].score_value_description.lower()
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_skips_reasoning_piece(good_json):
+    """Test that _score_value_with_llm extracts JSON from the text piece, not a reasoning piece."""
+    chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+    # Simulate a reasoning model response: first piece is reasoning, second is the actual text with JSON
+    reasoning_piece = MessagePiece(
+        role="assistant",
+        original_value="Let me think about this...",
+        original_value_data_type="reasoning",
+        converted_value="Let me think about this...",
+        converted_value_data_type="reasoning",
+        conversation_id="test-convo",
+    )
+    text_piece = MessagePiece(
+        role="assistant",
+        original_value=good_json,
+        conversation_id="test-convo",
+    )
+    response_message = Message(message_pieces=[reasoning_piece, text_piece])
+    chat_target.send_prompt_async = AsyncMock(return_value=[response_message])
+
+    scorer = MockScorer()
+
+    result = await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="message_value",
+        message_data_type="text",
+        scored_prompt_id="123",
+        category="category",
+        objective="task",
+    )
+
+    assert result.raw_score_value == "1"
+    assert result.score_rationale == "Valid response"
