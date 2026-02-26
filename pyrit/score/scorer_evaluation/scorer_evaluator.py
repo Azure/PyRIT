@@ -7,15 +7,12 @@ import abc
 import logging
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import numpy as np
 from scipy.stats import ttest_1samp
 
 from pyrit.common.path import SCORER_EVALS_PATH
-from pyrit.models import Message
-from pyrit.score import Scorer
 from pyrit.score.scorer_evaluation.human_labeled_dataset import (
     HarmHumanLabeledEntry,
     HumanLabeledDataset,
@@ -37,6 +34,12 @@ from pyrit.score.scorer_evaluation.scorer_metrics_io import (
     replace_evaluation_results,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from pyrit.models import Message
+    from pyrit.score import Scorer
 
 logger = logging.getLogger(__name__)
 
@@ -523,7 +526,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         human_scores_list: list[list[float]] = []
 
         for entry in labeled_dataset.entries:
-            harm_entry = cast(HarmHumanLabeledEntry, entry)
+            harm_entry = cast("HarmHumanLabeledEntry", entry)
             for message in harm_entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)
                 assistant_responses.append(message)
@@ -553,7 +556,7 @@ class HarmScorerEvaluator(ScorerEvaluator):
         diff[np.abs(diff) < 1e-10] = 0.0
 
         abs_error = np.abs(diff)
-        t_statistic, p_value = cast(tuple[float, float], ttest_1samp(diff, 0))
+        t_statistic, p_value = cast("tuple[float, float]", ttest_1samp(diff, 0))
 
         num_responses = all_human_scores.shape[1]
         num_human_raters = all_human_scores.shape[0]
@@ -624,7 +627,7 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
         objectives: list[str] = []
 
         for entry in labeled_dataset.entries:
-            objective_entry = cast(ObjectiveHumanLabeledEntry, entry)
+            objective_entry = cast("ObjectiveHumanLabeledEntry", entry)
             for message in objective_entry.conversation:
                 self.scorer._memory.add_message_to_memory(request=message)
                 assistant_responses.append(message)

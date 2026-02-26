@@ -93,7 +93,9 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         super().__init__(**kwargs)
 
-        self._n_seconds: VideoSeconds = cast(VideoSeconds, str(n_seconds)) if isinstance(n_seconds, int) else n_seconds
+        self._n_seconds: VideoSeconds = (
+            cast("VideoSeconds", str(n_seconds)) if isinstance(n_seconds, int) else n_seconds
+        )
         self._validate_duration()
         self._size: VideoSize = self._validate_resolution(resolution_dimensions=resolution_dimensions)
 

@@ -274,7 +274,7 @@ class TestPlaywrightTarget:
         from pyrit.prompt_target.playwright_target import InteractionFunction
 
         # Check that the protocol exists and has the right signature
-        assert hasattr(InteractionFunction, "__call__")
+        assert callable(InteractionFunction)
 
     @pytest.mark.asyncio
     async def test_interaction_function_receives_complete_request(self, mock_page, multiple_text_pieces):

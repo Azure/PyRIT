@@ -12,9 +12,8 @@ The one exception is `attack_result_to_summary` which receives pre-fetched piece
 
 import mimetypes
 import uuid
-from collections.abc import Sequence
 from datetime import datetime, timezone
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
@@ -28,6 +27,9 @@ from pyrit.models import AttackResult, ChatMessageRole, PromptDataType
 from pyrit.models import Message as PyritMessage
 from pyrit.models import MessagePiece as PyritMessagePiece
 from pyrit.models import Score as PyritScore
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # ============================================================================
 # Domain → DTO  (for API responses)
@@ -194,9 +196,9 @@ def request_piece_to_pyrit_message_piece(
     return PyritMessagePiece(
         role=role,
         original_value=piece.original_value,
-        original_value_data_type=cast(PromptDataType, piece.data_type),
+        original_value_data_type=cast("PromptDataType", piece.data_type),
         converted_value=piece.converted_value or piece.original_value,
-        converted_value_data_type=cast(PromptDataType, piece.data_type),
+        converted_value_data_type=cast("PromptDataType", piece.data_type),
         conversation_id=conversation_id,
         sequence=sequence,
         prompt_metadata=metadata,

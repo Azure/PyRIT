@@ -5,7 +5,7 @@ import logging
 import textwrap
 from dataclasses import dataclass, field
 from string import Formatter
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.exceptions import ComponentRole, execution_context
@@ -28,7 +28,9 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import TrueFalseScorer
+
+if TYPE_CHECKING:
+    from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 

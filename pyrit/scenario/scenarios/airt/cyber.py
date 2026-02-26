@@ -3,7 +3,7 @@
 
 import logging
 import os
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
@@ -12,7 +12,6 @@ from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
 )
-from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
 from pyrit.models import SeedAttackGroup, SeedObjective
@@ -32,6 +31,9 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
     TrueFalseScorer,
 )
+
+if TYPE_CHECKING:
+    from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 
 logger = logging.getLogger(__name__)
 

@@ -369,7 +369,7 @@ def test_factory_preserves_wrapped_scorer():
     assert isinstance(conv_scorer, ConversationScorer)
     # Access via attribute since _get_wrapped_scorer is available at runtime
     assert hasattr(conv_scorer, "_wrapped_scorer")
-    wrapped = getattr(conv_scorer, "_wrapped_scorer")
+    wrapped = conv_scorer._wrapped_scorer
     assert wrapped is original_scorer
     assert wrapped.custom_attr == "test_value"  # type: ignore
 

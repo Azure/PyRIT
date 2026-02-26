@@ -195,7 +195,7 @@ class PDFConverter(PromptConverter):
 
             except (ValueError, KeyError) as e:
                 logger.error(f"Error rendering prompt: {e}")
-                raise ValueError(f"Failed to render the prompt: {e}")
+                raise ValueError(f"Failed to render the prompt: {e}") from e
 
         # If no template is provided, return the raw prompt as content
         if isinstance(prompt, str):

@@ -11,11 +11,14 @@ Extends SeedGroup to enforce that all seeds have is_general_technique=True.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
 
-from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_group import SeedGroup
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pyrit.models.seeds.seed import Seed
 
 
 class SeedAttackTechniqueGroup(SeedGroup):

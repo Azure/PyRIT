@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Optional, Union, overload
 
 import yaml
 
@@ -24,7 +24,9 @@ from pyrit.models import (
     Message,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget
+
+if TYPE_CHECKING:
+    from pyrit.prompt_target import PromptChatTarget
 
 logger = logging.getLogger(__name__)
 

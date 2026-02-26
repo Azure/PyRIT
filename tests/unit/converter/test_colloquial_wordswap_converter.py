@@ -52,7 +52,7 @@ async def test_colloquial_non_deterministic(input_text):
     output_words = re.findall(r"\w+|\S+", result.output_text)
 
     # Check that each wordswap is a valid substitution
-    for input_word, output_word in zip(input_words, output_words):
+    for input_word, output_word in zip(input_words, output_words, strict=False):
         lower_input_word = input_word.lower()
 
         if lower_input_word in valid_substitutions:

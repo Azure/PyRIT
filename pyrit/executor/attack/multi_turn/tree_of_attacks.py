@@ -166,7 +166,7 @@ class TAPAttackResult(AttackResult):
     @property
     def tree_visualization(self) -> Optional[Tree]:
         """Get the tree visualization from metadata."""
-        return cast(Optional[Tree], self.metadata.get("tree_visualization", None))
+        return cast("Optional[Tree]", self.metadata.get("tree_visualization", None))
 
     @tree_visualization.setter
     def tree_visualization(self, value: Tree) -> None:
@@ -176,7 +176,7 @@ class TAPAttackResult(AttackResult):
     @property
     def nodes_explored(self) -> int:
         """Get the total number of nodes explored during the attack."""
-        return cast(int, self.metadata.get("nodes_explored", 0))
+        return cast("int", self.metadata.get("nodes_explored", 0))
 
     @nodes_explored.setter
     def nodes_explored(self, value: int) -> None:
@@ -186,7 +186,7 @@ class TAPAttackResult(AttackResult):
     @property
     def nodes_pruned(self) -> int:
         """Get the number of nodes pruned during the attack."""
-        return cast(int, self.metadata.get("nodes_pruned", 0))
+        return cast("int", self.metadata.get("nodes_pruned", 0))
 
     @nodes_pruned.setter
     def nodes_pruned(self, value: int) -> None:
@@ -196,7 +196,7 @@ class TAPAttackResult(AttackResult):
     @property
     def max_depth_reached(self) -> int:
         """Get the maximum depth reached in the attack tree."""
-        return cast(int, self.metadata.get("max_depth_reached", 0))
+        return cast("int", self.metadata.get("max_depth_reached", 0))
 
     @max_depth_reached.setter
     def max_depth_reached(self, value: int) -> None:
@@ -206,7 +206,7 @@ class TAPAttackResult(AttackResult):
     @property
     def auxiliary_scores_summary(self) -> dict[str, float]:
         """Get a summary of auxiliary scores from the best node."""
-        return cast(dict[str, float], self.metadata.get("auxiliary_scores_summary", {}))
+        return cast("dict[str, float]", self.metadata.get("auxiliary_scores_summary", {}))
 
     @auxiliary_scores_summary.setter
     def auxiliary_scores_summary(self, value: dict[str, float]) -> None:
@@ -216,7 +216,7 @@ class TAPAttackResult(AttackResult):
     @property
     def best_adversarial_conversation_id(self) -> Optional[str]:
         """Get the adversarial conversation ID for the best-scoring branch."""
-        return cast(Optional[str], self.metadata.get("best_adversarial_conversation_id", None))
+        return cast("Optional[str]", self.metadata.get("best_adversarial_conversation_id", None))
 
     @best_adversarial_conversation_id.setter
     def best_adversarial_conversation_id(self, value: Optional[str]) -> None:
@@ -493,7 +493,7 @@ class _TreeOfAttacksNode:
         prompt = await self._generate_red_teaming_prompt_async(objective=objective)
         self.last_prompt_sent = prompt
         logger.debug(f"Node {self.node_id}: Generated adversarial prompt")
-        return cast(str, prompt)
+        return cast("str", prompt)
 
     async def _send_prompt_to_target_async(self, prompt: str) -> Message:
         """
@@ -1133,13 +1133,17 @@ class _TreeOfAttacksNode:
             red_teaming_response_dict = json.loads(red_teaming_response)
         except json.JSONDecodeError:
             logger.error(f"The response from the red teaming chat is not in JSON format: {red_teaming_response}")
-            raise InvalidJsonException(message="The response from the red teaming chat is not in JSON format.")
+            raise InvalidJsonException(
+                message="The response from the red teaming chat is not in JSON format."
+            ) from None
 
         try:
-            return cast(str, red_teaming_response_dict["prompt"])
+            return cast("str", red_teaming_response_dict["prompt"])
         except KeyError:
             logger.error(f"The response from the red teaming chat does not contain a prompt: {red_teaming_response}")
-            raise InvalidJsonException(message="The response from the red teaming chat does not contain a prompt.")
+            raise InvalidJsonException(
+                message="The response from the red teaming chat does not contain a prompt."
+            ) from None
 
     def __str__(self) -> str:
         """
@@ -1838,7 +1842,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
                 generate adversarial prompts and evaluate responses.
         """
         node = _TreeOfAttacksNode(
-            objective_target=cast(PromptChatTarget, self._objective_target),
+            objective_target=cast("PromptChatTarget", self._objective_target),
             adversarial_chat=self._adversarial_chat,
             adversarial_chat_seed_prompt=self._adversarial_chat_seed_prompt,
             adversarial_chat_system_seed_prompt=self._adversarial_chat_system_seed_prompt,

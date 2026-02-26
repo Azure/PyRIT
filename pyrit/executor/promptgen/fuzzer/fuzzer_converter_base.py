@@ -136,7 +136,7 @@ class FuzzerConverter(PromptConverter):
             return str(parsed_response["output"])
 
         except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}")
+            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}") from None
 
     def input_supported(self, input_type: PromptDataType) -> bool:
         """

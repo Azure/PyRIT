@@ -11,8 +11,7 @@ against a simulated (compliant) target before executing the actual attack.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
@@ -23,8 +22,12 @@ from pyrit.executor.attack.multi_turn.red_teaming import RedTeamingAttack
 from pyrit.memory import CentralMemory
 from pyrit.message_normalizer import ConversationContextNormalizer
 from pyrit.models import Message, SeedPrompt, SeedSimulatedConversation
-from pyrit.prompt_target import PromptChatTarget
-from pyrit.score import TrueFalseScorer
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from pyrit.prompt_target import PromptChatTarget
+    from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 

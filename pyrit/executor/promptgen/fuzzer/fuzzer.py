@@ -8,7 +8,7 @@ import random
 import textwrap
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, Optional, Union, overload
 
 import numpy as np
 from colorama import Fore, Style
@@ -23,7 +23,6 @@ from pyrit.executor.promptgen.core.prompt_generator_strategy import (
     PromptGeneratorStrategyContext,
     PromptGeneratorStrategyResult,
 )
-from pyrit.executor.promptgen.fuzzer.fuzzer_converter_base import FuzzerConverter
 from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory
 from pyrit.models import (
@@ -33,8 +32,11 @@ from pyrit.models import (
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import NormalizerRequest, PromptNormalizer
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.score import FloatScaleThresholdScorer, Scorer, SelfAskScaleScorer
+
+if TYPE_CHECKING:
+    from pyrit.executor.promptgen.fuzzer.fuzzer_converter_base import FuzzerConverter
+    from pyrit.prompt_target import PromptChatTarget, PromptTarget
 
 logger = logging.getLogger(__name__)
 

@@ -304,7 +304,7 @@ class CopilotAuthenticator(Authenticator):
             raise RuntimeError(
                 "Playwright is not installed. Please install it with: "
                 "'pip install playwright && playwright install chromium'"
-            )
+            ) from None
 
         # On Windows, when using SelectorEventLoop (common in Jupyter), we need to run
         # Playwright in a separate thread with ProactorEventLoop to support subprocesses

@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 import dataclasses
-import logging
+import logging  # noqa: TC003
 import time
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Generic, Optional, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, Union, overload
 
 from pyrit.common.logger import logger
-from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
 from pyrit.executor.core import (
     Strategy,
@@ -28,7 +27,10 @@ from pyrit.models import (
     ConversationReference,
     Message,
 )
-from pyrit.prompt_target import PromptTarget
+
+if TYPE_CHECKING:
+    from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+    from pyrit.prompt_target import PromptTarget
 
 AttackStrategyContextT = TypeVar("AttackStrategyContextT", bound="AttackContext[Any]")
 AttackStrategyResultT = TypeVar("AttackStrategyResultT", bound="AttackResult")

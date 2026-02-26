@@ -124,7 +124,7 @@ class Jailbreak(Scenario):
         scenario_result_id: Optional[str] = None,
         num_templates: Optional[int] = None,
         num_attempts: int = 1,
-        jailbreak_names: list[str] = [],
+        jailbreak_names: list[str] = None,
     ) -> None:
         """
         Initialize the jailbreak scenario.
@@ -147,6 +147,8 @@ class Jailbreak(Scenario):
                 templates.
 
         """
+        if jailbreak_names is None:
+            jailbreak_names = []
         if jailbreak_names and num_templates:
             raise ValueError(
                 "Please provide only one of `num_templates` (random selection) or `jailbreak_names` (specific selection)."

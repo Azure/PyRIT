@@ -9,21 +9,22 @@ from __future__ import annotations
 
 import logging
 import os
-import uuid
-from collections.abc import Sequence
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
 from tinytag import TinyTag
 
 from pyrit.common.path import PATHS_DICT
 from pyrit.models import DataTypeSerializer
-from pyrit.models.literals import ChatMessageRole, PromptDataType
 from pyrit.models.seeds.seed import Seed
 
 if TYPE_CHECKING:
+    import uuid
+    from collections.abc import Sequence
+    from pathlib import Path
+
     from pyrit.models import Message
+    from pyrit.models.literals import ChatMessageRole, PromptDataType
 
 logger = logging.getLogger(__name__)
 

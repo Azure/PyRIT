@@ -296,7 +296,7 @@ class HumanLabeledDataset:
 
         entries: list[HumanLabeledEntry] = []
         for response_to_score, human_scores, objective_or_harm, data_type in zip(
-            responses_to_score, all_human_scores, objectives_or_harms, data_types
+            responses_to_score, all_human_scores, objectives_or_harms, data_types, strict=False
         ):
             response_to_score = str(response_to_score).strip()
             objective_or_harm = str(objective_or_harm).strip()
@@ -310,7 +310,7 @@ class HumanLabeledDataset:
                         MessagePiece(
                             role="assistant",
                             original_value=response_to_score,
-                            original_value_data_type=cast(PromptDataType, data_type),
+                            original_value_data_type=cast("PromptDataType", data_type),
                         )
                     ],
                 )

@@ -13,7 +13,7 @@ import logging
 import os
 from collections.abc import Sequence
 from inspect import signature
-from typing import Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
@@ -29,7 +29,6 @@ from pyrit.executor.attack.core.attack_config import (
     AttackConverterConfig,
     AttackScoringConfig,
 )
-from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_converter import (
     AnsiAttackConverter,
@@ -77,6 +76,9 @@ from pyrit.score import (
     TrueFalseInverterScorer,
     TrueFalseScoreAggregator,
 )
+
+if TYPE_CHECKING:
+    from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 
 AttackStrategyT = TypeVar("AttackStrategyT", bound="AttackStrategy[Any, Any]")
 logger = logging.getLogger(__name__)

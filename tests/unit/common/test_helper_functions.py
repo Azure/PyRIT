@@ -343,7 +343,7 @@ class TestVerifyAndResolvePath:
     def test_verify_and_resolve_path_confirms_existing(self) -> None:
         """Test that the function verifies paths that currently exist under the scorer configs."""
         full_paths: list[str] = []
-        for root, dirs, files in os.walk(SCORER_SEED_PROMPT_PATH):
+        for root, _dirs, files in os.walk(SCORER_SEED_PROMPT_PATH):
             full_paths.extend([os.path.join(root, f) for f in files if f.endswith(".yaml")])
         resolved_paths = [Path(p).resolve() for p in full_paths]
         attempted_paths = [verify_and_resolve_path(p) for p in full_paths]

@@ -3,8 +3,7 @@
 
 
 import uuid
-from collections.abc import Sequence
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pyrit.common.utils import to_sha256
 from pyrit.identifiers import ComponentIdentifier
@@ -18,6 +17,9 @@ from pyrit.models import (
     MessagePiece,
     Score,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def create_message_piece(conversation_id: str, prompt_num: int, targeted_harm_categories=None, labels=None):

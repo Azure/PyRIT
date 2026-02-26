@@ -4,7 +4,7 @@
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.common import apply_defaults
 from pyrit.common.path import (
@@ -21,7 +21,6 @@ from pyrit.executor.attack.core.attack_config import (
     AttackAdversarialConfig,
     AttackScoringConfig,
 )
-from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 from pyrit.models import SeedAttackGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.core.atomic_attack import AtomicAttack
@@ -39,6 +38,9 @@ from pyrit.score import (
     TrueFalseScoreAggregator,
     TrueFalseScorer,
 )
+
+if TYPE_CHECKING:
+    from pyrit.executor.attack.core.attack_strategy import AttackStrategy
 
 logger = logging.getLogger(__name__)
 PERSUASION_DECEPTION_PATH = Path(EXECUTOR_RED_TEAM_PATH, "persuasion_deception").resolve()

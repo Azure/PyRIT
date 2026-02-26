@@ -252,6 +252,7 @@ fixable = [
     "YTT",
 ]
 select = [
+    "B",  # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     "C4",  # https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
     "CPY001",  # missing-copyright-notice
     "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
@@ -261,10 +262,12 @@ select = [
     "PIE",  # https://docs.astral.sh/ruff/rules/#flake8-pie-pie
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "TCH",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tch
     "UP",  # https://docs.astral.sh/ruff/rules/#pyupgrade-up
     "W",  # https://docs.astral.sh/ruff/rules/#pycodestyle-w
 ]
 ignore = [
+    "B903",  # class-as-data-structure (test helper classes use @apply_defaults pattern)
     "D100",  # Missing docstring in public module
     "D200",  # One-line docstring should fit on one line
     "D205",  # 1 blank line required between summary line and description
@@ -293,14 +296,16 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 # Ignore D and DOC rules everywhere except for the pyrit/ directory
 "!pyrit/**.py" = ["D", "DOC"]
 # Ignore copyright check only in doc/ directory
-"doc/**" = ["CPY001"]
+"doc/**" = ["CPY001", "TCH"]
 # Temporary ignores for pyrit/ subdirectories until issue #1176
 # https://github.com/Azure/PyRIT/issues/1176 is fully resolved
 # TODO: Remove these ignores once the issues are fixed
-"pyrit/{auxiliary_attacks,ui}/**/*.py" = ["D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501", "SIM101", "SIM108"]
+"pyrit/{auxiliary_attacks,ui}/**/*.py" = ["B905", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501", "SIM101", "SIM108"]
 # Backend API routes raise HTTPException handled by FastAPI, not true exceptions
-"pyrit/backend/**/*.py" = ["DOC501"]
+"pyrit/backend/**/*.py" = ["DOC501", "B008"]
 "pyrit/__init__.py" = ["D104"]
+# Allow broad pytest.raises(Exception) in tests
+"tests/**/*.py" = ["B017"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
