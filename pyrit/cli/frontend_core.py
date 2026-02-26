@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 import logging
 import sys
-from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -43,6 +42,8 @@ except ImportError:
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     from pyrit.models.scenario_result import ScenarioResult
     from pyrit.registry import (
         InitializerMetadata,

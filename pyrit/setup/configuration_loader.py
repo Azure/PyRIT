@@ -297,7 +297,6 @@ class ConfigurationLoader(YamlLoadable):
             ValueError: If an initializer name is not found in the registry.
         """
         from pyrit.registry import InitializerRegistry
-        from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
         if not self._initializer_configs:
             return []

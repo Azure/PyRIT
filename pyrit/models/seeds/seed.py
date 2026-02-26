@@ -13,16 +13,19 @@ import abc
 import logging
 import re
 import uuid
-from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
 
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.literals import PromptDataType
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+    from pathlib import Path
+
+    from pyrit.models.literals import PromptDataType
 
 logger = logging.getLogger(__name__)
 
@@ -95,16 +98,16 @@ class Seed(YamlLoadable):
     dataset_name: Optional[str] = None
 
     # Categories of harm associated with this prompt
-    harm_categories: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    harm_categories: Optional[Sequence[str]] = field(default_factory=list)
 
     # Description of the prompt
     description: Optional[str] = None
 
     # Authors of the prompt
-    authors: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    authors: Optional[Sequence[str]] = field(default_factory=list)
 
     # Groups affiliated with the prompt
-    groups: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    groups: Optional[Sequence[str]] = field(default_factory=list)
 
     # Source of the prompt
     source: Optional[str] = None
@@ -116,7 +119,7 @@ class Seed(YamlLoadable):
     added_by: Optional[str] = None
 
     # Arbitrary metadata that can be attached to the prompt
-    metadata: Optional[dict[str, Union[str, int]]] = field(default_factory=lambda: {})
+    metadata: Optional[dict[str, Union[str, int]]] = field(default_factory=dict)
 
     # Unique identifier for the prompt group
     prompt_group_id: Optional[uuid.UUID] = None

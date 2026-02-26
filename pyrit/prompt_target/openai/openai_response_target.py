@@ -533,7 +533,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
             # Use unified error handling - automatically detects Response and validates
             result = await self._handle_openai_request(
-                api_call=lambda: self._async_client.responses.create(**body),
+                api_call=lambda body=body: self._async_client.responses.create(**body),
                 request=message,
             )
 
@@ -720,7 +720,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     continue
                 if isinstance(section, dict) and section.get("type") == "function_call":
                     # Do NOT skip function_call even if status == "completed" — we still need to emit the output.
-                    return cast(dict[str, Any], section)
+                    return cast("dict[str, Any]", section)
         return None
 
     async def _execute_call_section(self, tool_call_section: dict[str, Any]) -> dict[str, Any]:
@@ -755,7 +755,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         except Exception:
             # If arguments are not valid JSON, surface a structured error (or raise)
             if self._fail_on_missing_function:
-                raise ValueError(f"Malformed arguments for function '{name}': {args_json}")
+                raise ValueError(f"Malformed arguments for function '{name}': {args_json}") from None
             logger.warning("Malformed arguments for function '%s': %s", name, args_json)
             return {
                 "error": "malformed_arguments",

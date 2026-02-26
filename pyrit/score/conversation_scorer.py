@@ -92,7 +92,7 @@ class ConversationScorer(Scorer, ABC):
                     response_error=original_piece.response_error,
                     originator=original_piece.originator,
                     original_prompt_id=(
-                        cast(UUID, original_piece.original_prompt_id)
+                        cast("UUID", original_piece.original_prompt_id)
                         if isinstance(original_piece.original_prompt_id, str)
                         else original_piece.original_prompt_id
                     ),
@@ -127,7 +127,6 @@ class ConversationScorer(Scorer, ABC):
 
         This must be implemented by the factory-created subclass.
         """
-        pass
 
     def validate_return_scores(self, scores: list[Score]) -> None:
         """

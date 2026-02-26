@@ -219,7 +219,7 @@ class TransparencyAttackConverter(PromptConverter):
                 img_resized = img_gray.resize(self.size, Image.Resampling.LANCZOS)
                 return numpy.array(img_resized, dtype=numpy.float32) / 255.0  # normalize to [0, 1]
         except Exception as e:
-            raise ValueError(f"Failed to load and preprocess image from {path}: {e}")
+            raise ValueError(f"Failed to load and preprocess image from {path}: {e}") from e
 
     def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> float:  # type: ignore[type-arg, unused-ignore]
         """
@@ -284,7 +284,7 @@ class TransparencyAttackConverter(PromptConverter):
             await img_serializer.save_b64_image(data=image_str.decode())
             return img_serializer.value
         except Exception as e:
-            raise ValueError(f"Failed to save blended image: {e}")
+            raise ValueError(f"Failed to save blended image: {e}") from e
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """

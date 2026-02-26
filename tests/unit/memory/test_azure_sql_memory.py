@@ -4,15 +4,18 @@
 import os
 import uuid
 from collections.abc import Generator, MutableSequence, Sequence
+from typing import TYPE_CHECKING
 
 import pytest
 
 from pyrit.memory import AzureSQLMemory, EmbeddingDataEntry, PromptMemoryEntry
-from pyrit.memory.memory_models import Base
 from pyrit.models import MessagePiece
 from pyrit.prompt_converter.base64_converter import Base64Converter
 from pyrit.prompt_target.text_target import TextTarget
 from unit.mocks import get_azure_sql_memory, get_sample_conversation_entries
+
+if TYPE_CHECKING:
+    from pyrit.memory.memory_models import Base
 
 
 @pytest.fixture

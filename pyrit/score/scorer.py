@@ -9,7 +9,6 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -35,16 +34,18 @@ from pyrit.models import (
     ScoreType,
     UnvalidatedScore,
 )
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pyrit.prompt_target import PromptChatTarget, PromptTarget
     from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
     from pyrit.score.scorer_evaluation.scorer_evaluator import (
         ScorerEvalDatasetFiles,
     )
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
+    from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
 
@@ -410,7 +411,7 @@ class Scorer(Identifiable, abc.ABC):
         results = await batch_task_async(
             task_func=self.score_async,
             task_arguments=["message", "objective"],
-            prompt_target=cast(PromptTarget, prompt_target),
+            prompt_target=cast("PromptTarget", prompt_target),
             batch_size=batch_size,
             items_to_batch=[messages, objectives],
             role_filter=role_filter,
@@ -639,10 +640,10 @@ class Scorer(Identifiable, abc.ABC):
             )
 
         except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}") from None
 
         except KeyError:
-            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
+            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}") from None
 
         return score
 

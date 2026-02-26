@@ -156,7 +156,7 @@ class PromptConverter(Identifiable):
         tasks = [self._replace_text_match(match) for match in matches]
         converted_parts = await asyncio.gather(*tasks)
 
-        for original, converted in zip(matches, converted_parts):
+        for original, converted in zip(matches, converted_parts, strict=False):
             prompt = prompt.replace(f"{start_token}{original}{end_token}", converted.output_text, 1)
 
         return ConverterResult(output_text=prompt, output_type="text")

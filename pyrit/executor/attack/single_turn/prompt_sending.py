@@ -274,7 +274,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     async def _teardown_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
-        pass
 
     def _get_message(self, context: SingleTurnAttackContext[Any]) -> Message:
         """

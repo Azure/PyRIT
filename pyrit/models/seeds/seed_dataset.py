@@ -12,21 +12,24 @@ import random
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Optional, Union
-
-from pydantic.types import PositiveInt
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pyrit.common import utils
 from pyrit.common.yaml_loadable import YamlLoadable
-from pyrit.models.literals import PromptDataType, SeedType
-from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_attack_group import SeedAttackGroup
 from pyrit.models.seeds.seed_group import SeedGroup
 from pyrit.models.seeds.seed_objective import SeedObjective
 from pyrit.models.seeds.seed_prompt import SeedPrompt
 from pyrit.models.seeds.seed_simulated_conversation import SeedSimulatedConversation
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pydantic.types import PositiveInt
+
+    from pyrit.models.literals import PromptDataType, SeedType
+    from pyrit.models.seeds.seed import Seed
 
 logger = logging.getLogger(__name__)
 

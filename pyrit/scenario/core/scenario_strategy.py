@@ -1,6 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from __future__ import annotations
+
 """
 Base class for scenario attack strategies with group-based aggregation.
 
@@ -11,9 +13,11 @@ and automatically expanded during scenario initialization.
 It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
-from collections.abc import Sequence
 from enum import Enum
-from typing import TypeVar
+from typing import TYPE_CHECKING, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # TypeVar for the enum subclass itself
 T = TypeVar("T", bound="ScenarioStrategy")
@@ -47,7 +51,7 @@ class ScenarioStrategy(Enum):
 
     _tags: set[str]
 
-    def __new__(cls, value: str, tags: set[str] | None = None) -> "ScenarioStrategy":
+    def __new__(cls, value: str, tags: set[str] | None = None) -> ScenarioStrategy:
         """
         Create a new ScenarioStrategy with value and tags.
 
@@ -195,10 +199,10 @@ class ScenarioStrategy(Enum):
     @classmethod
     def prepare_scenario_strategies(
         cls: type[T],
-        strategies: Sequence[T | "ScenarioCompositeStrategy"] | None = None,
+        strategies: Sequence[T | ScenarioCompositeStrategy] | None = None,
         *,
         default_aggregate: T | None = None,
-    ) -> list["ScenarioCompositeStrategy"]:
+    ) -> list[ScenarioCompositeStrategy]:
         """
         Prepare and normalize scenario strategies for use in a scenario.
 
@@ -395,7 +399,7 @@ class ScenarioCompositeStrategy:
 
     @staticmethod
     def extract_single_strategy_values(
-        composites: Sequence["ScenarioCompositeStrategy"], *, strategy_type: type[T]
+        composites: Sequence[ScenarioCompositeStrategy], *, strategy_type: type[T]
     ) -> set[str]:
         """
         Extract strategy values from single-strategy composites.
@@ -474,8 +478,8 @@ class ScenarioCompositeStrategy:
 
     @staticmethod
     def normalize_compositions(
-        compositions: list["ScenarioCompositeStrategy"], *, strategy_type: type[T]
-    ) -> list["ScenarioCompositeStrategy"]:
+        compositions: list[ScenarioCompositeStrategy], *, strategy_type: type[T]
+    ) -> list[ScenarioCompositeStrategy]:
         """
         Normalize strategy compositions by expanding aggregates while preserving concrete compositions.
 

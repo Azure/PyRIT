@@ -11,12 +11,11 @@ from collections.abc import MutableSequence, Sequence
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from sqlalchemy import MetaData, and_, or_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.sql.elements import ColumnElement
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory.memory_embedding import (
@@ -49,6 +48,9 @@ from pyrit.models import (
     group_conversation_message_pieces_by_sequence,
     sort_message_pieces,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
 
 logger = logging.getLogger(__name__)
 

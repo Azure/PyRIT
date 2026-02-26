@@ -152,8 +152,8 @@ class Score:
                 score = float(score_value)
                 if not (0 <= score <= 1):
                     raise ValueError(f"Float scale scorers must have a score value between 0 and 1. Got {score_value}")
-            except ValueError:
-                raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}")
+            except ValueError as e:
+                raise ValueError(f"Float scale scorers require a numeric score value. Got {score_value}") from e
 
     def to_dict(self) -> dict[str, Any]:
         """

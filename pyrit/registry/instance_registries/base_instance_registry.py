@@ -16,11 +16,13 @@ Examples include:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
-from typing import Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.registry.base import RegistryProtocol
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 T = TypeVar("T")  # The type of instances stored
 MetadataT = TypeVar("MetadataT", bound=ComponentIdentifier)

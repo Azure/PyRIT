@@ -331,7 +331,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             # Decode the assistant's response from the generated token IDs
             assistant_response = cast(
-                str,
+                "str",
                 self.tokenizer.decode(generated_tokens, skip_special_tokens=self.skip_special_tokens),
             ).strip()
 
@@ -372,7 +372,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
 
             # Apply the chat template to format and tokenize the messages
             return cast(
-                BatchEncoding,
+                "BatchEncoding",
                 self.tokenizer.apply_chat_template(
                     messages,
                     tokenize=True,

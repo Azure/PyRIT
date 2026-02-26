@@ -253,7 +253,6 @@ class QuestionAnsweringBenchmark(Strategy[QuestionAnsweringBenchmarkContext, Att
         Args:
             context (QuestionAnsweringBenchmarkContext): The context for the strategy.
         """
-        pass
 
     @overload
     async def execute_async(

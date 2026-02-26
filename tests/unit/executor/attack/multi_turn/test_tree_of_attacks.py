@@ -182,7 +182,7 @@ class AttackBuilder:
         """Add a mock prompt normalizer."""
         normalizer = MagicMock(spec=PromptNormalizer)
         normalizer.send_prompt_async = AsyncMock(return_value=None)
-        self.prompt_normalizer = cast(PromptNormalizer, normalizer)
+        self.prompt_normalizer = cast("PromptNormalizer", normalizer)
         return self
 
     def build(self) -> TreeOfAttacksWithPruningAttack:
@@ -225,7 +225,7 @@ class AttackBuilder:
             class_name="MockTarget",
             class_module="test_module",
         )
-        return cast(PromptTarget, target)
+        return cast("PromptTarget", target)
 
     @staticmethod
     def _create_mock_chat() -> PromptChatTarget:
@@ -236,7 +236,7 @@ class AttackBuilder:
             class_name="MockChatTarget",
             class_module="test_module",
         )
-        return cast(PromptChatTarget, chat)
+        return cast("PromptChatTarget", chat)
 
     @staticmethod
     def _create_mock_scorer(name: str) -> TrueFalseScorer:
@@ -247,7 +247,7 @@ class AttackBuilder:
             class_name=name,
             class_module="test_module",
         )
-        return cast(TrueFalseScorer, scorer)
+        return cast("TrueFalseScorer", scorer)
 
     @staticmethod
     def _create_mock_aux_scorer(name: str) -> Scorer:
@@ -259,7 +259,7 @@ class AttackBuilder:
             class_name=name,
             class_module="test_module",
         )
-        return cast(Scorer, scorer)
+        return cast("Scorer", scorer)
 
 
 class TestHelpers:
@@ -380,7 +380,7 @@ class TestHelpers:
     @staticmethod
     def add_nodes_to_tree(context: TAPAttackContext, nodes: list[_TreeOfAttacksNode], parent: str = "root"):
         """Add nodes to the context's tree visualization."""
-        for i, node in enumerate(nodes):
+        for _i, node in enumerate(nodes):
             score_str = ""
             if node.objective_score:
                 score_str = f": Score {node.objective_score.get_value()}"

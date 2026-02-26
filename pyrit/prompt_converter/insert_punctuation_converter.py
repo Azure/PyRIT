@@ -119,7 +119,7 @@ class InsertPunctuationConverter(PromptConverter):
         # Words list contains single spaces, single word without punctuations, single punctuations
         words = re.findall(r"\w+|[^\w\s]|\s", prompt)
         # Maintains indices for actual "words", i.e. letters and numbers not divided by punctuations
-        word_indices = [i for i in range(0, len(words)) if not re.match(r"\W", words[i])]
+        word_indices = [i for i in range(len(words)) if not re.match(r"\W", words[i])]
         # Calculate the number of insertions
         num_insertions = max(
             1, round(len(word_indices) * self._word_swap_ratio)
@@ -177,7 +177,7 @@ class InsertPunctuationConverter(PromptConverter):
         # Store random indices of prompt_list into insert_indices
         # If the prompt has only 0 or 1 chars, insert at the end of the prompt
         insert_indices = (
-            [1] if len(prompt_list) <= num_insertions else random.sample(range(0, len(prompt_list) - 1), num_insertions)
+            [1] if len(prompt_list) <= num_insertions else random.sample(range(len(prompt_list) - 1), num_insertions)
         )
 
         for index in insert_indices:

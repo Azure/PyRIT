@@ -7,7 +7,7 @@ from pyrit.prompt_converter import ConverterResult, SuperscriptConverter
 
 
 async def _check_conversion(converter, prompts, expected_outputs):
-    for prompt, expected_output in zip(prompts, expected_outputs):
+    for prompt, expected_output in zip(prompts, expected_outputs, strict=False):
         result = await converter.convert_async(prompt=prompt, input_type="text")
         assert isinstance(result, ConverterResult)
         assert result.output_text == expected_output

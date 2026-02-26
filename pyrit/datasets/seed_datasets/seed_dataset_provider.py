@@ -50,7 +50,6 @@ class SeedDatasetProvider(ABC):
         Returns:
             str: The dataset name (e.g., "HarmBench", "JailbreakBench JBB-Behaviors")
         """
-        pass
 
     @abstractmethod
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
@@ -67,7 +66,6 @@ class SeedDatasetProvider(ABC):
         Raises:
             Exception: If the dataset cannot be fetched or processed.
         """
-        pass
 
     @classmethod
     def get_all_providers(cls) -> dict[str, type["SeedDatasetProvider"]]:
@@ -101,7 +99,7 @@ class SeedDatasetProvider(ABC):
                 provider = provider_class()
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
-                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}")
+                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}") from e
         return sorted(dataset_names)
 
     @classmethod

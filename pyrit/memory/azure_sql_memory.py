@@ -6,9 +6,8 @@ import struct
 from collections.abc import MutableSequence, Sequence
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
-from azure.core.credentials import AccessToken
 from sqlalchemy import and_, create_engine, event, exists, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -30,6 +29,9 @@ from pyrit.models import (
     AzureBlobStorageIO,
     MessagePiece,
 )
+
+if TYPE_CHECKING:
+    from azure.core.credentials import AccessToken
 
 logger = logging.getLogger(__name__)
 

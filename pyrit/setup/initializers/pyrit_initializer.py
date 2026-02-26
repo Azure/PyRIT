@@ -30,9 +30,8 @@ class PyRITInitializer(ABC):
     validation logic is needed.
     """
 
-    def __init__(self) -> None:
+    def __init__(self) -> None:  # noqa: B027
         """Initialize the PyRIT initializer with no parameters."""
-        pass
 
     @property
     @abstractmethod
@@ -43,7 +42,6 @@ class PyRITInitializer(ABC):
         Returns:
             str: A clear, descriptive name for this initializer.
         """
-        pass
 
     @property
     def description(self) -> str:
@@ -100,7 +98,6 @@ class PyRITInitializer(ABC):
         calls to set_default_value() and set_global_variable() as needed.
         All initializers must implement this as an async method.
         """
-        pass
 
     def validate(self) -> None:
         """
@@ -156,7 +153,7 @@ class PyRITInitializer(ABC):
             new_main_dict = sys.modules["__main__"].__dict__
 
             # Track default values that were added - just collect class.parameter pairs
-            for scope, value in new_defaults.items():
+            for scope, _value in new_defaults.items():
                 if scope not in current_default_keys:
                     class_param = f"{scope.class_type.__name__}.{scope.parameter_name}"
                     if class_param not in tracking_info["default_values"]:

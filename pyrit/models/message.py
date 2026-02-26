@@ -6,13 +6,16 @@ from __future__ import annotations
 import copy
 import uuid
 import warnings
-from collections.abc import MutableSequence, Sequence
 from datetime import datetime
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from pyrit.common.utils import combine_dict
-from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 from pyrit.models.message_piece import MessagePiece
+
+if TYPE_CHECKING:
+    from collections.abc import MutableSequence, Sequence
+
+    from pyrit.models.literals import ChatMessageRole, PromptDataType, PromptResponseError
 
 
 class Message:
