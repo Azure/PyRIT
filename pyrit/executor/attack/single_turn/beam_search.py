@@ -85,7 +85,6 @@ class BeamReviewer(ABC):
         Returns:
             list[Beam]: The updated list of beams.
         """
-        pass
 
 
 class TopKBeamReviewer(BeamReviewer):
@@ -462,4 +461,3 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
     async def _teardown_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
-        pass
