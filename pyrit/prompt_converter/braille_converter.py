@@ -125,10 +125,9 @@ class BrailleConverter(PromptConverter):
                     output += characterUnicodes["caps"]
                     output += characterUnicodes[char.lower()]
             elif char in characterUnicodes:
-                if char.isdigit():
-                    if not is_number:
-                        is_number = True
-                        output += characterUnicodes["num"]
+                if char.isdigit() and not is_number:
+                    is_number = True
+                    output += characterUnicodes["num"]
                 output += characterUnicodes[char]
             if is_number and char not in numberPunctuations:
                 is_number = False

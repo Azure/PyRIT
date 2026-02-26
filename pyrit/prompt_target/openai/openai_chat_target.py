@@ -158,10 +158,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         # Merge audio config into extra_body_parameters if provided
         if audio_response_config:
             audio_params = audio_response_config.to_extra_body_parameters()
-            if extra_body_parameters:
-                extra_body_parameters = {**audio_params, **extra_body_parameters}
-            else:
-                extra_body_parameters = audio_params
+            extra_body_parameters = {**audio_params, **extra_body_parameters} if extra_body_parameters else audio_params
 
         self._extra_body_parameters = extra_body_parameters
 
@@ -347,16 +344,13 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
             return True
 
         # Skip historical user audio if prefer_transcript_for_history is enabled and we have a transcript
-        if (
+        return bool(
             api_role == "user"
             and not is_last_message
             and has_text_piece
             and self._audio_response_config
             and self._audio_response_config.prefer_transcript_for_history
-        ):
-            return True
-
-        return False
+        )
 
     async def _construct_message_from_response(self, response: Any, request: MessagePiece) -> Message:
         """

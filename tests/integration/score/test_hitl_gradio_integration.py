@@ -137,9 +137,7 @@ class TestHiTLGradioIntegration:
                 assert prompt.original_value == promptOriginal.original_value
                 assert prompt.converted_value == promptOriginal.converted_value
 
-                if i % 2 == 0:
-                    return True
-                return False
+                return i % 2 == 0
 
             mock_is_app_running.return_value = True
 

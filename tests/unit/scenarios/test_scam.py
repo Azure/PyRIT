@@ -249,7 +249,7 @@ class TestScamAttackGeneration:
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         for run in atomic_attacks:
-            assert isinstance(run._attack, ContextComplianceAttack) or isinstance(run._attack, RolePlayAttack)
+            assert isinstance(run._attack, (ContextComplianceAttack, RolePlayAttack))
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_multiturn_async(
