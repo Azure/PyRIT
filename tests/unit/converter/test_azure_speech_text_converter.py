@@ -56,10 +56,8 @@ class TestAzureSpeechAudioToTextConverter:
 
         # Check if the callback function worked as expected
         MockSpeechRecognizer.stop_continuous_recognition_async.assert_called_once()
-        mock_logger.info.assert_any_call("CLOSING on {}".format(mock_event))
-        mock_logger.info.assert_any_call(
-            "Speech recognition canceled: {}".format(speechsdk.CancellationReason.EndOfStream)
-        )
+        mock_logger.info.assert_any_call(f"CLOSING on {mock_event}")
+        mock_logger.info.assert_any_call(f"Speech recognition canceled: {speechsdk.CancellationReason.EndOfStream}")
         mock_logger.info.assert_called_with("End of audio stream detected.")
 
     @patch(
@@ -86,7 +84,7 @@ class TestAzureSpeechAudioToTextConverter:
         converter.transcript_cb(evt=mock_event, transcript=transcript)
 
         # Check if the callback function worked as expected
-        mock_logger.info.assert_called_once_with("RECOGNIZED: {}".format(mock_event.result.text))
+        mock_logger.info.assert_called_once_with(f"RECOGNIZED: {mock_event.result.text}")
         assert mock_event.result.text in transcript
 
     @patch(

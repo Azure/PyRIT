@@ -8,16 +8,13 @@ This is the new, cleaner design that leverages the params_type architecture.
 """
 
 import asyncio
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Generic,
-    Iterator,
-    List,
     Optional,
-    Sequence,
     TypeVar,
 )
 
@@ -57,8 +54,8 @@ class AttackExecutorResult(Generic[AttackResultT]):
     Note: "completed" means the execution finished, not that the attack objective was achieved.
     """
 
-    completed_results: List[AttackResultT]
-    incomplete_objectives: List[tuple[str, BaseException]]
+    completed_results: list[AttackResultT]
+    incomplete_objectives: list[tuple[str, BaseException]]
 
     def __iter__(self) -> Iterator[AttackResultT]:
         """
@@ -93,7 +90,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
         return len(self.incomplete_objectives) == 0
 
     @property
-    def exceptions(self) -> List[BaseException]:
+    def exceptions(self) -> list[BaseException]:
         """Get all exceptions from incomplete objectives."""
         return [exception for _, exception in self.incomplete_objectives]
 
@@ -102,7 +99,7 @@ class AttackExecutorResult(Generic[AttackResultT]):
         if self.incomplete_objectives:
             raise self.incomplete_objectives[0][1]
 
-    def get_results(self) -> List[AttackResultT]:
+    def get_results(self) -> list[AttackResultT]:
         """
         Get completed results, raising if any incomplete.
 
@@ -143,7 +140,7 @@ class AttackExecutor:
         seed_groups: Sequence[SeedAttackGroup],
         adversarial_chat: Optional["PromptChatTarget"] = None,
         objective_scorer: Optional["TrueFalseScorer"] = None,
-        field_overrides: Optional[Sequence[Dict[str, Any]]] = None,
+        field_overrides: Optional[Sequence[dict[str, Any]]] = None,
         return_partial_on_failure: bool = False,
         **broadcast_fields: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
@@ -215,7 +212,7 @@ class AttackExecutor:
         *,
         attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
         objectives: Sequence[str],
-        field_overrides: Optional[Sequence[Dict[str, Any]]] = None,
+        field_overrides: Optional[Sequence[dict[str, Any]]] = None,
         return_partial_on_failure: bool = False,
         **broadcast_fields: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
@@ -252,7 +249,7 @@ class AttackExecutor:
         params_type = attack.params_type
 
         # Build params list
-        params_list: List[AttackParameters] = []
+        params_list: list[AttackParameters] = []
         for i, objective in enumerate(objectives):
             # Start with broadcast fields
             fields = dict(broadcast_fields)
@@ -315,7 +312,7 @@ class AttackExecutor:
         self,
         *,
         objectives: Sequence[str],
-        results_or_exceptions: List[Any],
+        results_or_exceptions: list[Any],
         return_partial_on_failure: bool,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
         """
@@ -332,8 +329,8 @@ class AttackExecutor:
         Raises:
             BaseException: If return_partial_on_failure=False and any failed.
         """
-        completed: List[AttackStrategyResultT] = []
-        incomplete: List[tuple[str, BaseException]] = []
+        completed: list[AttackStrategyResultT] = []
+        incomplete: list[tuple[str, BaseException]] = []
 
         for objective, result in zip(objectives, results_or_exceptions):
             if isinstance(result, BaseException):
@@ -362,9 +359,9 @@ class AttackExecutor:
         self,
         *,
         attack: AttackStrategy[AttackStrategyContextT, AttackStrategyResultT],
-        objectives: List[str],
-        prepended_conversation: Optional[List[Message]] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
+        objectives: list[str],
+        prepended_conversation: Optional[list[Message]] = None,
+        memory_labels: Optional[dict[str, str]] = None,
         return_partial_on_failure: bool = False,
         **attack_params: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
@@ -392,7 +389,7 @@ class AttackExecutor:
         )
 
         # Build field_overrides if prepended_conversation is provided (broadcast to all)
-        field_overrides: Optional[List[Dict[str, Any]]] = None
+        field_overrides: Optional[list[dict[str, Any]]] = None
         if prepended_conversation:
             field_overrides = [{"prepended_conversation": prepended_conversation} for _ in objectives]
 
@@ -409,10 +406,10 @@ class AttackExecutor:
         self,
         *,
         attack: AttackStrategy["_SingleTurnContextT", AttackStrategyResultT],
-        objectives: List[str],
-        messages: Optional[List[Message]] = None,
-        prepended_conversations: Optional[List[List[Message]]] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
+        objectives: list[str],
+        messages: Optional[list[Message]] = None,
+        prepended_conversations: Optional[list[list[Message]]] = None,
+        memory_labels: Optional[dict[str, str]] = None,
         return_partial_on_failure: bool = False,
         **attack_params: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
@@ -450,11 +447,11 @@ class AttackExecutor:
             )
 
         # Build field_overrides from per-objective parameters
-        field_overrides: Optional[List[Dict[str, Any]]] = None
+        field_overrides: Optional[list[dict[str, Any]]] = None
         if messages or prepended_conversations:
             field_overrides = []
             for i in range(len(objectives)):
-                override: Dict[str, Any] = {}
+                override: dict[str, Any] = {}
                 if messages and i < len(messages):
                     override["next_message"] = messages[i]
                 if prepended_conversations and i < len(prepended_conversations):
@@ -474,10 +471,10 @@ class AttackExecutor:
         self,
         *,
         attack: AttackStrategy["_MultiTurnContextT", AttackStrategyResultT],
-        objectives: List[str],
-        messages: Optional[List[Message]] = None,
-        prepended_conversations: Optional[List[List[Message]]] = None,
-        memory_labels: Optional[Dict[str, str]] = None,
+        objectives: list[str],
+        messages: Optional[list[Message]] = None,
+        prepended_conversations: Optional[list[list[Message]]] = None,
+        memory_labels: Optional[dict[str, str]] = None,
         return_partial_on_failure: bool = False,
         **attack_params: Any,
     ) -> AttackExecutorResult[AttackStrategyResultT]:
@@ -515,11 +512,11 @@ class AttackExecutor:
             )
 
         # Build field_overrides from per-objective parameters
-        field_overrides: Optional[List[Dict[str, Any]]] = None
+        field_overrides: Optional[list[dict[str, Any]]] = None
         if messages or prepended_conversations:
             field_overrides = []
             for i in range(len(objectives)):
-                override: Dict[str, Any] = {}
+                override: dict[str, Any] = {}
                 if messages and i < len(messages):
                     override["next_message"] = messages[i]
                 if prepended_conversations and i < len(prepended_conversations):

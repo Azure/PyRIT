@@ -2,8 +2,9 @@
 # Licensed under the MIT license.
 
 import enum
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, Iterator, Optional, Union
+from typing import Any, Optional, Union
 
 import yaml
 
@@ -146,7 +147,7 @@ class SelfAskTrueFalseScorer(TrueFalseScorer):
         true_category = true_false_question["true_description"]
         false_category = true_false_question["false_description"]
 
-        metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""
+        metadata = true_false_question["metadata"] if "metadata" in true_false_question else ""  # noqa: SIM401
 
         scoring_instructions_template = SeedPrompt.from_yaml_file(true_false_system_prompt_path)
 

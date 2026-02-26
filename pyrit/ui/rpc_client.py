@@ -3,8 +3,9 @@
 
 import socket
 import time
+from collections.abc import Callable
 from threading import Event, Semaphore, Thread
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import rpyc
 

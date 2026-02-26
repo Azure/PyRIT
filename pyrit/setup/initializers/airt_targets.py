@@ -15,7 +15,7 @@ Note: This module only includes PRIMARY endpoint configurations from .env_exampl
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, List, Optional, Type
+from typing import Any, Optional
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.prompt_target import (
@@ -41,7 +41,7 @@ class TargetConfig:
     """Configuration for a target to be registered."""
 
     registry_name: str
-    target_class: Type[PromptTarget]
+    target_class: type[PromptTarget]
     endpoint_var: str
     key_var: str = ""  # Empty string means no auth required (e.g., Ollama) or Entra auth
     model_var: Optional[str] = None
@@ -51,7 +51,7 @@ class TargetConfig:
 # Define all supported target configurations.
 # Only PRIMARY configurations are included here - alias configurations that use ${...}
 # syntax in .env_example are excluded since they reference other primary configurations.
-TARGET_CONFIGS: List[TargetConfig] = [
+TARGET_CONFIGS: list[TargetConfig] = [
     # ============================================
     # OpenAI Chat Targets (OpenAIChatTarget)
     # ============================================
@@ -345,7 +345,7 @@ class AIRTTargetInitializer(PyRITInitializer):
         )
 
     @property
-    def required_env_vars(self) -> List[str]:
+    def required_env_vars(self) -> list[str]:
         """
         Get list of required environment variables.
 

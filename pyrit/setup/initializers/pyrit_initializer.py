@@ -10,8 +10,9 @@ which are class-based alternatives to initialization scripts.
 
 import sys
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
-from typing import Any, Dict, Iterator, List
+from collections.abc import Iterator
+from contextlib import contextmanager, suppress
+from typing import Any
 
 from pyrit.common.apply_defaults import get_global_default_values
 
@@ -58,7 +59,7 @@ class PyRITInitializer(ABC):
         return self.name
 
     @property
-    def required_env_vars(self) -> List[str]:
+    def required_env_vars(self) -> list[str]:
         """
         Get list of required environment variables for this initializer.
 
@@ -132,7 +133,7 @@ class PyRITInitializer(ABC):
             await self.initialize_async()
 
     @contextmanager
-    def _track_initialization_changes(self) -> Iterator[Dict[str, Any]]:
+    def _track_initialization_changes(self) -> Iterator[dict[str, Any]]:
         """
         Context manager to track what changes during initialization.
 
@@ -145,7 +146,7 @@ class PyRITInitializer(ABC):
         current_main_dict = dict(sys.modules["__main__"].__dict__)
 
         # Initialize tracking dict
-        tracking_info: Dict[str, List[str]] = {"default_values": [], "global_variables": []}
+        tracking_info: dict[str, list[str]] = {"default_values": [], "global_variables": []}
 
         try:
             yield tracking_info
@@ -162,11 +163,11 @@ class PyRITInitializer(ABC):
                         tracking_info["default_values"].append(class_param)
 
             # Track global variables that were added - just collect the variable names
-            for name in new_main_dict.keys():
+            for name in new_main_dict:
                 if name not in current_main_dict and name not in tracking_info["global_variables"]:
                     tracking_info["global_variables"].append(name)
 
-    async def get_dynamic_default_values_info_async(self) -> Dict[str, Any]:
+    async def get_dynamic_default_values_info_async(self) -> dict[str, Any]:
         """
         Get information about what default values and global variables this initializer sets.
         This is useful for debugging what default_values are set by an initializer.
@@ -231,12 +232,13 @@ class PyRITInitializer(ABC):
 
             current_main_keys = set(sys.modules["__main__"].__dict__.keys())
             for var_name in list(current_main_keys):
-                if var_name in temp_backup_globals or var_name in original_main_keys:
-                    if var_name in sys.modules["__main__"].__dict__ and not var_name.startswith("_"):
-                        try:
-                            del sys.modules["__main__"].__dict__[var_name]
-                        except KeyError:
-                            pass
+                if (
+                    (var_name in temp_backup_globals or var_name in original_main_keys)
+                    and var_name in sys.modules["__main__"].__dict__
+                    and not var_name.startswith("_")
+                ):
+                    with suppress(KeyError):
+                        del sys.modules["__main__"].__dict__[var_name]
 
             # Then restore what was there originally
             for scope_key, value in temp_backup_defaults.items():
@@ -246,7 +248,7 @@ class PyRITInitializer(ABC):
                 sys.modules["__main__"].__dict__[var_name] = value
 
     @classmethod
-    async def get_info_async(cls) -> Dict[str, Any]:
+    async def get_info_async(cls) -> dict[str, Any]:
         """
         Get information about this initializer class.
 

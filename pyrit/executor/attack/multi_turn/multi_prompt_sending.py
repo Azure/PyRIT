@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import get_kwarg_param
@@ -46,11 +46,11 @@ class MultiPromptSendingAttackParameters(AttackParameters):
     Only accepts objective and user_messages fields.
     """
 
-    user_messages: Optional[List[Message]] = None
+    user_messages: Optional[list[Message]] = None
 
     @classmethod
     async def from_seed_group_async(
-        cls: Type["MultiPromptSendingAttackParameters"],
+        cls: type["MultiPromptSendingAttackParameters"],
         seed_group: SeedAttackGroup,
         *,
         adversarial_chat: Optional["PromptChatTarget"] = None,

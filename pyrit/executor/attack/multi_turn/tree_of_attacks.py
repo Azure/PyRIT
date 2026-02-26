@@ -7,7 +7,7 @@ import logging
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast, overload
+from typing import Any, Optional, cast, overload
 
 from treelib.tree import Tree
 
@@ -85,7 +85,7 @@ class TAPAttackScoringConfig(AttackScoringConfig):
         *,
         objective_scorer: FloatScaleThresholdScorer,
         refusal_scorer: Optional[TrueFalseScorer] = None,
-        auxiliary_scorers: Optional[List[Scorer]] = None,
+        auxiliary_scorers: Optional[list[Scorer]] = None,
         use_score_as_feedback: bool = True,
     ) -> None:
         """
@@ -146,7 +146,7 @@ class TAPAttackContext(MultiTurnAttackContext[Any]):
 
     # Nodes in the attack tree
     # Each node represents a branch in the attack tree with its own state
-    nodes: List["_TreeOfAttacksNode"] = field(default_factory=list)
+    nodes: list["_TreeOfAttacksNode"] = field(default_factory=list)
 
     # Best conversation ID and score found during the attack
     best_conversation_id: Optional[str] = None
@@ -204,12 +204,12 @@ class TAPAttackResult(AttackResult):
         self.metadata["max_depth_reached"] = value
 
     @property
-    def auxiliary_scores_summary(self) -> Dict[str, float]:
+    def auxiliary_scores_summary(self) -> dict[str, float]:
         """Get a summary of auxiliary scores from the best node."""
-        return cast(Dict[str, float], self.metadata.get("auxiliary_scores_summary", {}))
+        return cast(dict[str, float], self.metadata.get("auxiliary_scores_summary", {}))
 
     @auxiliary_scores_summary.setter
-    def auxiliary_scores_summary(self, value: Dict[str, float]) -> None:
+    def auxiliary_scores_summary(self, value: dict[str, float]) -> None:
         """Set the auxiliary scores summary."""
         self.metadata["auxiliary_scores_summary"] = value
 
@@ -265,9 +265,9 @@ class _TreeOfAttacksNode:
         desired_response_prefix: str,
         objective_scorer: Scorer,
         on_topic_scorer: Optional[Scorer],
-        request_converters: List[PromptConverterConfiguration],
-        response_converters: List[PromptConverterConfiguration],
-        auxiliary_scorers: Optional[List[Scorer]],
+        request_converters: list[PromptConverterConfiguration],
+        response_converters: list[PromptConverterConfiguration],
+        auxiliary_scorers: Optional[list[Scorer]],
         attack_id: ComponentIdentifier,
         attack_strategy_name: str,
         memory_labels: Optional[dict[str, str]] = None,
@@ -330,7 +330,7 @@ class _TreeOfAttacksNode:
         self.completed = False
         self.off_topic = False
         self.objective_score: Optional[Score] = None
-        self.auxiliary_scores: Dict[str, Score] = {}
+        self.auxiliary_scores: dict[str, Score] = {}
         self.last_prompt_sent: Optional[str] = None
         self.last_response: Optional[str] = None
         self.error_message: Optional[str] = None
@@ -348,7 +348,7 @@ class _TreeOfAttacksNode:
     async def initialize_with_prepended_conversation_async(
         self,
         *,
-        prepended_conversation: List[Message],
+        prepended_conversation: list[Message],
         prepended_conversation_config: Optional["PrependedConversationConfig"] = None,
     ) -> None:
         """
@@ -1868,7 +1868,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         return node
 
-    def _get_completed_nodes_sorted_by_score(self, nodes: List[_TreeOfAttacksNode]) -> List[_TreeOfAttacksNode]:
+    def _get_completed_nodes_sorted_by_score(self, nodes: list[_TreeOfAttacksNode]) -> list[_TreeOfAttacksNode]:
         """
         Get completed, on-topic nodes sorted by score in descending order.
 
@@ -2100,7 +2100,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
         responses = self._memory.get_message_pieces(conversation_id=conversation_id)
         return responses[-1] if responses else None
 
-    def _get_auxiliary_scores_summary(self, nodes: List[_TreeOfAttacksNode]) -> Dict[str, float]:
+    def _get_auxiliary_scores_summary(self, nodes: list[_TreeOfAttacksNode]) -> dict[str, float]:
         """
         Extract auxiliary scores from the best node if available.
 
@@ -2120,7 +2120,7 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         return {name: float(score.get_value()) for name, score in nodes[0].auxiliary_scores.items()}
 
-    def _calculate_tree_statistics(self, tree_visualization: Tree) -> Dict[str, int]:
+    def _calculate_tree_statistics(self, tree_visualization: Tree) -> dict[str, int]:
         """
         Calculate statistics from the tree visualization.
 

@@ -3,10 +3,11 @@
 
 import logging
 import uuid
+from collections.abc import MutableSequence, Sequence
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
-from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 from sqlalchemy import and_, create_engine, func, or_, text
 from sqlalchemy.engine.base import Engine
@@ -58,7 +59,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             verbose (bool): Whether to enable verbose logging.
                 Defaults to False.
         """
-        super(SQLiteMemory, self).__init__()
+        super().__init__()
 
         if db_path == ":memory:":
             self.db_path: Union[Path, str] = ":memory:"
@@ -298,10 +299,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             try:
                 for entry in entries:
                     # Ensure the entry is attached to the session. If it's detached, merge it.
-                    if not session.is_modified(entry):
-                        entry_in_session = session.merge(entry)
-                    else:
-                        entry_in_session = entry
+                    entry_in_session = session.merge(entry) if not session.is_modified(entry) else entry
                     for field, value in update_fields.items():
                         if field in vars(entry_in_session):
                             setattr(entry_in_session, field, value)

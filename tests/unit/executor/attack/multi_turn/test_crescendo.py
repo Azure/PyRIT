@@ -1649,16 +1649,18 @@ class TestAttackExecution:
         mock_check_refusal = AsyncMock(return_value=refusal_score)
 
         # Mock backtrack memory once
-        with patch.object(
-            attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"
-        ) as mock_backtrack:
-            with patch.object(attack, "_check_refusal_async", mock_check_refusal):
-                with patch(
-                    "pyrit.score.Scorer.score_response_async",
-                    new_callable=AsyncMock,
-                    return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []},
-                ):
-                    result = await attack._perform_async(context=basic_context)
+        with (
+            patch.object(
+                attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"
+            ) as mock_backtrack,
+            patch.object(attack, "_check_refusal_async", mock_check_refusal),
+            patch(
+                "pyrit.score.Scorer.score_response_async",
+                new_callable=AsyncMock,
+                return_value={"objective_scores": [failure_objective_score], "auxiliary_scores": []},
+            ),
+        ):
+            result = await attack._perform_async(context=basic_context)
 
         # Should only backtrack once (when backtrack count is 0)
         assert mock_backtrack.call_count == 1
@@ -1947,18 +1949,20 @@ class TestIntegrationScenarios:
         # Mock the conversation manager to return an empty state (no prepended conversation)
         mock_conversation_state = ConversationState(turn_count=0)
 
-        with patch.object(
-            attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
+        with (
+            patch.object(
+                attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
+            ),
+            patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal),
         ):
-            with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal):
-                with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
-                    mock_score.side_effect = [
-                        {"objective_scores": [scores[0]], "auxiliary_scores": []},
-                        {"objective_scores": [scores[1]], "auxiliary_scores": []},
-                        {"objective_scores": [scores[2]], "auxiliary_scores": []},
-                    ]
+            with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
+                mock_score.side_effect = [
+                    {"objective_scores": [scores[0]], "auxiliary_scores": []},
+                    {"objective_scores": [scores[1]], "auxiliary_scores": []},
+                    {"objective_scores": [scores[2]], "auxiliary_scores": []},
+                ]
 
-                    result = await attack.execute_with_context_async(context=context)
+                result = await attack.execute_with_context_async(context=context)
 
         # Verify the attack succeeded
         assert isinstance(result, CrescendoAttackResult)
@@ -2037,20 +2041,20 @@ class TestIntegrationScenarios:
         # Mock the conversation manager to return an empty state
         mock_conversation_state = ConversationState(turn_count=0)
 
-        with patch.object(
-            attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
+        with (
+            patch.object(
+                attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
+            ),
+            patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, side_effect=refusal_checks),
         ):
-            with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, side_effect=refusal_checks):
-                with patch.object(
-                    attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"
-                ):
-                    with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
-                        mock_score.return_value = {
-                            "objective_scores": [success_objective_score],
-                            "auxiliary_scores": [],
-                        }
+            with patch.object(attack, "_backtrack_memory_async", new_callable=AsyncMock, return_value="new_conv_id"):
+                with patch("pyrit.score.Scorer.score_response_async", new_callable=AsyncMock) as mock_score:
+                    mock_score.return_value = {
+                        "objective_scores": [success_objective_score],
+                        "auxiliary_scores": [],
+                    }
 
-                        result = await attack.execute_with_context_async(context=context)
+                    result = await attack.execute_with_context_async(context=context)
 
         # Verify backtracking occurred as expected
         assert isinstance(result, CrescendoAttackResult)
@@ -2211,20 +2215,22 @@ class TestEdgeCases:
         # Mock conversation state
         mock_conversation_state = ConversationState(turn_count=0)
 
-        with patch.object(
-            attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
+        with (
+            patch.object(
+                attack._conversation_manager, "initialize_context_async", return_value=mock_conversation_state
+            ),
+            patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score),
+            patch(
+                "pyrit.score.Scorer.score_response_async",
+                new_callable=AsyncMock,
+                return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
+            ),
         ):
-            with patch.object(attack, "_check_refusal_async", new_callable=AsyncMock, return_value=no_refusal_score):
-                with patch(
-                    "pyrit.score.Scorer.score_response_async",
-                    new_callable=AsyncMock,
-                    return_value={"objective_scores": [success_objective_score], "auxiliary_scores": []},
-                ):
-                    # Use the execute_async method with parameters
-                    result = await attack.execute_async(
-                        objective="Test objective",
-                        memory_labels={"test": "label"},
-                    )
+            # Use the execute_async method with parameters
+            result = await attack.execute_async(
+                objective="Test objective",
+                memory_labels={"test": "label"},
+            )
 
         assert isinstance(result, CrescendoAttackResult)
         assert result.outcome == AttackOutcome.SUCCESS

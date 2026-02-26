@@ -3,8 +3,9 @@
 
 import json
 import os
+from collections.abc import MutableSequence
 from tempfile import NamedTemporaryFile
-from typing import Any, MutableSequence
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -117,25 +118,22 @@ def openai_response_json() -> dict:
 
 
 def test_init_with_no_deployment_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIResponseTarget()
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIResponseTarget()
 
 
 def test_init_with_no_endpoint_uri_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIResponseTarget(
-                model_name="gpt-4",
-                endpoint="",
-                api_key="xxxxx",
-            )
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIResponseTarget(
+            model_name="gpt-4",
+            endpoint="",
+            api_key="xxxxx",
+        )
 
 
 def test_init_with_no_additional_request_headers_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIResponseTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIResponseTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
 @pytest.mark.asyncio()
