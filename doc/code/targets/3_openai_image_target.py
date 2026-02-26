@@ -66,7 +66,23 @@ for result in results:
 # This example shows how to use the image target to edit an existing image (or combine a set of images) from a text prompt.
 
 # %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
 from pyrit.models import SeedGroup, SeedPrompt
+
+# Image editing requires gpt-image-1 or newer; dall-e-3 does not support editing.
+edit_endpoint = os.environ.get("OPENAI_IMAGE_ENDPOINT2")
+edit_target = OpenAIImageTarget(
+    endpoint=edit_endpoint,
+    api_key=get_azure_openai_auth(edit_endpoint),
+    model_name=os.environ.get("OPENAI_IMAGE_MODEL2"),
+    output_format="jpeg",
+)
+edit_attack = PromptSendingAttack(
+    objective_target=edit_target,
+    attack_scoring_config=scoring_config,
+)
 
 # use the previously generated images as seeds
 image_seeds = [
@@ -87,7 +103,7 @@ all_seeds = [
 
 seed_group = SeedGroup(seeds=all_seeds)
 
-result = await attack.execute_async(
+result = await edit_attack.execute_async(
     objective=seed_group.prompts[0].value,
     next_message=seed_group.next_message,
 )  # type: ignore
