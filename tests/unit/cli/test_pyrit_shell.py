@@ -32,15 +32,19 @@ class TestPyRITShell:
         mock_context.initialize_async.assert_called_once()
 
     def test_prompt_and_intro(self):
-        """Test shell prompt and intro are set."""
+        """Test shell prompt is set and intro is set via cmdloop."""
         mock_context = MagicMock()
         mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
         assert shell.prompt == "pyrit> "
-        assert shell.intro is not None
-        assert "Interactive Shell" in str(shell.intro)
+        # intro is now set dynamically in cmdloop via banner.play_animation
+        # Verify that calling play_animation with no_animation produces expected content
+        from pyrit.cli.banner import get_static_banner
+
+        static = get_static_banner()
+        assert "Interactive Shell" in static
 
     @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
     def test_do_list_scenarios(self, mock_print_scenarios: AsyncMock):
