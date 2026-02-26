@@ -61,7 +61,6 @@ class FuzzerConverter(PromptConverter):
 
     def update(self, **kwargs: Any) -> None:
         """Update the converter with new parameters."""
-        pass
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """

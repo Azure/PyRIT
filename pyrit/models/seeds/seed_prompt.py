@@ -44,7 +44,7 @@ class SeedPrompt(Seed):
     sequence: int = 0
 
     # Parameters that can be used in the prompt template
-    parameters: Optional[Sequence[str]] = field(default_factory=lambda: [])
+    parameters: Optional[Sequence[str]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """

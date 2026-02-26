@@ -862,7 +862,6 @@ class FuzzerGenerator(
             context (FuzzerContext): The generation context.
         """
         # No specific teardown needed
-        pass
 
     def _should_stop_generation(self, context: FuzzerContext) -> bool:
         """

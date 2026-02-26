@@ -257,7 +257,6 @@ class OpenAITarget(PromptChatTarget):
         Returns:
             List of API paths (e.g., ["/chat/completions", "/v1/chat/completions"])
         """
-        pass
 
     @abstractmethod
     def _get_provider_examples(self) -> dict[str, str]:
@@ -270,7 +269,6 @@ class OpenAITarget(PromptChatTarget):
             Dict mapping provider patterns to example URLs
             (e.g., {".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1"})
         """
-        pass
 
     def _validate_url_for_target(self, endpoint_url: str) -> None:
         """
@@ -537,7 +535,6 @@ class OpenAITarget(PromptChatTarget):
         Returns:
             Message: Constructed message with extracted content.
         """
-        pass
 
     def _check_content_filter(self, response: Any) -> bool:
         """
@@ -694,4 +691,3 @@ class OpenAITarget(PromptChatTarget):
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """
-        pass

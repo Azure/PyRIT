@@ -403,7 +403,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             context (CrescendoAttackContext): The attack context.
         """
         # Nothing to be done here, no-op
-        pass
 
     @pyrit_json_retry
     async def _get_attack_prompt_async(
