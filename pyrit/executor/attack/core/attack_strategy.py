@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging  # noqa: TC003
 import time
 from abc import ABC
 from dataclasses import dataclass, field
@@ -28,8 +29,6 @@ from pyrit.models import (
 )
 
 if TYPE_CHECKING:
-    import logging
-
     from pyrit.executor.attack.core.attack_config import AttackScoringConfig
     from pyrit.prompt_target import PromptTarget
 

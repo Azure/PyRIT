@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging  # noqa: TC003
 import uuid
 from abc import ABC
 from dataclasses import dataclass, field
@@ -17,8 +18,6 @@ from pyrit.executor.attack.core.attack_strategy import (
 )
 
 if TYPE_CHECKING:
-    import logging
-
     from pyrit.models import (
         Message,
         Score,
