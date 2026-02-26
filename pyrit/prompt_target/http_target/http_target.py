@@ -206,9 +206,9 @@ class HTTPTarget(PromptTarget):
             # Detect content filter responses: empty parsed content with filter indicators in raw body
             response_text = str(response_content)
             raw_body = response.text
-            is_content_filtered = (
-                not response_text or response_text.strip() in ("", "None")
-            ) and ("content_filter" in raw_body or "ContentFilter" in raw_body)
+            is_content_filtered = (not response_text or response_text.strip() in ("", "None")) and (
+                "content_filter" in raw_body or "ContentFilter" in raw_body
+            )
 
             if is_content_filtered:
                 response_message = construct_response_from_request(

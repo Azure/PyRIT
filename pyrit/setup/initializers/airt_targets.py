@@ -376,7 +376,7 @@ class AIRTTargetInitializer(PyRITInitializer):
             return
 
         if config.key_var:
-            api_key = os.getenv(config.key_var)
+            api_key: Any = os.getenv(config.key_var)
             if not api_key:
                 return
         elif config.target_class is PromptShieldTarget:

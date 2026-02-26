@@ -127,9 +127,7 @@ class TestAIRTTargetInitializerInitialize:
         """Test that PromptShieldTarget is registered without model_name (it doesn't use one)."""
         os.environ["AZURE_CONTENT_SAFETY_API_ENDPOINT"] = "https://test.cognitiveservices.azure.com"
 
-        with patch(
-            "pyrit.setup.initializers.airt_targets.get_azure_token_provider", return_value=lambda: "mock-token"
-        ):
+        with patch("pyrit.setup.initializers.airt_targets.get_azure_token_provider", return_value=lambda: "mock-token"):
             init = AIRTTargetInitializer()
             await init.initialize_async()
 
@@ -143,9 +141,7 @@ class TestAIRTTargetInitializerInitialize:
         os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "my-deployment-name"
         os.environ["AZURE_OPENAI_GPT4O_UNDERLYING_MODEL"] = "gpt-4o"
 
-        with patch(
-            "pyrit.setup.initializers.airt_targets.get_azure_openai_auth", return_value=lambda: "mock-token"
-        ):
+        with patch("pyrit.setup.initializers.airt_targets.get_azure_openai_auth", return_value=lambda: "mock-token"):
             init = AIRTTargetInitializer()
             await init.initialize_async()
 
@@ -177,9 +173,7 @@ class TestAIRTTargetInitializerInitialize:
         os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "gpt-4o"
 
         mock_token_provider = lambda: "mock-token"
-        with patch(
-            "pyrit.setup.initializers.airt_targets.get_azure_openai_auth", return_value=mock_token_provider
-        ):
+        with patch("pyrit.setup.initializers.airt_targets.get_azure_openai_auth", return_value=mock_token_provider):
             init = AIRTTargetInitializer()
             await init.initialize_async()
 
