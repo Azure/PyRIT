@@ -27,8 +27,8 @@ class ColloquialWordswapConverter(PromptConverter):
 
     def __init__(
         self,
-        *,
         deterministic: bool = False,
+        *,
         custom_substitutions: Optional[dict[str, list[str]]] = None,
         wordswap_path: Optional[str] = None,
     ) -> None:
@@ -54,7 +54,7 @@ class ColloquialWordswapConverter(PromptConverter):
 
         self._wordswap_path = wordswap_path
 
-        if custom_substitutions is not None:
+        if custom_substitutions is not None and len(custom_substitutions) > 0:
             self._colloquial_substitutions = custom_substitutions
         else:
             wordswap_directory = CONVERTER_SEED_PROMPT_PATH / "colloquial_wordswaps"

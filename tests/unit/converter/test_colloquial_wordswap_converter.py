@@ -117,6 +117,14 @@ async def test_colloquial_default_singaporean():
     assert result.output_text == "mama and papa"
 
 
+# Test that empty custom_substitutions falls through to defaults
+@pytest.mark.asyncio
+async def test_colloquial_empty_custom_substitutions():
+    converter = ColloquialWordswapConverter(deterministic=True, custom_substitutions={})
+    result = await converter.convert_async(prompt="mother and father")
+    assert result.output_text == "mama and papa"
+
+
 # Test multiple word prompts
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
