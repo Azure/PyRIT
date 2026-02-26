@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import re
+import warnings
 
 import pytest
 
@@ -218,3 +219,9 @@ def test_init_malformed_yaml(tmp_path):
 def test_deterministic_positional_deprecation_warning():
     with pytest.warns(FutureWarning, match="positional argument is deprecated"):
         ColloquialWordswapConverter(True)
+
+
+def test_deterministic_keyword_no_deprecation_warning():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        ColloquialWordswapConverter(deterministic=True)
