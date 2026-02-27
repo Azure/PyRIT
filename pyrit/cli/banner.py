@@ -226,17 +226,19 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole]]:
 
     # Mid divider (with tail attachment point)
     tail_col = 77
+    # Curling tail: curves right then sweeps back left at the tip
+    # offsets: 0→1→2→3→3→3→2→1→0 creates the curl
     tail = [
-        "⣿⣿⣿⣿⣿⣿⣿⣿⠀",  # w=8 (dark stripe)
-        "⠇⠀⠀⠀⠀⠀⠀⠀⠸",  # w=9 (light edges)
-        "⣿⣿⣿⣿⣿⣿⣿⣿⣿",  # w=9 (dark stripe)
-        "⠀⠇⠀⠀⠀⠀⠀⠀⠸",  # w=8 (light edges, curl +1)
-        "⠀⣿⣿⣿⣿⣿⣿⣿⣿",  # w=8 (dark stripe, curl +1)
-        "⠀⠀⠇⠀⠀⠀⠀⠸⠀",  # w=6 (light edges, curl +2)
-        "⠀⠀⣿⣿⣿⣿⣿⣿⠀",  # w=6 (dark stripe, curl +2)
-        "⠀⠀⠀⠇⠀⠀⠀⠸⠀",  # w=5 (light edges, curl +3)
-        "⠀⠀⠀⣿⣿⣿⠀⠀⠀",  # w=3 (dark stripe, curl +3)
-        "⠀⠀⠀⠀⠇⠸⠀⠀⠀",  # w=2 (light edges / tip)
+        "⣿⣿⣿⣿⣿⣿⣿⣿⠀",  # off=0 w=8 (dark)
+        "⠇⠀⠀⠀⠀⠀⠀⠀⠸",  # off=0 w=9 (light edges)
+        "⠀⣿⣿⣿⣿⣿⣿⣿⣿",  # off=1 w=8 (dark, curving right)
+        "⠀⠀⠇⠀⠀⠀⠀⠀⠸",  # off=2 w=7 (light edges)
+        "⠀⠀⠀⣿⣿⣿⣿⣿⣿",  # off=3 w=6 (dark, peak of curl)
+        "⠀⠀⠀⠇⠀⠀⠀⠀⠸",  # off=3 w=6 (light edges)
+        "⠀⠀⠀⣿⣿⣿⣿⣿⠀",  # off=3 w=5 (dark, starting back)
+        "⠀⠀⠇⠀⠀⠸⠀⠀⠀",  # off=2 w=4 (light edges, curling back)
+        "⠀⣿⣿⣿⠀⠀⠀⠀⠀",  # off=1 w=3 (dark, curling back)
+        "⠇⠸⠀⠀⠀⠀⠀⠀⠀",  # off=0 w=2 (light edges / tip)
     ]
     add("╠" + "═" * BOX_W + "╣", ColorRole.BORDER)
 
