@@ -133,8 +133,8 @@ class TestStaticBanner:
 
     def test_static_banner_has_raccoon(self) -> None:
         banner_text = "\n".join(STATIC_BANNER_LINES)
-        assert "=o   o=" in banner_text  # bandit mask
-        assert "~~~~~" in banner_text  # striped tail
+        assert "⣿" in banner_text  # braille raccoon art
+        assert "⠿" in banner_text  # raccoon mask detail
 
     def test_static_banner_has_subtitle(self) -> None:
         banner_text = "\n".join(STATIC_BANNER_LINES)
