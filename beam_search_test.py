@@ -55,13 +55,15 @@ async def main():
         auxiliary_scorers=[acf_scorer],  # provide the list of aux scorers here
     )
 
-    reviewer = TopKBeamReviewer(k=6, drop_chars=25)
+    n_beams = 10
+
+    reviewer = TopKBeamReviewer(k=6, drop_chars=25, desired_beam_count=n_beams)
 
     beam_search_attack = BeamSearchAttack(
         objective_target=base_response_target,
         beam_reviewer=reviewer,
         attack_scoring_config=scoring_config,
-        num_beams=10,
+        num_beams=n_beams,
         max_iterations=8,
         num_chars_per_step=100,
     )

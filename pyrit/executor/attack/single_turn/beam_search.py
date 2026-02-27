@@ -90,7 +90,7 @@ class BeamReviewer(ABC):
 class TopKBeamReviewer(BeamReviewer):
     """Beam reviewer that retains the top-k beams and modifies them to create new beams."""
 
-    def __init__(self, *, k: int, drop_chars: int):
+    def __init__(self, *, k: int, drop_chars: int, desired_beam_count: Optional[int] = None):
         """
         Initialize the TopKBeamReviewer.
 
@@ -98,6 +98,8 @@ class TopKBeamReviewer(BeamReviewer):
             k (int): The number of top beams to retain.
             drop_chars (int): The number of characters to drop from the end of the retained beams
                 to create new beams.
+            desired_beam_count (Optional[int]): The desired total number of beams after review.
+                If None, it will be set to the supplied number of beams.
 
         Raises:
             ValueError: If k is not positive or drop_chars is negative.
@@ -108,6 +110,7 @@ class TopKBeamReviewer(BeamReviewer):
             raise ValueError("drop_chars must be a non-negative integer")
         self.k = k
         self.drop_chars = drop_chars
+        self.desired_beam_count = desired_beam_count
 
     def review(self, *, beams: list[Beam]) -> list[Beam]:
         """
@@ -118,12 +121,21 @@ class TopKBeamReviewer(BeamReviewer):
 
         Returns:
             list[Beam]: The updated list of beams.
+
+        Raises:
+            ValueError: If the list of beams is empty.
         """
+        if not beams:
+            raise ValueError("No beams to review")
+
         # Sort beams by score in descending order and select top k
         sorted_beams = sorted(beams, key=lambda b: b.score, reverse=True)
 
         new_beams = list(sorted_beams[: self.k])
-        for i in range(len(beams) - len(new_beams)):
+
+        _extra_beams_beams = self.desired_beam_count or len(beams)
+
+        for i in range(_extra_beams_beams - len(new_beams)):
             nxt = copy.deepcopy(new_beams[i % self.k])
             if self.drop_chars > 0 and len(nxt.text) > self.drop_chars:
                 nxt.text = nxt.text[: -self.drop_chars]
@@ -291,8 +303,14 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             for i, beam in enumerate(beams):
                 self._logger.debug(f"Beam {i} text after iteration {step}: {beam.text}")
 
+            # Make sure we only score beams which have a response
+            scoreable_beams = [beam for beam in beams if beam.message is not None]
+            if not scoreable_beams:
+                self._logger.warning("No beams produced a response to score in this iteration")
+                continue
+
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(self._score_beam(beam=beam, context=context)) for beam in beams]
+                tasks = [tg.create_task(self._score_beam(beam=beam, context=context)) for beam in scoreable_beams]
                 await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
@@ -327,6 +345,15 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         )
 
     async def _propagate_beam(self, *, beam: Beam) -> None:
+        """
+        Propagate a single beam by sending a prompt to the target and updating the beam with the response.
+
+        Args:
+            beam (Beam): The beam to propagate, which will be updated with the response and message.
+
+        Raises:
+            ValueError: If the start context is not set or if the model response does not contain exactly two message pieces.
+        """
         if self._start_context is None:
             raise ValueError("Start context must be set before propagating beams")
         target = self._get_target_for_beam(beam)
@@ -348,17 +375,29 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 attack_identifier=self.get_identifier(),
             )
 
-            assert len(model_response.message_pieces) == 2, "Expected exactly two message pieces in the response"
+            if len(model_response.message_pieces) != 2:
+                raise ValueError("Expected exactly two message pieces in the response")
             model_response.message_pieces = model_response.message_pieces[1:]
             model_response.message_pieces[0].role = "assistant"
             beam.text = model_response.message_pieces[0].converted_value
             beam.message = model_response
         except Exception as e:
             # Just log the error and skip the update
-            self._logger.warning(f"Error propagating beam: {e}")
+            self._logger.warning(f"Error propagating beam, skipping this update: {e}")
 
     async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]) -> None:
-        assert beam.message is not None, "Beam message must be set before scoring"
+        """
+        Score a propagated beam using objective and auxiliary scorers.
+
+        Args:
+            beam (Beam): The beam to score. Must include a model response message.
+            context (SingleTurnAttackContext[Any]): The current attack context containing the objective.
+
+        Raises:
+            ValueError: If beam.message is not set before scoring.
+        """
+        if beam.message is None:
+            raise ValueError("Beam message must be set before scoring")
         scoring_results = await Scorer.score_response_async(
             response=beam.message,
             objective_scorer=self._objective_scorer,

@@ -153,6 +153,21 @@ class TestTopKBeamReviewer:
         assert top_k_beams[1].text == "beam1"
         assert top_k_beams[2].text == "beam1"
 
+    def test_review_k1d2_with_missing_beam(self):
+        beam1 = Beam(id=str(uuid.uuid4()), text="beam111", score=0.9)
+        beam2 = Beam(id=str(uuid.uuid4()), text="beam222", score=0.8)
+        beams = [beam1, beam2]
+
+        desired_beam_count = 5
+        reviewer = TopKBeamReviewer(k=1, drop_chars=2, desired_beam_count=desired_beam_count)
+        top_k_beams = reviewer.review(beams=beams)
+        assert len(top_k_beams) == desired_beam_count
+        assert top_k_beams[0].text == "beam111"
+        assert top_k_beams[1].text == "beam1"
+        assert top_k_beams[2].text == "beam1"
+        assert top_k_beams[3].text == "beam1"
+        assert top_k_beams[4].text == "beam1"
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestBeamSearchAttack:
@@ -207,7 +222,7 @@ class TestBeamSearchAttack:
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
         )
-        with pytest.raises(ValueError, match="num_beams must greater than 1"):
+        with pytest.raises(ValueError, match="num_beams must be greater than 1"):
             _ = BeamSearchAttack(
                 objective_target=mock_target,
                 beam_reviewer=TopKBeamReviewer(k=2, drop_chars=1),
