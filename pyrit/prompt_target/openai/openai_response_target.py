@@ -166,6 +166,13 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     self._grammar_name = tool_name
 
         # Set up a fresh construction
+        kwargs_copy = {}
+        for k, v in kwargs.items():
+            if callable(v):
+                kwargs_copy[k] = v
+            else:
+                kwargs_copy[k] = deepcopy(v)
+
         self._init_args = {
             "custom_functions": deepcopy(custom_functions),
             "max_output_tokens": max_output_tokens,
@@ -175,7 +182,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             "fail_on_missing_function": fail_on_missing_function,
             "reasoning_effort": reasoning_effort,
             "reasoning_summary": reasoning_summary,
-            **deepcopy(kwargs),
+            **kwargs_copy,
         }
 
     def fresh_instance(
