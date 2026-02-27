@@ -79,7 +79,7 @@ class PyRITShell(cmd.Cmd):
         # Track scenario execution history: list of (command_string, ScenarioResult) tuples
         self._scenario_history: list[tuple[str, ScenarioResult]] = []
 
-        # Initialize PyRIT in background thread for faster startup
+        # Initialize PyRIT in background thread for faster startup.
         self._init_thread = threading.Thread(target=self._background_init, daemon=True)
         self._init_complete = threading.Event()
         self._init_thread.start()
@@ -98,7 +98,9 @@ class PyRITShell(cmd.Cmd):
 
     def cmdloop(self, intro: Optional[str] = None) -> None:
         """Override cmdloop to play animated banner before starting the REPL."""
-        # Play animation (or get static banner) and use result as intro
+        # Wait for background init to finish BEFORE animation,
+        # so its log output doesn't interfere with cursor positioning
+        self._init_complete.wait()
         self.intro = banner.play_animation(no_animation=self._no_animation)
         super().cmdloop(intro=self.intro)
 

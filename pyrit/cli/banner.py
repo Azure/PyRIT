@@ -136,43 +136,62 @@ def can_animate() -> bool:
 
 
 # ── Raccoon ASCII art ──────────────────────────────────────────────────────────
-# The raccoon is ~12 chars wide × 7 lines tall, designed to fit inside the banner box.
+# Raccoon with bandit mask (=o o=) and bushy striped tail (~~~~~).
 
 RACCOON_FRAMES = [
-    # Frame 0: raccoon walking pose 1 — bandit mask (=o.o=), nose (w), striped tail
+    # Frame 0: walking pose 1 — tail trailing behind
     [
-        r"   /\___/\    ",
-        r"  ( =o.o= )   ",
-        r"   > -w- <    ",
-        r"  /|     |\ ~~",
-        r" (_|     |_)  ",
+        "    /\\   /\\",
+        "   /  \\_/  \\",
+        "  | =o   o= |",
+        "  |    w    |",
+        "   \\ '---' /",
+        "    \\_| |_/",
+        "      | |",
+        "     _/ \\_",
+        "    |     |",
+        "     ~~~~~",
     ],
-    # Frame 1: raccoon walking pose 2 — tail up
+    # Frame 1: walking pose 2 — tail up
     [
-        r"   /\___/\  ~~",
-        r"  ( =o.o= )   ",
-        r"   > -w- <    ",
-        r"  /|     |\   ",
-        r" (_|     |_)  ",
+        "    /\\   /\\  ~~~~~",
+        "   /  \\_/  \\",
+        "  | =o   o= |",
+        "  |    w    |",
+        "   \\ '---' /",
+        "    \\_| |_/",
+        "      | |",
+        "     _/ \\_",
+        "    |     |",
+        "    |_____|",
     ],
-    # Frame 2: raccoon winking
+    # Frame 2: winking
     [
-        r"   /\___/\    ",
-        r"  ( =-.o= )   ",
-        r"   > -w- <    ",
-        r"  /|     |\ ~~",
-        r" (_|     |_)  ",
+        "    /\\   /\\",
+        "   /  \\_/  \\",
+        "  | =-   o= |",
+        "  |    w    |",
+        "   \\ '---' /",
+        "    \\_| |_/",
+        "      | |",
+        "     _/ \\_",
+        "    |     |",
+        "     ~~~~~",
     ],
-    # Frame 3: raccoon celebrating (arms up)
+    # Frame 3: celebrating
     [
-        r"   /\___/\    ",
-        r"  ( =^.^= ) * ",
-        r"   > -w- <    ",
-        r"  \|     |/   ",
-        r"  (_     _) ~~",
+        "    /\\   /\\",
+        "   /  \\_/  \\",
+        "  | =^   ^= |",
+        "  |    w    |",
+        "   \\ '---' / *",
+        "    \\_| |_/",
+        "      | |",
+        "     _/ \\_",
+        "    |     |",
+        "     ~~~~~",
     ],
 ]
-
 
 # ── PYRIT block letters (same style as existing banner) ────────────────────────
 
@@ -188,220 +207,217 @@ PYRIT_LETTERS = [
 # How many characters to reveal per frame (left to right)
 PYRIT_WIDTH = 37  # approximate visible width of PYRIT_LETTERS
 
+# ── Banner layout constants ────────────────────────────────────────────────────
+
+BOX_W = 94  # inner width between ║ chars
+RACCOON_COL = 26  # width reserved for raccoon column in header
+
+
+def _box_line(content: str) -> str:
+    """Wrap content in box border chars, padded to BOX_W."""
+    return "║" + content.ljust(BOX_W) + "║"
+
+
+def _empty_line() -> str:
+    return _box_line("")
+
 
 # ── Static banner (final frame / fallback) ─────────────────────────────────────
 
-STATIC_BANNER_LINES = [
-    "╔══════════════════════════════════════════════════════════════════════════════════════════════╗",
-    "║                                                                                              ║",
-    "║          /\\___/\\         ██████╗ ██╗   ██╗██████╗ ██╗████████╗                               ║",
-    "║         ( =o.o= )        ██╔══██╗╚██╗ ██╔╝██╔══██╗██║╚══██╔══╝                               ║",
-    "║          > -w- <         ██████╔╝ ╚████╔╝ ██████╔╝██║   ██║                                  ║",
-    "║         /|     |\\ ~~     ██╔═══╝   ╚██╔╝  ██╔══██╗██║   ██║                                  ║",
-    "║        (_|     |_)       ██║        ██║   ██║  ██║██║   ██║                                  ║",
-    "║                          ╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝   ╚═╝                                  ║",
-    "║                                                                                              ║",
-    "║                          Python Risk Identification Tool                                     ║",
-    "║                                Interactive Shell                                             ║",
-    "║                                                                                              ║",
-    "╠══════════════════════════════════════════════════════════════════════════════════════════════╣",
-    "║                                                                                              ║",
-    "║  Commands:                                                                                   ║",
-    "║    • list-scenarios        - See all available scenarios                                     ║",
-    "║    • list-initializers     - See all available initializers                                  ║",
-    "║    • run <scenario> [opts] - Execute a security scenario                                     ║",
-    "║    • scenario-history      - View your session history                                       ║",
-    "║    • print-scenario [N]    - Display detailed results                                        ║",
-    "║    • help [command]        - Get help on any command                                         ║",
-    "║    • exit                  - Quit the shell                                                  ║",
-    "║                                                                                              ║",
-    "║  Quick Start:                                                                                ║",
-    "║    pyrit> list-scenarios                                                                     ║",
-    "║    pyrit> run foundry --initializers openai_objective_target load_default_datasets           ║",
-    "║                                                                                              ║",
-    "╚══════════════════════════════════════════════════════════════════════════════════════════════╝",
-]
 
-# Color role for each line index in the static banner
-STATIC_COLOR_MAP: dict[int, ColorRole] = {
-    0: ColorRole.BORDER,
-    1: ColorRole.BORDER,
-    2: ColorRole.RACCOON_BODY,  # raccoon + PYRIT line
-    3: ColorRole.RACCOON_BODY,
-    4: ColorRole.RACCOON_BODY,
-    5: ColorRole.RACCOON_BODY,
-    6: ColorRole.RACCOON_BODY,
-    7: ColorRole.RACCOON_BODY,
-    8: ColorRole.BORDER,
-    9: ColorRole.SUBTITLE,
-    10: ColorRole.SUBTITLE,
-    11: ColorRole.BORDER,
-    12: ColorRole.BORDER,
-    13: ColorRole.BORDER,
-    14: ColorRole.COMMANDS,
-    15: ColorRole.COMMANDS,
-    16: ColorRole.COMMANDS,
-    17: ColorRole.COMMANDS,
-    18: ColorRole.COMMANDS,
-    19: ColorRole.COMMANDS,
-    20: ColorRole.COMMANDS,
-    21: ColorRole.COMMANDS,
-    22: ColorRole.BORDER,
-    23: ColorRole.COMMANDS,
-    24: ColorRole.COMMANDS,
-    25: ColorRole.COMMANDS,
-    26: ColorRole.BORDER,
-    27: ColorRole.BORDER,
-}
+def _build_static_banner() -> tuple[list[str], dict[int, ColorRole]]:
+    """Build the static banner lines and color map programmatically."""
+    raccoon = RACCOON_FRAMES[0]  # standing pose
+    lines: list[str] = []
+    color_map: dict[int, ColorRole] = {}
+
+    def add(line: str, role: ColorRole) -> None:
+        color_map[len(lines)] = role
+        lines.append(line)
+
+    # Top border + empty
+    add("╔" + "═" * BOX_W + "╗", ColorRole.BORDER)
+    add(_empty_line(), ColorRole.BORDER)
+
+    # Header: 10-line raccoon + PYRIT text side by side
+    # PYRIT starts at raccoon line 1, subtitles at lines 8-9
+    for i in range(10):
+        r_part = ("    " + raccoon[i]).ljust(RACCOON_COL)
+        if 1 <= i <= 6:
+            p_part = PYRIT_LETTERS[i - 1]
+        elif i == 8:
+            p_part = "Python Risk Identification Tool"
+        elif i == 9:
+            p_part = "      Interactive Shell"
+        else:
+            p_part = ""
+        role = ColorRole.SUBTITLE if i >= 8 else ColorRole.RACCOON_BODY
+        add(_box_line(r_part + p_part), role)
+
+    add(_empty_line(), ColorRole.BORDER)
+
+    # Mid divider
+    add("╠" + "═" * BOX_W + "╣", ColorRole.BORDER)
+    add(_empty_line(), ColorRole.BORDER)
+
+    # Commands section
+    commands = [
+        "Commands:",
+        "  • list-scenarios        - See all available scenarios",
+        "  • list-initializers     - See all available initializers",
+        "  • run <scenario> [opts] - Execute a security scenario",
+        "  • scenario-history      - View your session history",
+        "  • print-scenario [N]    - Display detailed results",
+        "  • help [command]        - Get help on any command",
+        "  • exit                  - Quit the shell",
+    ]
+    for cmd in commands:
+        add(_box_line("  " + cmd), ColorRole.COMMANDS)
+
+    add(_empty_line(), ColorRole.BORDER)
+
+    # Quick start
+    quick_start = [
+        "Quick Start:",
+        "  pyrit> list-scenarios",
+        "  pyrit> run foundry --initializers openai_objective_target load_default_datasets",
+    ]
+    for qs in quick_start:
+        add(_box_line("  " + qs), ColorRole.COMMANDS)
+
+    add(_empty_line(), ColorRole.BORDER)
+
+    # Bottom border
+    add("╚" + "═" * BOX_W + "╝", ColorRole.BORDER)
+
+    return lines, color_map
+
+
+STATIC_BANNER_LINES, STATIC_COLOR_MAP = _build_static_banner()
 
 
 def _build_animation_frames() -> list[AnimationFrame]:
     """Build the sequence of animation frames."""
     frames: list[AnimationFrame] = []
-    box_w = 94  # inner width of the box (matches static banner)
-    top = "╔" + "═" * box_w + "╗"
-    bot = "╚" + "═" * box_w + "╝"
-    mid = "╠" + "═" * box_w + "╣"
-    empty = "║" + " " * box_w + "║"
+    target_height = len(STATIC_BANNER_LINES)
+    top = "╔" + "═" * BOX_W + "╗"
+    bot = "╚" + "═" * BOX_W + "╝"
+    mid = "╠" + "═" * BOX_W + "╣"
+    empty = _empty_line()
 
-    # ── Phase 1: Raccoon enters from right (4 frames) ──────────────────────
-    # Raccoon slides in from position 85 → 65 → 45 → 12 (its final x position)
-    raccoon_positions = [78, 58, 38, 10]
-    for i, x_pos in enumerate(raccoon_positions):
-        lines = [top, empty]
-        raccoon = RACCOON_FRAMES[i % 2]  # alternate walking poses
-        for r_line in raccoon:
-            padded = " " * x_pos + r_line
-            # Trim/pad to fit box
-            content = padded[:box_w].ljust(box_w)
-            lines.append("║" + content + "║")
-        # Fill remaining rows of logo area with empty (6 rows for raccoon+PYRIT, then subtitle area)
-        for _ in range(4):
+    def _pad_to_height(lines: list[str], color_map: dict[int, ColorRole]) -> None:
+        """Pad frame lines to match static banner height."""
+        while len(lines) < target_height - 1:  # -1 for bottom border
+            color_map[len(lines)] = ColorRole.BORDER
             lines.append(empty)
-        lines.append(empty)  # subtitle placeholder
-        lines.append(empty)
-        lines.append(mid)
-        # commands section (hidden during entry)
-        for _ in range(13):
-            lines.append(empty)
+        color_map[len(lines)] = ColorRole.BORDER
         lines.append(bot)
 
-        color_map = {j: ColorRole.BORDER for j in range(len(lines))}
-        for j in range(2, 2 + len(raccoon)):
-            color_map[j] = ColorRole.RACCOON_BODY
+    # ── Phase 1: Raccoon enters from right (4 frames) ──────────────────────
+    raccoon_positions = [72, 52, 32, 4]
+    for i, x_pos in enumerate(raccoon_positions):
+        lines = [top, empty]
+        color_map: dict[int, ColorRole] = {0: ColorRole.BORDER, 1: ColorRole.BORDER}
+        raccoon = RACCOON_FRAMES[i % 2]
+        for r_line in raccoon:
+            padded = " " * x_pos + r_line
+            content = padded[:BOX_W].ljust(BOX_W)
+            color_map[len(lines)] = ColorRole.RACCOON_BODY
+            lines.append("║" + content + "║")
+        # Empty line + divider
+        color_map[len(lines)] = ColorRole.BORDER
+        lines.append(empty)
+        color_map[len(lines)] = ColorRole.BORDER
+        lines.append(mid)
+        _pad_to_height(lines, color_map)
         frames.append(AnimationFrame(lines=lines, color_map=color_map, duration=0.18))
 
     # ── Phase 2: PYRIT text reveals left-to-right (4 frames) ──────────────
     reveal_steps = [9, 18, 27, PYRIT_WIDTH]
-    raccoon = RACCOON_FRAMES[0]  # standing pose
-    raccoon_x = 10
+    raccoon = RACCOON_FRAMES[0]
 
     for step_i, chars_visible in enumerate(reveal_steps):
         lines = [top, empty]
-        for row_i in range(6):
-            r_part = ""
-            if row_i < len(raccoon):
-                r_part = raccoon[row_i]
-            raccoon_padded = " " * raccoon_x + r_part
-            raccoon_section = raccoon_padded[:24].ljust(24)
-
-            # Reveal PYRIT letters progressively
-            if row_i < len(PYRIT_LETTERS):
-                full_letter_line = PYRIT_LETTERS[row_i]
-                visible = full_letter_line[:chars_visible]
-                letter_section = visible.ljust(len(full_letter_line))
-            else:
-                letter_section = ""
-
-            content = (raccoon_section + "  " + letter_section)[:box_w].ljust(box_w)
-            lines.append("║" + content + "║")
-
-        lines.append(empty)
-        # Subtitle appears on last reveal step
-        if step_i == len(reveal_steps) - 1:
-            sub = "Python Risk Identification Tool"
-            sub_line = " " * 26 + sub
-            lines.append("║" + sub_line[:box_w].ljust(box_w) + "║")
-            sub2 = "Interactive Shell"
-            sub2_line = " " * 32 + sub2
-            lines.append("║" + sub2_line[:box_w].ljust(box_w) + "║")
-        else:
-            lines.append(empty)
-            lines.append(empty)
-
-        lines.append(empty)
-        lines.append(mid)
-        for _ in range(14):
-            lines.append(empty)
-        lines.append(bot)
-
         color_map = {0: ColorRole.BORDER, 1: ColorRole.BORDER}
-        for j in range(2, 8):
-            color_map[j] = ColorRole.PYRIT_TEXT
-        color_map[8] = ColorRole.BORDER
-        color_map[9] = ColorRole.SUBTITLE
-        color_map[10] = ColorRole.SUBTITLE
+
+        for row_i in range(10):
+            r_part = ("    " + raccoon[row_i]).ljust(RACCOON_COL)
+            # PYRIT at rows 1-6, subtitles at 8-9 on final step
+            if 1 <= row_i <= 6:
+                full_letter = PYRIT_LETTERS[row_i - 1]
+                visible = full_letter[:chars_visible]
+                p_part = visible.ljust(len(full_letter))
+            elif row_i == 8 and step_i == len(reveal_steps) - 1:
+                p_part = "Python Risk Identification Tool"
+            elif row_i == 9 and step_i == len(reveal_steps) - 1:
+                p_part = "      Interactive Shell"
+            else:
+                p_part = ""
+            color_map[len(lines)] = ColorRole.PYRIT_TEXT if 1 <= row_i <= 6 else ColorRole.RACCOON_BODY
+            lines.append(_box_line(r_part + p_part))
+
+        if step_i == len(reveal_steps) - 1:
+            color_map[len(lines) - 2] = ColorRole.SUBTITLE
+            color_map[len(lines) - 1] = ColorRole.SUBTITLE
+
+        color_map[len(lines)] = ColorRole.BORDER
+        lines.append(empty)
+        color_map[len(lines)] = ColorRole.BORDER
+        lines.append(mid)
+        _pad_to_height(lines, color_map)
         frames.append(AnimationFrame(lines=lines, color_map=color_map, duration=0.15))
 
     # ── Phase 3: Raccoon wink + sparkle (2 frames) ────────────────────────
-    for sparkle_frame in [2, 3]:  # wink, celebrate
-        raccoon = RACCOON_FRAMES[sparkle_frame]
+    for pose_idx in [2, 3]:
+        raccoon = RACCOON_FRAMES[pose_idx]
         lines = [top, empty]
-        for row_i in range(6):
-            r_part = ""
-            if row_i < len(raccoon):
-                r_part = raccoon[row_i]
-            raccoon_padded = " " * raccoon_x + r_part
-            raccoon_section = raccoon_padded[:24].ljust(24)
+        color_map = {0: ColorRole.BORDER, 1: ColorRole.BORDER}
+        base_role = ColorRole.SPARKLE if pose_idx == 3 else ColorRole.RACCOON_BODY
 
-            if row_i < len(PYRIT_LETTERS):
-                letter_section = PYRIT_LETTERS[row_i]
+        for row_i in range(10):
+            r_part = ("    " + raccoon[row_i]).ljust(RACCOON_COL)
+            if 1 <= row_i <= 6:
+                p_part = PYRIT_LETTERS[row_i - 1]
+            elif row_i == 8:
+                p_part = "Python Risk Identification Tool"
+            elif row_i == 9:
+                p_part = "      Interactive Shell"
             else:
-                letter_section = ""
+                p_part = ""
+            role = ColorRole.SUBTITLE if row_i >= 8 else base_role
+            color_map[len(lines)] = role
+            lines.append(_box_line(r_part + p_part))
 
-            content = (raccoon_section + "  " + letter_section)[:box_w].ljust(box_w)
-            lines.append("║" + content + "║")
-
+        color_map[len(lines)] = ColorRole.BORDER
         lines.append(empty)
-        sub = "Python Risk Identification Tool"
-        sub_line = " " * 26 + sub
-        lines.append("║" + sub_line[:box_w].ljust(box_w) + "║")
-        sub2 = "Interactive Shell"
-        sub2_line = " " * 32 + sub2
-        lines.append("║" + sub2_line[:box_w].ljust(box_w) + "║")
-        lines.append(empty)
+        color_map[len(lines)] = ColorRole.BORDER
         lines.append(mid)
-        for _ in range(14):
-            lines.append(empty)
-        lines.append(bot)
-
-        color_map = {}
-        for j in range(len(lines)):
-            if 2 <= j <= 7:
-                color_map[j] = ColorRole.SPARKLE if sparkle_frame == 3 else ColorRole.RACCOON_BODY
-            elif j in (9, 10):
-                color_map[j] = ColorRole.SUBTITLE
-            else:
-                color_map[j] = ColorRole.BORDER
+        _pad_to_height(lines, color_map)
         frames.append(AnimationFrame(lines=lines, color_map=color_map, duration=0.25))
 
     # ── Phase 4: Commands section reveals (2 frames) ──────────────────────
-    command_lines = STATIC_BANNER_LINES[14:27]  # commands portion
+    # Use the actual static banner lines, revealing commands section
+    header_end = next(
+        i for i, line in enumerate(STATIC_BANNER_LINES) if "╠" in line
+    ) + 1  # line after mid divider
+    cmd_start = header_end
+    cmd_lines = STATIC_BANNER_LINES[cmd_start:]
 
     for cmd_step in [0, 1]:
-        lines = list(STATIC_BANNER_LINES[:14])  # header through divider
-        if cmd_step == 0:
-            # Show first half of commands
-            lines.extend(command_lines[:7])
-            for _ in range(6):
-                lines.append(empty)
-            lines.append(bot)
-        else:
-            # Show all commands
-            lines.extend(command_lines)
-            lines.append(bot)
+        lines = list(STATIC_BANNER_LINES[:cmd_start])
+        color_map = {i: STATIC_COLOR_MAP.get(i, ColorRole.BORDER) for i in range(len(lines))}
 
-        color_map = dict(STATIC_COLOR_MAP)
+        if cmd_step == 0:
+            half = len(cmd_lines) // 2
+            for cl in cmd_lines[:half]:
+                color_map[len(lines)] = ColorRole.COMMANDS
+                lines.append(cl)
+            _pad_to_height(lines, color_map)
+        else:
+            for j, cl in enumerate(cmd_lines):
+                color_map[len(lines)] = STATIC_COLOR_MAP.get(cmd_start + j, ColorRole.COMMANDS)
+                lines.append(cl)
+
         frames.append(AnimationFrame(lines=lines, color_map=color_map, duration=0.15))
 
     return frames
