@@ -297,7 +297,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             beams = self._beam_reviewer.review(beams=beams)
 
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(self._propagate_beam_async(beam=beam)) for beam in beams]
+                _ = [tg.create_task(self._propagate_beam_async(beam=beam)) for beam in beams]
 
             for i, beam in enumerate(beams):
                 self._logger.debug(f"Beam {i} text after iteration {step}: {beam.text}")
@@ -309,7 +309,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 continue
 
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(self._score_beam_async(beam=beam, context=context)) for beam in scoreable_beams]
+                _ = [tg.create_task(self._score_beam_async(beam=beam, context=context)) for beam in scoreable_beams]
 
             for i, beam in enumerate(beams):
                 self._logger.debug(f"Beam {i} score: {beam.score}")
