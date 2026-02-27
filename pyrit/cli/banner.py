@@ -522,21 +522,24 @@ def _render_line_with_segments(
     segments: list[tuple[int, int, ColorRole]],
     theme: dict[ColorRole, str],
 ) -> str:
-    """Render a line with per-segment coloring."""
+    """Render a line with per-segment coloring (handles overlapping segments)."""
     reset = _get_color(ColorRole.RESET, theme)
-    # Sort segments by start position
-    sorted_segs = sorted(segments, key=lambda s: s[0])
+    # Build per-character color map (later segments override earlier ones)
+    char_roles: list[Optional[ColorRole]] = [None] * len(line)
+    for start, end, role in segments:
+        for pos in range(start, min(end, len(line))):
+            char_roles[pos] = role
+
+    # Group consecutive same-role characters for efficient rendering
     result: list[str] = []
-    pos = 0
-    for start, end, role in sorted_segs:
-        if pos < start:
-            # Gap before this segment — use reset/default
-            result.append(f"{reset}{line[pos:start]}")
-        color = _get_color(role, theme)
-        result.append(f"{color}{line[start:end]}")
-        pos = end
-    if pos < len(line):
-        result.append(f"{reset}{line[pos:]}")
+    current_role: Optional[ColorRole] = None
+    for pos, ch in enumerate(line):
+        role = char_roles[pos]
+        if role != current_role:
+            color = _get_color(role, theme) if role else reset
+            result.append(color)
+            current_role = role
+        result.append(ch)
     result.append(reset)
     return "".join(result)
 
