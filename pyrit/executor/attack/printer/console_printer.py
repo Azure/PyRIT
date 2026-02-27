@@ -3,7 +3,7 @@
 
 import json
 import textwrap
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from colorama import Back, Fore, Style
@@ -345,10 +345,10 @@ class ConsoleAttackResultPrinter(AttackResultPrinter):
 
         Displays the current timestamp when the report was generated.
         """
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         print()
         self._print_colored("─" * self._width, Style.DIM, Fore.WHITE)
-        footer_text = f"Report generated at: {timestamp}"
+        footer_text = f"Report generated at: {timestamp} UTC"
         self._print_colored(footer_text.center(self._width), Style.DIM, Fore.WHITE)
 
     def _print_section_header(self, title: str) -> None:

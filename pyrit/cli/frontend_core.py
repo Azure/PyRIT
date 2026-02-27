@@ -32,7 +32,7 @@ except ImportError:
     HAS_TERMCOLOR = False
 
     # Create a dummy termcolor module for fallback
-    class termcolor:  # type: ignore
+    class termcolor:  # type: ignore  # noqa: N801
         """Dummy termcolor fallback for colored printing if termcolor is not installed."""
 
         @staticmethod
@@ -718,8 +718,8 @@ def get_default_initializer_discovery_path() -> Path:
     Returns:
         Path to the scenarios initializers directory.
     """
-    PYRIT_PATH = Path(__file__).parent.parent.resolve()
-    return PYRIT_PATH / "setup" / "initializers" / "scenarios"
+    pyrit_path = Path(__file__).parent.parent.resolve()
+    return pyrit_path / "setup" / "initializers" / "scenarios"
 
 
 async def print_scenarios_list_async(*, context: FrontendCore) -> int:

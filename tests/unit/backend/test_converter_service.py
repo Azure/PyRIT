@@ -390,14 +390,14 @@ def _try_instantiate_converter(converter_name: str):
 
     # Converters requiring external credentials or resources that can't be mocked
     # at the constructor level — these validate env vars / files in __init__ body
-    _SKIP_CONVERTERS = {
+    skip_converters = {
         "AzureSpeechAudioToTextConverter",  # requires AZURE_SPEECH_REGION env var
         "AzureSpeechTextToAudioConverter",  # requires AZURE_SPEECH_REGION env var
         "TransparencyAttackConverter",  # requires a real JPEG image file on disk
     }
 
     # Converter-specific overrides for params with validation
-    _OVERRIDES: dict = {
+    overrides: dict = {
         "CodeChameleonConverter": {"encrypt_type": "reverse"},
         "SearchReplaceConverter": {"pattern": "foo", "replace": "bar"},
         "PersuasionConverter": {"persuasion_technique": "logical_appeal"},
@@ -407,7 +407,7 @@ def _try_instantiate_converter(converter_name: str):
     if converter_cls is None:
         return None, f"Converter {converter_name} not found in prompt_converter module"
 
-    if converter_name in _SKIP_CONVERTERS:
+    if converter_name in skip_converters:
         return None, None  # Signal to skip without failure
 
     # Build minimal kwargs based on constructor signature
@@ -426,8 +426,8 @@ def _try_instantiate_converter(converter_name: str):
             continue  # Has a real default — skip
 
         # Check overrides first
-        if converter_name in _OVERRIDES and pname in _OVERRIDES[converter_name]:
-            kwargs[pname] = _OVERRIDES[converter_name][pname]
+        if converter_name in overrides and pname in overrides[converter_name]:
+            kwargs[pname] = overrides[converter_name][pname]
             continue
 
         ann = param.annotation

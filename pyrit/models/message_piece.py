@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union, get_args
 from uuid import uuid4
 
@@ -108,7 +108,7 @@ class MessagePiece:
         self.conversation_id = conversation_id if conversation_id else str(uuid4())
         self.sequence = sequence
 
-        self.timestamp = timestamp if timestamp else datetime.now()
+        self.timestamp = timestamp if timestamp else datetime.now(tz=timezone.utc)
         self.labels = labels or {}
         self.prompt_metadata = prompt_metadata or {}
 

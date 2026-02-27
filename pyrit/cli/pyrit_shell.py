@@ -411,7 +411,7 @@ class PyRITShell(cmd.Cmd):
     # Shortcuts and aliases
     do_quit = do_exit
     do_q = do_exit
-    do_EOF = do_exit  # Ctrl+D on Unix, Ctrl+Z on Windows
+    do_EOF = do_exit  # Ctrl+D on Unix, Ctrl+Z on Windows  # noqa: N815
 
     def emptyline(self) -> bool:
         """

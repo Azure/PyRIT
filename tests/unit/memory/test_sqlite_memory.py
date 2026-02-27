@@ -4,6 +4,7 @@
 import os
 import uuid
 from collections.abc import Sequence
+from datetime import timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -369,7 +370,7 @@ def test_get_memories_with_json_properties(sqlite_instance):
         assert retrieved_entry.original_value == "Test content"
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
         assert abs((retrieved_entry.timestamp - piece.timestamp).total_seconds()) < 0.1
-        assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 0.1
+        assert abs((retrieved_entry.timestamp - entry.timestamp.replace(tzinfo=timezone.utc)).total_seconds()) < 0.1
 
         converter_identifiers = retrieved_entry.converter_identifiers
         assert len(converter_identifiers) == 1
