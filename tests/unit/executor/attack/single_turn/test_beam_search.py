@@ -13,7 +13,6 @@ from pyrit.executor.attack import (
     BeamSearchAttack,
     TopKBeamReviewer,
 )
-from pyrit.executor.attack.single_turn.beam_search import Beam
 from pyrit.prompt_target import OpenAIResponseTarget, PromptTarget
 from pyrit.score import FloatScaleScorer, Scorer, TrueFalseScorer
 
