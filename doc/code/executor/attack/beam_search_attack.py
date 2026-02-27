@@ -35,6 +35,7 @@
 # %%
 import os
 
+from pyrit.auth import get_azure_token_provider
 from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
 from pyrit.executor.attack.single_turn.beam_search import BeamSearchAttack, TopKBeamReviewer
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIResponseTarget
@@ -52,22 +53,25 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 # requires a chat target, for which we use an `OpenAIChatTarget`.
 
 # %%
-target = OpenAIResponseTarget()
-# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth import get_azure_openai_auth
-# endpoint = "https://your-endpoint.openai.azure.com"
-# target = OpenAIResponseTarget(
-#     endpoint=endpoint,
-#     api_key=get_azure_openai_auth(endpoint),
-#     model_name="your-deployment-name"
-# )
+
+api_key=get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+
+target = OpenAIResponseTarget(
+    endpoint=os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
+    model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
+    api_key=api_key
+    )
 
 azure_content_filter = AzureContentFilterScorer(
-    api_key=os.environ.get("AZURE_CONTENT_SAFETY_API_KEY"),
-    endpoint=os.environ.get("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
+    api_key=api_key,
+    endpoint=os.getenv("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
 )
 
-chat_target = OpenAIChatTarget()
+chat_target = OpenAIChatTarget(
+    endpoint=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT"),
+    model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
+    api_key=api_key
+)
 
 objective_scorer = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=chat_target))
 
@@ -81,10 +85,13 @@ scoring_config = AttackScoringConfig(
 # of the candidate beams to retain and expand. The `TopKBeamReviewer` is a simple reviewer
 # which retains the top K beams based on the auxiliary scorer(s) and fills out the next
 # set of beams (to replace those outside the top K) by dropping a specified number
-# of characters from the end of the retained beams.
+# of characters from the end of the retained beams. This reviewer can also optionally
+# maintain a specified number of beams, should any have been lost to failed model calls.
 
 # %%
-reviewer = TopKBeamReviewer(k=6, drop_chars=25)
+n_beams = 10
+
+reviewer = TopKBeamReviewer(k=6, drop_chars=25, desired_beam_count=n_beams)
 
 # %% [markdown]
 # Now we have all the components we need to create the `BeamSearchAttack` instance:
@@ -94,7 +101,7 @@ beam_search_attack = BeamSearchAttack(
     objective_target=target,
     beam_reviewer=reviewer,
     attack_scoring_config=scoring_config,
-    num_beams=10,
+    num_beams=n_beams,
     max_iterations=8,
     num_chars_per_step=100,
 )
