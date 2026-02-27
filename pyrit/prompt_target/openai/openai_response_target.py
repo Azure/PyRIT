@@ -199,9 +199,10 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         init_args: dict[str, Any] = deepcopy(self._init_args)
         if extra_body_parameters is not None:
             init_args["extra_body_parameters"] = deepcopy(extra_body_parameters)
+        result = OpenAIResponseTarget(**init_args)
         if grammar_name is not None:
-            init_args["grammar_name"] = grammar_name
-        return OpenAIResponseTarget(**init_args)
+           result._grammar_name = grammar_name
+        return result
 
     def _build_identifier(self) -> ComponentIdentifier:
         """
