@@ -297,7 +297,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             beams = self._beam_reviewer.review(beams=beams)
 
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(self._propagate_beam(beam=beam)) for beam in beams]
+                tasks = [tg.create_task(self._propagate_beam_async(beam=beam)) for beam in beams]
                 await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
@@ -310,7 +310,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 continue
 
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(self._score_beam(beam=beam, context=context)) for beam in scoreable_beams]
+                tasks = [tg.create_task(self._score_beam_async(beam=beam, context=context)) for beam in scoreable_beams]
                 await asyncio.gather(*tasks)
 
             for i, beam in enumerate(beams):
@@ -344,7 +344,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             executed_turns=1,
         )
 
-    async def _propagate_beam(self, *, beam: Beam) -> None:
+    async def _propagate_beam_async(self, *, beam: Beam) -> None:
         """
         Propagate a single beam by sending a prompt to the target and updating the beam with the response.
 
@@ -352,7 +352,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             beam (Beam): The beam to propagate, which will be updated with the response and message.
 
         Raises:
-            ValueError: If the start context is not set or if the model response does not contain exactly two message pieces.
+            ValueError: If the start context is not set.
         """
         if self._start_context is None:
             raise ValueError("Start context must be set before propagating beams")
@@ -375,17 +375,29 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 attack_identifier=self.get_identifier(),
             )
 
-            if len(model_response.message_pieces) != 2:
-                raise ValueError("Expected exactly two message pieces in the response")
-            model_response.message_pieces = model_response.message_pieces[1:]
-            model_response.message_pieces[0].role = "assistant"
-            beam.text = model_response.message_pieces[0].converted_value
+            assistant_pieces = [
+                piece
+                for piece in model_response.message_pieces
+                if getattr(piece, "role", None) == "assistant"
+                or getattr(piece, "original_value_data_type", None) in ("assistant_text", "grammar")
+            ]
+            if not assistant_pieces:
+                assistant_pieces = [
+                    piece
+                    for piece in model_response.message_pieces
+                    if isinstance(getattr(piece, "converted_value", None), str)
+                ]
+            beam.text = "".join(
+                piece.converted_value
+                for piece in assistant_pieces
+                if isinstance(piece.converted_value, str)
+            )
             beam.message = model_response
         except Exception as e:
             # Just log the error and skip the update
             self._logger.warning(f"Error propagating beam, skipping this update: {e}")
 
-    async def _score_beam(self, *, beam: Beam, context: SingleTurnAttackContext[Any]) -> None:
+    async def _score_beam_async(self, *, beam: Beam, context: SingleTurnAttackContext[Any]) -> None:
         """
         Score a propagated beam using objective and auxiliary scorers.
 
