@@ -379,7 +379,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 piece
                 for piece in model_response.message_pieces
                 if (
-                    getattr(piece, "role", None) == "assistant"
+                    getattr(piece, "api_role", None) == "assistant"
                     and getattr(piece, "original_value_data_type", None) == "text"
                 )
                 or getattr(piece, "original_value_data_type", None) in ("assistant_text", "grammar")
