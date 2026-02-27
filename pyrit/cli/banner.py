@@ -468,7 +468,9 @@ def play_animation(no_animation: bool = False) -> str:
                 sys.stdout.flush()
             else:
                 # Move cursor up to overwrite previous frame
-                sys.stdout.write(f"\033[{frame_height}A")
+                # rendered has (frame_height - 1) newlines, so cursor is on
+                # the last line. Move up (frame_height - 1) to reach line 1.
+                sys.stdout.write(f"\033[{frame_height - 1}A")
                 sys.stdout.write("\r")
                 sys.stdout.write(rendered)
                 sys.stdout.flush()
@@ -476,7 +478,7 @@ def play_animation(no_animation: bool = False) -> str:
             time.sleep(frame.duration)
 
         # Final frame: overwrite with the static banner (colored)
-        sys.stdout.write(f"\033[{frame_height}A")
+        sys.stdout.write(f"\033[{frame_height - 1}A")
         sys.stdout.write("\r")
         static = _render_static_banner(theme)
         sys.stdout.write(static)
