@@ -133,9 +133,9 @@ class TopKBeamReviewer(BeamReviewer):
 
         new_beams = list(sorted_beams[: self.k])
 
-        _extra_beams_beams = self.desired_beam_count or len(beams)
+        _extra_beam_count = self.desired_beam_count or len(beams)
 
-        for i in range(_extra_beams_beams - len(new_beams)):
+        for i in range(_extra_beam_count - len(new_beams)):
             nxt = copy.deepcopy(new_beams[i % self.k])
             if self.drop_chars > 0 and len(nxt.text) > self.drop_chars:
                 nxt.text = nxt.text[: -self.drop_chars]
@@ -336,7 +336,11 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             conversation_id=beams[0].id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
-            last_response=beams[0].message.message_pieces[0] if beams[0].message else None,
+            last_response=(
+                beams[0].message.message_pieces[0]
+                if beams[0].message and beams[0].message.message_pieces
+                else None
+            ),
             last_score=beams[0].objective_score,
             related_conversations=related_conversations,
             outcome=outcome,
