@@ -285,7 +285,6 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, l
     for i, (content, cmd_role) in enumerate(cmd_section):
         if i < len(tail):
             content = content.ljust(tail_col) + tail[i]
-            # Segment colors: commands text + tail
             full_line = _box_line(content)
             segs = [
                 (0, 1, ColorRole.BORDER),
@@ -295,7 +294,16 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, l
             ]
             add(full_line, cmd_role, segs)
         else:
-            add(_box_line(content), cmd_role)
+            full_line = _box_line(content)
+            if content:  # non-empty command line
+                segs = [
+                    (0, 1, ColorRole.BORDER),
+                    (1, len(full_line) - 1, ColorRole.COMMANDS),
+                    (len(full_line) - 1, len(full_line), ColorRole.BORDER),
+                ]
+                add(full_line, cmd_role, segs)
+            else:
+                add(full_line, cmd_role)
 
     add(_empty_line(), ColorRole.BORDER)
 
@@ -306,7 +314,13 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, l
         "  pyrit> run foundry --initializers openai_objective_target load_default_datasets",
     ]
     for qs in quick_start:
-        add(_box_line("  " + qs), ColorRole.COMMANDS)
+        full_line = _box_line("  " + qs)
+        segs = [
+            (0, 1, ColorRole.BORDER),
+            (1, len(full_line) - 1, ColorRole.COMMANDS),
+            (len(full_line) - 1, len(full_line), ColorRole.BORDER),
+        ]
+        add(full_line, ColorRole.COMMANDS, segs)
 
     add(_empty_line(), ColorRole.BORDER)
 
