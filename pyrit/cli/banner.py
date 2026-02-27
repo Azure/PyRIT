@@ -141,18 +141,18 @@ def can_animate() -> bool:
 # against the solid ⣿ background.
 
 BRAILLE_RACCOON = [
-    "⠀⠀⠀⠀⠀⠀⣀⣀⠀⠀⠀⠀⠀⠀⠀   ⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀",
+    "⠀⠀⠀⠀⠀⠀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠀⣼⢻⠈⢑⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⢎⠁⠉⣻⡀⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠀⡇⠀⠁⢙⣿⣮⢲⠀⠀⠀⠀⠀⠀⠀⢠⣾⣟⠀⠸⢫⡇⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠀⣧⢀⠀⠘⣷⣿⠆⠀⠐⠘⠿⠓⠀⠀⢾⣧⠃⠀⠐⣼⠀⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠀⠘⣇⢰⣶⠛⣁⣐⣷⣦⠐⢘⣼⣷⣂⡀⠛⢽⣆⣸⠁⠀⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠀⣚⣾⡿⢡⣴⣿⣿⣿⣿⠇⠸⣿⣿⣿⣿⣶⡄⠾⣷⣟⡀⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠘⣻⠇⣲⡿⠟⠋⢉⠉⢿⠰⠆⡿⠋⠉⠙⠿⣿⣆⡻⣿⣓⠀⠀⠀⠀",
-    "⠀⠀⠀⣰⢿⣷⠞⢩ ⠀⠀⠈⢀⣀⠀⡀⣠⡀⠈  ⣨⠛⢷⣿⣭⠃⠀⠀⠀",
-    "⠀⠀⠀⣶⠟⠁⠶  ⠀⠀⣠⣾⡟⠘⠃⢻⣿⣌       ⠻⣷⠀⠀⠀",
-    "⠀⠀⠘⠿⣔⠺   ⠀⢰⣿⣿⡀⠘⠀⢀⣿⣿⡆⡂⠀⡈⠡⠜⣙⣿⠇⠀⠀",
+    "⠀⠀⠀⣰⢿⣷⠞⢩⠀⠀⠀⠈⢀⣀⠀⡀⣠⡀⠈⠀⠀⣨⠛⢷⣿⣭⠃⠀⠀⠀",
+    "⠀⠀⠀⣶⠟⠁⠶⠀⠀⠀⠀⣠⣾⡟⠘⠃⢻⣿⣌⠀⠀⠀⠀⠀⠀⠻⣷⠀⠀⠀",
+    "⠀⠀⠘⠿⣔⠺⠀⠀⠀⠀⢰⣿⣿⡀⠘⠀⢀⣿⣿⡆⡂⠀⡈⠡⠜⣙⣿⠇⠀⠀",
     "⠀⠀⠀⠐⠻⢿⣶⣅⢀⠐⠀⠙⣒⡃⡀⠄⢘⠉⠋⠁⠆⢀⢼⣿⣿⡟⠋⠁⠀⠀",
-    "⠀⠀⠀⠀⠀⠀⠀⠀      ⠭⠛⠿⠿⠛⠧    ⠀⠀⠀⠀⠀⠀⠀⠀",
+    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠭⠛⠿⠿⠛⠧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
 ]
 
 # ── PYRIT block letters (same style as existing banner) ────────────────────────
@@ -219,16 +219,18 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole]]:
             p_part = "      Interactive Shell"
         else:
             p_part = ""
-        role = ColorRole.SUBTITLE if i in (subtitle_row_1, subtitle_row_2) else ColorRole.RACCOON_BODY
+        role = ColorRole.RACCOON_BODY
         add(_box_line(r_part + p_part), role)
 
     add(_empty_line(), ColorRole.BORDER)
 
-    # Mid divider
-    add("╠" + "═" * BOX_W + "╣", ColorRole.BORDER)
-    add(_empty_line(), ColorRole.BORDER)
+    # Mid divider (with tail attachment point)
+    tail_col = 82
+    tail = ["║", "│", "║", "│", "║", "│", "╲", " ~"]
+    divider_content = "═" * tail_col + "╤" + "═" * (BOX_W - tail_col - 1)
+    add("╠" + divider_content + "╣", ColorRole.BORDER)
 
-    # Commands section
+    # Commands section with striped tail hanging from divider
     commands = [
         "Commands:",
         "  • list-scenarios        - See all available scenarios",
@@ -239,8 +241,17 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole]]:
         "  • help [command]        - Get help on any command",
         "  • exit                  - Quit the shell",
     ]
+    cmd_section: list[tuple[str, ColorRole]] = [
+        ("", ColorRole.BORDER),  # empty line after divider
+    ]
     for cmd in commands:
-        add(_box_line("  " + cmd), ColorRole.COMMANDS)
+        cmd_section.append(("  " + cmd, ColorRole.COMMANDS))
+    cmd_section.append(("", ColorRole.BORDER))  # empty line after commands
+
+    for i, (content, cmd_role) in enumerate(cmd_section):
+        if i < len(tail):
+            content = content.ljust(tail_col) + tail[i]
+        add(_box_line(content), cmd_role)
 
     add(_empty_line(), ColorRole.BORDER)
 
