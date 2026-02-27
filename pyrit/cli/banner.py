@@ -261,6 +261,7 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole]]:
     for i, (content, cmd_role) in enumerate(cmd_section):
         if i < len(tail):
             content = content.ljust(tail_col) + tail[i]
+            cmd_role = ColorRole.COMMANDS  # tail should match commands color
         add(_box_line(content), cmd_role)
 
     add(_empty_line(), ColorRole.BORDER)
