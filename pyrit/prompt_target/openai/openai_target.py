@@ -73,7 +73,7 @@ def _ensure_async_token_provider(
         Returns:
             str: The token string from the synchronous provider.
         """
-        return api_key()  # type: ignore
+        return api_key()  # type: ignore[return-value]
 
     return async_token_provider
 

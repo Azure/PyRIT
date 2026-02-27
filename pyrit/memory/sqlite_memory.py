@@ -240,7 +240,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                     return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
-                logger.exception(f"Error fetching data from table {model_class.__tablename__}: {e}")  # type: ignore
+                logger.exception(f"Error fetching data from table {model_class.__tablename__}: {e}")  # type: ignore[attr-defined]
                 raise
 
     def _insert_entry(self, entry: Base) -> None:
@@ -448,7 +448,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             file_extension = f".{export_type}"
             file_path = DB_DATA_PATH / f"{table_name}{file_extension}"
             # Convert to list for exporter compatibility
-            self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)  # type: ignore
+            self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)  # type: ignore[arg-type]
 
     def _get_attack_result_harm_category_condition(self, *, targeted_harm_categories: Sequence[str]) -> Any:
         """

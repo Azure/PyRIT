@@ -194,7 +194,7 @@ class Seed(YamlLoadable):
                 return self.value
 
         # Create a Jinja template with PartialUndefined placeholders
-        env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore
+        env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore[arg-type]
         jinja_template = env.from_string(self.value)
 
         try:

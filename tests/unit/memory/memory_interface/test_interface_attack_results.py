@@ -560,8 +560,8 @@ def test_attack_result_with_attack_generation_conversation_ids(sqlite_instance: 
 
     entry: AttackResultEntry = sqlite_instance._query_entries(AttackResultEntry)[0]
 
-    assert set(entry.pruned_conversation_ids) == pruned_ids  # type: ignore
-    assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids  # type: ignore
+    assert set(entry.pruned_conversation_ids) == pruned_ids  # type: ignore[arg-type]
+    assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids  # type: ignore[arg-type]
 
     retrieved_result = entry.get_attack_result()
     assert {

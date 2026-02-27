@@ -1050,7 +1050,7 @@ class MemoryInterface(abc.ABC):
         try:
             entries: Sequence[SeedEntry] = self._query_entries(
                 SeedEntry,
-                conditions=and_(SeedEntry.dataset_name is not None, SeedEntry.dataset_name != ""),  # type: ignore
+                conditions=and_(SeedEntry.dataset_name is not None, SeedEntry.dataset_name != ""),  # type: ignore[arg-type]
                 distinct=True,
             )
             # Extract unique dataset names from the entries
@@ -1484,7 +1484,7 @@ class MemoryInterface(abc.ABC):
             scenario_result = scenario_results[0]
 
             # Update the scenario run state
-            scenario_result.scenario_run_state = scenario_run_state  # type: ignore
+            scenario_result.scenario_run_state = scenario_run_state  # type: ignore[assignment]
 
             # Save updated result back to memory using update
             entry = ScenarioResultEntry(entry=scenario_result)
