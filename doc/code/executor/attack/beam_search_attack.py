@@ -36,8 +36,7 @@
 import os
 
 from pyrit.auth import get_azure_token_provider
-from pyrit.executor.attack import AttackScoringConfig, ConsoleAttackResultPrinter
-from pyrit.executor.attack.single_turn.beam_search import BeamSearchAttack, TopKBeamReviewer
+from pyrit.executor.attack import AttackScoringConfig, BeamSearchAttack, ConsoleAttackResultPrinter, TopKBeamReviewer
 from pyrit.prompt_target import OpenAIChatTarget, OpenAIResponseTarget
 from pyrit.score import (
     AzureContentFilterScorer,
