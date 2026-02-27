@@ -44,11 +44,11 @@ class AIRTInitializer(PyRITInitializer):
 
     Required Environment Variables:
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT: Azure OpenAI endpoint for converters and targets
-    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY: Azure OpenAI API key for converters and targets
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL: Azure OpenAI model name for converters and targets
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2: Azure OpenAI endpoint for scoring
-    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2: Azure OpenAI API key for scoring
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2: Azure OpenAI model name for scoring
+
+    Authentication is handled automatically via Entra ID (Azure AD) for Azure endpoints.
 
     This configuration is designed for full AI Red Team operations with:
     - Separate endpoints for attack execution vs scoring (security isolation)
@@ -81,13 +81,10 @@ class AIRTInitializer(PyRITInitializer):
         """Get list of required environment variables."""
         return [
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
-            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2",
-            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2",
             "AZURE_CONTENT_SAFETY_API_ENDPOINT",
-            "AZURE_CONTENT_SAFETY_API_KEY",
         ]
 
     async def initialize_async(self) -> None:
@@ -102,37 +99,28 @@ class AIRTInitializer(PyRITInitializer):
         """
         # Get environment variables (validated by validate() method)
         converter_endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
-        converter_api_key = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY")
         converter_model_name = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL")
         scorer_endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2")
-        scorer_api_key = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2")
         scorer_model_name = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2")
 
         # Type assertions - safe because validate() already checked these
         assert converter_endpoint is not None
-        assert converter_api_key is not None
         assert scorer_endpoint is not None
-        assert scorer_api_key is not None
         # model name can be empty in certain cases (e.g., custom model deployments that don't need model name)
 
         # 1. Setup converter target
-        self._setup_converter_target(
-            endpoint=converter_endpoint, api_key=converter_api_key, model_name=converter_model_name
-        )
+        self._setup_converter_target(endpoint=converter_endpoint, model_name=converter_model_name)
 
         # 2. Setup scorers
-        self._setup_scorers(endpoint=scorer_endpoint, api_key=scorer_api_key, model_name=scorer_model_name)
+        self._setup_scorers(endpoint=scorer_endpoint, model_name=scorer_model_name)
 
         # 3. Setup adversarial targets
-        self._setup_adversarial_targets(
-            endpoint=converter_endpoint, api_key=converter_api_key, model_name=converter_model_name
-        )
+        self._setup_adversarial_targets(endpoint=converter_endpoint, model_name=converter_model_name)
 
-    def _setup_converter_target(self, *, endpoint: str, api_key: str, model_name: str) -> None:
+    def _setup_converter_target(self, *, endpoint: str, model_name: str) -> None:
         """Set up the default converter target configuration."""
         default_converter_target = OpenAIChatTarget(
             endpoint=endpoint,
-            api_key=api_key,
             model_name=model_name,
             temperature=1.1,
         )
@@ -144,11 +132,10 @@ class AIRTInitializer(PyRITInitializer):
             value=default_converter_target,
         )
 
-    def _setup_scorers(self, *, endpoint: str, api_key: str, model_name: str) -> None:
+    def _setup_scorers(self, *, endpoint: str, model_name: str) -> None:
         """Set up the composite harm and objective scorers."""
         scorer_target = OpenAIChatTarget(
             endpoint=endpoint,
-            api_key=api_key,
             model_name=model_name,
             temperature=0.3,
         )
@@ -205,12 +192,11 @@ class AIRTInitializer(PyRITInitializer):
                 value=default_objective_scorer_config,
             )
 
-    def _setup_adversarial_targets(self, *, endpoint: str, api_key: str, model_name: str) -> None:
+    def _setup_adversarial_targets(self, *, endpoint: str, model_name: str) -> None:
         """Set up the adversarial target configurations for attacks."""
         adversarial_config = AttackAdversarialConfig(
             target=OpenAIChatTarget(
                 endpoint=endpoint,
-                api_key=api_key,
                 model_name=model_name,
                 temperature=1.2,
             )

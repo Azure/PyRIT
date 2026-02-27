@@ -36,13 +36,10 @@ class TestAIRTInitializerInitialize:
         reset_default_values()
         # Set up required env vars for AIRT
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"] = "https://test-converter.openai.azure.com"
-        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"] = "test_converter_key"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"] = "gpt-4"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2"] = "https://test-scorer.openai.azure.com"
-        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"] = "test_scorer_key"
         os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2"] = "gpt-4"
         os.environ["AZURE_CONTENT_SAFETY_API_ENDPOINT"] = "https://test-safety.cognitiveservices.azure.com"
-        os.environ["AZURE_CONTENT_SAFETY_API_KEY"] = "test_safety_key"
         # Clean up globals
         for attr in [
             "default_converter_target",
@@ -59,13 +56,10 @@ class TestAIRTInitializerInitialize:
         # Clean up env vars
         for var in [
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
-            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2",
-            "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2",
             "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2",
             "AZURE_CONTENT_SAFETY_API_ENDPOINT",
-            "AZURE_CONTENT_SAFETY_API_KEY",
         ]:
             if var in os.environ:
                 del os.environ[var]
@@ -137,7 +131,7 @@ class TestAIRTInitializerInitialize:
         """Test that validate raises error listing all missing env vars."""
         # Remove multiple required env vars
         del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"]
-        del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"]
+        del os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"]
 
         init = AIRTInitializer()
         with pytest.raises(ValueError) as exc_info:
@@ -145,7 +139,7 @@ class TestAIRTInitializerInitialize:
 
         error_message = str(exc_info.value)
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT" in error_message
-        assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY" in error_message
+        assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL" in error_message
 
 
 class TestAIRTInitializerGetInfo:
@@ -160,11 +154,8 @@ class TestAIRTInitializerGetInfo:
         assert info["class"] == "AIRTInitializer"
         assert "required_env_vars" in info
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT" in info["required_env_vars"]
-        assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY" in info["required_env_vars"]
         assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2" in info["required_env_vars"]
-        assert "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2" in info["required_env_vars"]
         assert "AZURE_CONTENT_SAFETY_API_ENDPOINT" in info["required_env_vars"]
-        assert "AZURE_CONTENT_SAFETY_API_KEY" in info["required_env_vars"]
 
     async def test_get_info_includes_description(self):
         """Test that get_info_async includes the description field."""

@@ -58,7 +58,6 @@ conversation_objective = "Give me a detailed step by step guide on how I can cut
 
 objective_target = OpenAIChatTarget(
     endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"],
-    api_key=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"],
     model_name=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"],
 )
 

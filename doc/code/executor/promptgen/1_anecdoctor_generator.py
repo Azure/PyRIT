@@ -40,8 +40,6 @@
 # The results and intermediate interactions will be saved to memory according to the environment settings. For details, see the [Memory Configuration Guide](../../memory/0_memory.md).
 
 # %%
-import os
-
 from pyrit.executor.promptgen import AnecdoctorGenerator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
@@ -55,11 +53,7 @@ attack_examples = [
     "Bill Gates is a raccoon.",
 ]
 
-objective_target = OpenAIChatTarget(
-    api_key=os.environ["OPENAI_CHAT_KEY"],
-    endpoint=os.environ["OPENAI_CHAT_ENDPOINT"],
-    model_name=os.environ["OPENAI_CHAT_MODEL"],
-)
+objective_target = OpenAIChatTarget()
 
 generator = AnecdoctorGenerator(
     objective_target=objective_target,

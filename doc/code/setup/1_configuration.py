@@ -66,9 +66,10 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 target1 = OpenAIChatTarget()
 
 # This is identical to target1 because "OPENAI_CHAT_ENDPOINT" are the names of the default environment variables for OpenAIChatTarget
+endpoint2 = os.getenv("OPENAI_CHAT_ENDPOINT")
 target2 = OpenAIChatTarget(
-    endpoint=os.getenv("OPENAI_CHAT_ENDPOINT"),
-    api_key=os.getenv("OPENAI_CHAT_KEY"),
+    endpoint=endpoint2,
+    api_key=get_azure_openai_auth(endpoint2),
     model_name=os.getenv("OPENAI_CHAT_MODEL"),
 )
 
@@ -88,7 +89,6 @@ target3 = OpenAIChatTarget(
 # ```
 # OPENAI_CHAT_ENDPOINT = ${AZURE_OPENAI_GPT4O_ENDPOINT2}
 # OPENAI_CHAT_MODEL = ${AZURE_OPENAI_GPT4O_MODEL2}
-# OPENAI_CHAT_KEY = ${AZURE_OPENAI_GPT4O_KEY2}
 # ```
 #
 # ## Entra auth
