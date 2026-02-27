@@ -151,7 +151,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         num_chars_per_step: int = 100,
     ) -> None:
         """
-        Initialize the prompt injection attack strategy.
+        Initialize the beam search attack strategy for single-turn attacks.
 
         The auxiliary scorers (provided via attack_scoring_config) are used to
         evaluate and rank the beams at each iteration; as such, they must be
