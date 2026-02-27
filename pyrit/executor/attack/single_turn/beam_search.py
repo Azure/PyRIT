@@ -335,9 +335,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             objective=context.objective,
             attack_identifier=self.get_identifier(),
             last_response=(
-                beams[0].message.message_pieces[0]
-                if beams[0].message and beams[0].message.message_pieces
-                else None
+                beams[0].message.message_pieces[0] if beams[0].message and beams[0].message.message_pieces else None
             ),
             last_score=beams[0].objective_score,
             related_conversations=related_conversations,

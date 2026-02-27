@@ -9,8 +9,11 @@ from unit.mocks import get_mock_scorer_identifier, get_mock_target_identifier
 
 from pyrit.executor.attack import (
     AttackScoringConfig,
+    Beam,
+    BeamSearchAttack,
+    TopKBeamReviewer,
 )
-from pyrit.executor.attack.single_turn.beam_search import Beam, BeamSearchAttack, TopKBeamReviewer
+from pyrit.executor.attack.single_turn.beam_search import Beam
 from pyrit.prompt_target import OpenAIResponseTarget, PromptTarget
 from pyrit.score import FloatScaleScorer, Scorer, TrueFalseScorer
 

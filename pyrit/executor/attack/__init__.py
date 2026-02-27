@@ -41,6 +41,9 @@ from pyrit.executor.attack.multi_turn import (
 # Import printer modules last to avoid circular dependencies
 from pyrit.executor.attack.printer import AttackResultPrinter, ConsoleAttackResultPrinter, MarkdownAttackResultPrinter
 from pyrit.executor.attack.single_turn import (
+    Beam,
+    BeamReviewer,
+    BeamSearchAttack,
     ContextComplianceAttack,
     FlipAttack,
     ManyShotJailbreakAttack,
@@ -50,6 +53,7 @@ from pyrit.executor.attack.single_turn import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
     SkeletonKeyAttack,
+    TopKBeamReviewer,
 )
 
 __all__ = [
@@ -76,6 +80,10 @@ __all__ = [
     "RolePlayAttack",
     "RolePlayPaths",
     "SkeletonKeyAttack",
+    "Beam",
+    "BeamReviewer",
+    "BeamSearchAttack",
+    "TopKBeamReviewer",
     "ConversationSession",
     "MultiTurnAttackStrategy",
     "MultiTurnAttackContext",
