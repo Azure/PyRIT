@@ -173,6 +173,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             "top_p": top_p,
             "extra_body_parameters": deepcopy(extra_body_parameters),
             "fail_on_missing_function": fail_on_missing_function,
+            "reasoning_effort": reasoning_effort,
+            "reasoning_summary": reasoning_summary,
             **deepcopy(kwargs),
         }
 
