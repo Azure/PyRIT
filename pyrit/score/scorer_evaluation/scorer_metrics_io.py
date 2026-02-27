@@ -223,7 +223,7 @@ def _load_metrics_from_file(
 
 def find_objective_metrics_by_hash(
     *,
-    hash: str,
+    hash: str,  # noqa: A002
     file_path: Optional[Path] = None,
 ) -> Optional[ObjectiveScorerMetrics]:
     """
@@ -246,7 +246,7 @@ def find_objective_metrics_by_hash(
 
 def find_harm_metrics_by_hash(
     *,
-    hash: str,
+    hash: str,  # noqa: A002
     harm_category: str,
 ) -> Optional[HarmScorerMetrics]:
     """
@@ -266,7 +266,7 @@ def find_harm_metrics_by_hash(
 def _find_metrics_by_hash(
     *,
     file_path: Path,
-    hash: str,
+    hash: str,  # noqa: A002
     metrics_class: type[M],
 ) -> Optional[M]:
     """

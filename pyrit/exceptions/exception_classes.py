@@ -377,6 +377,6 @@ def handle_bad_request_exception(
             request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
         )
     else:
-        raise
+        raise  # noqa: PLE0704
 
     return response_entry

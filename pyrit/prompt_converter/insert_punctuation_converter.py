@@ -70,7 +70,7 @@ class InsertPunctuationConverter(PromptConverter):
         Returns:
             bool: valid list and valid punctuations
         """
-        return all(str in string.punctuation for str in punctuation_list)
+        return all(char in string.punctuation for char in punctuation_list)
 
     async def convert_async(
         self, *, prompt: str, input_type: PromptDataType = "text", punctuation_list: Optional[list[str]] = None

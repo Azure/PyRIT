@@ -201,7 +201,7 @@ class Seed(YamlLoadable):
             # Render the template with the provided kwargs
             return jinja_template.render(**kwargs)
         except Exception as e:
-            logging.error("Error rendering template: %s", e)
+            logger.error("Error rendering template: %s", e)
             return self.value
 
     async def set_sha256_value_async(self) -> None:

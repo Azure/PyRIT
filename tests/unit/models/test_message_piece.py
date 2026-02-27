@@ -601,8 +601,8 @@ def test_order_message_pieces_by_conversation_same_timestamp():
         ),
     ]
 
-    sorted = sort_message_pieces(pieces)
-    assert sorted == expected
+    sorted_pieces = sort_message_pieces(pieces)
+    assert sorted_pieces == expected
 
 
 def test_order_message_pieces_by_conversation_empty_list():

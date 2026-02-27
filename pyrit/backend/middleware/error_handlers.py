@@ -165,7 +165,7 @@ def register_error_handlers(app: FastAPI) -> None:
         # Log the full exception for debugging
         logger.error(
             f"Unhandled exception on {request.method} {request.url.path}: {exc}",
-            exc_info=True,
+            exc_info=True,  # noqa: LOG014
         )
 
         problem = ProblemDetail(

@@ -336,7 +336,7 @@ class HuggingFaceChatTarget(PromptChatTarget):
             ).strip()
 
             if not assistant_response:
-                raise EmptyResponseException()
+                raise EmptyResponseException
 
             logger.info(f"Assistant's response: {assistant_response}")
 
