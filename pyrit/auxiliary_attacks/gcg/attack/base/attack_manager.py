@@ -107,10 +107,7 @@ def get_nonascii_toks(tokenizer: Any, device: str = "cpu") -> torch.Tensor:
     def is_ascii(s: str) -> bool:
         return s.isascii() and s.isprintable()
 
-    ascii_toks = []
-    for i in range(3, tokenizer.vocab_size):
-        if not is_ascii(tokenizer.decode([i])):
-            ascii_toks.append(i)
+    ascii_toks = [i for i in range(3, tokenizer.vocab_size) if not is_ascii(tokenizer.decode([i]))]
 
     if tokenizer.bos_token_id is not None:
         ascii_toks.append(tokenizer.bos_token_id)

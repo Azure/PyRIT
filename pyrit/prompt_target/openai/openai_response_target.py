@@ -256,9 +256,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
             # System message (remapped to developer)
             if pieces[0].api_role == "system":
-                system_content = []
-                for piece in pieces:
-                    system_content.append({"type": "input_text", "text": piece.converted_value})
+                system_content = [{"type": "input_text", "text": piece.converted_value} for piece in pieces]
                 input_items.append({"role": "developer", "content": system_content})
                 continue
 
