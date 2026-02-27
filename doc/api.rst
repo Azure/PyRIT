@@ -200,6 +200,10 @@ API Reference
     TAPAttackContext
     TAPAttackResult
     TreeOfAttacksWithPruningAttack
+    Beam
+    BeamReviewer
+    BeamSearchAttack
+    TopKBeamReviewer
 
 :py:mod:`pyrit.executor.promptgen`
 ==================================
