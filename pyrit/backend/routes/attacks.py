@@ -55,7 +55,9 @@ async def list_attacks(
     attack_class: Optional[str] = Query(None, description="Filter by exact attack class name"),
     converter_classes: Optional[list[str]] = Query(
         None,
-        description="Filter by converter class names (repeatable, AND logic). Pass empty to match no-converter attacks.",
+        description=(
+            "Filter by converter class names (repeatable, AND logic). Pass empty to match no-converter attacks."
+        ),
     ),
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Query(None, description="Filter by outcome"),
     label: Optional[list[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),

@@ -17,7 +17,7 @@ from typing import Optional
 sys.stdout.reconfigure(errors="replace")  # type: ignore[union-attr]
 sys.stderr.reconfigure(errors="replace")  # type: ignore[union-attr]
 
-from pyrit.cli import frontend_core
+from pyrit.cli import frontend_core  # noqa: E402
 
 
 def parse_args(*, args: Optional[list[str]] = None) -> Namespace:
