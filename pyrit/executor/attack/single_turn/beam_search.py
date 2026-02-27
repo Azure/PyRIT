@@ -327,7 +327,6 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         )
 
     async def _propagate_beam(self, *, beam: Beam) -> None:
-        # print(f"Propagating beam with text: {beam.text}")
         target = self._get_target_for_beam(beam)
 
         current_context = copy.deepcopy(self._start_context)
