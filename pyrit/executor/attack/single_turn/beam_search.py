@@ -430,7 +430,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
     def _get_target_for_beam(self, beam: Beam) -> OpenAIResponseTarget:
         """
-        Create a OpenAIResponseTarget for the given beam by duplicating the base target.
+        Create an OpenAIResponseTarget for the given beam by duplicating the base target.
 
         Args:
             beam (Beam): The beam for which to create the target.
