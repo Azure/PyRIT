@@ -41,9 +41,9 @@ class Beam:
     text: str
     score: float
     objective_score: Optional[Score] = None
-    message: Message | None = None
+    message: Optional[Message] = None
 
-    def get_grammar(self, n_chars: int) -> str:
+    def get_grammar(self, *, n_chars: int) -> str:
         """
         Generate a grammar definition for the beam to be used in the attack.
 
@@ -61,7 +61,7 @@ CONTINUATION: /.{{0,{n_chars}}}/
         prefix = self.text.replace('"', '\\"').replace("\n", "\\n")
 
         # Prune non-printable characters from the prefix to avoid issues in the grammar
-        end_index = len(prefix)
+        end_index = 0
         for i in range(len(prefix) - 1, -1, -1):
             if str.isprintable(prefix[i]):
                 end_index = i + 1
@@ -75,7 +75,7 @@ class BeamReviewer(ABC):
     """Abstract base class for beam reviewers in beam search attacks."""
 
     @abstractmethod
-    def review(self, beams: list[Beam]) -> list[Beam]:
+    def review(self, *, beams: list[Beam]) -> list[Beam]:
         """
         Review the beams and potentially modify them to improve the search.
 
@@ -90,7 +90,7 @@ class BeamReviewer(ABC):
 class TopKBeamReviewer(BeamReviewer):
     """Beam reviewer that retains the top-k beams and modifies them to create new beams."""
 
-    def __init__(self, k: int, drop_chars: int):
+    def __init__(self, *, k: int, drop_chars: int):
         """
         Initialize the TopKBeamReviewer.
 
@@ -109,7 +109,7 @@ class TopKBeamReviewer(BeamReviewer):
         self.k = k
         self.drop_chars = drop_chars
 
-    def review(self, beams: list[Beam]) -> list[Beam]:
+    def review(self, *, beams: list[Beam]) -> list[Beam]:
         """
         Review the beams to retain the top-k and create new beams by modifying them.
 
@@ -128,7 +128,6 @@ class TopKBeamReviewer(BeamReviewer):
             if self.drop_chars > 0 and len(nxt.text) > self.drop_chars:
                 nxt.text = nxt.text[: -self.drop_chars]
             new_beams.append(nxt)
-        assert len(beams) == len(new_beams)
         return new_beams
 
 
@@ -215,7 +214,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         self._beam_reviewer = beam_reviewer
 
         if num_beams <= 1:
-            raise ValueError("num_beams must greater than 1")
+            raise ValueError("num_beams must be greater than 1")
         if max_iterations <= 1:
             raise ValueError("max_iterations must be greater than 1")
         if num_chars_per_step <= 0:
@@ -227,6 +226,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
         # Store the prepended conversation configuration
         self._prepended_conversation_config = prepended_conversation_config
+        self._start_context: Optional[SingleTurnAttackContext[Any]] = None
 
     def _validate_context(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """
@@ -265,7 +265,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
 
     async def _perform_async(self, *, context: SingleTurnAttackContext[Any]) -> AttackResult:
         """
-        Perform the attack.
+        Perform the beam search attack.
 
         Args:
             context: The attack context with objective and parameters.
@@ -282,7 +282,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             self._logger.info(f"Starting iteration {step}/{self._max_iterations}")
 
             # Review beams at the top of the loop for simplicity
-            beams = self._beam_reviewer.review(beams)
+            beams = self._beam_reviewer.review(beams=beams)
 
             async with asyncio.TaskGroup() as tg:
                 tasks = [tg.create_task(self._propagate_beam(beam=beam)) for beam in beams]
@@ -327,6 +327,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         )
 
     async def _propagate_beam(self, *, beam: Beam) -> None:
+        if self._start_context is None:
+            raise ValueError("Start context must be set before propagating beams")
         target = self._get_target_for_beam(beam)
 
         current_context = copy.deepcopy(self._start_context)
