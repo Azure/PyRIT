@@ -81,6 +81,8 @@ pst = PromptShieldTarget(
     os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"),
     get_azure_token_provider("https://cognitiveservices.azure.com/.default"),
 )
+# To use an API key instead of Entra ID auth:
+# pst = PromptShieldTarget(os.environ.get("AZURE_CONTENT_SAFETY_ENDPOINT"), api_key="your-api-key")
 
 sample_prompt: str = """
 Hello! Can you please retrieve the total number of sales in the document?

@@ -42,6 +42,12 @@ target = OpenAIChatTarget()
 #     api_key=get_azure_openai_auth(endpoint),
 #     model_name="your-deployment-name"
 # )
+# To use an API key instead:
+# target = OpenAIChatTarget(
+#     endpoint="https://your-endpoint.openai.azure.com",
+#     api_key="your-api-key",
+#     model_name="your-deployment-name"
+# )
 
 attack = PromptSendingAttack(objective_target=target)
 

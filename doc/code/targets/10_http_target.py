@@ -47,6 +47,8 @@ endpoint = os.environ.get("AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT")
 model = os.environ.get("AZURE_OPENAI_GPT3_5_CHAT_MODEL")
 token_provider = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
 access_token = token_provider()
+# To use an API key instead of Entra ID auth, replace the Authorization header with:
+#     Ocp-Apim-Subscription-Key: your-api-key
 
 url = f"{endpoint}/chat/completions"
 

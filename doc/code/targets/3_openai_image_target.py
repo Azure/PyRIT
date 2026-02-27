@@ -66,21 +66,11 @@ for result in results:
 # This example shows how to use the image target to edit an existing image (or combine a set of images) from a text prompt.
 
 # %%
-import os
-
-from pyrit.auth import get_azure_openai_auth
 from pyrit.models import SeedGroup, SeedPrompt
 
-# Image editing requires gpt-image-1 or newer; dall-e-3 does not support editing.
-edit_endpoint = os.environ.get("OPENAI_IMAGE_ENDPOINT2")
-edit_target = OpenAIImageTarget(
-    endpoint=edit_endpoint,
-    api_key=get_azure_openai_auth(edit_endpoint),
-    model_name=os.environ.get("OPENAI_IMAGE_MODEL2"),
-    output_format="jpeg",
-)
+# Reuse the same image target for editing (requires gpt-image-1 or newer).
 edit_attack = PromptSendingAttack(
-    objective_target=edit_target,
+    objective_target=img_prompt_target,
     attack_scoring_config=scoring_config,
 )
 
