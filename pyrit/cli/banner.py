@@ -152,7 +152,7 @@ BRAILLE_RACCOON = [
     "⠀⠀⠀⣶⠟⠁⠶⠀⠀⠀⠀⣠⣾⡟⠘⠃⢻⣿⣌⠀⠀⠀⠀⠀⠀⠻⣷⠀⠀⠀",
     "⠀⠀⠘⠿⣔⠺⠀⠀⠀⠀⢰⣿⣿⡀⠘⠀⢀⣿⣿⡆⡂⠀⡈⠡⠜⣙⣿⠇⠀⠀",
     "⠀⠀⠀⠐⠻⢿⣶⣅⢀⠐⠀⠙⣒⡃⡀⠄⢘⠉⠋⠁⠆⢀⢼⣿⣿⡟⠋⠁⠀⠀",
-    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠭⠛⠿⠿⠛⠧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠭⠛⠿⠿⠛⠧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
 ]
 
 # ── PYRIT block letters (same style as existing banner) ────────────────────────
@@ -225,10 +225,18 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole]]:
     add(_empty_line(), ColorRole.BORDER)
 
     # Mid divider (with tail attachment point)
-    tail_col = 82
-    tail = ["║", "│", "║", "│", "║", "│", "╲", " ~"]
-    divider_content = "═" * tail_col + "╤" + "═" * (BOX_W - tail_col - 1)
-    add("╠" + divider_content + "╣", ColorRole.BORDER)
+    tail_col = 80
+    tail = [
+        "⣿⣿⣿⣿⣿⣿",  # dark stripe (wide)
+        "⠒⠒⠒⠒⠒⠒",  # light stripe
+        "⠀⣿⣿⣿⣿⠀",  # dark stripe (narrower)
+        "⠀⠒⠒⠒⠒⠀",  # light stripe
+        "⠀⠀⣿⣿⠀⠀",  # dark stripe (tapered)
+        "⠀⠀⠒⠒⠀⠀",  # light stripe
+        "⠀⠀⠀⣷⠀⠀",  # dark tip
+        "⠀⠀⠀⠁⠀⠀",  # very tip
+    ]
+    add("╠" + "═" * BOX_W + "╣", ColorRole.BORDER)
 
     # Commands section with striped tail hanging from divider
     commands = [
@@ -337,14 +345,6 @@ def _build_animation_frames() -> list[AnimationFrame]:
             color_map[len(lines)] = ColorRole.RACCOON_BODY
             lines.append(_box_line(r_part + p_part))
 
-        if step_i == len(reveal_steps) - 1:
-            # Fix subtitle colors on final reveal
-            for line_idx in range(len(lines)):
-                if line_idx >= 2:
-                    row_in_header = line_idx - 2
-                    if row_in_header in (subtitle_row_1, subtitle_row_2):
-                        color_map[line_idx] = ColorRole.SUBTITLE
-
         color_map[len(lines)] = ColorRole.BORDER
         lines.append(empty)
         color_map[len(lines)] = ColorRole.BORDER
@@ -369,8 +369,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
                 p_part = "      Interactive Shell"
             else:
                 p_part = ""
-            role = ColorRole.SUBTITLE if row_i in (subtitle_row_1, subtitle_row_2) else base_role
-            color_map[len(lines)] = role
+            color_map[len(lines)] = base_role
             lines.append(_box_line(r_part + p_part))
 
         color_map[len(lines)] = ColorRole.BORDER
