@@ -225,18 +225,18 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole]]:
     add(_empty_line(), ColorRole.BORDER)
 
     # Mid divider (with tail attachment point)
-    tail_col = 80
+    tail_col = 77
     tail = [
-        "⣿⣿⣿⣿⣿⠀",  # w=5 (dark stripe)
-        "⠉⠀⠀⠀⠀⠉",  # w=6 (light edges)
-        "⣿⣿⣿⣿⣿⣿",  # w=6 (dark stripe)
-        "⠉⠀⠀⠀⠉⠀",  # w=5 (light edges)
-        "⣿⣿⣿⣿⣿⠀",  # w=5 (dark stripe)
-        "⠀⠉⠀⠀⠉⠀",  # w=4 (light edges)
-        "⠀⣿⣿⣿⣿⠀",  # w=4 (dark stripe)
-        "⠀⠉⠀⠉⠀⠀",  # w=3 (light edges)
-        "⠀⠀⣿⣿⠀⠀",  # w=2 (dark stripe)
-        "⠀⠀⠉⠀⠀⠀",  # w=1 (light edges / tip)
+        "⣿⣿⣿⣿⣿⣿⣿⣿⠀",  # w=8 (dark stripe)
+        "⠇⠀⠀⠀⠀⠀⠀⠀⠸",  # w=9 (light edges)
+        "⣿⣿⣿⣿⣿⣿⣿⣿⣿",  # w=9 (dark stripe)
+        "⠀⠇⠀⠀⠀⠀⠀⠀⠸",  # w=8 (light edges, curl +1)
+        "⠀⣿⣿⣿⣿⣿⣿⣿⣿",  # w=8 (dark stripe, curl +1)
+        "⠀⠀⠇⠀⠀⠀⠀⠸⠀",  # w=6 (light edges, curl +2)
+        "⠀⠀⣿⣿⣿⣿⣿⣿⠀",  # w=6 (dark stripe, curl +2)
+        "⠀⠀⠀⠇⠀⠀⠀⠸⠀",  # w=5 (light edges, curl +3)
+        "⠀⠀⠀⣿⣿⣿⠀⠀⠀",  # w=3 (dark stripe, curl +3)
+        "⠀⠀⠀⠀⠇⠸⠀⠀⠀",  # w=2 (light edges / tip)
     ]
     add("╠" + "═" * BOX_W + "╣", ColorRole.BORDER)
 
