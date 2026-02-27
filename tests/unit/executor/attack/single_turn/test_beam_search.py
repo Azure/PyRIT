@@ -192,7 +192,7 @@ class TestBeamSearchAttack:
                 attack_scoring_config=scoring_config,
             )
 
-    def tests_init_invalid_num_beams(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
+    def test_init_invalid_num_beams(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
         """Test initialization with invalid num_beams values"""
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
@@ -205,7 +205,7 @@ class TestBeamSearchAttack:
                 num_beams=1,
             )
 
-    def tests_init_invalid_max_iterations(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
+    def test_init_invalid_max_iterations(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
         """Test initialization with invalid max_iterations values"""
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
@@ -218,7 +218,7 @@ class TestBeamSearchAttack:
                 max_iterations=1,
             )
 
-    def tests_init_invalid_num_chars_per_step(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
+    def test_init_invalid_num_chars_per_step(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
         """Test initialization with invalid num_chars_per_step values"""
         scoring_config = AttackScoringConfig(
             objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
