@@ -120,3 +120,5 @@ attack_result = await beam_search_attack.execute_async(objective=objective)  # t
 
 printer = ConsoleAttackResultPrinter()
 await printer.print_conversation_async(result=attack_result)  # type: ignore
+
+# %%
