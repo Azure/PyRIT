@@ -18,9 +18,9 @@ from pyrit.score import FloatScaleScorer, Scorer, TrueFalseScorer
 @pytest.fixture
 def mock_target():
     """Create a mock prompt target for testing"""
-    target = MagicMock(spec=OpenAIResponseTarget)
+    target = OpenAIResponseTarget.__new__(OpenAIResponseTarget)
     target.send_prompt_async = AsyncMock()
-    target.get_identifier.return_value = get_mock_target_identifier("MockTarget")
+    target.get_identifier = MagicMock(return_value=get_mock_target_identifier("MockTarget"))
     return target
 
 
