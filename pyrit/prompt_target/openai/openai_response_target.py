@@ -197,11 +197,13 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         Optionally override extra body parameters or a grammar name for the new instance.
 
         Args:
-            extra_body_parameters (Optional[dict[str, Any]]): Optional overrides for the extra body parameters of the new instance.
-            grammar_name (Optional[str]): Optional override for the grammar name of the new instance.
+            extra_body_parameters (Optional[dict[str, Any]]): Optional overrides for the
+                extra body parameters of the new instance.
+            grammar_name (Optional[str]): Optional override for the grammar name of the
+                new instance.
 
         Returns:
-            A new instance of OpenAIResponseTarget.
+            OpenAIResponseTarget: A new instance of OpenAIResponseTarget.
         """
         init_args: dict[str, Any] = deepcopy(self._init_args)
         if extra_body_parameters is not None:
