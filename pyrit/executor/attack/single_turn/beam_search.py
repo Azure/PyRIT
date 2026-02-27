@@ -58,7 +58,7 @@ start: PREFIX CONTINUATION
 PREFIX: "{prefix}"
 CONTINUATION: /.{{0,{n_chars}}}/
 """
-        prefix = self.text.replace('"', '\\"').replace("\n", "\\n")
+        prefix = self.text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
         # Prune non-printable characters from the prefix to avoid issues in the grammar
         end_index = 0
