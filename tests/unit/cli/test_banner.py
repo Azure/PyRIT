@@ -27,7 +27,7 @@ class TestColorRole:
 
     def test_get_color_returns_ansi_code(self) -> None:
         color = _get_color(ColorRole.PYRIT_TEXT, DARK_THEME)
-        assert color == ANSI_COLORS["bright_red"]
+        assert color == ANSI_COLORS["bright_cyan"]
 
     def test_get_color_reset(self) -> None:
         color = _get_color(ColorRole.RESET, DARK_THEME)
