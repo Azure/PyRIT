@@ -139,37 +139,37 @@ def can_animate() -> bool:
 # The raccoon is ~12 chars wide × 7 lines tall, designed to fit inside the banner box.
 
 RACCOON_FRAMES = [
-    # Frame 0: raccoon looking right (walking pose 1)
+    # Frame 0: raccoon walking pose 1 — bandit mask (=o.o=), nose (w), striped tail
     [
-        r"   /\_/\   ",
-        r"  ( o.o )  ",
-        r"   > ^ <   ",
-        r"  /|   |\ ~",
-        r" (_|   |_) ",
+        r"   /\___/\    ",
+        r"  ( =o.o= )   ",
+        r"   > -w- <    ",
+        r"  /|     |\ ~~",
+        r" (_|     |_)  ",
     ],
-    # Frame 1: raccoon looking right (walking pose 2 - tail up)
+    # Frame 1: raccoon walking pose 2 — tail up
     [
-        r"   /\_/\  ~",
-        r"  ( o.o )  ",
-        r"   > ^ <   ",
-        r"  /|   |\  ",
-        r" (_|   |_) ",
+        r"   /\___/\  ~~",
+        r"  ( =o.o= )   ",
+        r"   > -w- <    ",
+        r"  /|     |\   ",
+        r" (_|     |_)  ",
     ],
     # Frame 2: raccoon winking
     [
-        r"   /\_/\   ",
-        r"  ( -.o )  ",
-        r"   > ^ <   ",
-        r"  /|   |\ ~",
-        r" (_|   |_) ",
+        r"   /\___/\    ",
+        r"  ( =-.o= )   ",
+        r"   > -w- <    ",
+        r"  /|     |\ ~~",
+        r" (_|     |_)  ",
     ],
     # Frame 3: raccoon celebrating (arms up)
     [
-        r"   /\_/\   ",
-        r"  ( ^.^ ) *",
-        r"   > ^ <   ",
-        r"  \|   |/  ",
-        r"  (_   _)  ",
+        r"   /\___/\    ",
+        r"  ( =^.^= ) * ",
+        r"   > -w- <    ",
+        r"  \|     |/   ",
+        r"  (_     _) ~~",
     ],
 ]
 
@@ -194,12 +194,12 @@ PYRIT_WIDTH = 37  # approximate visible width of PYRIT_LETTERS
 STATIC_BANNER_LINES = [
     "╔══════════════════════════════════════════════════════════════════════════════════════════════╗",
     "║                                                                                              ║",
-    "║           /\\_/\\          ██████╗ ██╗   ██╗██████╗ ██╗████████╗                              ║",
-    "║          ( o.o )         ██╔══██╗╚██╗ ██╔╝██╔══██╗██║╚══██╔══╝                              ║",
-    "║           > ^ <          ██████╔╝ ╚████╔╝ ██████╔╝██║   ██║                                 ║",
-    "║          /|   |\\ ~       ██╔═══╝   ╚██╔╝  ██╔══██╗██║   ██║                                 ║",
-    "║         (_|   |_)        ██║        ██║   ██║  ██║██║   ██║                                 ║",
-    "║                          ╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝   ╚═╝                                 ║",
+    "║          /\\___/\\         ██████╗ ██╗   ██╗██████╗ ██╗████████╗                               ║",
+    "║         ( =o.o= )        ██╔══██╗╚██╗ ██╔╝██╔══██╗██║╚══██╔══╝                               ║",
+    "║          > -w- <         ██████╔╝ ╚████╔╝ ██████╔╝██║   ██║                                  ║",
+    "║         /|     |\\ ~~     ██╔═══╝   ╚██╔╝  ██╔══██╗██║   ██║                                  ║",
+    "║        (_|     |_)       ██║        ██║   ██║  ██║██║   ██║                                  ║",
+    "║                          ╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝   ╚═╝                                  ║",
     "║                                                                                              ║",
     "║                          Python Risk Identification Tool                                     ║",
     "║                                Interactive Shell                                             ║",
@@ -457,29 +457,27 @@ def play_animation(no_animation: bool = False) -> str:
     try:
         # Hide cursor during animation
         sys.stdout.write("\033[?25l")
+
+        # Reserve vertical space so the terminal doesn't scroll during animation.
+        # Print blank lines to push content up, then move cursor back to the top.
+        sys.stdout.write("\n" * (frame_height - 1))
+        sys.stdout.write(f"\033[{frame_height - 1}A")
+        sys.stdout.write("\r")
         sys.stdout.flush()
 
         for frame_idx, frame in enumerate(frames):
             rendered = _render_frame(frame, theme)
 
-            if frame_idx == 0:
-                # First frame: just print
-                sys.stdout.write(rendered)
-                sys.stdout.flush()
-            else:
-                # Move cursor up to overwrite previous frame
-                # rendered has (frame_height - 1) newlines, so cursor is on
-                # the last line. Move up (frame_height - 1) to reach line 1.
-                sys.stdout.write(f"\033[{frame_height - 1}A")
-                sys.stdout.write("\r")
-                sys.stdout.write(rendered)
-                sys.stdout.flush()
+            if frame_idx > 0:
+                # Move cursor back to the top of the reserved space
+                sys.stdout.write(f"\033[{frame_height - 1}A\r")
 
+            sys.stdout.write(rendered)
+            sys.stdout.flush()
             time.sleep(frame.duration)
 
         # Final frame: overwrite with the static banner (colored)
-        sys.stdout.write(f"\033[{frame_height - 1}A")
-        sys.stdout.write("\r")
+        sys.stdout.write(f"\033[{frame_height - 1}A\r")
         static = _render_static_banner(theme)
         sys.stdout.write(static)
         sys.stdout.write("\n")
