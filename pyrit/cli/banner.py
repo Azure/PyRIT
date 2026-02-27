@@ -148,22 +148,23 @@ BRAILLE_RACCOON = [
     "⠀⠀⠀⠀⠀⠘⣇⢰⣶⠛⣁⣐⣷⣦⠐⢘⣼⣷⣂⡀⠛⢽⣆⣸⠁⠀⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠀⣚⣾⡿⢡⣴⣿⣿⣿⣿⠇⠸⣿⣿⣿⣿⣶⡄⠾⣷⣟⡀⠀⠀⠀⠀",
     "⠀⠀⠀⠀⠘⣻⠇⣲⡿⠟⠋⢉⠉⢿⠰⠆⡿⠋⠉⠙⠿⣿⣆⡻⣿⣓⠀⠀⠀⠀",
-    "⠀⠀⠀⣰⢿⣷⠞⢩⡤⠀⠀⠈⢀⣀⠀⡀⣠⡀⢌⡀⢤⣨⠛⢷⣿⣭⠃⠀⠀⠀",
-    "⠀⠀⠀⣶⠟⠁⠶⠡⠄⠀⠀⣠⣾⡟⠘⠃⢻⣿⣌⠿⠾⠟⢺⣷⣏⠻⣷⠀⠀⠀",
-    "⠀⠀⠘⠿⣔⠺⢿⣧⡤⠀⢰⣿⣿⡀⠘⠀⢀⣿⣿⡆⡂⠀⡈⠡⠜⣙⣿⠇⠀⠀",
+    "⠀⠀⠀⣰⢿⣷⠞⢩ ⠀⠀⠈⢀⣀⠀⡀⣠⡀⠈  ⣨⠛⢷⣿⣭⠃⠀⠀⠀",
+    "⠀⠀⠀⣶⠟⠁⠶  ⠀⠀⣠⣾⡟⠘⠃⢻⣿⣌       ⠻⣷⠀⠀⠀",
+    "⠀⠀⠘⠿⣔⠺   ⠀⢰⣿⣿⡀⠘⠀⢀⣿⣿⡆⡂⠀⡈⠡⠜⣙⣿⠇⠀⠀",
     "⠀⠀⠀⠐⠻⢿⣶⣅⢀⠐⠀⠙⣒⡃⡀⠄⢘⠉⠋⠁⠆⢀⢼⣿⣿⡟⠋⠁⠀⠀",
-    "⠀⠀⠀⠀⠀⠀⠀⠀      ⠭⠛⠿⠿⠛⠧    ⠀⠉⠁⠀⠀⠀⠀⠀",
+    "⠀⠀⠀⠀⠀⠀⠀⠀      ⠭⠛⠿⠿⠛⠧    ⠀⠀⠀⠀⠀⠀⠀⠀",
 ]
 
 # ── PYRIT block letters (same style as existing banner) ────────────────────────
 
 PYRIT_LETTERS = [
-    "██████╗ ██╗   ██╗██████╗ ██╗████████╗",
-    "██╔══██╗╚██╗ ██╔╝██╔══██╗██║╚══██╔══╝",
-    "██████╔╝ ╚████╔╝ ██████╔╝██║   ██║   ",
-    "██╔═══╝   ╚██╔╝  ██╔══██╗██║   ██║   ",
-    "██║        ██║   ██║  ██║██║   ██║   ",
-    "╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝   ╚═╝   ",
+    "██████╗          ██████╗ ██╗████████╗",
+    "██╔══██╗██╗   ██╗██╔══██╗██║╚══██╔══╝",
+    "██████╔╝╚██╗ ██╔╝██████╔╝██║   ██║   ",
+    "██╔═══╝  ╚████╔╝ ██╔══██╗██║   ██║   ",
+    "██║       ╚██╔╝  ██║  ██║██║   ██║   ",
+    "╚═╝        ██║   ╚═╝  ╚═╝╚═╝   ╚═╝   ",
+    "           ╚═╝                       ",
 ]
 
 # How many characters to reveal per frame (left to right)
@@ -174,7 +175,7 @@ PYRIT_WIDTH = 37  # approximate visible width of PYRIT_LETTERS
 BOX_W = 94  # inner width between ║ chars
 RACCOON_COL = 32  # width reserved for raccoon column in header (30 + 2 padding)
 HEADER_ROWS = 12  # match braille raccoon height
-PYRIT_START_ROW = 3  # PYRIT text starts at this row within the header
+PYRIT_START_ROW = 2  # PYRIT text starts at this row within the header
 
 
 def _box_line(content: str) -> str:
@@ -322,8 +323,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
                 p_part = "      Interactive Shell"
             else:
                 p_part = ""
-            role = ColorRole.PYRIT_TEXT if 0 <= pyrit_idx < len(PYRIT_LETTERS) else ColorRole.RACCOON_BODY
-            color_map[len(lines)] = role
+            color_map[len(lines)] = ColorRole.RACCOON_BODY
             lines.append(_box_line(r_part + p_part))
 
         if step_i == len(reveal_steps) - 1:
