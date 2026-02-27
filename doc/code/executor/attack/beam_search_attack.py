@@ -54,13 +54,13 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # %%
 
-api_key=get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
 
 target = OpenAIResponseTarget(
     endpoint=os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
     model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
-    api_key=api_key
-    )
+    api_key=api_key,
+)
 
 azure_content_filter = AzureContentFilterScorer(
     api_key=api_key,
@@ -70,7 +70,7 @@ azure_content_filter = AzureContentFilterScorer(
 chat_target = OpenAIChatTarget(
     endpoint=os.getenv("AZURE_OPENAI_GPT5_COMPLETIONS_ENDPOINT"),
     model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
-    api_key=api_key
+    api_key=api_key,
 )
 
 objective_scorer = TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=chat_target))
