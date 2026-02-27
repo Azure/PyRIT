@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import logging
+from typing import Any
 
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
@@ -110,9 +111,11 @@ class _CBTBenchDataset(_RemoteDatasetLoader):
 
             # Extract core beliefs for metadata
             core_beliefs = item.get("core_belief_fine_grained", [])
-            metadata = {
+
+            metadata: dict[str, Any] = {
                 "config": self.config,
             }
+
             if core_beliefs:
                 metadata["core_belief_fine_grained"] = core_beliefs
 
