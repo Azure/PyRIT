@@ -178,14 +178,30 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             **deepcopy(kwargs),
         }
 
-    def fresh_instance(self) -> "OpenAIResponseTarget":
+    def fresh_instance(
+        self,
+        *,
+        extra_body_parameters: Optional[dict[str, Any]] = None,
+        grammar_name: Optional[str] = None,
+    ) -> "OpenAIResponseTarget":
         """
         Create a fresh instance of the OpenAIResponseTarget with the same configuration.
+
+        Optionally override extra body parameters or a grammar name for the new instance.
+
+        Args:
+            extra_body_parameters (Optional[dict[str, Any]]): Optional overrides for the extra body parameters of the new instance.
+            grammar_name (Optional[str]): Optional override for the grammar name of the new instance.
 
         Returns:
             A new instance of OpenAIResponseTarget.
         """
-        return OpenAIResponseTarget(**self._init_args)
+        init_args: dict[str, Any] = deepcopy(self._init_args)
+        if extra_body_parameters is not None:
+            init_args["extra_body_parameters"] = deepcopy(extra_body_parameters)
+        if grammar_name is not None:
+            init_args["grammar_name"] = grammar_name
+        return OpenAIResponseTarget(**init_args)
 
     def _build_identifier(self) -> ComponentIdentifier:
         """

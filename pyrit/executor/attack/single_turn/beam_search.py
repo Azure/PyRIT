@@ -378,7 +378,10 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             assistant_pieces = [
                 piece
                 for piece in model_response.message_pieces
-                if getattr(piece, "role", None) == "assistant"
+                if (
+                    getattr(piece, "role", None) == "assistant"
+                    and getattr(piece, "original_value_data_type", None) == "text"
+                )
                 or getattr(piece, "original_value_data_type", None) in ("assistant_text", "grammar")
             ]
             if not assistant_pieces:
@@ -388,9 +391,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                     if isinstance(getattr(piece, "converted_value", None), str)
                 ]
             beam.text = "".join(
-                piece.converted_value
-                for piece in assistant_pieces
-                if isinstance(piece.converted_value, str)
+                piece.converted_value for piece in assistant_pieces if isinstance(piece.converted_value, str)
             )
             beam.message = model_response
         except Exception as e:
@@ -463,11 +464,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             "tool_choice": "required",
         }
 
-        target = self._objective_target.fresh_instance()
-        target._extra_body_parameters = ebp
-        target._grammar_name = grammar_tool["name"]  # type: ignore[assignment]
-
-        return target
+        return self._objective_target.fresh_instance(extra_body_parameters=ebp, grammar_name=str(grammar_tool["name"]))
 
     def _get_message(self, context: SingleTurnAttackContext[Any]) -> Message:
         """
