@@ -76,13 +76,38 @@ class TestAIRTInitializerInitialize:
 
     @pytest.mark.asyncio
     async def test_initialize_runs_without_error(self):
-        """Test that initialize runs without errors."""
+        """Test that initialize runs without errors when no API keys are set (Entra auth fallback)."""
         init = AIRTInitializer()
         with (
             patch("pyrit.setup.initializers.airt.get_azure_openai_auth", return_value="mock_token"),
             patch("pyrit.setup.initializers.airt.get_azure_token_provider", return_value="mock_token_provider"),
         ):
             await init.initialize_async()
+
+    @pytest.mark.asyncio
+    async def test_initialize_uses_api_keys_when_set(self):
+        """Test that initialize uses API keys from env vars when they are set."""
+        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"] = "converter-key"
+        os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2"] = "scorer-key"
+        os.environ["AZURE_CONTENT_SAFETY_API_KEY"] = "safety-key"
+        try:
+            init = AIRTInitializer()
+            with (
+                patch("pyrit.setup.initializers.airt.get_azure_openai_auth") as mock_auth,
+                patch("pyrit.setup.initializers.airt.get_azure_token_provider") as mock_token,
+            ):
+                await init.initialize_async()
+                # Entra auth should NOT be called when API keys are set
+                mock_auth.assert_not_called()
+                mock_token.assert_not_called()
+        finally:
+            for var in [
+                "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
+                "AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2",
+                "AZURE_CONTENT_SAFETY_API_KEY",
+            ]:
+                if var in os.environ:
+                    del os.environ[var]
 
     @pytest.mark.asyncio
     async def test_get_info_after_initialize_has_populated_data(self):
