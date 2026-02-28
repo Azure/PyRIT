@@ -47,6 +47,10 @@ class AttackResult(StrategyResult):
     # Natural-language description of the attacker's objective
     objective: str
 
+    # Database-assigned unique ID for this AttackResult row.
+    # ``None`` for newly-constructed results that haven't been persisted yet.
+    attack_result_id: Optional[str] = None
+
     # Identifier of the attack strategy that produced this result
     attack_identifier: Optional[ComponentIdentifier] = None
 
