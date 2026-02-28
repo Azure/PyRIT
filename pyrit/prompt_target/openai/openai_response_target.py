@@ -171,6 +171,11 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         Returns:
             ComponentIdentifier: The identifier for this target instance.
         """
+        specific_params: dict[str, Any] = {
+            "max_output_tokens": self._max_output_tokens,
+        }
+        if self._extra_body_parameters:
+            specific_params["extra_body_parameters"] = self._extra_body_parameters
         return self._create_identifier(
             params={
                 "temperature": self._temperature,
@@ -179,6 +184,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 "reasoning_effort": self._reasoning_effort,
                 "reasoning_summary": self._reasoning_summary,
             },
+            target_specific_params=specific_params,
         )
 
     def _set_openai_env_configuration_vars(self) -> None:
