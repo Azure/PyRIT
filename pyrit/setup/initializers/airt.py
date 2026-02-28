@@ -9,7 +9,9 @@ AIRT configuration including converters, scorers, and targets using Azure OpenAI
 """
 
 import os
+from collections.abc import Callable
 
+from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
@@ -108,19 +110,34 @@ class AIRTInitializer(PyRITInitializer):
         assert scorer_endpoint is not None
         # model name can be empty in certain cases (e.g., custom model deployments that don't need model name)
 
+        # Use Entra auth for all Azure endpoints
+        converter_api_key = get_azure_openai_auth(converter_endpoint)
+        scorer_api_key = get_azure_openai_auth(scorer_endpoint)
+        content_safety_api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+
         # 1. Setup converter target
-        self._setup_converter_target(endpoint=converter_endpoint, model_name=converter_model_name)
+        self._setup_converter_target(
+            endpoint=converter_endpoint, api_key=converter_api_key, model_name=converter_model_name
+        )
 
         # 2. Setup scorers
-        self._setup_scorers(endpoint=scorer_endpoint, model_name=scorer_model_name)
+        self._setup_scorers(
+            endpoint=scorer_endpoint,
+            api_key=scorer_api_key,
+            content_safety_api_key=content_safety_api_key,
+            model_name=scorer_model_name,
+        )
 
         # 3. Setup adversarial targets
-        self._setup_adversarial_targets(endpoint=converter_endpoint, model_name=converter_model_name)
+        self._setup_adversarial_targets(
+            endpoint=converter_endpoint, api_key=converter_api_key, model_name=converter_model_name
+        )
 
-    def _setup_converter_target(self, *, endpoint: str, model_name: str) -> None:
+    def _setup_converter_target(self, *, endpoint: str, api_key: str, model_name: str) -> None:
         """Set up the default converter target configuration."""
         default_converter_target = OpenAIChatTarget(
             endpoint=endpoint,
+            api_key=api_key,
             model_name=model_name,
             temperature=1.1,
         )
@@ -132,10 +149,13 @@ class AIRTInitializer(PyRITInitializer):
             value=default_converter_target,
         )
 
-    def _setup_scorers(self, *, endpoint: str, model_name: str) -> None:
+    def _setup_scorers(
+        self, *, endpoint: str, api_key: str, content_safety_api_key: Callable[[], str], model_name: str
+    ) -> None:
         """Set up the composite harm and objective scorers."""
         scorer_target = OpenAIChatTarget(
             endpoint=endpoint,
+            api_key=api_key,
             model_name=model_name,
             temperature=0.3,
         )
@@ -148,7 +168,9 @@ class AIRTInitializer(PyRITInitializer):
         default_harm_scorer = TrueFalseCompositeScorer(
             aggregator=TrueFalseScoreAggregator.AND,
             scorers=[
-                FloatScaleThresholdScorer(scorer=AzureContentFilterScorer(), threshold=0.5),
+                FloatScaleThresholdScorer(
+                    scorer=AzureContentFilterScorer(api_key=content_safety_api_key), threshold=0.5
+                ),
                 TrueFalseInverterScorer(
                     scorer=SelfAskRefusalScorer(chat_target=scorer_target),
                 ),
@@ -192,11 +214,12 @@ class AIRTInitializer(PyRITInitializer):
                 value=default_objective_scorer_config,
             )
 
-    def _setup_adversarial_targets(self, *, endpoint: str, model_name: str) -> None:
+    def _setup_adversarial_targets(self, *, endpoint: str, api_key: str, model_name: str) -> None:
         """Set up the adversarial target configurations for attacks."""
         adversarial_config = AttackAdversarialConfig(
             target=OpenAIChatTarget(
                 endpoint=endpoint,
+                api_key=api_key,
                 model_name=model_name,
                 temperature=1.2,
             )

@@ -52,7 +52,7 @@ await initialize_pyrit_async(memory_db_type="InMemory", initializers=[SimpleInit
 #
 # The recommended step to setup PyRIT is that it needs access to secrets and endpoints. These can be loaded in environment variables or put in a `.env` file. See `.env_example` for how this file is formatted.
 #
-# Each target has default environment variables to look for. For example, `OpenAIChatTarget` looks for the `OPENAI_CHAT_ENDPOINT` for its endpoint, `OPENAI_CHAT_MODEL` for its model name, and `OPENAI_CHAT_KEY` for its key. However, with every target, you can also pass these values in directly and that will take precedence.
+# Each target has default environment variables to look for. For example, `OpenAIChatTarget` looks for the `OPENAI_CHAT_ENDPOINT` for its endpoint, `OPENAI_CHAT_MODEL` for its model name, and `OPENAI_CHAT_KEY` for its key. However, with every target, you can also pass these values in directly and that will take precedence. For Azure endpoints with Entra ID authentication, pass a token provider from `pyrit.auth` as the `api_key`.
 
 # %%
 import os
@@ -63,7 +63,12 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
-target1 = OpenAIChatTarget()
+# Using Entra auth (no API key needed, run `az login` first):
+endpoint1 = os.environ["OPENAI_CHAT_ENDPOINT"]
+target1 = OpenAIChatTarget(
+    endpoint=endpoint1,
+    api_key=get_azure_openai_auth(endpoint1),
+)
 
 # This is identical to target1 because "OPENAI_CHAT_ENDPOINT" are the names of the default environment variables for OpenAIChatTarget
 endpoint2 = os.getenv("OPENAI_CHAT_ENDPOINT")

@@ -270,52 +270,7 @@ async def test_http_target_with_injected_client():
     await custom_client.aclose()
 
 
-@pytest.mark.asyncio
-@patch("httpx.AsyncClient.request")
-async def test_send_prompt_async_content_filter_returns_error(mock_request, mock_http_target):
-    """When the callback returns empty and the raw body indicates content filtering, return an error response."""
-    message = MagicMock()
-    message.message_pieces = [
-        MagicMock(converted_value="test_prompt", prompt_target_identifier=None, attack_identifier=None)
-    ]
-
-    # Simulate a content-filtered response: callback parses to empty, raw body has content_filter
-    mock_response = MagicMock()
-    filtered_body = '{"choices":[{"finish_reason":"content_filter","message":{"content":null}}]}'
-    mock_response.content = filtered_body.encode()
-    mock_response.text = filtered_body
-    mock_request.return_value = mock_response
-
-    # Callback returns empty string (content was None)
-    mock_http_target.callback_function = lambda response: ""
-
-    response = await mock_http_target.send_prompt_async(message=message)
-    assert len(response) == 1
-    assert response[0].message_pieces[0].converted_value_data_type == "error"
-
-
-@pytest.mark.asyncio
-@patch("httpx.AsyncClient.request")
-async def test_send_prompt_async_normal_response_not_marked_as_error(mock_request, mock_http_target):
-    """Normal non-empty responses should not be marked as error even if raw body mentions content_filter."""
-    message = MagicMock()
-    message.message_pieces = [
-        MagicMock(converted_value="test_prompt", prompt_target_identifier=None, attack_identifier=None)
-    ]
-
-    mock_response = MagicMock()
-    normal_body = '{"choices":[{"finish_reason":"stop","content_filter_results":{},"message":{"content":"Hello"}}]}'
-    mock_response.content = normal_body.encode()
-    mock_response.text = normal_body
-    mock_request.return_value = mock_response
-
-    # Callback extracts actual content
-    mock_http_target.callback_function = lambda response: "Hello"
-
-    response = await mock_http_target.send_prompt_async(message=message)
-    assert len(response) == 1
-    assert response[0].get_value() == "Hello"
-    assert response[0].message_pieces[0].converted_value_data_type == "text"
+def test_http_target_init_basic():
     http_request = "POST / HTTP/1.1\nHost: example.com\n\n"
     target = HTTPTarget(http_request=http_request)
     assert target.http_request == http_request

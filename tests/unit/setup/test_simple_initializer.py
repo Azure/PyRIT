@@ -3,6 +3,7 @@
 
 import os
 import sys
+from unittest.mock import patch
 
 import pytest
 
@@ -40,7 +41,7 @@ class TestSimpleInitializerInitialize:
         """Clean up after each test."""
         reset_default_values()
         # Clean up env vars
-        for var in ["OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_MODEL"]:
+        for var in ["OPENAI_CHAT_ENDPOINT", "OPENAI_CHAT_KEY", "OPENAI_CHAT_MODEL"]:
             if var in os.environ:
                 del os.environ[var]
         # Clean up globals
@@ -49,15 +50,23 @@ class TestSimpleInitializerInitialize:
                 delattr(sys.modules["__main__"], attr)
 
     @pytest.mark.asyncio
-    async def test_initialize_runs_without_error(self):
-        """Test that initialize runs without errors."""
+    async def test_initialize_with_api_key_runs_without_error(self):
+        """Test that initialize runs without errors when API key is provided."""
+        os.environ["OPENAI_CHAT_KEY"] = "test_key"
         init = SimpleInitializer()
-        # Should not raise any errors
         await init.initialize_async()
+
+    @pytest.mark.asyncio
+    async def test_initialize_with_entra_auth_runs_without_error(self):
+        """Test that initialize falls back to Entra auth when no API key is set."""
+        init = SimpleInitializer()
+        with patch("pyrit.auth.get_azure_openai_auth", return_value="mock_token"):
+            await init.initialize_async()
 
     @pytest.mark.asyncio
     async def test_get_info_after_initialize_has_populated_data(self):
         """Test that get_info_async() returns populated data after initialization."""
+        os.environ["OPENAI_CHAT_KEY"] = "test_key"
         init = SimpleInitializer()
         await init.initialize_async()
 

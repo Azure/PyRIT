@@ -203,27 +203,9 @@ class HTTPTarget(PromptTarget):
             if self.callback_function:
                 response_content = self.callback_function(response=response)
 
-            # Detect content filter responses: empty parsed content with filter indicators in raw body.
-            # This check is specific to HTTPTarget because SDK-based targets (OpenAIChatTarget, etc.)
-            # surface content filter blocks as exceptions. HTTPTarget works with raw HTTP responses
-            # where the filter manifests as empty content with a "content_filter" finish_reason.
-            response_text = str(response_content)
-            raw_body = response.text
-            is_content_filtered = (not response_text or response_text.strip() in ("", "None")) and (
-                "content_filter" in raw_body or "ContentFilter" in raw_body
+            response_message = construct_response_from_request(
+                request=request, response_text_pieces=[str(response_content)]
             )
-
-            if is_content_filtered:
-                response_message = construct_response_from_request(
-                    request=request,
-                    response_text_pieces=[raw_body],
-                    response_type="error",
-                    error="blocked",
-                )
-            else:
-                response_message = construct_response_from_request(
-                    request=request, response_text_pieces=[response_text]
-                )
             return [response_message]
         finally:
             if cleanup_client:

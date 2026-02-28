@@ -25,27 +25,23 @@
 # - model_name: The model to use (`OPENAI_RESPONSES_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 
 # %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
-target = OpenAIResponseTarget()
-# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth import get_azure_openai_auth
-# endpoint = "https://your-endpoint.openai.azure.com"
-# target = OpenAIResponseTarget(
-#     endpoint=endpoint,
-#     api_key=get_azure_openai_auth(endpoint),
-#     model_name="your-deployment-name"
-# )
+# For Azure OpenAI with Entra ID authentication (no API key needed, run `az login` first):
+endpoint = os.environ["OPENAI_RESPONSES_ENDPOINT"]
+target = OpenAIResponseTarget(
+    endpoint=endpoint,
+    api_key=get_azure_openai_auth(endpoint),
+)
 # To use an API key instead:
-# target = OpenAIResponseTarget(
-#     endpoint="https://your-endpoint.openai.azure.com",
-#     api_key="your-api-key",
-#     model_name="your-deployment-name"
-# )
+# target = OpenAIResponseTarget()  # Uses OPENAI_RESPONSES_ENDPOINT, OPENAI_RESPONSES_MODEL, OPENAI_RESPONSES_KEY env vars
 
 attack = PromptSendingAttack(objective_target=target)
 

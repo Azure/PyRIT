@@ -3,7 +3,7 @@
 
 import base64
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from azure.ai.contentsafety import ContentSafetyClient
 from azure.ai.contentsafety.models import (
@@ -124,33 +124,20 @@ class AzureContentFilterScorer(FloatScaleScorer):
             env_var_name=self.ENDPOINT_URI_ENVIRONMENT_VARIABLE, passed_value=endpoint or ""
         )
 
-        # API key is optional - auto-detect Entra auth for Azure endpoints
-        resolved_api_key: Any = None
-        if callable(api_key):
-            # Callable token provider passed directly
-            resolved_api_key = api_key
-        else:
-            passed_api_key = default_values.get_non_required_value(
-                env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
-            )
-
-            if passed_api_key:
-                resolved_api_key = passed_api_key
-            else:
-                # No API key found — use Entra auth via token provider
-                from pyrit.auth import get_azure_token_provider
-
-                resolved_api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+        # API key is required - either from parameter or environment variable
+        self._api_key = default_values.get_required_value(
+            env_var_name=self.API_KEY_ENVIRONMENT_VARIABLE, passed_value=api_key
+        )
 
         # Create ContentSafetyClient with appropriate credential
-        if resolved_api_key is not None and self._endpoint is not None:
-            if callable(resolved_api_key):
+        if self._api_key is not None and self._endpoint is not None:
+            if callable(self._api_key):
                 # Token provider - create a TokenCredential wrapper
-                credential = TokenProviderCredential(resolved_api_key)
+                credential = TokenProviderCredential(self._api_key)
                 self._azure_cf_client = ContentSafetyClient(self._endpoint, credential=credential)
             else:
                 # String API key
-                self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(resolved_api_key))
+                self._azure_cf_client = ContentSafetyClient(self._endpoint, AzureKeyCredential(self._api_key))
         else:
             raise ValueError("Please provide the Azure Content Safety endpoint and api_key")
 

@@ -135,7 +135,7 @@ class OpenAITarget(PromptChatTarget):
                 Defaults to None.
 
         Raises:
-            ValueError: If no API key is provided and the endpoint is not an Azure endpoint.
+            ValueError: If no API key is provided via parameter or environment variable.
         """
         self._headers: dict[str, str] = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
@@ -170,20 +170,10 @@ class OpenAITarget(PromptChatTarget):
             underlying_model=underlying_model_value,
         )
 
-        # API key: use provided value, env var, or fall back to Entra auth for Azure endpoints
-        api_key_value = default_values.get_non_required_value(
+        # API key is required - either from parameter or environment variable
+        self._api_key = default_values.get_required_value(
             env_var_name=self.api_key_environment_variable, passed_value=api_key
         )
-        if not api_key_value:
-            if "azure" in endpoint_value.lower():
-                from pyrit.auth import get_azure_openai_auth
-
-                api_key_value = get_azure_openai_auth(endpoint_value)
-            else:
-                raise ValueError(
-                    f"Environment variable {self.api_key_environment_variable} is required for non-Azure endpoints"
-                )
-        self._api_key = api_key_value
 
         # Ensure api_key is async-compatible (wrap sync token providers if needed)
         self._api_key = _ensure_async_token_provider(self._api_key)

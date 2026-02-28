@@ -21,6 +21,9 @@
 # This example shows how to use the image target to create an image from a text prompt.
 
 # %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
 from pyrit.executor.attack import (
     AttackExecutor,
     AttackScoringConfig,
@@ -33,10 +36,19 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
-img_prompt_target = OpenAIImageTarget(output_format="jpeg")
+image_endpoint = os.environ["OPENAI_IMAGE_ENDPOINT"]
+img_prompt_target = OpenAIImageTarget(
+    endpoint=image_endpoint,
+    api_key=get_azure_openai_auth(image_endpoint),
+    output_format="jpeg",
+)
 
+chat_endpoint = os.environ["OPENAI_CHAT_ENDPOINT"]
 image_scorer = SelfAskTrueFalseScorer(
-    chat_target=OpenAIChatTarget(),
+    chat_target=OpenAIChatTarget(
+        endpoint=chat_endpoint,
+        api_key=get_azure_openai_auth(chat_endpoint),
+    ),
     true_false_question=TrueFalseQuestion(true_description="The response matches the objective {{objective}}"),
 )
 

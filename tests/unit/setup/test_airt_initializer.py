@@ -3,6 +3,7 @@
 
 import os
 import sys
+from unittest.mock import patch
 
 import pytest
 
@@ -77,14 +78,21 @@ class TestAIRTInitializerInitialize:
     async def test_initialize_runs_without_error(self):
         """Test that initialize runs without errors."""
         init = AIRTInitializer()
-        # Should not raise any errors
-        await init.initialize_async()
+        with (
+            patch("pyrit.setup.initializers.airt.get_azure_openai_auth", return_value="mock_token"),
+            patch("pyrit.setup.initializers.airt.get_azure_token_provider", return_value="mock_token_provider"),
+        ):
+            await init.initialize_async()
 
     @pytest.mark.asyncio
     async def test_get_info_after_initialize_has_populated_data(self):
         """Test that get_info_async() returns populated data after initialization."""
         init = AIRTInitializer()
-        await init.initialize_async()
+        with (
+            patch("pyrit.setup.initializers.airt.get_azure_openai_auth", return_value="mock_token"),
+            patch("pyrit.setup.initializers.airt.get_azure_token_provider", return_value="mock_token_provider"),
+        ):
+            await init.initialize_async()
 
         info = await AIRTInitializer.get_info_async()
 
