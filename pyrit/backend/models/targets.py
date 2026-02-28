@@ -11,7 +11,7 @@ Targets have two concepts:
 This module defines the Instance models for runtime target management.
 """
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -26,16 +26,17 @@ class TargetInstance(BaseModel):
     Also used as the create-target response (same shape as GET).
     """
 
-    target_unique_name: str = Field(
-        ..., description="Unique target instance identifier (ComponentIdentifier.unique_name)"
-    )
+    target_registry_name: str = Field(..., description="Human-friendly target registry name")
     target_type: str = Field(..., description="Target class name (e.g., 'OpenAIChatTarget')")
     endpoint: Optional[str] = Field(None, description="Target endpoint URL")
     model_name: Optional[str] = Field(None, description="Model or deployment name")
     temperature: Optional[float] = Field(None, description="Temperature parameter for generation")
     top_p: Optional[float] = Field(None, description="Top-p parameter for generation")
     max_requests_per_minute: Optional[int] = Field(None, description="Maximum requests per minute")
-    target_specific_params: Optional[dict[str, Any]] = Field(None, description="Additional target-specific parameters")
+    supports_multiturn_chat: bool = Field(
+        True, description="Whether the target supports multi-turn conversation history"
+    )
+    target_specific_params: Optional[Dict[str, Any]] = Field(None, description="Additional target-specific parameters")
 
 
 class TargetListResponse(BaseModel):

@@ -6,14 +6,26 @@ from __future__ import annotations
 """
 Attack mappers – domain ↔ DTO translation for attack-related models.
 
-All functions are pure (no database or service calls) so they are easy to test.
-The one exception is `attack_result_to_summary` which receives pre-fetched pieces.
+Most functions are pure (no database or service calls).  The exceptions are
+``pyrit_messages_to_dto_async`` which fetches Azure Blob Storage content
+and converts it to data URIs, and ``attack_result_to_summary`` which
+receives pre-fetched pieces.
 """
 
+import base64
+import logging
 import mimetypes
+import os
+import time
 import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional, cast
+from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, cast
+from urllib.parse import urlparse
+
+import httpx
+from azure.identity.aio import DefaultAzureCredential
+from azure.storage.blob import ContainerSasPermissions, generate_container_sas
+from azure.storage.blob.aio import BlobServiceClient
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
@@ -22,11 +34,15 @@ from pyrit.backend.models.attacks import (
     MessagePiece,
     MessagePieceRequest,
     Score,
+    TargetInfo,
 )
 from pyrit.models import AttackResult, ChatMessageRole, PromptDataType
 from pyrit.models import Message as PyritMessage
 from pyrit.models import MessagePiece as PyritMessagePiece
 from pyrit.models import Score as PyritScore
+from pyrit.models.conversation_stats import ConversationStats
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -35,27 +51,189 @@ if TYPE_CHECKING:
 # Domain → DTO  (for API responses)
 # ============================================================================
 
+# Media data types whose values are local file paths that need base64 encoding
+_MEDIA_PATH_TYPES = frozenset({"image_path", "audio_path", "video_path", "binary_path"})
+
+# Media types that are too large for base64 data URIs and should use signed URLs instead.
+_STREAMING_PATH_TYPES = frozenset({"video_path"})
+
+# ---------------------------------------------------------------------------
+# Azure Blob SAS token cache
+# ---------------------------------------------------------------------------
+# Container URL -> (sas_token_query_string, expiry_epoch)
+_sas_token_cache: Dict[str, Tuple[str, float]] = {}
+_SAS_TTL_SECONDS = 3500  # cache for ~58 min; tokens are valid for 1 hour
+
+
+def _is_azure_blob_url(value: str) -> bool:
+    """Return True if *value* looks like an Azure Blob Storage URL."""
+    return value.startswith("https://") and ".blob.core.windows.net/" in value
+
+
+async def _get_sas_for_container_async(*, container_url: str) -> str:
+    """
+    Return a read-only SAS query string for *container_url*, generating and
+    caching one when necessary.
+
+    The SAS token is cached per container URL and reused for ~1 hour.
+
+    Args:
+        container_url: The full URL of the Azure Blob Storage container
+                       (e.g. ``https://account.blob.core.windows.net/container``).
+
+    Returns:
+        A SAS query string (without the leading ``?``).
+    """
+    now = time.time()
+    cached = _sas_token_cache.get(container_url)
+    if cached and cached[1] > now:
+        return cached[0]
+
+    parsed = urlparse(container_url)
+    account_url = f"{parsed.scheme}://{parsed.netloc}"
+    container_name = parsed.path.strip("/")
+    storage_account_name = parsed.netloc.split(".")[0]
+
+    start_time = datetime.now() - timedelta(minutes=5)
+    expiry_time = start_time + timedelta(hours=1)
+
+    credential = DefaultAzureCredential()
+    try:
+        async with BlobServiceClient(account_url=account_url, credential=credential) as bsc:
+            delegation_key = await bsc.get_user_delegation_key(
+                key_start_time=start_time,
+                key_expiry_time=expiry_time,
+            )
+            sas_token: str = generate_container_sas(  # type: ignore[assignment]
+                account_name=storage_account_name,
+                container_name=container_name,
+                user_delegation_key=delegation_key,
+                permission=ContainerSasPermissions(read=True),  # type: ignore[no-untyped-call, unused-ignore]
+                expiry=expiry_time,
+                start=start_time,
+            )
+    finally:
+        await credential.close()
+
+    _sas_token_cache[container_url] = (sas_token, now + _SAS_TTL_SECONDS)
+    return sas_token
+
+
+async def _sign_blob_url_async(*, blob_url: str) -> str:
+    """
+    Append a read-only SAS token to an Azure Blob Storage URL.
+
+    Non-blob URLs (local paths, data URIs, etc.) are returned unchanged.
+
+    Args:
+        blob_url: The raw Azure Blob Storage URL.
+
+    Returns:
+        The URL with an appended SAS query string, or the original value for
+        non-blob URLs.
+    """
+    if not _is_azure_blob_url(blob_url):
+        return blob_url
+
+    parsed = urlparse(blob_url)
+    # Already signed
+    if parsed.query:
+        return blob_url
+
+    # Extract container name from path: /container/path/to/blob
+    parts = parsed.path.strip("/").split("/", 1)
+    if not parts:
+        return blob_url
+
+    container_name = parts[0]
+    container_url = f"{parsed.scheme}://{parsed.netloc}/{container_name}"
+
+    try:
+        sas = await _get_sas_for_container_async(container_url=container_url)
+        return f"{blob_url}?{sas}"
+    except Exception:
+        logger.warning("Failed to generate SAS token for %s; returning unsigned URL", blob_url, exc_info=True)
+        return blob_url
+
+
+async def _fetch_blob_as_data_uri_async(*, blob_url: str) -> str:
+    """
+    Fetch an Azure Blob Storage file and return it as a ``data:`` URI.
+
+    The blob URL is first signed with a SAS token, then fetched server-side.
+    The content is base64-encoded into a data URI so the frontend receives the
+    same format regardless of whether storage is local or remote.
+
+    Falls back to the raw (unsigned) URL if signing or fetching fails.
+
+    Args:
+        blob_url: The raw Azure Blob Storage URL.
+
+    Returns:
+        A ``data:<mime>;base64,...`` string, or the original URL on failure.
+    """
+    signed_url = await _sign_blob_url_async(blob_url=blob_url)
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(signed_url, follow_redirects=True, timeout=60.0)
+            resp.raise_for_status()
+    except Exception:
+        logger.warning("Failed to fetch blob %s; returning raw URL", blob_url, exc_info=True)
+        return blob_url
+
+    content_type = resp.headers.get("content-type", "application/octet-stream")
+    encoded = base64.b64encode(resp.content).decode("ascii")
+    return f"data:{content_type};base64,{encoded}"
+
+
+def _encode_media_value(*, value: Optional[str], data_type: str) -> Optional[str]:
+    """
+    Return the value as-is for text, or base64-encode the referenced file for media types.
+
+    If the file cannot be read (missing, permissions, etc.) the original value is
+    returned so the frontend can still display *something*.
+
+    Returns:
+        The original value for text types, a ``data:`` URI for readable media files,
+        or the raw value when the file is inaccessible.
+    """
+    if not value or data_type not in _MEDIA_PATH_TYPES:
+        return value
+    # Already a data-URI — no need to re-encode
+    if value.startswith("data:"):
+        return value
+    # Looks like a local file path — read & encode
+    if os.path.isfile(value):
+        try:
+            mime, _ = mimetypes.guess_type(value)
+            mime = mime or "application/octet-stream"
+            with open(value, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("ascii")
+            return f"data:{mime};base64,{encoded}"
+        except Exception:
+            logger.warning("Failed to read media file %s; returning raw path", value, exc_info=True)
+    return value
+
 
 def attack_result_to_summary(
     ar: AttackResult,
     *,
-    pieces: Sequence[PyritMessagePiece],
+    stats: ConversationStats,
 ) -> AttackSummary:
     """
-    Build an AttackSummary DTO from an AttackResult and its message pieces.
-
-    Extracts only the frontend-relevant fields from the internal identifiers,
-    avoiding leakage of internal PyRIT core structures.
+    Build an AttackSummary DTO from an AttackResult.
 
     Args:
         ar: The domain AttackResult.
-        pieces: Pre-fetched message pieces for this conversation.
+        stats: Pre-aggregated conversation stats (from ``get_conversation_stats``).
 
     Returns:
         AttackSummary DTO ready for the API response.
     """
-    message_count = len({p.sequence for p in pieces})
-    last_preview = _get_preview_from_pieces(pieces)
+    message_count = stats.message_count
+    last_preview = stats.last_message_preview
+    labels = dict(stats.labels) if stats.labels else {}
 
     created_str = ar.metadata.get("created_at")
     updated_str = ar.metadata.get("updated_at")
@@ -68,17 +246,28 @@ def attack_result_to_summary(
     target_id = aid.get_child("objective_target") if aid else None
     converter_ids = aid.get_child_list("request_converters") if aid else []
 
+    target_info = (
+        TargetInfo(
+            target_type=target_id.class_name,
+            endpoint=target_id.params.get("endpoint") or None,
+            model_name=target_id.params.get("model_name") or None,
+        )
+        if target_id
+        else None
+    )
+
     return AttackSummary(
+        attack_result_id=ar.attack_result_id or "",
         conversation_id=ar.conversation_id,
         attack_type=aid.class_name if aid else "Unknown",
         attack_specific_params=aid.params or None if aid else None,
-        target_unique_name=target_id.unique_name if target_id else None,
-        target_type=target_id.class_name if target_id else None,
+        target=target_info,
         converters=[c.class_name for c in converter_ids] if converter_ids else [],
         outcome=ar.outcome.value,
         last_message_preview=last_preview,
         message_count=message_count,
-        labels=_collect_labels_from_pieces(pieces),
+        related_conversation_ids=[ref.conversation_id for ref in ar.related_conversations],
+        labels=labels,
         created_at=created_at,
         updated_at=updated_at,
     )
@@ -91,16 +280,25 @@ def pyrit_scores_to_dto(scores: list[PyritScore]) -> list[Score]:
     Returns:
         List of Score DTOs for the API.
     """
-    return [
-        Score(
-            score_id=str(s.id),
-            scorer_type=s.scorer_class_identifier.class_name,
-            score_value=float(s.score_value),
-            score_rationale=s.score_rationale,
-            scored_at=s.timestamp,
+    mapped_scores: List[Score] = []
+    for score in scores:
+        try:
+            score_value = float(score.score_value)
+        except (TypeError, ValueError):
+            logger.warning("Skipping score %s with non-numeric score_value=%r", score.id, score.score_value)
+            continue
+
+        mapped_scores.append(
+            Score(
+                score_id=str(score.id),
+                scorer_type=score.scorer_class_identifier.class_name,
+                score_value=score_value,
+                score_rationale=score.score_rationale,
+                scored_at=score.timestamp,
+            )
         )
-        for s in scores
-    ]
+
+    return mapped_scores
 
 
 def _infer_mime_type(*, value: Optional[str], data_type: PromptDataType) -> Optional[str]:
@@ -124,33 +322,114 @@ def _infer_mime_type(*, value: Optional[str], data_type: PromptDataType) -> Opti
     return mime_type
 
 
-def pyrit_messages_to_dto(pyrit_messages: list[PyritMessage]) -> list[Message]:
+def _build_filename(
+    *,
+    data_type: str,
+    sha256: Optional[str],
+    value: Optional[str],
+) -> Optional[str]:
+    """
+    Build a human-readable download filename from the data type and hash.
+
+    Produces names like ``image_a1b2c3d4.png`` or ``audio_e5f6g7h8.wav``.
+    The hash is truncated to 8 characters for readability.
+
+    Falls back to the file extension from *value* (path or URL) when the
+    MIME type cannot be determined from the data type alone.
+
+    Returns ``None`` for text-like types that don't need a download filename.
+
+    Args:
+        data_type: The prompt data type (e.g. ``image_path``, ``audio_path``).
+        sha256: The SHA256 hash of the content, if available.
+        value: The original value (path or URL) used to infer file extension.
+    """
+    # Map data types to friendly prefixes
+    _PREFIX_MAP = {
+        "image_path": "image",
+        "audio_path": "audio",
+        "video_path": "video",
+        "binary_path": "file",
+    }
+    prefix = _PREFIX_MAP.get(data_type)
+    if not prefix:
+        return None
+
+    short_hash = sha256[:8] if sha256 else uuid.uuid4().hex[:8]
+
+    # Derive extension from the value (file path or URL)
+    ext = ""
+    if value and not value.startswith("data:"):
+        source = value
+        if source.startswith("http"):
+            source = urlparse(source).path
+        ext = os.path.splitext(source)[1]  # e.g. ".png"
+
+    if not ext:
+        # Fallback: guess from mime type based on data type prefix
+        _DEFAULT_EXT = {"image": ".png", "audio": ".wav", "video": ".mp4", "file": ".bin"}
+        ext = _DEFAULT_EXT.get(prefix, ".bin")
+
+    return f"{prefix}_{short_hash}{ext}"
+
+
+async def pyrit_messages_to_dto_async(pyrit_messages: List[PyritMessage]) -> List[Message]:
     """
     Translate PyRIT messages to backend Message DTOs.
+
+    Local media files are base64-encoded into data URIs.  Azure Blob Storage
+    files are fetched server-side and converted to data URIs so the frontend
+    receives the same format regardless of storage backend.
 
     Returns:
         List of Message DTOs for the API.
     """
     messages = []
     for msg in pyrit_messages:
-        pieces = [
-            MessagePiece(
-                piece_id=str(p.id),
-                original_value_data_type=p.original_value_data_type or "text",
-                converted_value_data_type=p.converted_value_data_type or "text",
-                original_value=p.original_value,
-                original_value_mime_type=_infer_mime_type(
-                    value=p.original_value, data_type=p.original_value_data_type or "text"
-                ),
-                converted_value=p.converted_value or "",
-                converted_value_mime_type=_infer_mime_type(
-                    value=p.converted_value, data_type=p.converted_value_data_type or "text"
-                ),
-                scores=pyrit_scores_to_dto(p.scores) if p.scores else [],
-                response_error=p.response_error or "none",
+        pieces = []
+        for p in msg.message_pieces:
+            orig_dtype = p.original_value_data_type or "text"
+            conv_dtype = p.converted_value_data_type or "text"
+
+            orig_val = _encode_media_value(value=p.original_value, data_type=orig_dtype)
+            conv_val = _encode_media_value(value=p.converted_value or "", data_type=conv_dtype) or ""
+
+            # For streaming types (video), pass a signed URL directly instead of
+            # downloading and base64-encoding the entire file.
+            if orig_val and _is_azure_blob_url(orig_val):
+                if orig_dtype in _STREAMING_PATH_TYPES:
+                    orig_val = await _sign_blob_url_async(blob_url=orig_val)
+                else:
+                    orig_val = await _fetch_blob_as_data_uri_async(blob_url=orig_val)
+            if conv_val and _is_azure_blob_url(conv_val):
+                if conv_dtype in _STREAMING_PATH_TYPES:
+                    conv_val = await _sign_blob_url_async(blob_url=conv_val)
+                else:
+                    conv_val = await _fetch_blob_as_data_uri_async(blob_url=conv_val)
+
+            pieces.append(
+                MessagePiece(
+                    piece_id=str(p.id),
+                    original_value_data_type=orig_dtype,
+                    converted_value_data_type=conv_dtype,
+                    original_value=orig_val,
+                    original_value_mime_type=_infer_mime_type(value=p.original_value, data_type=orig_dtype),
+                    converted_value=conv_val,
+                    converted_value_mime_type=_infer_mime_type(value=p.converted_value, data_type=conv_dtype),
+                    scores=pyrit_scores_to_dto(p.scores) if p.scores else [],
+                    response_error=p.response_error or "none",
+                    original_filename=_build_filename(
+                        data_type=orig_dtype,
+                        sha256=p.original_value_sha256,
+                        value=p.original_value,
+                    ),
+                    converted_filename=_build_filename(
+                        data_type=conv_dtype,
+                        sha256=p.converted_value_sha256,
+                        value=p.converted_value,
+                    ),
+                )
             )
-            for p in msg.message_pieces
-        ]
 
         first = msg.message_pieces[0] if msg.message_pieces else None
         messages.append(
@@ -237,6 +516,7 @@ def request_to_pyrit_message(
         for p in request.pieces
     ]
     return PyritMessage(pieces)
+
 
 
 # ============================================================================
