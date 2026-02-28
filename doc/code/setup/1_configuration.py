@@ -131,6 +131,9 @@ target3 = OpenAIChatTarget(
 # The following example shows how to use PyRIT initializers. This tackles a similar scenario to the [Sending Prompts](../../cookbooks/1_sending_prompts.ipynb) but is much easier because defaults are set.
 
 # %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common.path import PYRIT_PATH
 from pyrit.executor.attack import (
     AttackConverterConfig,
@@ -175,7 +178,8 @@ objectives = [
 # This is similar to the cookbook "Sending a Million Prompts" but using defaults
 
 # Create target without extensive configuration (uses defaults from initializer)
-objective_target = OpenAIChatTarget()
+endpoint = os.environ["OPENAI_CHAT_ENDPOINT"]
+objective_target = OpenAIChatTarget(endpoint=endpoint, api_key=get_azure_openai_auth(endpoint))
 
 # TenseConverter automatically gets the default converter_target from our initializer
 converters = PromptConverterConfiguration.from_converters(converters=[TenseConverter(tense="past")])  # type: ignore

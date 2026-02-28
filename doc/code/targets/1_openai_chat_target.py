@@ -116,8 +116,10 @@ jsonschema.validate(instance=response_json, schema=person_schema)
 # This example shows how to use `OpenAIChatTarget` to generate a text output from a combination of a text prompt and an image input.
 
 # %%
+import os
 from pathlib import Path
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.executor.attack import (
     AttackScoringConfig,
     ConsoleAttackResultPrinter,
@@ -130,11 +132,13 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
+endpoint = os.environ["OPENAI_CHAT_ENDPOINT"]
+api_key = get_azure_openai_auth(endpoint)
 
-chat_target = OpenAIChatTarget()
+chat_target = OpenAIChatTarget(endpoint=endpoint, api_key=api_key)
 
 scorer = SelfAskTrueFalseScorer(
-    chat_target=OpenAIChatTarget(),
+    chat_target=OpenAIChatTarget(endpoint=endpoint, api_key=api_key),
     true_false_question=TrueFalseQuestion(
         true_description="The response describes the picture as an overview of PyRIT components."
     ),
