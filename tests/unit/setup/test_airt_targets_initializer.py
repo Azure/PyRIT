@@ -165,6 +165,23 @@ class TestAIRTTargetInitializerInitialize:
         assert target is not None
         assert target._model_name == "llama2"
 
+    @pytest.mark.asyncio
+    async def test_registers_gpt5_high_reasoning_with_extra_body_parameters(self):
+        """Test that GPT-5 high-reasoning target has extra_body_parameters set."""
+        os.environ["AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"] = "https://gpt5.openai.azure.com"
+        os.environ["AZURE_OPENAI_GPT5_KEY"] = "test_key"
+        os.environ["AZURE_OPENAI_GPT5_MODEL"] = "gpt-5"
+        os.environ["AZURE_OPENAI_GPT5_UNDERLYING_MODEL"] = "gpt-5"
+
+        init = AIRTTargetInitializer()
+        await init.initialize_async()
+
+        registry = TargetRegistry.get_registry_singleton()
+        assert "azure_openai_gpt5_responses_high_reasoning" in registry
+        target = registry.get_instance_by_name("azure_openai_gpt5_responses_high_reasoning")
+        assert target is not None
+        assert target._extra_body_parameters == {"reasoning": {"effort": "high"}}
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestAIRTTargetInitializerTargetConfigs:

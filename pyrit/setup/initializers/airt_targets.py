@@ -14,8 +14,8 @@ Note: This module only includes PRIMARY endpoint configurations from .env_exampl
 
 import logging
 import os
-from dataclasses import dataclass
-from typing import Any, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Type
 
 from pyrit.prompt_target import (
     AzureMLChatTarget,
@@ -45,6 +45,7 @@ class TargetConfig:
     key_var: str = ""  # Empty string means no auth required
     model_var: Optional[str] = None
     underlying_model_var: Optional[str] = None
+    extra_kwargs: Dict[str, Any] = field(default_factory=dict)
 
 
 # Define all supported target configurations.
@@ -169,6 +170,15 @@ TARGET_CONFIGS: list[TargetConfig] = [
         underlying_model_var="AZURE_OPENAI_GPT5_UNDERLYING_MODEL",
     ),
     TargetConfig(
+        registry_name="azure_openai_gpt5_responses_high_reasoning",
+        target_class=OpenAIResponseTarget,
+        endpoint_var="AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT5_KEY",
+        model_var="AZURE_OPENAI_GPT5_MODEL",
+        underlying_model_var="AZURE_OPENAI_GPT5_UNDERLYING_MODEL",
+        extra_kwargs={"extra_body_parameters": {"reasoning": {"effort": "high"}}},
+    ),
+    TargetConfig(
         registry_name="platform_openai_responses",
         target_class=OpenAIResponseTarget,
         endpoint_var="PLATFORM_OPENAI_RESPONSES_ENDPOINT",
@@ -243,12 +253,11 @@ TARGET_CONFIGS: list[TargetConfig] = [
     # Video Targets (OpenAIVideoTarget)
     # ============================================
     TargetConfig(
-        registry_name="azure_openai_video",
+        registry_name="openai_video",
         target_class=OpenAIVideoTarget,
-        endpoint_var="AZURE_OPENAI_VIDEO_ENDPOINT",
-        key_var="AZURE_OPENAI_VIDEO_KEY",
-        model_var="AZURE_OPENAI_VIDEO_MODEL",
-        underlying_model_var="AZURE_OPENAI_VIDEO_UNDERLYING_MODEL",
+        endpoint_var="OPENAI_VIDEO_ENDPOINT",
+        key_var="OPENAI_VIDEO_KEY",
+        model_var="OPENAI_VIDEO_MODEL",
     ),
     # ============================================
     # Completion Targets (OpenAICompletionTarget)
@@ -310,6 +319,7 @@ class AIRTTargetInitializer(PyRITInitializer):
 
     **OpenAI Responses Targets (OpenAIResponseTarget):**
     - AZURE_OPENAI_GPT5_RESPONSES_* - Azure OpenAI GPT-5 Responses
+    - AZURE_OPENAI_GPT5_RESPONSES_* (high reasoning) - Azure OpenAI GPT-5 Responses with high reasoning effort
     - PLATFORM_OPENAI_RESPONSES_* - Platform OpenAI Responses
     - AZURE_OPENAI_RESPONSES_* - Azure OpenAI Responses
 
@@ -415,6 +425,10 @@ class AIRTTargetInitializer(PyRITInitializer):
         # Add underlying_model if specified (for Azure deployments where name differs from model)
         if underlying_model is not None:
             kwargs["underlying_model"] = underlying_model
+
+        # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning)
+        if config.extra_kwargs:
+            kwargs.update(config.extra_kwargs)
 
         target = config.target_class(**kwargs)
         registry = TargetRegistry.get_registry_singleton()

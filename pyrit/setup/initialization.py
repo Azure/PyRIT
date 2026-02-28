@@ -284,14 +284,33 @@ async def initialize_pyrit_async(
         )
     CentralMemory.set_memory_instance(memory)
 
-    # Combine directly provided initializers with those loaded from scripts
+    await run_initializers_async(initializers=initializers, initialization_scripts=initialization_scripts)
+
+
+async def run_initializers_async(
+    *,
+    initializers: Optional[Sequence["PyRITInitializer"]] = None,
+    initialization_scripts: Optional[Sequence[Union[str, pathlib.Path]]] = None,
+) -> None:
+    """
+    Run initializers and initialization scripts without re-initializing memory or environment.
+
+    This is useful when memory and environment are already set up (e.g. via
+    :func:`initialize_pyrit_async`) and only the initializer step needs to run.
+
+    Args:
+        initializers: Optional sequence of PyRITInitializer instances to execute directly.
+        initialization_scripts: Optional sequence of Python script paths containing
+            PyRITInitializer classes.
+
+    Raises:
+        ValueError: If initializers are invalid or scripts cannot be loaded.
+    """
     all_initializers = list(initializers) if initializers else []
 
-    # Load additional initializers from scripts
     if initialization_scripts:
         script_initializers = _load_initializers_from_scripts(script_paths=initialization_scripts)
         all_initializers.extend(script_initializers)
 
-    # Execute all initializers (sorted by execution_order)
     if all_initializers:
         await _execute_initializers_async(initializers=all_initializers)
