@@ -6,7 +6,7 @@ import {
   Tooltip,
 } from '@fluentui/react-components'
 import { versionApi } from '../../services/api'
-import Navigation from '../Sidebar/Navigation'
+import Navigation, { type ViewName } from '../Sidebar/Navigation'
 
 const useStyles = makeStyles({
   root: {
@@ -62,28 +62,36 @@ const useStyles = makeStyles({
 
 interface MainLayoutProps {
   children: React.ReactNode
+  currentView: ViewName
+  onNavigate: (view: ViewName) => void
   onToggleTheme: () => void
   isDarkMode: boolean
 }
 
 export default function MainLayout({
   children,
+  currentView,
+  onNavigate,
   onToggleTheme,
   isDarkMode,
 }: MainLayoutProps) {
   const styles = useStyles()
   const [version, setVersion] = useState<string>('Loading...')
+  const [databaseInfo, setDatabaseInfo] = useState<string | null>(null)
 
   useEffect(() => {
     versionApi.getVersion()
-      .then(data => setVersion(data.display || data.version))
+      .then(data => {
+        setVersion(data.display || data.version)
+        setDatabaseInfo(data.database_info ?? null)
+      })
       .catch(() => setVersion('Unknown'))
   }, [])
 
   return (
     <div className={styles.root}>
       <div className={styles.topBar}>
-        <Tooltip content={`PyRIT ${version}`} relationship="label">
+        <Tooltip content={<>{`PyRIT ${version}`}{databaseInfo && <><br />{databaseInfo}</>}</>} relationship="label">
           <img
             src="/roakey.png"
             alt="Co-PyRIT Logo"
@@ -96,6 +104,8 @@ export default function MainLayout({
       <div className={styles.contentArea}>
         <aside className={styles.sidebar}>
           <Navigation
+            currentView={currentView}
+            onNavigate={onNavigate}
             onToggleTheme={onToggleTheme}
             isDarkMode={isDarkMode}
           />

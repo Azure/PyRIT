@@ -106,8 +106,8 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
-        run: npm run test:e2e
+      - name: Run E2E tests (seeded mode)
+        run: npm run test:e2e:seeded
         env:
           CI: true
 

@@ -1,7 +1,9 @@
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 import InputBox from "./InputBox";
+import type { InputBoxHandle } from "./InputBox";
 
 // Wrapper component for Fluent UI context
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -329,6 +331,58 @@ describe("InputBox", () => {
     });
   });
 
+  it("should show single-turn warning when target does not support multiturn chat", () => {
+    render(
+      <TestWrapper>
+        <InputBox
+          {...defaultProps}
+          activeTarget={{
+            target_registry_name: "test",
+            target_type: "TextTarget",
+            supports_multiturn_chat: false,
+          }}
+        />
+      </TestWrapper>
+    );
+
+    expect(
+      screen.getByText(
+        /does not track conversation history/
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("should not show single-turn warning when target supports multiturn chat", () => {
+    render(
+      <TestWrapper>
+        <InputBox
+          {...defaultProps}
+          activeTarget={{
+            target_registry_name: "test",
+            target_type: "OpenAIChatTarget",
+            supports_multiturn_chat: true,
+          }}
+        />
+      </TestWrapper>
+    );
+
+    expect(
+      screen.queryByText(/does not track conversation history/)
+    ).not.toBeInTheDocument();
+  });
+
+  it("should not show single-turn warning when no active target", () => {
+    render(
+      <TestWrapper>
+        <InputBox {...defaultProps} activeTarget={null} />
+      </TestWrapper>
+    );
+
+    expect(
+      screen.queryByText(/does not track conversation history/)
+    ).not.toBeInTheDocument();
+  });
+
   it("should handle multiple file attachments", async () => {
     const user = userEvent.setup();
 
@@ -354,5 +408,97 @@ describe("InputBox", () => {
       expect(screen.getByText(/photo\.png/)).toBeInTheDocument();
       expect(screen.getByText(/audio\.mp3/)).toBeInTheDocument();
     });
+  });
+
+  it("should show attachment chip when addAttachment is called via ref", async () => {
+    const ref = React.createRef<InputBoxHandle>();
+
+    render(
+      <TestWrapper>
+        <InputBox ref={ref} {...defaultProps} />
+      </TestWrapper>
+    );
+
+    // Programmatically add an attachment via the ref
+    React.act(() => {
+      ref.current?.addAttachment({
+        type: "image",
+        name: "forwarded.png",
+        url: "data:image/png;base64,abc=",
+        mimeType: "image/png",
+        size: 512,
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/forwarded\.png/)).toBeInTheDocument();
+    });
+
+    // Send button should be enabled since there's an attachment
+    expect(screen.getByTitle("Send message")).toBeEnabled();
+  });
+
+  it("should show single-turn banner when singleTurnLimitReached is true", () => {
+    render(
+      <TestWrapper>
+        <InputBox
+          {...defaultProps}
+          singleTurnLimitReached={true}
+          onNewConversation={jest.fn()}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("single-turn-banner")).toBeInTheDocument();
+    expect(screen.getByText(/only supports single-turn/)).toBeInTheDocument();
+    expect(screen.getByTestId("new-conversation-btn")).toBeInTheDocument();
+    // Input area should not be rendered
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("should call onNewConversation when New Conversation button clicked", async () => {
+    const user = userEvent.setup();
+    const onNewConversation = jest.fn();
+
+    render(
+      <TestWrapper>
+        <InputBox
+          {...defaultProps}
+          singleTurnLimitReached={true}
+          onNewConversation={onNewConversation}
+        />
+      </TestWrapper>
+    );
+
+    await user.click(screen.getByTestId("new-conversation-btn"));
+    expect(onNewConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it("should not show New Conversation button when onNewConversation is not provided", () => {
+    render(
+      <TestWrapper>
+        <InputBox
+          {...defaultProps}
+          singleTurnLimitReached={true}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("single-turn-banner")).toBeInTheDocument();
+    expect(screen.queryByTestId("new-conversation-btn")).not.toBeInTheDocument();
+  });
+
+  it("should show normal input when singleTurnLimitReached is false", () => {
+    render(
+      <TestWrapper>
+        <InputBox
+          {...defaultProps}
+          singleTurnLimitReached={false}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.queryByTestId("single-turn-banner")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 });

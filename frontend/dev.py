@@ -8,6 +8,7 @@ Cross-platform script to manage PyRIT UI development servers
 import json
 import os
 import platform
+import signal
 import subprocess
 import sys
 import time
@@ -22,6 +23,8 @@ sys.stderr.reconfigure(errors="replace")  # type: ignore[attr-defined]
 # Determine workspace root (parent of frontend directory)
 FRONTEND_DIR = Path(__file__).parent.absolute()
 WORKSPACE_ROOT = FRONTEND_DIR.parent
+DEVPY_LOG_FILE = Path.home() / ".pyrit" / "dev.log"
+DEVPY_PID_FILE = Path.home() / ".pyrit" / "dev.pid"
 
 
 def is_windows():
@@ -56,38 +59,74 @@ def sync_version():
         print(f"⚠️  Warning: Could not sync version: {e}")
 
 
-def kill_process_by_pattern(pattern):
-    """Kill processes matching a pattern (cross-platform)"""
+def find_pids_by_pattern(pattern):
+    """Find PIDs of processes matching a pattern (cross-platform).
+
+    Returns:
+        list[int]: List of matching process IDs.
+    """
+    pids = []
     try:
         if is_windows():
-            # Windows: use taskkill
-            subprocess.run(
-                f'taskkill /F /FI "COMMANDLINE like %{pattern}%" >nul 2>&1',
-                shell=True,
+            result = subprocess.run(
+                ["wmic", "process", "where", f"CommandLine like '%{pattern}%'", "get", "ProcessId"],
+                capture_output=True,
+                text=True,
                 check=False,
             )
+            for line in result.stdout.strip().splitlines():
+                line = line.strip()
+                if line.isdigit():
+                    pids.append(int(line))
         else:
-            # Unix: use pkill
-            subprocess.run(["pkill", "-f", pattern], check=False, stderr=subprocess.DEVNULL)
-    except Exception as e:
-        print(f"Warning: Could not kill {pattern}: {e}")
+            result = subprocess.run(
+                ["pgrep", "-f", pattern],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            for line in result.stdout.strip().splitlines():
+                line = line.strip()
+                if line.isdigit():
+                    pid = int(line)
+                    # Don't include our own process
+                    if pid != os.getpid():
+                        pids.append(pid)
+    except Exception:
+        pass
+    return pids
+
+
+def kill_pids(pids):
+    """Kill a list of processes by PID."""
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            pass
 
 
 def stop_servers():
     """Stop all running servers"""
     print("🛑 Stopping servers...")
-    kill_process_by_pattern("pyrit.backend.main")
-    kill_process_by_pattern("vite")
-    time.sleep(1)
+    backend_pids = find_pids_by_pattern("pyrit.cli.pyrit_backend")
+    frontend_pids = find_pids_by_pattern("node.*vite")
+    # Also find any parent dev.py processes (detached wrappers)
+    wrapper_pids = find_pids_by_pattern("frontend/dev.py")
+    all_pids = backend_pids + frontend_pids + wrapper_pids
+    if all_pids:
+        print(f"   Killing PIDs: {all_pids}")
+        kill_pids(all_pids)
+        time.sleep(1)
     print("✅ Servers stopped")
 
 
-def start_backend(initializers: list[str] | None = None):
+def start_backend(*, config_file: str | None = None, initializers: list[str] | None = None):
     """Start the FastAPI backend using pyrit_backend CLI.
 
-    Args:
-        initializers: Optional list of initializer names to run at startup.
-            If not specified, no initializers are run.
+    Configuration (initializers, database, env files) is read automatically
+    from ~/.pyrit/.pyrit_conf by the pyrit_backend CLI via ConfigurationLoader,
+    unless overridden with *config_file*.
     """
     print("🚀 Starting backend on port 8000...")
 
@@ -98,11 +137,6 @@ def start_backend(initializers: list[str] | None = None):
     env = os.environ.copy()
     env["PYRIT_DEV_MODE"] = "true"
 
-    # Default to no initializers
-    if initializers is None:
-        initializers = []
-
-    # Build command using pyrit_backend CLI
     cmd = [
         sys.executable,
         "-m",
@@ -114,6 +148,8 @@ def start_backend(initializers: list[str] | None = None):
         "--log-level",
         "info",
     ]
+    if config_file:
+        cmd.extend(["--config-file", config_file])
 
     # Add initializers if specified
     if initializers:
@@ -135,12 +171,15 @@ def start_frontend():
     return subprocess.Popen([npm_cmd, "run", "dev"])
 
 
-def start_servers():
+def start_servers(*, config_file: str | None = None):
     """Start both backend and frontend servers"""
     print("🚀 Starting PyRIT UI servers...")
     print()
 
-    backend = start_backend()
+    # Kill any stale processes from prior sessions
+    stop_servers()
+
+    backend = start_backend(config_file=config_file)
     print("⏳ Waiting for backend to initialize...")
     time.sleep(5)  # Give backend more time to fully start up
 
@@ -184,13 +223,65 @@ def wait_for_interrupt(backend, frontend):
         print("✅ Servers stopped")
 
 
+def start_detached(*, config_file: str | None = None):
+    """Re-launch this script in a fully detached background process.
+
+    The detached process writes stdout/stderr to DEVPY_LOG_FILE and its PID
+    is recorded in DEVPY_PID_FILE so ``stop`` can find it.
+    """
+    DEVPY_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    cmd = [sys.executable, str(Path(__file__).absolute())]
+    if config_file:
+        cmd.extend(["--config-file", config_file])
+
+    log_fh = open(DEVPY_LOG_FILE, "w")
+    proc = subprocess.Popen(
+        cmd,
+        stdout=log_fh,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+    DEVPY_PID_FILE.write_text(str(proc.pid))
+    print(f"🚀 dev.py started in background (PID: {proc.pid})")
+    print(f"   Logs: {DEVPY_LOG_FILE}")
+    print(f"   Stop: python {Path(__file__).name} stop")
+
+
+def show_logs(*, follow: bool = False, lines: int = 50):
+    """Show dev.py logs."""
+    if not DEVPY_LOG_FILE.exists():
+        print(f"No log file found at {DEVPY_LOG_FILE}")
+        return
+    if follow:
+        subprocess.run(["tail", "-f", "-n", str(lines), str(DEVPY_LOG_FILE)])
+    else:
+        subprocess.run(["tail", "-n", str(lines), str(DEVPY_LOG_FILE)])
+
+
 def main():
     """Main entry point"""
     # Sync version before any operation
     sync_version()
 
-    if len(sys.argv) > 1:
-        command = sys.argv[1].lower()
+    # Extract --config-file and --detach from argv
+    config_file: str | None = None
+    detach = False
+    argv = list(sys.argv[1:])
+    if "--config-file" in argv:
+        idx = argv.index("--config-file")
+        if idx + 1 < len(argv):
+            config_file = argv[idx + 1]
+            argv = argv[:idx] + argv[idx + 2:]
+        else:
+            print("ERROR: --config-file requires a path argument")
+            sys.exit(1)
+    if "--detach" in argv:
+        argv.remove("--detach")
+        detach = True
+
+    if argv:
+        command = argv[0].lower()
 
         if command == "stop":
             stop_servers()
@@ -198,11 +289,22 @@ def main():
         if command == "restart":
             stop_servers()
             time.sleep(1)
+            # Fall through to start
         elif command == "start":
             pass  # Just start both
+        elif command == "logs":
+            follow = "-f" in argv or "--follow" in argv
+            show_logs(follow=follow)
+            return
         elif command == "backend":
             print("🚀 Starting backend only...")
-            backend = start_backend()
+            # Kill stale backend processes
+            stale = find_pids_by_pattern("pyrit.cli.pyrit_backend")
+            if stale:
+                print(f"   Killing stale backend PIDs: {stale}")
+                kill_pids(stale)
+                time.sleep(1)
+            backend = start_backend(config_file=config_file)
             print(f"✅ Backend running on http://localhost:8000 (PID: {backend.pid})")
             print("   API Docs: http://localhost:8000/docs")
             print("\nPress Ctrl+C to stop")
@@ -216,6 +318,12 @@ def main():
             return
         elif command == "frontend":
             print("🎨 Starting frontend only...")
+            # Kill stale frontend processes
+            stale = find_pids_by_pattern("node.*vite")
+            if stale:
+                print(f"   Killing stale frontend PIDs: {stale}")
+                kill_pids(stale)
+                time.sleep(1)
             frontend = start_frontend()
             print(f"✅ Frontend running on http://localhost:3000 (PID: {frontend.pid})")
             print("\nPress Ctrl+C to stop")
@@ -229,11 +337,19 @@ def main():
             return
         else:
             print(f"Unknown command: {command}")
-            print("Usage: python dev.py [start|stop|restart|backend|frontend]")
+            print(
+                "Usage: python dev.py [start|stop|restart|backend|frontend|logs] "
+                "[--config-file PATH] [--detach]"
+            )
             sys.exit(1)
 
+    # If --detach, re-launch in background and exit immediately
+    if detach:
+        start_detached(config_file=config_file)
+        return
+
     # Start servers
-    backend, frontend = start_servers()
+    backend, frontend = start_servers(config_file=config_file)
 
     # Wait for interrupt
     wait_for_interrupt(backend, frontend)

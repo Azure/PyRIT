@@ -17,8 +17,14 @@ export default defineConfig({
 
   projects: [
     {
-      name: "chromium",
+      name: "seeded",
       use: { ...devices["Desktop Chrome"] },
+      grep: /@seeded/,
+    },
+    {
+      name: "live",
+      use: { ...devices["Desktop Chrome"] },
+      grep: /@live/,
     },
     // Firefox can be enabled by installing: npx playwright install firefox
     // {
