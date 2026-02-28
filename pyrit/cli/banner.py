@@ -90,13 +90,23 @@ LIGHT_THEME: dict[ColorRole, str] = {
 
 
 def _get_color(role: ColorRole, theme: dict[ColorRole, str]) -> str:
-    """Resolve a color role to an ANSI escape sequence."""
+    """
+    Resolve a color role to an ANSI escape sequence.
+
+    Returns:
+        The ANSI escape sequence string for the given role.
+    """
     color_name = theme.get(role, "reset")
     return ANSI_COLORS.get(color_name, ANSI_COLORS["reset"])
 
 
 def _detect_theme() -> dict[ColorRole, str]:
-    """Detect whether terminal is light or dark themed. Defaults to dark."""
+    """
+    Detect whether terminal is light or dark themed. Defaults to dark.
+
+    Returns:
+        The theme color mapping dictionary.
+    """
     # COLORFGBG is set by some terminals (e.g. xterm): "fg;bg"
     colorfgbg = os.environ.get("COLORFGBG", "")
     if colorfgbg:
@@ -125,7 +135,12 @@ class AnimationFrame:
 
 
 def can_animate() -> bool:
-    """Check whether the terminal supports animation."""
+    """
+    Check whether the terminal supports animation.
+
+    Returns:
+        True if the terminal supports animation, False otherwise.
+    """
     if not sys.stdout.isatty():
         return False
     if os.environ.get("NO_COLOR"):
@@ -133,9 +148,7 @@ def can_animate() -> bool:
     if os.environ.get("PYRIT_NO_ANIMATION"):
         return False
     # CI environments
-    if os.environ.get("CI"):
-        return False
-    return True
+    return not os.environ.get("CI")
 
 
 # ── Raccoon braille art ────────────────────────────────────────────────────────
@@ -182,7 +195,12 @@ PYRIT_START_ROW = 2  # PYRIT text starts at this row within the header
 
 
 def _box_line(content: str) -> str:
-    """Wrap content in box border chars, padded to BOX_W."""
+    """
+    Wrap content in box border chars, padded to BOX_W.
+
+    Returns:
+        The content wrapped in box border characters.
+    """
     return "║" + content.ljust(BOX_W) + "║"
 
 
@@ -194,7 +212,12 @@ def _empty_line() -> str:
 
 
 def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, list[tuple[int, int, ColorRole]]]]:
-    """Build the static banner lines, color map, and per-segment colors."""
+    """
+    Build the static banner lines, color map, and per-segment colors.
+
+    Returns:
+        A tuple of (lines, color_map, segment_colors).
+    """
     raccoon = BRAILLE_RACCOON
     lines: list[str] = []
     color_map: dict[int, ColorRole] = {}
@@ -334,7 +357,12 @@ STATIC_BANNER_LINES, STATIC_COLOR_MAP, STATIC_SEGMENT_COLORS = _build_static_ban
 
 
 def _build_animation_frames() -> list[AnimationFrame]:
-    """Build the sequence of animation frames."""
+    """
+    Build the sequence of animation frames.
+
+    Returns:
+        A list of AnimationFrame objects.
+    """
     frames: list[AnimationFrame] = []
     target_height = len(STATIC_BANNER_LINES)
     top = "╔" + "═" * BOX_W + "╗"
@@ -443,7 +471,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
         [(1, 55, "✧"), (5, 75, "✦"), (9, 45, "·"), (3, 80, "*")],
         [],  # final frame = clean (matches static banner)
     ]
-    for sparkle_idx, spots in enumerate(sparkle_spots):
+    for spots in sparkle_spots:
         lines = [top, empty]
         color_map = {0: ColorRole.BORDER, 1: ColorRole.BORDER}
         seg_colors = {}
@@ -469,7 +497,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
                     full_line = full_line[:s_col] + s_char + full_line[s_col + 1:]
 
             # Per-segment colors
-            segs: list[tuple[int, int, ColorRole]] = [
+            segs = [
                 (0, 1, ColorRole.BORDER),
                 (1, 1 + RACCOON_COL, ColorRole.RACCOON_BODY),
             ]
@@ -536,7 +564,12 @@ def _render_line_with_segments(
     segments: list[tuple[int, int, ColorRole]],
     theme: dict[ColorRole, str],
 ) -> str:
-    """Render a line with per-segment coloring (handles overlapping segments)."""
+    """
+    Render a line with per-segment coloring (handles overlapping segments).
+
+    Returns:
+        The rendered line string with ANSI color codes.
+    """
     reset = _get_color(ColorRole.RESET, theme)
     # Build per-character color map (later segments override earlier ones)
     char_roles: list[Optional[ColorRole]] = [None] * len(line)
@@ -559,7 +592,12 @@ def _render_line_with_segments(
 
 
 def _render_frame(frame: AnimationFrame, theme: dict[ColorRole, str]) -> str:
-    """Render a single frame with colors applied."""
+    """
+    Render a single frame with colors applied.
+
+    Returns:
+        The rendered frame string with ANSI color codes.
+    """
     reset = _get_color(ColorRole.RESET, theme)
     rendered_lines: list[str] = []
     for i, line in enumerate(frame.lines):
@@ -573,7 +611,12 @@ def _render_frame(frame: AnimationFrame, theme: dict[ColorRole, str]) -> str:
 
 
 def _render_static_banner(theme: dict[ColorRole, str]) -> str:
-    """Render the static banner with colors."""
+    """
+    Render the static banner with colors.
+
+    Returns:
+        The rendered static banner string with ANSI color codes.
+    """
     reset = _get_color(ColorRole.RESET, theme)
     rendered_lines: list[str] = []
     for i, line in enumerate(STATIC_BANNER_LINES):
@@ -589,7 +632,12 @@ def _render_static_banner(theme: dict[ColorRole, str]) -> str:
 
 
 def get_static_banner() -> str:
-    """Get the static (non-animated) banner string, with colors if supported."""
+    """
+    Get the static (non-animated) banner string, with colors if supported.
+
+    Returns:
+        The static banner string.
+    """
     if sys.stdout.isatty() and not os.environ.get("NO_COLOR"):
         theme = _detect_theme()
         return _render_static_banner(theme)
