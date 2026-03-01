@@ -52,6 +52,9 @@ from pyrit.datasets.seed_datasets.remote.mlcommons_ailuminate_dataset import (
 from pyrit.datasets.seed_datasets.remote.multilingual_vulnerability_dataset import (  # noqa: F401
     _MultilingualVulnerabilityDataset,
 )
+from pyrit.datasets.seed_datasets.remote.or_bench_dataset import (
+    _ORBenchDataset,
+)  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.pku_safe_rlhf_dataset import (
     _PKUSafeRLHFDataset,
 )  # noqa: F401
@@ -103,6 +106,7 @@ __all__ = [
     "_LibrAIDoNotAnswerDataset",
     "_MedSafetyBenchDataset",
     "_MLCommonsAILuminateDataset",
+    "_ORBenchDataset",
     "_PKUSafeRLHFDataset",
     "PromptIntelCategory",
     "PromptIntelSeverity",
