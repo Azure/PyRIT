@@ -1,0 +1,110 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+import logging
+
+from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
+    _RemoteDatasetLoader,
+)
+from pyrit.models import SeedDataset, SeedPrompt
+
+logger = logging.getLogger(__name__)
+
+
+class _BeaverTailsDataset(_RemoteDatasetLoader):
+    """
+    Loader for the BeaverTails dataset from HuggingFace.
+
+    BeaverTails contains 330k+ question-answer pairs annotated across 14 harm categories.
+    It is widely used for safety alignment research. This loader filters to unsafe entries
+    by default.
+
+    References:
+        - https://huggingface.co/datasets/PKU-Alignment/BeaverTails
+        - https://arxiv.org/abs/2307.04657
+        - https://github.com/PKU-Alignment/beavertails
+    """
+
+    def __init__(
+        self,
+        *,
+        dataset_name: str = "PKU-Alignment/BeaverTails",
+        split: str = "330k_train",
+        unsafe_only: bool = True,
+    ):
+        """
+        Initialize the BeaverTails dataset loader.
+
+        Args:
+            dataset_name: HuggingFace dataset identifier. Defaults to "PKU-Alignment/BeaverTails".
+            split: Dataset split to load. Defaults to "330k_train".
+            unsafe_only: If True, only load entries marked as unsafe. Defaults to True.
+        """
+        self.hf_dataset_name = dataset_name
+        self.split = split
+        self.unsafe_only = unsafe_only
+
+    @property
+    def dataset_name(self) -> str:
+        """Return the dataset name."""
+        return "beaver_tails"
+
+    async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
+        """
+        Fetch BeaverTails dataset from HuggingFace and return as SeedDataset.
+
+        Args:
+            cache: Whether to cache the fetched dataset. Defaults to True.
+
+        Returns:
+            SeedDataset: A SeedDataset containing the BeaverTails prompts.
+        """
+        logger.info(f"Loading BeaverTails dataset from {self.hf_dataset_name}")
+
+        data = await self._fetch_from_huggingface(
+            dataset_name=self.hf_dataset_name,
+            split=self.split,
+            cache=cache,
+        )
+
+        authors = [
+            "Jiaming Ji",
+            "Mickel Liu",
+            "Juntao Dai",
+            "Xuehai Pan",
+            "Chi Zhang",
+            "Ce Bian",
+            "Boyuan Chen",
+            "Ruiyang Sun",
+            "Yizhou Wang",
+            "Yaodong Yang",
+        ]
+        description = (
+            "BeaverTails is a collection of 330k+ human-LLM QA pairs annotated across 14 harm "
+            "categories, designed for safety alignment research. Introduced in 'BeaverTails: "
+            "Towards Improved Safety Alignment of LLM via a Human-Preference Dataset' (2023)."
+        )
+
+        seed_prompts = []
+        for item in data:
+            if self.unsafe_only and item["is_safe"]:
+                continue
+
+            harm_categories = [k for k, v in item["category"].items() if v]
+
+            seed_prompts.append(
+                SeedPrompt(
+                    value=item["prompt"],
+                    data_type="text",
+                    dataset_name=self.dataset_name,
+                    harm_categories=harm_categories,
+                    description=description,
+                    source=f"https://huggingface.co/datasets/{self.hf_dataset_name}",
+                    authors=authors,
+                    groups=["Institute for Artificial Intelligence", "CFCS, School of Computer Science"],
+                )
+            )
+
+        logger.info(f"Successfully loaded {len(seed_prompts)} prompts from BeaverTails dataset")
+
+        return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)
