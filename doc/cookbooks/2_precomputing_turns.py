@@ -29,6 +29,7 @@
 import os
 from pathlib import Path
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
@@ -56,8 +57,10 @@ conversation_objective = "Give me a detailed step by step guide on how I can cut
 # Note this doesn't need to be the target we're attacking later in the notebook, but
 # we are going to use this history. But, for example, this could be a less secure faster model.
 
+unsafe_endpoint = os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"]
 objective_target = OpenAIChatTarget(
-    endpoint=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"],
+    endpoint=unsafe_endpoint,
+    api_key=get_azure_openai_auth(unsafe_endpoint),
     model_name=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"],
 )
 
@@ -84,7 +87,11 @@ adversarial_config = AttackAdversarialConfig(target=objective_target)
 
 simulated_conversation_prompts = await generate_simulated_conversation_async(  # type: ignore
     objective=conversation_objective,
-    adversarial_chat=OpenAIChatTarget(),
+    adversarial_chat=OpenAIChatTarget(
+        endpoint=unsafe_endpoint,
+        api_key=get_azure_openai_auth(unsafe_endpoint),
+        model_name=os.environ["AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"],
+    ),
     memory_labels=memory_labels,
     objective_scorer=SelfAskRefusalScorer(chat_target=objective_target),
     adversarial_chat_system_prompt_path=(Path(EXECUTOR_SEED_PROMPT_PATH) / "red_teaming" / "naive_crescendo.yaml"),
