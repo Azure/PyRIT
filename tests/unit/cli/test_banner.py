@@ -4,8 +4,6 @@
 import os
 from unittest.mock import patch
 
-import pytest
-
 from pyrit.cli.banner import (
     ANSI_COLORS,
     DARK_THEME,
@@ -87,9 +85,7 @@ class TestCanAnimate:
             assert can_animate() is False
 
     def test_can_animate_in_normal_tty(self) -> None:
-        with patch("sys.stdout") as mock_stdout, patch.dict(
-            os.environ, {}, clear=True
-        ):
+        with patch("sys.stdout") as mock_stdout, patch.dict(os.environ, {}, clear=True):
             mock_stdout.isatty.return_value = True
             # Remove env vars that would block animation
             os.environ.pop("NO_COLOR", None)

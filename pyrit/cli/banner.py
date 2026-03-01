@@ -395,10 +395,10 @@ def _build_animation_frames() -> list[AnimationFrame]:
             content = padded[:BOX_W].ljust(BOX_W)
             # Add trailing stars in later frames
             if i >= 2:
-                for s_row, s_col in star_positions[:i - 1]:
+                for s_row, s_col in star_positions[: i - 1]:
                     if r_idx == s_row and s_col < BOX_W and content[s_col] == " ":
                         star = star_chars[(s_row + i) % len(star_chars)]
-                        content = content[:s_col] + star + content[s_col + 1:]
+                        content = content[:s_col] + star + content[s_col + 1 :]
                         line_idx = len(lines)
                         seg_colors.setdefault(line_idx, []).append(
                             (s_col + 1, s_col + 2, ColorRole.SPARKLE)  # +1 for ║
@@ -410,8 +410,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
         color_map[len(lines)] = ColorRole.BORDER
         lines.append(mid)
         _pad_to_height(lines, color_map)
-        frames.append(AnimationFrame(lines=lines, color_map=color_map,
-                                     segment_colors=seg_colors, duration=0.18))
+        frames.append(AnimationFrame(lines=lines, color_map=color_map, segment_colors=seg_colors, duration=0.18))
 
     # ── Phase 2: PYRIT text reveals left-to-right (4 frames) ──────────────
     reveal_steps = [9, 18, 27, PYRIT_WIDTH]
@@ -462,8 +461,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
         color_map[len(lines)] = ColorRole.BORDER
         lines.append(mid)
         _pad_to_height(lines, color_map)
-        frames.append(AnimationFrame(lines=lines, color_map=color_map,
-                                     segment_colors=seg_colors, duration=0.15))
+        frames.append(AnimationFrame(lines=lines, color_map=color_map, segment_colors=seg_colors, duration=0.15))
 
     # ── Phase 3: Sparkle celebration (3 frames) ───────────────────────────
     sparkle_spots = [
@@ -494,7 +492,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
             # Add sparkle characters
             for s_row, s_col, s_char in spots:
                 if row_i == s_row and 1 < s_col < BOX_W and full_line[s_col] == " ":
-                    full_line = full_line[:s_col] + s_char + full_line[s_col + 1:]
+                    full_line = full_line[:s_col] + s_char + full_line[s_col + 1 :]
 
             # Per-segment colors
             segs = [
@@ -520,14 +518,11 @@ def _build_animation_frames() -> list[AnimationFrame]:
         color_map[len(lines)] = ColorRole.BORDER
         lines.append(mid)
         _pad_to_height(lines, color_map)
-        frames.append(AnimationFrame(lines=lines, color_map=color_map,
-                                     segment_colors=seg_colors, duration=0.2))
+        frames.append(AnimationFrame(lines=lines, color_map=color_map, segment_colors=seg_colors, duration=0.2))
 
     # ── Phase 4: Commands section reveals (2 frames) ──────────────────────
     # Use the actual static banner lines, revealing commands section
-    header_end = next(
-        i for i, line in enumerate(STATIC_BANNER_LINES) if "╠" in line
-    ) + 1  # line after mid divider
+    header_end = next(i for i, line in enumerate(STATIC_BANNER_LINES) if "╠" in line) + 1  # line after mid divider
     cmd_start = header_end
     cmd_lines = STATIC_BANNER_LINES[cmd_start:]
 
@@ -553,8 +548,7 @@ def _build_animation_frames() -> list[AnimationFrame]:
                     seg_colors[len(lines)] = STATIC_SEGMENT_COLORS[src_idx]
                 lines.append(cl)
 
-        frames.append(AnimationFrame(lines=lines, color_map=color_map,
-                                     segment_colors=seg_colors, duration=0.15))
+        frames.append(AnimationFrame(lines=lines, color_map=color_map, segment_colors=seg_colors, duration=0.15))
 
     return frames
 
@@ -621,9 +615,7 @@ def _render_static_banner(theme: dict[ColorRole, str]) -> str:
     rendered_lines: list[str] = []
     for i, line in enumerate(STATIC_BANNER_LINES):
         if i in STATIC_SEGMENT_COLORS:
-            rendered_lines.append(
-                _render_line_with_segments(line, STATIC_SEGMENT_COLORS[i], theme)
-            )
+            rendered_lines.append(_render_line_with_segments(line, STATIC_SEGMENT_COLORS[i], theme))
         else:
             role = STATIC_COLOR_MAP.get(i, ColorRole.BORDER)
             color = _get_color(role, theme)
