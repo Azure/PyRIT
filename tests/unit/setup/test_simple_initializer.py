@@ -64,6 +64,14 @@ class TestSimpleInitializerInitialize:
             await init.initialize_async()
 
     @pytest.mark.asyncio
+    async def test_initialize_non_azure_endpoint_without_key_raises(self):
+        """Test that a non-Azure endpoint without an API key raises ValueError."""
+        os.environ["OPENAI_CHAT_ENDPOINT"] = "https://api.openai.com/v1"
+        init = SimpleInitializer()
+        with pytest.raises(ValueError, match="OPENAI_CHAT_KEY environment variable is required"):
+            await init.initialize_async()
+
+    @pytest.mark.asyncio
     async def test_get_info_after_initialize_has_populated_data(self):
         """Test that get_info_async() returns populated data after initialization."""
         os.environ["OPENAI_CHAT_KEY"] = "test_key"

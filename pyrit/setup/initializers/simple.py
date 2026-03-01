@@ -89,18 +89,28 @@ class SimpleInitializer(PyRITInitializer):
         Get the API key or Entra auth token provider.
 
         Returns the OPENAI_CHAT_KEY if set, otherwise falls back to
-        Entra ID authentication for Azure endpoints.
+        Entra ID authentication for Azure endpoints. Raises an error
+        if the endpoint is non-Azure and no API key is configured.
 
         Returns:
             API key string or async token provider callable.
+
+        Raises:
+            ValueError: If no API key is set and the endpoint is not an Azure endpoint.
         """
         api_key = os.getenv("OPENAI_CHAT_KEY")
         if api_key:
             return api_key
 
+        endpoint = os.environ["OPENAI_CHAT_ENDPOINT"]
+        if "azure" not in endpoint.lower():
+            raise ValueError(
+                "OPENAI_CHAT_KEY environment variable is required for non-Azure endpoints. "
+                "Entra ID authentication is only supported for Azure endpoints."
+            )
+
         from pyrit.auth import get_azure_openai_auth
 
-        endpoint = os.environ["OPENAI_CHAT_ENDPOINT"]
         return get_azure_openai_auth(endpoint)
 
     async def initialize_async(self) -> None:
