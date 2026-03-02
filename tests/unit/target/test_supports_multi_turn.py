@@ -11,11 +11,11 @@ class TestSupportsMultiTurn:
     """Test the supports_multi_turn property across the target hierarchy."""
 
     def test_prompt_target_defaults_to_false(self, patch_central_database):
-        from pyrit.prompt_target import PromptTarget
-
         # PromptTarget is abstract, so we use a concrete subclass
         # MockPromptTarget inherits from PromptChatTarget, so use a PromptTarget mock
         from unittest.mock import MagicMock
+
+        from pyrit.prompt_target import PromptTarget
 
         target = MagicMock(spec=PromptTarget)
         # The property should be False on PromptTarget
@@ -43,9 +43,7 @@ class TestSupportsMultiTurn:
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
         )
-        # Image targets inherit from PromptChatTarget via OpenAITarget,
-        # but they are effectively single-turn
-        assert target.supports_multi_turn is True  # inherits from PromptChatTarget
+        assert target.supports_multi_turn is False
 
     def test_openai_video_target_returns_false(self, patch_central_database):
         from pyrit.prompt_target import OpenAIVideoTarget
@@ -55,7 +53,7 @@ class TestSupportsMultiTurn:
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
         )
-        assert target.supports_multi_turn is True  # inherits from PromptChatTarget
+        assert target.supports_multi_turn is False
 
     def test_openai_tts_target_returns_false(self, patch_central_database):
         from pyrit.prompt_target import OpenAITTSTarget
@@ -65,7 +63,7 @@ class TestSupportsMultiTurn:
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
         )
-        assert target.supports_multi_turn is True  # inherits from PromptChatTarget
+        assert target.supports_multi_turn is False
 
     def test_openai_completion_target_returns_false(self, patch_central_database):
         from pyrit.prompt_target import OpenAICompletionTarget
@@ -75,7 +73,7 @@ class TestSupportsMultiTurn:
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
         )
-        assert target.supports_multi_turn is True  # inherits from PromptChatTarget
+        assert target.supports_multi_turn is False
 
     def test_text_target_returns_false(self, patch_central_database):
         from pyrit.prompt_target import TextTarget

@@ -52,6 +52,11 @@ class OpenAIVideoTarget(OpenAITarget):
     SUPPORTED_DURATIONS: list[VideoSeconds] = ["4", "8", "12"]
     SUPPORTED_IMAGE_FORMATS: list[str] = ["image/jpeg", "image/png", "image/webp"]
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """Video generation is stateless and single-turn."""
+        return False
+
     def __init__(
         self,
         *,

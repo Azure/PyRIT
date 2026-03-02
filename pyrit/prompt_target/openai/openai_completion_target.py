@@ -18,6 +18,11 @@ logger = logging.getLogger(__name__)
 class OpenAICompletionTarget(OpenAITarget):
     """A prompt target for OpenAI completion endpoints."""
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """Completion endpoints are stateless and single-turn."""
+        return False
+
     def __init__(
         self,
         max_tokens: Optional[int] = None,
