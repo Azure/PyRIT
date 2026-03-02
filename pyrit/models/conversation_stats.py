@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import ClassVar, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,7 @@ import json
 import logging
 import struct
 from collections.abc import MutableSequence, Sequence
-from contextlib import closing
+from contextlib import closing, suppress
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
@@ -543,10 +543,8 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
             labels: dict[str, str] = {}
             if raw_labels and raw_labels not in ("null", "{}"):
-                try:
+                with suppress(ValueError, TypeError):
                     labels = json.loads(raw_labels)
-                except (ValueError, TypeError):
-                    pass
 
             created_at = None
             if raw_created_at is not None:

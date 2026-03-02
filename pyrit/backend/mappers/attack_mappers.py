@@ -41,12 +41,13 @@ from pyrit.models import AttackResult, ChatMessageRole, PromptDataType
 from pyrit.models import Message as PyritMessage
 from pyrit.models import MessagePiece as PyritMessagePiece
 from pyrit.models import Score as PyritScore
-from pyrit.models.conversation_stats import ConversationStats
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from pyrit.models.conversation_stats import ConversationStats
 
 # ============================================================================
 # Domain → DTO  (for API responses)
@@ -105,11 +106,11 @@ async def _get_sas_for_container_async(*, container_url: str) -> str:
                 key_start_time=start_time,
                 key_expiry_time=expiry_time,
             )
-            sas_token: str = generate_container_sas(  # type: ignore[assignment]
+            sas_token: str = generate_container_sas(
                 account_name=storage_account_name,
                 container_name=container_name,
                 user_delegation_key=delegation_key,
-                permission=ContainerSasPermissions(read=True),  # type: ignore[no-untyped-call, unused-ignore]
+                permission=ContainerSasPermissions(read=True),
                 expiry=expiry_time,
                 start=start_time,
             )
@@ -344,6 +345,9 @@ def _build_filename(
         data_type: The prompt data type (e.g. ``image_path``, ``audio_path``).
         sha256: The SHA256 hash of the content, if available.
         value: The original value (path or URL) used to infer file extension.
+
+    Returns:
+        Optional[str]: A filename like ``image_a1b2c3d4.png``, or ``None`` for text-like types.
     """
     # Map data types to friendly prefixes
     _PREFIX_MAP = {
