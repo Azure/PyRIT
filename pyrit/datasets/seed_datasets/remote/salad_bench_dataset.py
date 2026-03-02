@@ -27,10 +27,11 @@ class _SaladBenchDataset(_RemoteDatasetLoader):
         - https://github.com/OpenSafetyLab/SALAD-BENCH
     """
 
+    HF_DATASET_NAME: str = "walledai/SaladBench"
+
     def __init__(
         self,
         *,
-        dataset_name: str = "walledai/SaladBench",
         config: str = "prompts",
         split: str = "base",
     ):
@@ -38,12 +39,10 @@ class _SaladBenchDataset(_RemoteDatasetLoader):
         Initialize the SALAD-Bench dataset loader.
 
         Args:
-            dataset_name: HuggingFace dataset identifier. Defaults to "walledai/SaladBench".
             config: Dataset configuration. Defaults to "prompts".
             split: Dataset split to load. One of "base", "attackEnhanced", "defenseEnhanced".
                 Defaults to "base".
         """
-        self.hf_dataset_name = dataset_name
         self.config = config
         self.split = split
 
@@ -75,10 +74,10 @@ class _SaladBenchDataset(_RemoteDatasetLoader):
         Returns:
             SeedDataset: A SeedDataset containing the SALAD-Bench prompts.
         """
-        logger.info(f"Loading SALAD-Bench dataset from {self.hf_dataset_name}")
+        logger.info(f"Loading SALAD-Bench dataset from {self.HF_DATASET_NAME}")
 
         data = await self._fetch_from_huggingface(
-            dataset_name=self.hf_dataset_name,
+            dataset_name=self.HF_DATASET_NAME,
             config=self.config,
             split=self.split,
             cache=cache,
@@ -107,7 +106,7 @@ class _SaladBenchDataset(_RemoteDatasetLoader):
                 dataset_name=self.dataset_name,
                 harm_categories=[self._parse_category(c) for c in item["categories"]],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.hf_dataset_name}",
+                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
                 authors=authors,
                 groups=[
                     "Shanghai Artificial Intelligence Laboratory",

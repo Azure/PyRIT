@@ -63,7 +63,6 @@ class TestSaladBenchDataset:
     async def test_fetch_dataset_with_custom_config(self, mock_salad_bench_data):
         """Test fetching with custom config."""
         loader = _SaladBenchDataset(
-            dataset_name="custom/SaladBench",
             config="prompts",
             split="attackEnhanced",
         )
@@ -74,6 +73,6 @@ class TestSaladBenchDataset:
             assert len(dataset.seeds) == 2
             mock_fetch.assert_called_once()
             call_kwargs = mock_fetch.call_args.kwargs
-            assert call_kwargs["dataset_name"] == "custom/SaladBench"
+            assert call_kwargs["dataset_name"] == "walledai/SaladBench"
             assert call_kwargs["config"] == "prompts"
             assert call_kwargs["split"] == "attackEnhanced"
