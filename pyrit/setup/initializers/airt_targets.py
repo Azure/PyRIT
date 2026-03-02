@@ -43,7 +43,7 @@ class TargetConfig:
     registry_name: str
     target_class: type[PromptTarget]
     endpoint_var: str
-    key_var: str = ""  # Empty string means no auth required (e.g., Ollama) or Entra auth
+    key_var: str = ""  # Empty string means no auth required
     model_var: Optional[str] = None
     underlying_model_var: Optional[str] = None
 
@@ -66,6 +66,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_gpt4o",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_OPENAI_GPT4O_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT4O_KEY",
         model_var="AZURE_OPENAI_GPT4O_MODEL",
         underlying_model_var="AZURE_OPENAI_GPT4O_UNDERLYING_MODEL",
     ),
@@ -73,6 +74,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_integration_test",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_OPENAI_INTEGRATION_TEST_ENDPOINT",
+        key_var="AZURE_OPENAI_INTEGRATION_TEST_KEY",
         model_var="AZURE_OPENAI_INTEGRATION_TEST_MODEL",
         underlying_model_var="AZURE_OPENAI_INTEGRATION_TEST_UNDERLYING_MODEL",
     ),
@@ -80,6 +82,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_gpt35_chat",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_OPENAI_GPT3_5_CHAT_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT3_5_CHAT_KEY",
         model_var="AZURE_OPENAI_GPT3_5_CHAT_MODEL",
         underlying_model_var="AZURE_OPENAI_GPT3_5_CHAT_UNDERLYING_MODEL",
     ),
@@ -87,6 +90,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_gpt4_chat",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_OPENAI_GPT4_CHAT_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT4_CHAT_KEY",
         model_var="AZURE_OPENAI_GPT4_CHAT_MODEL",
         underlying_model_var="AZURE_OPENAI_GPT4_CHAT_UNDERLYING_MODEL",
     ),
@@ -94,6 +98,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_gpt4o_unsafe_chat",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
         model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL",
         underlying_model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_UNDERLYING_MODEL",
     ),
@@ -101,6 +106,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_gpt4o_unsafe_chat2",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2",
+        key_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2",
         model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2",
         underlying_model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_UNDERLYING_MODEL2",
     ),
@@ -108,18 +114,21 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_foundry_deepseek",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_FOUNDRY_DEEPSEEK_ENDPOINT",
+        key_var="AZURE_FOUNDRY_DEEPSEEK_KEY",
         model_var="AZURE_FOUNDRY_DEEPSEEK_MODEL",
     ),
     TargetConfig(
         registry_name="azure_foundry_phi4",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_FOUNDRY_PHI4_ENDPOINT",
+        key_var="AZURE_CHAT_PHI4_KEY",
         model_var="AZURE_FOUNDRY_PHI4_MODEL",
     ),
     TargetConfig(
         registry_name="azure_foundry_mistral_large",
         target_class=OpenAIChatTarget,
         endpoint_var="AZURE_FOUNDRY_MISTRAL_LARGE_ENDPOINT",
+        key_var="AZURE_FOUNDRY_MISTRAL_LARGE_KEY",
         model_var="AZURE_FOUNDRY_MISTRAL_LARGE_MODEL",
     ),
     TargetConfig(
@@ -156,6 +165,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_gpt5_responses",
         target_class=OpenAIResponseTarget,
         endpoint_var="AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT5_KEY",
         model_var="AZURE_OPENAI_GPT5_MODEL",
         underlying_model_var="AZURE_OPENAI_GPT5_UNDERLYING_MODEL",
     ),
@@ -170,6 +180,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_responses",
         target_class=OpenAIResponseTarget,
         endpoint_var="AZURE_OPENAI_RESPONSES_ENDPOINT",
+        key_var="AZURE_OPENAI_RESPONSES_KEY",
         model_var="AZURE_OPENAI_RESPONSES_MODEL",
         underlying_model_var="AZURE_OPENAI_RESPONSES_UNDERLYING_MODEL",
     ),
@@ -187,6 +198,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_realtime",
         target_class=RealtimeTarget,
         endpoint_var="AZURE_OPENAI_REALTIME_ENDPOINT",
+        key_var="AZURE_OPENAI_REALTIME_API_KEY",
         model_var="AZURE_OPENAI_REALTIME_MODEL",
         underlying_model_var="AZURE_OPENAI_REALTIME_UNDERLYING_MODEL",
     ),
@@ -197,6 +209,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="openai_image_azure",
         target_class=OpenAIImageTarget,
         endpoint_var="OPENAI_IMAGE_ENDPOINT1",
+        key_var="OPENAI_IMAGE_API_KEY1",
         model_var="OPENAI_IMAGE_MODEL1",
         underlying_model_var="OPENAI_IMAGE_UNDERLYING_MODEL1",
     ),
@@ -215,6 +228,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="openai_tts_azure",
         target_class=OpenAITTSTarget,
         endpoint_var="OPENAI_TTS_ENDPOINT1",
+        key_var="OPENAI_TTS_KEY1",
         model_var="OPENAI_TTS_MODEL1",
         underlying_model_var="OPENAI_TTS_UNDERLYING_MODEL1",
     ),
@@ -233,6 +247,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_openai_video",
         target_class=OpenAIVideoTarget,
         endpoint_var="AZURE_OPENAI_VIDEO_ENDPOINT",
+        key_var="AZURE_OPENAI_VIDEO_KEY",
         model_var="AZURE_OPENAI_VIDEO_MODEL",
         underlying_model_var="AZURE_OPENAI_VIDEO_UNDERLYING_MODEL",
     ),
@@ -262,6 +277,7 @@ TARGET_CONFIGS: list[TargetConfig] = [
         registry_name="azure_content_safety",
         target_class=PromptShieldTarget,
         endpoint_var="AZURE_CONTENT_SAFETY_API_ENDPOINT",
+        key_var="AZURE_CONTENT_SAFETY_API_KEY",
     ),
 ]
 
@@ -375,16 +391,21 @@ class AIRTTargetInitializer(PyRITInitializer):
         if not endpoint:
             return
 
+        # Try API key first, fall back to Entra auth for Azure endpoints
         if config.key_var:
             api_key: Any = os.getenv(config.key_var)
-            if not api_key:
+            if not api_key and "azure" in endpoint.lower():
+                if config.target_class is PromptShieldTarget:
+                    api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+                else:
+                    api_key = get_azure_openai_auth(endpoint)
+            elif not api_key:
                 return
-        elif config.target_class is PromptShieldTarget:
-            # PromptShieldTarget uses a sync token provider
-            api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
         elif "azure" in endpoint.lower():
-            # Azure OpenAI SDK targets use an async token provider
-            api_key = get_azure_openai_auth(endpoint)
+            if config.target_class is PromptShieldTarget:
+                api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+            else:
+                api_key = get_azure_openai_auth(endpoint)
         else:
             api_key = "not-needed"
 
