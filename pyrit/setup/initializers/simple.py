@@ -45,8 +45,7 @@ class SimpleInitializer(PyRITInitializer):
     - OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_MODEL
 
     Optional Environment Variables:
-    - OPENAI_CHAT_KEY: API key. If not provided, Entra ID authentication is used
-      automatically for Azure endpoints.
+    - OPENAI_CHAT_KEY: API key. If not set, Entra ID auth is used for Azure endpoints.
 
     This configuration is designed for simple use cases with:
     - Basic OpenAI API integration
