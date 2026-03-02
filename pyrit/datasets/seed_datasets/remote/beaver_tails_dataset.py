@@ -25,10 +25,11 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
         - https://github.com/PKU-Alignment/beavertails
     """
 
+    HF_DATASET_NAME: str = "PKU-Alignment/BeaverTails"
+
     def __init__(
         self,
         *,
-        dataset_name: str = "PKU-Alignment/BeaverTails",
         split: str = "330k_train",
         unsafe_only: bool = True,
     ):
@@ -36,11 +37,9 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
         Initialize the BeaverTails dataset loader.
 
         Args:
-            dataset_name: HuggingFace dataset identifier. Defaults to "PKU-Alignment/BeaverTails".
             split: Dataset split to load. Defaults to "330k_train".
             unsafe_only: If True, only load entries marked as unsafe. Defaults to True.
         """
-        self.hf_dataset_name = dataset_name
         self.split = split
         self.unsafe_only = unsafe_only
 
@@ -59,10 +58,10 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
         Returns:
             SeedDataset: A SeedDataset containing the BeaverTails prompts.
         """
-        logger.info(f"Loading BeaverTails dataset from {self.hf_dataset_name}")
+        logger.info(f"Loading BeaverTails dataset from {self.HF_DATASET_NAME}")
 
         data = await self._fetch_from_huggingface(
-            dataset_name=self.hf_dataset_name,
+            dataset_name=self.HF_DATASET_NAME,
             split=self.split,
             cache=cache,
         )
@@ -99,7 +98,7 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
                     dataset_name=self.dataset_name,
                     harm_categories=harm_categories,
                     description=description,
-                    source=f"https://huggingface.co/datasets/{self.hf_dataset_name}",
+                    source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
                     authors=authors,
                     groups=["Institute for Artificial Intelligence", "CFCS, School of Computer Science"],
                 )
