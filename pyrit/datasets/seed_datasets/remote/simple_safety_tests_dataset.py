@@ -23,20 +23,19 @@ class _SimpleSafetyTestsDataset(_RemoteDatasetLoader):
         - https://arxiv.org/abs/2311.08370
     """
 
+    HF_DATASET_NAME: str = "Bertievidgen/SimpleSafetyTests"
+
     def __init__(
         self,
         *,
-        dataset_name: str = "Bertievidgen/SimpleSafetyTests",
         split: str = "test",
     ):
         """
         Initialize the SimpleSafetyTests dataset loader.
 
         Args:
-            dataset_name: HuggingFace dataset identifier. Defaults to "Bertievidgen/SimpleSafetyTests".
             split: Dataset split to load. Defaults to "test".
         """
-        self.hf_dataset_name = dataset_name
         self.split = split
 
     @property
@@ -54,10 +53,10 @@ class _SimpleSafetyTestsDataset(_RemoteDatasetLoader):
         Returns:
             SeedDataset: A SeedDataset containing the SimpleSafetyTests prompts.
         """
-        logger.info(f"Loading SimpleSafetyTests dataset from {self.hf_dataset_name}")
+        logger.info(f"Loading SimpleSafetyTests dataset from {self.HF_DATASET_NAME}")
 
         data = await self._fetch_from_huggingface(
-            dataset_name=self.hf_dataset_name,
+            dataset_name=self.HF_DATASET_NAME,
             split=self.split,
             cache=cache,
         )
@@ -81,9 +80,9 @@ class _SimpleSafetyTestsDataset(_RemoteDatasetLoader):
                 value=item["prompt"],
                 data_type="text",
                 dataset_name=self.dataset_name,
-                harm_categories=[item["harm_area"]],
+                harm_categories=[item["harm_area"]] if item.get("harm_area") else [],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.hf_dataset_name}",
+                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
                 authors=authors,
                 groups=["Patronus AI", "University of Oxford", "Bocconi University"],
                 metadata={"category": category} if (category := item.get("category")) else {},
