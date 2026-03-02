@@ -66,6 +66,8 @@ class RealtimeTarget(OpenAITarget):
     and https://platform.openai.com/docs/guides/realtime-websocket
     """
 
+    _DEFAULT_SUPPORTS_MULTI_TURN: bool = True
+
     def __init__(
         self,
         *,
@@ -101,13 +103,6 @@ class RealtimeTarget(OpenAITarget):
         self.voice = voice
         self._existing_conversation = existing_convo if existing_convo is not None else {}
         self._realtime_client: Optional[AsyncOpenAI] = None
-
-    @property
-    def supports_multi_turn(self) -> bool:
-        """
-        Realtime targets maintain state via WebSocket connections across turns.
-        """
-        return True
 
     def _set_openai_env_configuration_vars(self) -> None:
         self.model_name_environment_variable = "OPENAI_REALTIME_MODEL"

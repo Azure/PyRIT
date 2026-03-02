@@ -21,6 +21,8 @@ class PromptChatTarget(PromptTarget):
     Realtime chat targets or OpenAI completions are NOT PromptChatTargets. You don't send the conversation history.
     """
 
+    _DEFAULT_SUPPORTS_MULTI_TURN: bool = True
+
     def __init__(
         self,
         *,
@@ -28,6 +30,7 @@ class PromptChatTarget(PromptTarget):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
+        supports_multi_turn: Optional[bool] = None,
     ) -> None:
         """
         Initialize the PromptChatTarget.
@@ -39,26 +42,16 @@ class PromptChatTarget(PromptTarget):
             underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. Defaults to None.
+            supports_multi_turn (bool, Optional): Whether this target supports multi-turn
+                conversations. If None, uses the class default. Defaults to None.
         """
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint,
             model_name=model_name,
             underlying_model=underlying_model,
+            supports_multi_turn=supports_multi_turn,
         )
-
-    @property
-    def supports_multi_turn(self) -> bool:
-        """
-        Whether this target supports multi-turn conversations.
-
-        Chat targets retrieve conversation history from memory and send it
-        with each request, supporting true multi-turn conversations.
-
-        Returns:
-            bool: True for chat targets.
-        """
-        return True
 
     def set_system_prompt(
         self,

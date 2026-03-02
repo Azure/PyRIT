@@ -27,11 +27,7 @@ class OpenAIImageTarget(OpenAITarget):
 
     # Maximum number of image inputs supported by the OpenAI image API
     _MAX_INPUT_IMAGES = 16
-
-    @property
-    def supports_multi_turn(self) -> bool:
-        """Image generation is stateless and single-turn."""
-        return False
+    _DEFAULT_SUPPORTS_MULTI_TURN: bool = False
 
     def __init__(
         self,

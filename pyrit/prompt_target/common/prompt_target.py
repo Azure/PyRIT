@@ -28,6 +28,8 @@ class PromptTarget(Identifiable):
 
     _identifier: Optional[ComponentIdentifier] = None
 
+    _DEFAULT_SUPPORTS_MULTI_TURN: bool = False
+
     def __init__(
         self,
         verbose: bool = False,
@@ -35,6 +37,7 @@ class PromptTarget(Identifiable):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
+        supports_multi_turn: Optional[bool] = None,
     ) -> None:
         """
         Initialize the PromptTarget.
@@ -48,6 +51,10 @@ class PromptTarget(Identifiable):
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. If not provided, `model_name` will be used for the identifier.
                 Defaults to None.
+            supports_multi_turn (bool, Optional): Whether this target supports multi-turn
+                conversations. If None, uses the class default. Can be overridden per instance
+                for targets whose multi-turn capability depends on configuration.
+                Defaults to None.
         """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
@@ -55,6 +62,7 @@ class PromptTarget(Identifiable):
         self._endpoint = endpoint
         self._model_name = model_name
         self._underlying_model = underlying_model
+        self._supports_multi_turn = supports_multi_turn
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -128,6 +136,7 @@ class PromptTarget(Identifiable):
             "model_name": model_name,
             "max_requests_per_minute": self._max_requests_per_minute,
             "supports_conversation_history": isinstance(self, PromptChatTarget),
+            "supports_multi_turn": self.supports_multi_turn,
         }
         if params:
             all_params.update(params)
@@ -143,10 +152,16 @@ class PromptTarget(Identifiable):
         conversation history. Multi-turn targets either retrieve conversation
         history from memory or maintain state externally (e.g., WebSocket).
 
+        Can be overridden per instance via the constructor's `supports_multi_turn`
+        parameter, or per class by overriding the `_DEFAULT_SUPPORTS_MULTI_TURN`
+        class attribute or this property.
+
         Returns:
             bool: False by default. Subclasses that support multi-turn should override.
         """
-        return False
+        if self._supports_multi_turn is not None:
+            return self._supports_multi_turn
+        return self._DEFAULT_SUPPORTS_MULTI_TURN
 
     def _build_identifier(self) -> ComponentIdentifier:
         """

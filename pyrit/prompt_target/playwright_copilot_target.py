@@ -78,6 +78,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
     # Supported data types
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
+    _DEFAULT_SUPPORTS_MULTI_TURN: bool = True
 
     # Placeholder text constants
     PLACEHOLDER_GENERATING_RESPONSE: str = "generating response"
@@ -129,13 +130,6 @@ class PlaywrightCopilotTarget(PromptTarget):
             raise ValueError("The provided page URL indicates M365 Copilot, but the type is set to consumer.")
         if page and self.M365_URL_IDENTIFIER not in page.url and copilot_type == CopilotType.M365:
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
-
-    @property
-    def supports_multi_turn(self) -> bool:
-        """
-        Playwright Copilot targets maintain state via browser page across turns.
-        """
-        return True
 
     def _build_identifier(self) -> ComponentIdentifier:
         """

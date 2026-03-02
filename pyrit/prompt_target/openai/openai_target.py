@@ -108,6 +108,7 @@ class OpenAITarget(PromptChatTarget):
         max_requests_per_minute: Optional[int] = None,
         httpx_client_kwargs: Optional[dict[str, Any]] = None,
         underlying_model: Optional[str] = None,
+        supports_multi_turn: Optional[bool] = None,
     ) -> None:
         """
         Initialize an instance of OpenAITarget.
@@ -133,6 +134,8 @@ class OpenAITarget(PromptChatTarget):
                 from the actual model. If not provided, will attempt to fetch from environment variable.
                 If it is not there either, the identifier "model_name" attribute will use the model_name.
                 Defaults to None.
+            supports_multi_turn (bool, Optional): Whether this target supports multi-turn
+                conversations. If None, uses the class default. Defaults to None.
 
         Raises:
             ValueError: If no API key is provided via parameter or environment variable.
@@ -168,6 +171,7 @@ class OpenAITarget(PromptChatTarget):
             endpoint=endpoint_value,
             model_name=self._model_name,
             underlying_model=underlying_model_value,
+            supports_multi_turn=supports_multi_turn,
         )
 
         # API key is required - either from parameter or environment variable

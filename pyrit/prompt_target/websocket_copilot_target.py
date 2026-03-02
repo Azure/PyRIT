@@ -73,6 +73,7 @@ class WebSocketCopilotTarget(PromptTarget):
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
     RESPONSE_TIMEOUT_SECONDS: int = 60
     CONNECTION_TIMEOUT_SECONDS: int = 30
+    _DEFAULT_SUPPORTS_MULTI_TURN: bool = True
 
     def __init__(
         self,
@@ -118,13 +119,6 @@ class WebSocketCopilotTarget(PromptTarget):
             endpoint=self._websocket_base_url,
             model_name=model_name,
         )
-
-    @property
-    def supports_multi_turn(self) -> bool:
-        """
-        WebSocket Copilot targets maintain state via WebSocket connections across turns.
-        """
-        return True
 
     def _build_identifier(self) -> ComponentIdentifier:
         """

@@ -51,6 +51,7 @@ class PlaywrightTarget(PromptTarget):
 
     # Supported data types
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
+    _DEFAULT_SUPPORTS_MULTI_TURN: bool = True
 
     def __init__(
         self,
@@ -73,13 +74,6 @@ class PlaywrightTarget(PromptTarget):
         super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
         self._interaction_func = interaction_func
         self._page = page
-
-    @property
-    def supports_multi_turn(self) -> bool:
-        """
-        Playwright targets maintain state via browser page across turns.
-        """
-        return True
 
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:

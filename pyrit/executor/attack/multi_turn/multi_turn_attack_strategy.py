@@ -128,7 +128,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
             )
         )
         context.session.conversation_id = str(uuid.uuid4())
-        logger.debug(
+        self._logger.debug(
             f"Rotated conversation_id for single-turn target: "
             f"{old_conversation_id} -> {context.session.conversation_id}"
         )

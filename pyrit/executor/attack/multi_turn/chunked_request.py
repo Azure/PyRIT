@@ -224,16 +224,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
 
         Args:
             context (ChunkedRequestAttackContext): The attack context containing attack parameters.
-
-        Raises:
-            ValueError: If the objective target does not support multi-turn conversations.
         """
-        if not self._objective_target.supports_multi_turn:
-            raise ValueError(
-                "ChunkedRequestAttack requires a multi-turn target. "
-                "The objective target does not support multi-turn conversations."
-            )
-
         # Ensure the context has a session
         context.session = ConversationSession()
 
@@ -267,6 +258,9 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         response = None
         for idx, chunk_prompt in enumerate(chunk_prompts):
             logger.info(f"Sending chunk request {idx + 1}/{len(chunk_prompts)}")
+
+            # For single-turn targets, rotate conversation_id so each chunk starts fresh
+            self._rotate_conversation_for_single_turn_target(context=context)
 
             # Create message for this chunk request
             message = Message.from_prompt(prompt=chunk_prompt, role="user")
