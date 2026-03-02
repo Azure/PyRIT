@@ -225,14 +225,12 @@ class ScenarioResult:
         """
         # import here to avoid circular imports
         from pyrit.score.scorer_evaluation.scorer_metrics_io import (
-            find_objective_metrics_by_hash,
+            find_objective_metrics_by_eval_hash,
         )
 
         if not self.objective_scorer_identifier:
             return None
 
-        scorer_hash = self.objective_scorer_identifier.hash
-        if not scorer_hash:
-            return None
+        eval_hash = self.objective_scorer_identifier.compute_eval_hash()
 
-        return find_objective_metrics_by_hash(hash=scorer_hash)
+        return find_objective_metrics_by_eval_hash(eval_hash=eval_hash)

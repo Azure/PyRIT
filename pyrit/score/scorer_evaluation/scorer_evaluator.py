@@ -32,8 +32,8 @@ from pyrit.score.scorer_evaluation.scorer_metrics import (
     ScorerMetrics,
 )
 from pyrit.score.scorer_evaluation.scorer_metrics_io import (
-    find_harm_metrics_by_hash,
-    find_objective_metrics_by_hash,
+    find_harm_metrics_by_eval_hash,
+    find_objective_metrics_by_eval_hash,
     replace_evaluation_results,
 )
 from pyrit.score.true_false.true_false_scorer import TrueFalseScorer
@@ -272,7 +272,7 @@ class ScorerEvaluator(abc.ABC):
                 - (False, None) if should run evaluation
         """
         try:
-            scorer_hash = self.scorer.get_identifier().hash
+            scorer_hash = self.scorer.get_eval_hash()
 
             # Determine if this is a harm or objective evaluation
             metrics_type = MetricsType.OBJECTIVE if isinstance(self.scorer, TrueFalseScorer) else MetricsType.HARM
@@ -282,14 +282,14 @@ class ScorerEvaluator(abc.ABC):
                 if harm_category is None:
                     logger.warning("harm_category must be provided for harm scorer evaluations")
                     return (False, None)
-                existing = find_harm_metrics_by_hash(
-                    hash=scorer_hash,
+                existing = find_harm_metrics_by_eval_hash(
+                    eval_hash=scorer_hash,
                     harm_category=harm_category,
                 )
             else:
-                existing = find_objective_metrics_by_hash(
+                existing = find_objective_metrics_by_eval_hash(
                     file_path=result_file_path,
-                    hash=scorer_hash,
+                    eval_hash=scorer_hash,
                 )
 
             if not existing:
@@ -484,6 +484,7 @@ class ScorerEvaluator(abc.ABC):
             replace_evaluation_results(
                 file_path=result_file_path,
                 scorer_identifier=self.scorer.get_identifier(),
+                eval_hash=self.scorer.get_eval_hash(),
                 metrics=metrics,
             )
         except Exception as e:

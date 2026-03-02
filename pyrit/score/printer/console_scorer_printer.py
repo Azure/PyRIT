@@ -101,7 +101,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
             scorer_identifier (ComponentIdentifier): The scorer identifier to print information for.
         """
         from pyrit.score.scorer_evaluation.scorer_metrics_io import (
-            find_objective_metrics_by_hash,
+            find_objective_metrics_by_eval_hash,
         )
 
         print()
@@ -109,9 +109,9 @@ class ConsoleScorerPrinter(ScorerPrinter):
         self._print_colored(f"{self._indent * 2}▸ Scorer Identifier", Fore.WHITE)
         self._print_scorer_info(scorer_identifier, indent_level=3)
 
-        # Look up metrics by hash
-        scorer_hash = scorer_identifier.hash
-        metrics = find_objective_metrics_by_hash(hash=scorer_hash)
+        # Look up metrics by eval hash
+        eval_hash = scorer_identifier.compute_eval_hash()
+        metrics = find_objective_metrics_by_eval_hash(eval_hash=eval_hash)
         self._print_objective_metrics(metrics)
 
     def print_harm_scorer(self, scorer_identifier: ComponentIdentifier, *, harm_category: str) -> None:
@@ -128,7 +128,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
             harm_category (str): The harm category for looking up metrics (e.g., "hate_speech", "violence").
         """
         from pyrit.score.scorer_evaluation.scorer_metrics_io import (
-            find_harm_metrics_by_hash,
+            find_harm_metrics_by_eval_hash,
         )
 
         print()
@@ -136,9 +136,9 @@ class ConsoleScorerPrinter(ScorerPrinter):
         self._print_colored(f"{self._indent * 2}▸ Scorer Identifier", Fore.WHITE)
         self._print_scorer_info(scorer_identifier, indent_level=3)
 
-        # Look up metrics by hash and harm category
-        scorer_hash = scorer_identifier.hash
-        metrics = find_harm_metrics_by_hash(hash=scorer_hash, harm_category=harm_category)
+        # Look up metrics by eval hash and harm category
+        eval_hash = scorer_identifier.compute_eval_hash()
+        metrics = find_harm_metrics_by_eval_hash(eval_hash=eval_hash, harm_category=harm_category)
         self._print_harm_metrics(metrics)
 
     def _print_scorer_info(self, scorer_identifier: ComponentIdentifier, *, indent_level: int = 2) -> None:

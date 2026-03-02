@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Optional,
     Union,
     cast,
@@ -54,8 +55,13 @@ class Scorer(Identifiable, abc.ABC):
     Abstract base class for scorers.
     """
 
-    # Evaluation configuration - maps input dataset files to a result file
-    # Specifies glob patterns for datasets and a result file name
+    # Eval-hash configuration: which children are "targets" (operational params stripped)
+    # and which target params are behavioral (kept in eval hash).
+    EVAL_TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"prompt_target", "converter_target"})
+    EVAL_BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature", "top_p"})
+
+    # Evaluation configuration - maps input dataset files to a result file.
+    # Specifies glob patterns for datasets and a result file name.
     evaluation_file_mapping: Optional[ScorerEvalDatasetFiles] = None
 
     _identifier: Optional[ComponentIdentifier] = None
