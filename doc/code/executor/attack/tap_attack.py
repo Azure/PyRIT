@@ -39,6 +39,7 @@
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     ConsoleAttackResultPrinter,
@@ -56,9 +57,10 @@ adversarial_chat = OpenAIChatTarget(
     temperature=1.1,
 )
 
+objective_endpoint = os.environ["AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT"]
 objective_target = OpenAIChatTarget(
-    endpoint=os.environ["AZURE_OPENAI_GPT4O_STRICT_FILTER_ENDPOINT"],
-    api_key=os.environ["AZURE_OPENAI_GPT4O_STRICT_FILTER_KEY"],
+    endpoint=objective_endpoint,
+    api_key=get_azure_openai_auth(objective_endpoint),
     model_name=os.environ["AZURE_OPENAI_GPT4O_STRICT_FILTER_MODEL"],
 )
 
