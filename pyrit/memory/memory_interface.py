@@ -1323,6 +1323,9 @@ class MemoryInterface(abc.ABC):
         Raises:
             ValueError: If update_fields is empty.
         """
+        if not update_fields:
+            raise ValueError("update_fields must not be empty")
+
         entries: MutableSequence[AttackResultEntry] = self._query_entries(
             AttackResultEntry,
             conditions=AttackResultEntry.conversation_id == conversation_id,
@@ -1347,9 +1350,18 @@ class MemoryInterface(abc.ABC):
         Returns:
             True if the update was successful, False if the entry was not found.
         """
+        try:
+            attack_result_uuid = uuid.UUID(attack_result_id)
+        except (ValueError, TypeError):
+            logger.warning(
+                "Invalid attack_result_id '%s' passed to update_attack_result_by_id",
+                attack_result_id,
+            )
+            return False
+
         entries: MutableSequence[AttackResultEntry] = self._query_entries(
             AttackResultEntry,
-            conditions=AttackResultEntry.id == attack_result_id,
+            conditions=AttackResultEntry.id == attack_result_uuid,
         )
         if not entries:
             return False
