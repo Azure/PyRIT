@@ -74,6 +74,13 @@ class PlaywrightTarget(PromptTarget):
         self._interaction_func = interaction_func
         self._page = page
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """
+        Playwright targets maintain state via browser page across turns.
+        """
+        return True
+
     @limit_requests_per_minute
     async def send_prompt_async(self, *, message: Message) -> list[Message]:
         """

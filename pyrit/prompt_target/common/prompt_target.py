@@ -134,6 +134,20 @@ class PromptTarget(Identifiable):
 
         return ComponentIdentifier.of(self, params=all_params, children=children)
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """
+        Whether this target supports multi-turn conversations.
+
+        Single-turn targets process each message independently without using
+        conversation history. Multi-turn targets either retrieve conversation
+        history from memory or maintain state externally (e.g., WebSocket).
+
+        Returns:
+            bool: False by default. Subclasses that support multi-turn should override.
+        """
+        return False
+
     def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier for this target.

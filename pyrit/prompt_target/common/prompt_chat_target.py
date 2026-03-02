@@ -47,6 +47,19 @@ class PromptChatTarget(PromptTarget):
             underlying_model=underlying_model,
         )
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """
+        Whether this target supports multi-turn conversations.
+
+        Chat targets retrieve conversation history from memory and send it
+        with each request, supporting true multi-turn conversations.
+
+        Returns:
+            bool: True for chat targets.
+        """
+        return True
+
     def set_system_prompt(
         self,
         *,

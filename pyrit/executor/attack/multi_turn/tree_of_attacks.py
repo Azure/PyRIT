@@ -777,9 +777,14 @@ class _TreeOfAttacksNode:
         )
 
         # Duplicate the conversations to preserve history
-        duplicate_node.objective_target_conversation_id = self._memory.duplicate_conversation(
-            conversation_id=self.objective_target_conversation_id
-        )
+        # For single-turn targets, create a fresh conversation_id instead of duplicating
+        # history, since single-turn targets reject conversations with prior messages.
+        if self._objective_target.supports_multi_turn:
+            duplicate_node.objective_target_conversation_id = self._memory.duplicate_conversation(
+                conversation_id=self.objective_target_conversation_id
+            )
+        else:
+            duplicate_node.objective_target_conversation_id = str(uuid.uuid4())
 
         duplicate_node.adversarial_chat_conversation_id = self._memory.duplicate_conversation(
             conversation_id=self.adversarial_chat_conversation_id

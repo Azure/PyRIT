@@ -314,6 +314,14 @@ class OpenAIImageTarget(OpenAITarget):
             other_types = [p.converted_value_data_type for p in other_pieces]
             raise ValueError(f"The message contains unsupported piece types. Unsupported types: {other_types}.")
 
+        request = text_pieces[0]
+        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
+        if len(messages) > 0:
+            raise ValueError(
+                "This target only supports a single turn conversation. "
+                f"Received: {len(messages)} messages which indicates a prior turn."
+            )
+
     def is_json_response_supported(self) -> bool:
         """
         Check if the target supports JSON as a response format.

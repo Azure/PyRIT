@@ -119,6 +119,13 @@ class WebSocketCopilotTarget(PromptTarget):
             model_name=model_name,
         )
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """
+        WebSocket Copilot targets maintain state via WebSocket connections across turns.
+        """
+        return True
+
     def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with WebSocketCopilot-specific parameters.
