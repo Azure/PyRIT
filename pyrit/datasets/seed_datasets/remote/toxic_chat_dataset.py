@@ -22,6 +22,10 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
     References:
         - https://huggingface.co/datasets/lmsys/toxic-chat
         - https://arxiv.org/abs/2310.17389
+    License: CC BY-NC 4.0
+
+    Warning: This dataset contains toxic, offensive, and jailbreaking content from real user
+    conversations. Consult your legal department before using these prompts for testing.
     """
 
     HF_DATASET_NAME: str = "lmsys/toxic-chat"
