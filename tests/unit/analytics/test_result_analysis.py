@@ -216,14 +216,18 @@ class TestGroupByConverterType:
             AttackResult(
                 conversation_id="conv-1",
                 objective="test",
-                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=None,
             ),
             AttackResult(
                 conversation_id="conv-2",
                 objective="test",
-                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.FAILURE,
                 last_response=None,
             ),
@@ -350,13 +354,17 @@ class TestCustomDimensions:
             AttackResult(
                 conversation_id="c1",
                 objective="steal secrets",
-                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.SUCCESS,
             ),
             AttackResult(
                 conversation_id="c2",
                 objective="bypass filter",
-                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.FAILURE,
             ),
         ]
@@ -413,7 +421,9 @@ class TestGroupByLabel:
             AttackResult(
                 conversation_id="c1",
                 objective="test",
-                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=message,
             ),
@@ -434,7 +444,9 @@ class TestGroupByLabel:
             AttackResult(
                 conversation_id="c1",
                 objective="test",
-                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=message,
             ),
@@ -454,14 +466,18 @@ class TestGroupByLabel:
             AttackResult(
                 conversation_id="c1",
                 objective="test",
-                attack_identifier=ComponentIdentifier(class_name='CrescendoAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="CrescendoAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=message,
             ),
             AttackResult(
                 conversation_id="c2",
                 objective="test",
-                attack_identifier=ComponentIdentifier(class_name='CrescendoAttack', class_module='pyrit.executor.attack'),
+                attack_identifier=ComponentIdentifier(
+                    class_name="CrescendoAttack", class_module="pyrit.executor.attack"
+                ),
                 outcome=AttackOutcome.FAILURE,
                 last_response=message,
             ),
