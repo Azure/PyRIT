@@ -103,7 +103,9 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             prompt_path = Path(refusal_system_prompt_path)
 
         self._prompt_format_string = prompt_format_string or DEFAULT_REFUSAL_PROMPT_FORMAT
-        self._system_prompt = SeedPrompt.from_yaml_file(prompt_path).value
+        seed_prompt = SeedPrompt.from_yaml_file(prompt_path)
+        self._system_prompt = seed_prompt.value
+        self._json_schema = seed_prompt.response_json_schema
         self._score_category = ["refusal"]
 
     def _build_identifier(self) -> ComponentIdentifier:
@@ -118,6 +120,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
                 "system_prompt_template": self._system_prompt,
                 "user_prompt_template": self._prompt_format_string,
                 "score_aggregator": self._score_aggregator.__name__,
+                "json_schema": self._json_schema,
             },
             children={
                 "prompt_target": self._prompt_target.get_identifier(),

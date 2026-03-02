@@ -37,6 +37,8 @@ class SeedPrompt(Seed):
     # This field shadows the base class property to allow per-prompt data types
     data_type: Optional[PromptDataType] = None
 
+    response_json_schema: Optional[dict] = None
+
     # Role of the prompt in a conversation (e.g., "user", "assistant")
     role: Optional[ChatMessageRole] = None
 
