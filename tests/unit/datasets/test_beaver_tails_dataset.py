@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -70,7 +70,7 @@ class TestBeaverTailsDataset:
         """Test fetching BeaverTails dataset with unsafe_only=True."""
         loader = _BeaverTailsDataset()
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_beaver_tails_data):
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_beaver_tails_data)):
             dataset = await loader.fetch_dataset()
 
             assert isinstance(dataset, SeedDataset)
@@ -86,7 +86,7 @@ class TestBeaverTailsDataset:
         """Test fetching BeaverTails dataset with unsafe_only=False."""
         loader = _BeaverTailsDataset(unsafe_only=False)
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_beaver_tails_data):
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_beaver_tails_data)):
             dataset = await loader.fetch_dataset()
 
             assert len(dataset.seeds) == 3  # All entries including safe
