@@ -55,8 +55,8 @@ class TestToxicChatDataset:
             assert first_prompt.metadata["jailbreaking"] == "1"
 
     @pytest.mark.asyncio
-    async def test_fetch_dataset_skips_jinja2_invalid_entries(self):
-        """Test that entries with Jinja2-invalid content are gracefully skipped."""
+    async def test_fetch_dataset_preserves_jinja2_content(self):
+        """Test that entries with Jinja2-like content are preserved via raw wrapping."""
         data_with_html = [
             {
                 "conv_id": "good1",
@@ -68,7 +68,7 @@ class TestToxicChatDataset:
                 "openai_moderation": "[]",
             },
             {
-                "conv_id": "bad1",
+                "conv_id": "html1",
                 "user_input": "<!DOCTYPE html>{%block%}broken",
                 "model_output": "N/A",
                 "human_annotation": "False",
@@ -82,8 +82,9 @@ class TestToxicChatDataset:
         with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=data_with_html)):
             dataset = await loader.fetch_dataset()
 
-            assert len(dataset.seeds) == 1
+            assert len(dataset.seeds) == 2
             assert dataset.seeds[0].value == "Normal question"
+            assert dataset.seeds[1].value == "<!DOCTYPE html>{%block%}broken"
 
     def test_dataset_name(self):
         """Test dataset_name property."""

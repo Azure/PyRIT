@@ -3,8 +3,6 @@
 
 import logging
 
-from jinja2 import TemplateSyntaxError
-
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
@@ -86,32 +84,23 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
         source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
         groups = ["UC San Diego"]
 
-        seed_prompts = []
-        skipped = 0
-        for item in data:
-            try:
-                seed_prompts.append(
-                    SeedPrompt(
-                        value=item["user_input"],
-                        data_type="text",
-                        dataset_name=self.dataset_name,
-                        description=description,
-                        source=source_url,
-                        authors=authors,
-                        groups=groups,
-                        metadata={
-                            "toxicity": str(item.get("toxicity", "")),
-                            "jailbreaking": str(item.get("jailbreaking", "")),
-                            "human_annotation": str(item.get("human_annotation", "")),
-                        },
-                    )
-                )
-            except TemplateSyntaxError:
-                skipped += 1
-                logger.debug("Skipped ToxicChat entry due to template parsing error (e.g. HTML content)")
-
-        if skipped > 0:
-            logger.info(f"Skipped {skipped} entries due to template parsing errors")
+        seed_prompts = [
+            SeedPrompt(
+                value=f"{{% raw %}}{item['user_input']}{{% endraw %}}",
+                data_type="text",
+                dataset_name=self.dataset_name,
+                description=description,
+                source=source_url,
+                authors=authors,
+                groups=groups,
+                metadata={
+                    "toxicity": str(item.get("toxicity", "")),
+                    "jailbreaking": str(item.get("jailbreaking", "")),
+                    "human_annotation": str(item.get("human_annotation", "")),
+                },
+            )
+            for item in data
+        ]
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from ToxicChat dataset")
 
