@@ -22,6 +22,7 @@ from pyrit.models import (
     data_serializer_factory,
 )
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
@@ -67,7 +68,7 @@ class RealtimeTarget(OpenAITarget, PromptChatTarget):
     and https://platform.openai.com/docs/guides/realtime-websocket
     """
 
-    _DEFAULT_SUPPORTS_MULTI_TURN: bool = True
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=True)
 
     def __init__(
         self,

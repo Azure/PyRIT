@@ -3,11 +3,13 @@
 
 import abc
 import logging
+from dataclasses import replace
 from typing import Any, Optional, Union
 
 from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Message
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ class PromptTarget(Identifiable):
 
     _identifier: Optional[ComponentIdentifier] = None
 
-    _DEFAULT_SUPPORTS_MULTI_TURN: bool = False
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities()
 
     def __init__(
         self,
@@ -62,7 +64,12 @@ class PromptTarget(Identifiable):
         self._endpoint = endpoint
         self._model_name = model_name
         self._underlying_model = underlying_model
-        self._supports_multi_turn = supports_multi_turn
+
+        # Build capabilities from class defaults with per-instance overrides
+        caps = type(self)._DEFAULT_CAPABILITIES
+        if supports_multi_turn is not None:
+            caps = replace(caps, supports_multi_turn=supports_multi_turn)
+        self._capabilities = caps
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -144,24 +151,29 @@ class PromptTarget(Identifiable):
         return ComponentIdentifier.of(self, params=all_params, children=children)
 
     @property
+    def capabilities(self) -> TargetCapabilities:
+        """
+        The capabilities of this target instance.
+
+        Returns the resolved capabilities, combining class defaults with any
+        per-instance overrides specified in the constructor.
+
+        Returns:
+            TargetCapabilities: The capabilities for this target.
+        """
+        return self._capabilities
+
+    @property
     def supports_multi_turn(self) -> bool:
         """
         Whether this target supports multi-turn conversations.
 
-        Single-turn targets process each message independently without using
-        conversation history. Multi-turn targets either retrieve conversation
-        history from memory or maintain state externally (e.g., WebSocket).
-
-        Can be overridden per instance via the constructor's `supports_multi_turn`
-        parameter, or per class by overriding the `_DEFAULT_SUPPORTS_MULTI_TURN`
-        class attribute or this property.
+        Convenience property that delegates to ``self.capabilities.supports_multi_turn``.
 
         Returns:
             bool: False by default. Subclasses that support multi-turn should override.
         """
-        if self._supports_multi_turn is not None:
-            return self._supports_multi_turn
-        return self._DEFAULT_SUPPORTS_MULTI_TURN
+        return self._capabilities.supports_multi_turn
 
     def _build_identifier(self) -> ComponentIdentifier:
         """

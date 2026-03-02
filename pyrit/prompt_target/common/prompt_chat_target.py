@@ -8,6 +8,7 @@ from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 
 
 class PromptChatTarget(PromptTarget):
@@ -21,7 +22,7 @@ class PromptChatTarget(PromptTarget):
     Realtime chat targets or OpenAI completions are NOT PromptChatTargets. You don't send the conversation history.
     """
 
-    _DEFAULT_SUPPORTS_MULTI_TURN: bool = True
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=True)
 
     def __init__(
         self,

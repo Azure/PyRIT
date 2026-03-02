@@ -11,10 +11,11 @@ class TestSupportsMultiTurn:
     """Test the supports_multi_turn property across the target hierarchy."""
 
     def test_prompt_target_defaults_to_false(self, patch_central_database):
-        # PromptTarget is abstract, so we verify via the class constant
-        from pyrit.prompt_target import PromptTarget
+        # PromptTarget is abstract, so we verify via the class default capabilities
+        from pyrit.prompt_target import PromptTarget, TargetCapabilities
 
-        assert PromptTarget._DEFAULT_SUPPORTS_MULTI_TURN is False
+        assert TargetCapabilities() == PromptTarget._DEFAULT_CAPABILITIES
+        assert PromptTarget._DEFAULT_CAPABILITIES.supports_multi_turn is False
 
     def test_prompt_chat_target_returns_true(self, patch_central_database):
         target = MockPromptTarget()
@@ -108,6 +109,33 @@ class TestSupportsMultiTurn:
             supports_multi_turn=True,
         )
         assert target.supports_multi_turn is True
+
+    def test_capabilities_property_returns_target_capabilities(self, patch_central_database):
+        """Test that the capabilities property returns a TargetCapabilities instance."""
+        from pyrit.prompt_target import OpenAIChatTarget, TargetCapabilities
+
+        target = OpenAIChatTarget(
+            model_name="test-model",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+        )
+        caps = target.capabilities
+        assert isinstance(caps, TargetCapabilities)
+        assert caps.supports_multi_turn is True
+
+    def test_capabilities_override_via_constructor(self, patch_central_database):
+        """Test that capabilities are correctly built from constructor overrides."""
+        from pyrit.prompt_target import OpenAIChatTarget, TargetCapabilities
+
+        target = OpenAIChatTarget(
+            model_name="test-model",
+            endpoint="https://mock.azure.com/",
+            api_key="mock-api-key",
+            supports_multi_turn=False,
+        )
+        caps = target.capabilities
+        assert isinstance(caps, TargetCapabilities)
+        assert caps.supports_multi_turn is False
 
     def test_prompt_shield_target_returns_false(self, patch_central_database):
         from pyrit.prompt_target import PromptShieldTarget
