@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from sqlalchemy import MetaData, and_, or_
 from sqlalchemy.engine.base import Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from pyrit.common.path import DB_DATA_PATH
@@ -243,7 +244,6 @@ class MemoryInterface(abc.ABC):
         Raises:
             SQLAlchemyError: If there's an error during the database operation.
         """
-        from sqlalchemy.exc import SQLAlchemyError
 
         with closing(self.get_session()) as session:
             try:
@@ -1283,16 +1283,7 @@ class MemoryInterface(abc.ABC):
             SQLAlchemyError: If the database transaction fails.
         """
         entries = [AttackResultEntry(entry=attack_result) for attack_result in attack_results]
-        # Capture the DB-assigned IDs before insert (they'll be set after flush/commit).
-        # _insert_entries closes the session, so we must read `entry.id` *inside*
-        # the session.  Since _insert_entries uses a context manager, we instead
-        # read the ids from the entries *before* the session closes by doing the
-        # insert inline.
-        from contextlib import closing
-
         with closing(self.get_session()) as session:
-            from sqlalchemy.exc import SQLAlchemyError
-
             try:
                 session.add_all(entries)
                 session.commit()
