@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -42,7 +42,7 @@ class TestToxicChatDataset:
         """Test fetching ToxicChat dataset."""
         loader = _ToxicChatDataset()
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_toxic_chat_data):
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_toxic_chat_data)):
             dataset = await loader.fetch_dataset()
 
             assert isinstance(dataset, SeedDataset)
@@ -79,7 +79,7 @@ class TestToxicChatDataset:
         ]
         loader = _ToxicChatDataset()
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=data_with_html):
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=data_with_html)):
             dataset = await loader.fetch_dataset()
 
             assert len(dataset.seeds) == 1
@@ -98,7 +98,7 @@ class TestToxicChatDataset:
             split="test",
         )
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_toxic_chat_data) as mock_fetch:
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_toxic_chat_data)) as mock_fetch:
             dataset = await loader.fetch_dataset()
 
             assert len(dataset.seeds) == 2
