@@ -9,7 +9,7 @@ This is the attack-centric API design where every user interaction targets a mod
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -89,9 +89,9 @@ class AttackSummary(BaseModel):
     attack_result_id: str = Field(..., description="Database-assigned unique ID for this AttackResult")
     conversation_id: str = Field(..., description="Primary conversation of this attack result")
     attack_type: str = Field(..., description="Attack class name (e.g., 'CrescendoAttack', 'ManualAttack')")
-    attack_specific_params: Optional[Dict[str, Any]] = Field(None, description="Additional attack-specific parameters")
+    attack_specific_params: Optional[dict[str, Any]] = Field(None, description="Additional attack-specific parameters")
     target: Optional[TargetInfo] = Field(None, description="Target information from the stored identifier")
-    converters: List[str] = Field(
+    converters: list[str] = Field(
         default_factory=list, description="Request converter class names applied in this attack"
     )
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Field(
@@ -101,10 +101,10 @@ class AttackSummary(BaseModel):
         None, description="Preview of the last message (truncated to ~100 chars)"
     )
     message_count: int = Field(0, description="Total number of messages in the attack")
-    related_conversation_ids: List[str] = Field(
+    related_conversation_ids: list[str] = Field(
         default_factory=list, description="IDs of related conversations within this attack"
     )
-    labels: Dict[str, str] = Field(default_factory=dict, description="User-defined labels for filtering")
+    labels: dict[str, str] = Field(default_factory=dict, description="User-defined labels for filtering")
     created_at: datetime = Field(..., description="Attack creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -118,7 +118,7 @@ class ConversationMessagesResponse(BaseModel):
     """Response containing all messages for a conversation."""
 
     conversation_id: str = Field(..., description="Conversation identifier")
-    messages: List[Message] = Field(default_factory=list, description="All messages in order")
+    messages: list[Message] = Field(default_factory=list, description="All messages in order")
 
 
 # ============================================================================
@@ -136,13 +136,13 @@ class AttackListResponse(BaseModel):
 class AttackOptionsResponse(BaseModel):
     """Response containing unique attack type names used across attacks."""
 
-    attack_types: List[str] = Field(..., description="Sorted list of unique attack type names found in attack results")
+    attack_types: list[str] = Field(..., description="Sorted list of unique attack type names found in attack results")
 
 
 class ConverterOptionsResponse(BaseModel):
     """Response containing unique converter type names used across attacks."""
 
-    converter_types: List[str] = Field(
+    converter_types: list[str] = Field(
         ..., description="Sorted list of unique converter type names found in attack results"
     )
 
@@ -179,7 +179,8 @@ class PrependedMessageRequest(BaseModel):
 
 
 class CreateAttackRequest(BaseModel):
-    """Request to create a new attack.
+    """
+    Request to create a new attack.
 
     For branching from an existing conversation into a new attack, provide
     ``source_conversation_id`` and ``cutoff_index``.  The backend will
@@ -240,7 +241,7 @@ class AttackConversationsResponse(BaseModel):
 
     attack_result_id: str = Field(..., description="The AttackResult ID")
     main_conversation_id: str = Field(..., description="The attack's primary conversation_id")
-    conversations: List[ConversationSummary] = Field(
+    conversations: list[ConversationSummary] = Field(
         default_factory=list, description="All conversations including main"
     )
 
@@ -304,7 +305,7 @@ class AddMessageRequest(BaseModel):
         None,
         description="Target registry name. Required when send=True so the backend knows which target to use.",
     )
-    converter_ids: Optional[List[str]] = Field(
+    converter_ids: Optional[list[str]] = Field(
         None, description="Converter instance IDs to apply (overrides attack-level)"
     )
     target_conversation_id: str = Field(
@@ -312,7 +313,7 @@ class AddMessageRequest(BaseModel):
         description="The conversation_id to store and send messages under. "
         "Usually the attack's main conversation, but can be a related conversation.",
     )
-    labels: Optional[Dict[str, str]] = Field(
+    labels: Optional[dict[str, str]] = Field(
         None,
         description="Labels to stamp on every message piece. "
         "Falls back to labels from existing pieces in the conversation.",

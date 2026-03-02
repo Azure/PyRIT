@@ -12,9 +12,10 @@ import dataclasses
 import os
 import tempfile
 import uuid
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from pyrit.backend.mappers.attack_mappers import (
     _build_filename,
@@ -1071,7 +1072,6 @@ class TestConverterObjectToInstance:
         assert result.supported_output_types == []
         assert result.converter_specific_params is None
         assert result.sub_converter_ids is None
-
 
 
 # ============================================================================

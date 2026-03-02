@@ -18,8 +18,9 @@ import mimetypes
 import os
 import time
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 from urllib.parse import urlparse
 
 import httpx
@@ -61,7 +62,7 @@ _STREAMING_PATH_TYPES = frozenset({"video_path"})
 # Azure Blob SAS token cache
 # ---------------------------------------------------------------------------
 # Container URL -> (sas_token_query_string, expiry_epoch)
-_sas_token_cache: Dict[str, Tuple[str, float]] = {}
+_sas_token_cache: dict[str, tuple[str, float]] = {}
 _SAS_TTL_SECONDS = 3500  # cache for ~58 min; tokens are valid for 1 hour
 
 
@@ -280,7 +281,7 @@ def pyrit_scores_to_dto(scores: list[PyritScore]) -> list[Score]:
     Returns:
         List of Score DTOs for the API.
     """
-    mapped_scores: List[Score] = []
+    mapped_scores: list[Score] = []
     for score in scores:
         try:
             score_value = float(score.score_value)
@@ -373,7 +374,7 @@ def _build_filename(
     return f"{prefix}_{short_hash}{ext}"
 
 
-async def pyrit_messages_to_dto_async(pyrit_messages: List[PyritMessage]) -> List[Message]:
+async def pyrit_messages_to_dto_async(pyrit_messages: list[PyritMessage]) -> list[Message]:
     """
     Translate PyRIT messages to backend Message DTOs.
 
@@ -516,7 +517,6 @@ def request_to_pyrit_message(
         for p in request.pieces
     ]
     return PyritMessage(pieces)
-
 
 
 # ============================================================================
