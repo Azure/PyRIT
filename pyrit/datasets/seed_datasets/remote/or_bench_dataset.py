@@ -20,6 +20,10 @@ class _ORBenchBaseDataset(_RemoteDatasetLoader):
     References:
         - https://huggingface.co/datasets/bench-llm/OR-Bench
         - https://arxiv.org/abs/2405.20947
+    License: CC BY 4.0
+
+    Warning: This dataset contains prompts designed to test over-refusal behavior in LLMs,
+    including potentially harmful and toxic content.
     """
 
     HF_DATASET_NAME: str = "bench-llm/OR-Bench"
