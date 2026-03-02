@@ -21,6 +21,9 @@ class _SimpleSafetyTestsDataset(_RemoteDatasetLoader):
     References:
         - https://huggingface.co/datasets/Bertievidgen/SimpleSafetyTests
         - https://arxiv.org/abs/2311.08370
+    License: CC BY 4.0
+
+    Warning: This dataset contains prompts related to harmful and unsafe content categories.
     """
 
     HF_DATASET_NAME: str = "Bertievidgen/SimpleSafetyTests"
