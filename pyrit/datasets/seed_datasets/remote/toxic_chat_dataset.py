@@ -83,6 +83,9 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
             "of adversarial user interactions with LLMs."
         )
 
+        source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
+        groups = ["UC San Diego"]
+
         seed_prompts = []
         skipped = 0
         for item in data:
@@ -93,9 +96,9 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
                         data_type="text",
                         dataset_name=self.dataset_name,
                         description=description,
-                        source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
+                        source=source_url,
                         authors=authors,
-                        groups=["UC San Diego"],
+                        groups=groups,
                         metadata={
                             "toxicity": str(item.get("toxicity", "")),
                             "jailbreaking": str(item.get("jailbreaking", "")),
