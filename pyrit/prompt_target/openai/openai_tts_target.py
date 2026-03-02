@@ -26,6 +26,11 @@ TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", 
 class OpenAITTSTarget(OpenAITarget):
     """A prompt target for OpenAI Text-to-Speech (TTS) endpoints."""
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """TTS is stateless and single-turn."""
+        return False
+
     def __init__(
         self,
         *,
