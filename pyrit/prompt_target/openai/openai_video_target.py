@@ -478,10 +478,12 @@ class OpenAIVideoTarget(OpenAITarget):
             raise ValueError("Cannot use image input in remix mode. Remix uses existing video as reference.")
 
         messages = self._memory.get_conversation(conversation_id=text_piece.conversation_id)
-        if len(messages) > 0:
+
+        n_messages = len(messages)
+        if n_messages > 0:
             raise ValueError(
                 "This target only supports a single turn conversation. "
-                f"Received: {len(messages)} messages which indicates a prior turn."
+                f"Received: {n_messages} messages which indicates a prior turn."
             )
 
     def is_json_response_supported(self) -> bool:
