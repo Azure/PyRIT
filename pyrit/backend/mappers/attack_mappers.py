@@ -106,11 +106,11 @@ async def _get_sas_for_container_async(*, container_url: str) -> str:
                 key_start_time=start_time,
                 key_expiry_time=expiry_time,
             )
-            sas_token: str = generate_container_sas(  # type: ignore[assignment]
+            sas_token: str = generate_container_sas(
                 account_name=storage_account_name,
                 container_name=container_name,
                 user_delegation_key=delegation_key,
-                permission=ContainerSasPermissions(read=True),  # type: ignore[no-untyped-call]
+                permission=ContainerSasPermissions(read=True),
                 expiry=expiry_time,
                 start=start_time,
             )

@@ -152,7 +152,12 @@ class AIRTInitializer(PyRITInitializer):
         )
 
     def _setup_scorers(
-        self, *, endpoint: str, credential: Callable[..., Any], model_name: str, content_safety_credential: Callable[..., Any]
+        self,
+        *,
+        endpoint: str,
+        credential: Callable[..., Any],
+        model_name: str,
+        content_safety_credential: Callable[..., Any],
     ) -> None:
         """Set up the composite harm and objective scorers."""
         scorer_target = OpenAIChatTarget(
