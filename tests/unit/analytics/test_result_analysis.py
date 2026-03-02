@@ -10,7 +10,7 @@ from pyrit.analytics.result_analysis import (
     AttackStats,
     analyze_results,
 )
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import AttackOutcome, AttackResult, MessagePiece
 
 
@@ -23,11 +23,12 @@ def make_attack(
     conversation_id: str = "conv-1",
 ) -> AttackResult:
     """Minimal valid AttackResult for analytics tests."""
-    attack_identifier: dict[str, str] = {}
+    attack_identifier = None
     if attack_type is not None:
-        attack_identifier["__type__"] = attack_type
-        attack_identifier["__module__"] = "pyrit.executor.attack"
-        attack_identifier["id"] = "00000000-0000-0000-0000-000000000001"
+        attack_identifier = ComponentIdentifier(
+            class_name=attack_type,
+            class_module="pyrit.executor.attack",
+        )
 
     return AttackResult(
         conversation_id=conversation_id,
@@ -40,15 +41,11 @@ def make_attack(
 def make_converter(
     class_name: str,
     class_module: str = "pyrit.prompt_converter.test_converter",
-) -> ConverterIdentifier:
-    """Create a test ConverterIdentifier with minimal required fields."""
-    return ConverterIdentifier(
+) -> ComponentIdentifier:
+    """Create a test ComponentIdentifier for converter with minimal required fields."""
+    return ComponentIdentifier(
         class_name=class_name,
         class_module=class_module,
-        class_description="Test converter",
-        identifier_type="instance",
-        supported_input_types=("text",),
-        supported_output_types=("text",),
     )
 
 
@@ -65,11 +62,10 @@ def make_attack_with_converters(
         original_value="test",
         converter_identifiers=converters,
     )
-    attack_identifier: dict[str, str] = {
-        "__type__": attack_type,
-        "__module__": "pyrit.executor.attack",
-        "id": "00000000-0000-0000-0000-000000000001",
-    }
+    attack_identifier = ComponentIdentifier(
+        class_name=attack_type,
+        class_module="pyrit.executor.attack",
+    )
     return AttackResult(
         conversation_id=conversation_id,
         objective="test",
@@ -220,14 +216,14 @@ class TestGroupByConverterType:
             AttackResult(
                 conversation_id="conv-1",
                 objective="test",
-                attack_identifier={"__type__": "PromptSendingAttack"},
+                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=None,
             ),
             AttackResult(
                 conversation_id="conv-2",
                 objective="test",
-                attack_identifier={"__type__": "PromptSendingAttack"},
+                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.FAILURE,
                 last_response=None,
             ),
@@ -354,13 +350,13 @@ class TestCustomDimensions:
             AttackResult(
                 conversation_id="c1",
                 objective="steal secrets",
-                attack_identifier={"__type__": "PromptSendingAttack"},
+                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.SUCCESS,
             ),
             AttackResult(
                 conversation_id="c2",
                 objective="bypass filter",
-                attack_identifier={"__type__": "PromptSendingAttack"},
+                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.FAILURE,
             ),
         ]
@@ -417,7 +413,7 @@ class TestGroupByLabel:
             AttackResult(
                 conversation_id="c1",
                 objective="test",
-                attack_identifier={"__type__": "PromptSendingAttack"},
+                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=message,
             ),
@@ -438,7 +434,7 @@ class TestGroupByLabel:
             AttackResult(
                 conversation_id="c1",
                 objective="test",
-                attack_identifier={"__type__": "PromptSendingAttack"},
+                attack_identifier=ComponentIdentifier(class_name='PromptSendingAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=message,
             ),
@@ -458,14 +454,14 @@ class TestGroupByLabel:
             AttackResult(
                 conversation_id="c1",
                 objective="test",
-                attack_identifier={"__type__": "CrescendoAttack"},
+                attack_identifier=ComponentIdentifier(class_name='CrescendoAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.SUCCESS,
                 last_response=message,
             ),
             AttackResult(
                 conversation_id="c2",
                 objective="test",
-                attack_identifier={"__type__": "CrescendoAttack"},
+                attack_identifier=ComponentIdentifier(class_name='CrescendoAttack', class_module='pyrit.executor.attack'),
                 outcome=AttackOutcome.FAILURE,
                 last_response=message,
             ),
