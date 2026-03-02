@@ -23,6 +23,10 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
         - https://huggingface.co/datasets/PKU-Alignment/BeaverTails
         - https://arxiv.org/abs/2307.04657
         - https://github.com/PKU-Alignment/beavertails
+    License: CC BY-NC 4.0
+
+    Warning: This dataset contains unsafe and potentially harmful content. Consult your
+    legal department before using these prompts for testing.
     """
 
     HF_DATASET_NAME: str = "PKU-Alignment/BeaverTails"
