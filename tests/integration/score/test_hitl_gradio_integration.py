@@ -3,8 +3,9 @@
 
 import importlib.util
 import time
+from collections.abc import Callable
 from threading import Event, Thread
-from typing import Callable, Optional
+from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -136,9 +137,7 @@ class TestHiTLGradioIntegration:
                 assert prompt.original_value == promptOriginal.original_value
                 assert prompt.converted_value == promptOriginal.converted_value
 
-                if i % 2 == 0:
-                    return True
-                return False
+                return i % 2 == 0
 
             mock_is_app_running.return_value = True
 

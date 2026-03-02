@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from pyrit.common.path import DATASETS_PATH
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedAttackGroup, SeedObjective, SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -24,23 +24,19 @@ from pyrit.scenario.scenarios.airt.content_harms import (
 from pyrit.score import TrueFalseScorer
 
 
-def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -136,7 +132,7 @@ class TestContentHarmsStrategy:
 
     def test_all_strategies_can_be_accessed_by_name(self):
         """Test that all strategies can be accessed by their name."""
-        assert ContentHarmsStrategy.ALL == ContentHarmsStrategy["ALL"]
+        assert ContentHarmsStrategy["ALL"] == ContentHarmsStrategy.ALL
         assert ContentHarmsStrategy.Hate == ContentHarmsStrategy["Hate"]
         assert ContentHarmsStrategy.Fairness == ContentHarmsStrategy["Fairness"]
         assert ContentHarmsStrategy.Violence == ContentHarmsStrategy["Violence"]
@@ -172,7 +168,7 @@ class TestContentHarmsStrategy:
         """Test that strategy comparison works correctly."""
         assert ContentHarmsStrategy.Hate == ContentHarmsStrategy.Hate
         assert ContentHarmsStrategy.Hate != ContentHarmsStrategy.Violence
-        assert ContentHarmsStrategy.ALL != ContentHarmsStrategy.Hate
+        assert ContentHarmsStrategy.Hate != ContentHarmsStrategy.ALL
 
     def test_strategy_hash(self):
         """Test that strategies can be hashed and used in sets/dicts."""

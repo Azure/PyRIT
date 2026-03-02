@@ -4,9 +4,9 @@
 import random
 import re
 import string
-from typing import List, Optional
+from typing import Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -45,21 +45,21 @@ class InsertPunctuationConverter(PromptConverter):
         self._word_swap_ratio = word_swap_ratio
         self._between_words = between_words
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with punctuation insertion parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "word_swap_ratio": self._word_swap_ratio,
                 "between_words": self._between_words,
             }
         )
 
-    def _is_valid_punctuation(self, punctuation_list: List[str]) -> bool:
+    def _is_valid_punctuation(self, punctuation_list: list[str]) -> bool:
         """
         Check if all items in the list are valid punctuation characters in string.punctuation.
         Space, letters, numbers, double punctuations are all invalid.
@@ -73,7 +73,7 @@ class InsertPunctuationConverter(PromptConverter):
         return all(str in string.punctuation for str in punctuation_list)
 
     async def convert_async(
-        self, *, prompt: str, input_type: PromptDataType = "text", punctuation_list: Optional[List[str]] = None
+        self, *, prompt: str, input_type: PromptDataType = "text", punctuation_list: Optional[list[str]] = None
     ) -> ConverterResult:
         """
         Convert the given prompt by inserting punctuation.
@@ -105,7 +105,7 @@ class InsertPunctuationConverter(PromptConverter):
         modified_prompt = self._insert_punctuation(prompt, punctuation_list)
         return ConverterResult(output_text=modified_prompt, output_type="text")
 
-    def _insert_punctuation(self, prompt: str, punctuation_list: List[str]) -> str:
+    def _insert_punctuation(self, prompt: str, punctuation_list: list[str]) -> str:
         """
         Insert punctuation into the prompt.
 
@@ -119,7 +119,7 @@ class InsertPunctuationConverter(PromptConverter):
         # Words list contains single spaces, single word without punctuations, single punctuations
         words = re.findall(r"\w+|[^\w\s]|\s", prompt)
         # Maintains indices for actual "words", i.e. letters and numbers not divided by punctuations
-        word_indices = [i for i in range(0, len(words)) if not re.match(r"\W", words[i])]
+        word_indices = [i for i in range(len(words)) if not re.match(r"\W", words[i])]
         # Calculate the number of insertions
         num_insertions = max(
             1, round(len(word_indices) * self._word_swap_ratio)
@@ -131,11 +131,10 @@ class InsertPunctuationConverter(PromptConverter):
 
         if self._between_words:
             return self._insert_between_words(words, word_indices, num_insertions, punctuation_list)
-        else:
-            return self._insert_within_words(prompt, num_insertions, punctuation_list)
+        return self._insert_within_words(prompt, num_insertions, punctuation_list)
 
     def _insert_between_words(
-        self, words: List[str], word_indices: List[int], num_insertions: int, punctuation_list: List[str]
+        self, words: list[str], word_indices: list[int], num_insertions: int, punctuation_list: list[str]
     ) -> str:
         """
         Insert punctuation between words in the prompt.
@@ -161,7 +160,7 @@ class InsertPunctuationConverter(PromptConverter):
         # Join the words list and return a modified prompt
         return "".join(words).strip()
 
-    def _insert_within_words(self, prompt: str, num_insertions: int, punctuation_list: List[str]) -> str:
+    def _insert_within_words(self, prompt: str, num_insertions: int, punctuation_list: list[str]) -> str:
         """
         Insert punctuation at any indices in the prompt, can insert into a word.
 
@@ -178,7 +177,7 @@ class InsertPunctuationConverter(PromptConverter):
         # Store random indices of prompt_list into insert_indices
         # If the prompt has only 0 or 1 chars, insert at the end of the prompt
         insert_indices = (
-            [1] if len(prompt_list) <= num_insertions else random.sample(range(0, len(prompt_list) - 1), num_insertions)
+            [1] if len(prompt_list) <= num_insertions else random.sample(range(len(prompt_list) - 1), num_insertions)
         )
 
         for index in insert_indices:

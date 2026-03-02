@@ -7,16 +7,19 @@ import ast
 import hashlib
 from dataclasses import dataclass
 from io import BytesIO
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from docx import Document
 
 from pyrit.common.logger import logger
-from pyrit.identifiers import ConverterIdentifier
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
-from pyrit.models.data_type_serializer import DataTypeSerializer
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from pyrit.identifiers import ComponentIdentifier
+    from pyrit.models.data_type_serializer import DataTypeSerializer
 
 
 @dataclass
@@ -102,12 +105,12 @@ class WordDocConverter(PromptConverter):
             placeholder=placeholder,
         )
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with template and document parameters.
 
         Returns:
-            ConverterIdentifier: The identifier with converter-specific parameters.
+            ComponentIdentifier: The identifier with converter-specific parameters.
         """
         template_hash: Optional[str] = None
         if self._prompt_template:
@@ -118,7 +121,7 @@ class WordDocConverter(PromptConverter):
             existing_docx_path = str(self._injection_config.existing_docx)
 
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "prompt_template_hash": template_hash,
                 "existing_docx_path": existing_docx_path,
                 "placeholder": self._injection_config.placeholder,
@@ -180,7 +183,7 @@ class WordDocConverter(PromptConverter):
         if self._prompt_template:
             logger.debug(f"Preparing Word content with template: {self._prompt_template.value}")
             try:
-                dynamic_data: Dict[str, Any] = ast.literal_eval(prompt)
+                dynamic_data: dict[str, Any] = ast.literal_eval(prompt)
 
                 if not isinstance(dynamic_data, dict):
                     raise ValueError("Prompt must be a dictionary-compatible object after parsing.")

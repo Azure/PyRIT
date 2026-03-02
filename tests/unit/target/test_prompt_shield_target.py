@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import MutableSequence
+from collections.abc import MutableSequence
 from unittest.mock import MagicMock
 
 import pytest
@@ -46,8 +46,7 @@ def sample_delineated_prompt_as_dict() -> dict:
 
 @pytest.fixture
 def sample_conversation_piece(sample_delineated_prompt_as_str: str) -> MessagePiece:
-    prp = MessagePiece(role="user", original_value=sample_delineated_prompt_as_str)
-    return prp
+    return MessagePiece(role="user", original_value=sample_delineated_prompt_as_str)
 
 
 def test_promptshield_init(promptshield_target: PromptShieldTarget):
@@ -86,7 +85,7 @@ async def test_prompt_shield_document_parsing(
 @pytest.mark.asyncio
 async def test_prompt_shield_response_validation(promptshield_target: PromptShieldTarget):
     # This tests handling both an empty request and an empty response
-    promptshield_target._validate_response(request_body=dict(), response_body=dict())
+    promptshield_target._validate_response(request_body={}, response_body={})
 
 
 def test_api_key_authentication():

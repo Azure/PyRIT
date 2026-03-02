@@ -7,7 +7,7 @@ import logging
 import re
 import wave
 from dataclasses import dataclass, field
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, Literal, Optional
 
 from openai import AsyncOpenAI
 
@@ -15,7 +15,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     construct_response_from_request,
@@ -43,7 +43,7 @@ class RealtimeTargetResult:
     """
 
     audio_bytes: bytes = field(default_factory=lambda: b"")
-    transcripts: List[str] = field(default_factory=list)
+    transcripts: list[str] = field(default_factory=list)
 
     def flatten_transcripts(self) -> str:
         """
@@ -119,15 +119,15 @@ class RealtimeTarget(OpenAITarget):
             "api.openai.com": "wss://api.openai.com/v1",
         }
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with Realtime API-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "voice": self.voice,
             },
         )
@@ -507,13 +507,13 @@ class RealtimeTarget(OpenAITarget):
                     logger.debug("Received response.done - finishing normally")
                     break
 
-                elif event_type == "error":
+                if event_type == "error":
                     error_message = event.error.message if hasattr(event.error, "message") else str(event.error)
                     error_type = event.error.type if hasattr(event.error, "type") else "unknown"
                     logger.error(f"Received 'error' event: [{error_type}] {error_message}")
                     raise RuntimeError(f"Server error: [{error_type}] {error_message}")
 
-                elif event_type in ["response.audio.delta", "response.output_audio.delta"]:
+                if event_type in ["response.audio.delta", "response.output_audio.delta"]:
                     audio_data = base64.b64decode(event.delta)
                     result.audio_bytes += audio_data
                     logger.debug(f"Decoded {len(audio_data)} bytes of audio data")
@@ -639,7 +639,7 @@ class RealtimeTarget(OpenAITarget):
                 return f"[{error_type}] {error_message}"
         return "Unknown error occurred"
 
-    async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
+    async def send_text_async(self, text: str, conversation_id: str) -> tuple[str, RealtimeTargetResult]:
         """
         Send text prompt using OpenAI Realtime API client.
 
@@ -693,7 +693,7 @@ class RealtimeTarget(OpenAITarget):
         output_audio_path = await self.save_audio(audio_bytes=result.audio_bytes, sample_rate=24000)
         return output_audio_path, result
 
-    async def send_audio_async(self, filename: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
+    async def send_audio_async(self, filename: str, conversation_id: str) -> tuple[str, RealtimeTargetResult]:
         """
         Send an audio message using OpenAI Realtime API client.
 

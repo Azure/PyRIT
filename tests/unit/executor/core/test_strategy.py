@@ -11,7 +11,7 @@ from pyrit.exceptions import (
     execution_context,
 )
 from pyrit.executor.core.strategy import Strategy, StrategyContext
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 
 
 @dataclass
@@ -82,7 +82,9 @@ class TestStrategyExecutionContext:
             with execution_context(
                 component_role=ComponentRole.OBJECTIVE_TARGET,
                 attack_strategy_name="MockStrategy",
-                attack_identifier={"id": "test-123"},
+                attack_identifier=ComponentIdentifier(
+                    class_name="MockStrategy", class_module="test_module", params={"id": "test-123"}
+                ),
             ):
                 await strategy.execute_with_context_async(context=context)
 
@@ -129,12 +131,14 @@ class TestStrategyExecutionContext:
         strategy = MockStrategy(perform_exception=middle_error)
         context = MockContext()
 
-        with execution_context(
-            component_role=ComponentRole.OBJECTIVE_TARGET,
-            attack_strategy_name="MockStrategy",
+        with (
+            execution_context(
+                component_role=ComponentRole.OBJECTIVE_TARGET,
+                attack_strategy_name="MockStrategy",
+            ),
+            pytest.raises(RuntimeError) as exc_info,
         ):
-            with pytest.raises(RuntimeError) as exc_info:
-                await strategy.execute_with_context_async(context=context)
+            await strategy.execute_with_context_async(context=context)
 
         error_message = str(exc_info.value)
         # Should include root cause information
@@ -157,17 +161,21 @@ class TestStrategyExecutionContextDetails:
         strategy = MockStrategy(perform_exception=ValueError("Error"))
         context = MockContext()
 
-        with pytest.raises(RuntimeError) as exc_info:
-            with execution_context(
+        with (
+            pytest.raises(RuntimeError) as exc_info,
+            execution_context(
                 component_role=ComponentRole.ADVERSARIAL_CHAT,
                 attack_strategy_name="TestAttack",
-                attack_identifier={"__type__": "TestAttack", "id": "abc-123"},
-            ):
-                await strategy.execute_with_context_async(context=context)
+                attack_identifier=ComponentIdentifier(
+                    class_name="TestAttack", class_module="test_module", params={"id": "abc-123"}
+                ),
+            ),
+        ):
+            await strategy.execute_with_context_async(context=context)
 
         error_message = str(exc_info.value)
         assert "Attack identifier:" in error_message
-        assert "abc-123" in error_message
+        assert "TestAttack" in error_message
 
     @pytest.mark.asyncio
     async def test_error_includes_conversation_id(self):
@@ -175,13 +183,15 @@ class TestStrategyExecutionContextDetails:
         strategy = MockStrategy(perform_exception=ValueError("Error"))
         context = MockContext()
 
-        with pytest.raises(RuntimeError) as exc_info:
-            with execution_context(
+        with (
+            pytest.raises(RuntimeError) as exc_info,
+            execution_context(
                 component_role=ComponentRole.OBJECTIVE_TARGET,
                 attack_strategy_name="TestAttack",
                 objective_target_conversation_id="conv-xyz-789",
-            ):
-                await strategy.execute_with_context_async(context=context)
+            ),
+        ):
+            await strategy.execute_with_context_async(context=context)
 
         error_message = str(exc_info.value)
         assert "Objective target conversation ID: conv-xyz-789" in error_message
@@ -192,16 +202,18 @@ class TestStrategyExecutionContextDetails:
         strategy = MockStrategy(perform_exception=ValueError("Error"))
         context = MockContext()
 
-        with pytest.raises(RuntimeError) as exc_info:
-            with execution_context(
+        with (
+            pytest.raises(RuntimeError) as exc_info,
+            execution_context(
                 component_role=ComponentRole.OBJECTIVE_SCORER,
                 attack_strategy_name="TestAttack",
-                component_identifier=ScorerIdentifier(
+                component_identifier=ComponentIdentifier(
                     class_name="SelfAskTrueFalseScorer",
                     class_module="pyrit.score.true_false.self_ask_true_false_scorer",
                 ),
-            ):
-                await strategy.execute_with_context_async(context=context)
+            ),
+        ):
+            await strategy.execute_with_context_async(context=context)
 
         error_message = str(exc_info.value)
         assert "objective_scorer identifier:" in error_message

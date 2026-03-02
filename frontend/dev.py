@@ -42,7 +42,7 @@ def sync_version():
 
         # Read package.json
         package_json_path = FRONTEND_DIR / "package.json"
-        with open(package_json_path, "r") as f:
+        with open(package_json_path) as f:
             package_data = json.load(f)
 
         # Update version if different
@@ -120,9 +120,7 @@ def start_backend(initializers: list[str] | None = None):
         cmd.extend(["--initializers"] + initializers)
 
     # Start backend
-    backend = subprocess.Popen(cmd, env=env)
-
-    return backend
+    return subprocess.Popen(cmd, env=env)
 
 
 def start_frontend():
@@ -134,9 +132,7 @@ def start_frontend():
 
     # Start frontend process
     npm_cmd = "npm.cmd" if is_windows() else "npm"
-    frontend = subprocess.Popen([npm_cmd, "run", "dev"])
-
-    return frontend
+    return subprocess.Popen([npm_cmd, "run", "dev"])
 
 
 def start_servers():
@@ -199,7 +195,7 @@ def main():
         if command == "stop":
             stop_servers()
             return
-        elif command == "restart":
+        if command == "restart":
             stop_servers()
             time.sleep(1)
         elif command == "start":

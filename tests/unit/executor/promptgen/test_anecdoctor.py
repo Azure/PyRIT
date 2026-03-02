@@ -2,7 +2,6 @@
 # Licensed under the MIT license.
 
 import uuid
-from typing import List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,19 +12,17 @@ from pyrit.executor.promptgen.anecdoctor import (
     AnecdoctorGenerator,
     AnecdoctorResult,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptChatTarget
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test_module",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -56,7 +53,7 @@ def mock_prompt_normalizer() -> PromptNormalizer:
 
 
 @pytest.fixture
-def sample_evaluation_data() -> List[str]:
+def sample_evaluation_data() -> list[str]:
     """Sample evaluation data for testing."""
     return [
         "Claim: The earth is flat. Review: FALSE",

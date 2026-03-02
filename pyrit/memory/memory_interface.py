@@ -7,15 +7,15 @@ import logging
 import uuid
 import warnings
 import weakref
+from collections.abc import MutableSequence, Sequence
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
-from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from sqlalchemy import MetaData, and_, or_
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.sql.elements import ColumnElement
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory.memory_embedding import (
@@ -48,6 +48,9 @@ from pyrit.models import (
     group_conversation_message_pieces_by_sequence,
     sort_message_pieces,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
 
 logger = logging.getLogger(__name__)
 
@@ -693,10 +696,7 @@ class MemoryInterface(abc.ABC):
 
         length_of_sequence_to_remove = 0
 
-        if last_message.api_role == "system" or last_message.api_role == "user":
-            length_of_sequence_to_remove = 1
-        else:
-            length_of_sequence_to_remove = 2
+        length_of_sequence_to_remove = 1 if last_message.api_role == "system" or last_message.api_role == "user" else 2
 
         messages_to_duplicate = [
             message for message in messages if message.sequence <= last_message.sequence - length_of_sequence_to_remove
@@ -1088,7 +1088,7 @@ class MemoryInterface(abc.ABC):
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(seed.prompt_group_id for seed in prompt_group.seeds)
+            group_id_set = {seed.prompt_group_id for seed in prompt_group.seeds}
             if len(group_id_set) > 1:
                 raise ValueError(
                     f"""Inconsistent 'prompt_group_id' attribute between members of the

@@ -14,8 +14,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import ConverterIdentifier
-from pyrit.identifiers.class_name_utils import class_name_to_snake_case
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.registry.instance_registries.base_instance_registry import (
     BaseInstanceRegistry,
 )
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentifier]):
+class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ComponentIdentifier]):
     """
     Registry for managing available converter instances.
 
@@ -57,10 +56,10 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
         Args:
             converter: The pre-configured converter instance (not a class).
             name: Optional custom registry name. If not provided,
-                derived from class name (e.g., Base64Converter -> base64).
+                derived from the converter's unique identifier.
         """
         if name is None:
-            name = class_name_to_snake_case(converter.__class__.__name__, suffix="Converter")
+            name = converter.get_identifier().unique_name
 
         self.register(converter, name=name)
         logger.debug(f"Registered converter instance: {name} ({converter.__class__.__name__})")
@@ -77,7 +76,7 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
         """
         return self.get(name)
 
-    def _build_metadata(self, name: str, instance: PromptConverter) -> ConverterIdentifier:
+    def _build_metadata(self, name: str, instance: PromptConverter) -> ComponentIdentifier:
         """
         Build metadata for a converter instance.
 
@@ -86,13 +85,6 @@ class ConverterRegistry(BaseInstanceRegistry["PromptConverter", ConverterIdentif
             instance: The converter instance.
 
         Returns:
-            ConverterIdentifier with basic info about the converter.
+            ComponentIdentifier: The converter's identifier.
         """
-        return ConverterIdentifier(
-            class_name=instance.__class__.__name__,
-            class_module=instance.__class__.__module__,
-            class_description=f"Converter: {name}",
-            identifier_type="instance",
-            supported_input_types=instance.SUPPORTED_INPUT_TYPES,
-            supported_output_types=instance.SUPPORTED_OUTPUT_TYPES,
-        )
+        return instance.get_identifier()

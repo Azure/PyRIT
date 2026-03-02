@@ -5,7 +5,7 @@ import ast
 import hashlib
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from pypdf import PageObject, PdfReader, PdfWriter
 from reportlab.lib.units import mm
@@ -13,7 +13,7 @@ from reportlab.lib.utils import simpleSplit
 from reportlab.pdfgen import canvas
 
 from pyrit.common.logger import logger
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, SeedPrompt, data_serializer_factory
 from pyrit.models.data_type_serializer import DataTypeSerializer
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
@@ -48,7 +48,7 @@ class PDFConverter(PromptConverter):
         column_width: int = 0,
         row_height: int = 10,
         existing_pdf: Optional[Path] = None,
-        injection_items: Optional[List[Dict[str, Any]]] = None,
+        injection_items: Optional[list[dict[str, Any]]] = None,
     ) -> None:
         """
         Initialize the converter with the specified parameters.
@@ -105,12 +105,12 @@ class PDFConverter(PromptConverter):
         if not all(isinstance(item, dict) for item in self._injection_items):
             raise ValueError("Each injection item must be a dictionary.")
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with PDF converter parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         template_hash = None
         if self._prompt_template:
@@ -121,7 +121,7 @@ class PDFConverter(PromptConverter):
             existing_pdf_path = str(self._existing_pdf_path)
 
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "font_type": self._font_type,
                 "font_size": self._font_size,
                 "page_width": self._page_width,
@@ -155,10 +155,7 @@ class PDFConverter(PromptConverter):
         content = self._prepare_content(prompt)
 
         # Step 2: Generate or modify the PDF (Overlay, if existing PDF)
-        if self._existing_pdf_bytes:
-            pdf_bytes = self._modify_existing_pdf()
-        else:
-            pdf_bytes = self._generate_pdf(content)
+        pdf_bytes = self._modify_existing_pdf() if self._existing_pdf_bytes else self._generate_pdf(content)
 
         # Step 3: Serialize PDF
         pdf_serializer = await self._serialize_pdf(pdf_bytes, content)
@@ -198,15 +195,14 @@ class PDFConverter(PromptConverter):
 
             except (ValueError, KeyError) as e:
                 logger.error(f"Error rendering prompt: {e}")
-                raise ValueError(f"Failed to render the prompt: {e}")
+                raise ValueError(f"Failed to render the prompt: {e}") from e
 
         # If no template is provided, return the raw prompt as content
         if isinstance(prompt, str):
             logger.debug("No template provided. Using raw prompt.")
             return prompt
-        else:
-            logger.error("Prompt must be a string when no template is provided.")
-            raise ValueError("Prompt must be a string when no template is provided.")
+        logger.error("Prompt must be a string when no template is provided.")
+        raise ValueError("Prompt must be a string when no template is provided.")
 
     def _generate_pdf(self, content: str) -> bytes:
         """
@@ -244,10 +240,7 @@ class PDFConverter(PromptConverter):
         y = page_height_pt - margin  # ReportLab uses bottom-left origin
 
         # Calculate actual column width
-        if self._column_width == 0:
-            actual_width = page_width_pt - (2 * margin)
-        else:
-            actual_width = self._column_width * mm
+        actual_width = page_width_pt - 2 * margin if self._column_width == 0 else self._column_width * mm
 
         # Convert row_height from mm to points
         line_height = self._row_height * mm if self._row_height else self._font_size * 1.2
@@ -441,10 +434,7 @@ class PDFConverter(PromptConverter):
         """
         original_filename_ending = self._existing_pdf_path.suffix if self._existing_pdf_path else ""
 
-        if original_filename_ending:
-            extension = original_filename_ending[1:]  # Remove the leading dot
-        else:
-            extension = "pdf"
+        extension = original_filename_ending[1:] if original_filename_ending else "pdf"
 
         pdf_serializer = data_serializer_factory(
             category="prompt-memory-entries",

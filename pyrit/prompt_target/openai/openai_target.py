@@ -6,7 +6,8 @@ import json
 import logging
 import re
 from abc import abstractmethod
-from typing import Any, Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 from openai import (
@@ -256,7 +257,6 @@ class OpenAITarget(PromptChatTarget):
         Returns:
             List of API paths (e.g., ["/chat/completions", "/v1/chat/completions"])
         """
-        pass
 
     @abstractmethod
     def _get_provider_examples(self) -> dict[str, str]:
@@ -269,7 +269,6 @@ class OpenAITarget(PromptChatTarget):
             Dict mapping provider patterns to example URLs
             (e.g., {".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1"})
         """
-        pass
 
     def _validate_url_for_target(self, endpoint_url: str) -> None:
         """
@@ -497,19 +496,18 @@ class OpenAITarget(PromptChatTarget):
             request_id = _extract_request_id_from_exception(e)
             retry_after = _extract_retry_after_from_exception(e)
             logger.warning(f"RateLimitError request_id={request_id} retry_after={retry_after} error={e}")
-            raise RateLimitException()
+            raise RateLimitException() from None
         except APIStatusError as e:
             # Other API status errors - check for 429 here as well
             request_id = _extract_request_id_from_exception(e)
             if getattr(e, "status_code", None) == 429:
                 retry_after = _extract_retry_after_from_exception(e)
                 logger.warning(f"429 via APIStatusError request_id={request_id} retry_after={retry_after}")
-                raise RateLimitException()
-            else:
-                logger.exception(
-                    f"APIStatusError request_id={request_id} status={getattr(e, 'status_code', None)} error={e}"
-                )
-                raise
+                raise RateLimitException() from None
+            logger.exception(
+                f"APIStatusError request_id={request_id} status={getattr(e, 'status_code', None)} error={e}"
+            )
+            raise
         except (APITimeoutError, APIConnectionError) as e:
             # Transient infrastructure errors - these are retryable
             request_id = _extract_request_id_from_exception(e)
@@ -537,7 +535,6 @@ class OpenAITarget(PromptChatTarget):
         Returns:
             Message: Constructed message with extracted content.
         """
-        pass
 
     def _check_content_filter(self, response: Any) -> bool:
         """
@@ -694,4 +691,3 @@ class OpenAITarget(PromptChatTarget):
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """
-        pass

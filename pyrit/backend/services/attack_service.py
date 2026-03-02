@@ -18,7 +18,7 @@ ARCHITECTURE:
 import uuid
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 from pyrit.backend.mappers.attack_mappers import (
     attack_result_to_summary,
@@ -39,7 +39,7 @@ from pyrit.backend.models.attacks import (
 from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
-from pyrit.identifiers import AttackIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -64,9 +64,9 @@ class AttackService:
         self,
         *,
         attack_class: Optional[str] = None,
-        converter_classes: Optional[List[str]] = None,
+        converter_classes: Optional[list[str]] = None,
         outcome: Optional[Literal["undetermined", "success", "failure"]] = None,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
         min_turns: Optional[int] = None,
         max_turns: Optional[int] = None,
         limit: int = 20,
@@ -100,7 +100,7 @@ class AttackService:
             converter_classes=converter_classes,
         )
 
-        filtered: List[AttackResult] = []
+        filtered: list[AttackResult] = []
         for ar in attack_results:
             if min_turns is not None and ar.executed_turns < min_turns:
                 continue
@@ -119,7 +119,7 @@ class AttackService:
         next_cursor = page_results[-1].conversation_id if has_more and page_results else None
 
         # Phase 2: Fetch pieces only for the page we're returning
-        page: List[AttackSummary] = []
+        page: list[AttackSummary] = []
         for ar in page_results:
             pieces = self._memory.get_message_pieces(conversation_id=ar.conversation_id)
             page.append(attack_result_to_summary(ar, pieces=pieces))
@@ -129,7 +129,7 @@ class AttackService:
             pagination=PaginationInfo(limit=limit, has_more=has_more, next_cursor=next_cursor, prev_cursor=cursor),
         )
 
-    async def get_attack_options_async(self) -> List[str]:
+    async def get_attack_options_async(self) -> list[str]:
         """
         Get all unique attack class names from stored attack results.
 
@@ -141,7 +141,7 @@ class AttackService:
         """
         return self._memory.get_unique_attack_class_names()
 
-    async def get_converter_options_async(self) -> List[str]:
+    async def get_converter_options_async(self) -> list[str]:
         """
         Get all unique converter class names used across attack results.
 
@@ -205,7 +205,7 @@ class AttackService:
         if not target_instance:
             raise ValueError(f"Target instance '{request.target_unique_name}' not found")
 
-        # Get the actual target object so we can capture its TargetIdentifier
+        # Get the actual target object so we can capture its ComponentIdentifier
         target_obj = target_service.get_target_object(target_unique_name=request.target_unique_name)
         target_identifier = target_obj.get_identifier() if target_obj else None
 
@@ -217,10 +217,10 @@ class AttackService:
         attack_result = AttackResult(
             conversation_id=conversation_id,
             objective=request.name or "Manual attack via GUI",
-            attack_identifier=AttackIdentifier(
+            attack_identifier=ComponentIdentifier(
                 class_name=request.name or "ManualAttack",
                 class_module="pyrit.backend",
-                objective_target_identifier=target_identifier,
+                children={"objective_target": target_identifier} if target_identifier else {},
             ),
             outcome=AttackOutcome.UNDETERMINED,
             metadata={
@@ -296,9 +296,10 @@ class AttackService:
 
         ar = results[0]
         aid = ar.attack_identifier
-        if not aid or not aid.objective_target_identifier:
+        objective_target = aid.get_child("objective_target") if aid else None
+        if not aid or not objective_target:
             raise ValueError(f"Attack '{conversation_id}' has no target configured")
-        target_unique_name = aid.objective_target_identifier.unique_name
+        target_unique_name = objective_target.unique_name
 
         # Get existing messages to determine sequence.
         # NOTE: This read-then-write is not atomic (TOCTOU). Fine for the
@@ -339,8 +340,8 @@ class AttackService:
     # ========================================================================
 
     def _paginate_attack_results(
-        self, items: List[AttackResult], cursor: Optional[str], limit: int
-    ) -> tuple[List[AttackResult], bool]:
+        self, items: list[AttackResult], cursor: Optional[str], limit: int
+    ) -> tuple[list[AttackResult], bool]:
         """
         Apply cursor-based pagination over AttackResult objects.
 
@@ -368,12 +369,11 @@ class AttackService:
     async def _store_prepended_messages(
         self,
         conversation_id: str,
-        prepended: List[Any],
-        labels: Optional[Dict[str, str]] = None,
+        prepended: list[Any],
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         """Store prepended conversation messages in memory."""
-        seq = 0
-        for msg in prepended:
+        for seq, msg in enumerate(prepended):
             for p in msg.pieces:
                 piece = request_piece_to_pyrit_message_piece(
                     piece=p,
@@ -383,7 +383,6 @@ class AttackService:
                     labels=labels,
                 )
                 self._memory.add_message_pieces_to_memory(message_pieces=[piece])
-            seq += 1
 
     async def _send_and_store_message(
         self,
@@ -392,7 +391,7 @@ class AttackService:
         request: AddMessageRequest,
         sequence: int,
         *,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         """Send message to target via normalizer and store response."""
         target_obj = get_target_service().get_target_object(target_unique_name=target_unique_name)
@@ -423,7 +422,7 @@ class AttackService:
         request: AddMessageRequest,
         sequence: int,
         *,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         """Store message without sending (send=False)."""
         for p in request.pieces:
@@ -436,7 +435,7 @@ class AttackService:
             )
             self._memory.add_message_pieces_to_memory(message_pieces=[piece])
 
-    def _get_converter_configs(self, request: AddMessageRequest) -> List[PromptConverterConfiguration]:
+    def _get_converter_configs(self, request: AddMessageRequest) -> list[PromptConverterConfiguration]:
         """
         Get converter configurations if needed.
 

@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from unit.mocks import MockPromptTarget, get_image_message_piece, get_mock_target_identifier
+from unit.mocks import MockPromptTarget, get_image_message_piece, get_mock_attack_identifier, get_mock_target_identifier
 
 from pyrit.exceptions import (
     ComponentRole,
@@ -175,8 +175,8 @@ async def test_send_prompt_async_request_response_added_to_memory(mock_memory_in
         == mock_memory_instance.add_message_to_memory.call_args_list[0][1]["request"].message_pieces[0].original_value
     )
     assert (
-        "test_response"
-        == mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"].message_pieces[0].original_value
+        mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"].message_pieces[0].original_value
+        == "test_response"
     )
 
     assert mock_memory_instance.add_message_to_memory.call_args_list[1].called_after(prompt_target.send_prompt_async)
@@ -207,10 +207,10 @@ async def test_send_prompt_async_exception(mock_memory_instance, seed_group):
                 .original_value
             )
             assert (
-                "test_exception"
-                == mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"]
+                mock_memory_instance.add_message_to_memory.call_args_list[1][1]["request"]
                 .message_pieces[0]
                 .original_value
+                == "test_exception"
             )
 
 
@@ -518,7 +518,7 @@ class TestPromptNormalizerConverterContext:
         with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name="TestAttack",
-            attack_identifier={"id": "attack-123"},
+            attack_identifier=get_mock_attack_identifier("TestAttack"),
             objective_target_conversation_id="conv-456",
         ):
             await normalizer.convert_values(converter_configurations=[converter_config], message=message)

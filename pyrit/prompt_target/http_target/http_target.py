@@ -5,11 +5,12 @@
 import json
 import logging
 import re
-from typing import Any, Callable, Dict, Optional, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any, Optional
 
 import httpx
 
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -83,15 +84,15 @@ class HTTPTarget(PromptTarget):
         if client and httpx_client_kwargs:
             raise ValueError("Cannot provide both a pre-configured client and additional httpx client kwargs.")
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with HTTP target-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "use_tls": self.use_tls,
                 "prompt_regex_string": self.prompt_regex_string,
                 "callback_function": getattr(self.callback_function, "__name__", None),
@@ -120,14 +121,13 @@ class HTTPTarget(PromptTarget):
         Returns:
             HTTPTarget: an instance of HTTPTarget
         """
-        instance = cls(
+        return cls(
             http_request=http_request,
             prompt_regex_string=prompt_regex_string,
             callback_function=callback_function,
             max_requests_per_minute=max_requests_per_minute,
             client=client,
         )
-        return instance
 
     def _inject_prompt_into_request(self, request: MessagePiece) -> str:
         """
@@ -211,7 +211,7 @@ class HTTPTarget(PromptTarget):
             if cleanup_client:
                 await client.aclose()
 
-    def parse_raw_http_request(self, http_request: str) -> tuple[Dict[str, str], RequestBody, str, str, str]:
+    def parse_raw_http_request(self, http_request: str) -> tuple[dict[str, str], RequestBody, str, str, str]:
         """
         Parse the HTTP request string into a dictionary of headers.
 
@@ -229,7 +229,7 @@ class HTTPTarget(PromptTarget):
         Raises:
             ValueError: If the HTTP request line is invalid.
         """
-        headers_dict: Dict[str, str] = {}
+        headers_dict: dict[str, str] = {}
         if self._client:
             headers_dict = dict(self._client.headers.copy())
         if not http_request:
@@ -277,7 +277,7 @@ class HTTPTarget(PromptTarget):
     def _infer_full_url_from_host(
         self,
         path: str,
-        headers_dict: Dict[str, str],
+        headers_dict: dict[str, str],
     ) -> str:
         # If path is already a full URL, return it as is
         path = path.lower()

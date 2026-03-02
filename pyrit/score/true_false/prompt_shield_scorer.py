@@ -6,7 +6,7 @@ import logging
 import uuid
 from typing import Any, Optional
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece, Score, ScoreType
 from pyrit.prompt_target import PromptShieldTarget
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
@@ -49,16 +49,20 @@ class PromptShieldScorer(TrueFalseScorer):
 
         super().__init__(validator=validator or self._DEFAULT_VALIDATOR, score_aggregator=score_aggregator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
-        Build the scorer evaluation identifier for this scorer.
+        Build the identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier(
-            prompt_target=self._prompt_target,
-            score_aggregator=self._score_aggregator.__name__,
+            params={
+                "score_aggregator": self._score_aggregator.__name__,
+            },
+            children={
+                "prompt_target": self._prompt_target.get_identifier(),
+            },
         )
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
@@ -121,10 +125,7 @@ class PromptShieldScorer(TrueFalseScorer):
         user_prompt_attack: dict[str, bool] = response_json.get("userPromptAnalysis", False)
         documents_attack: list[dict[str, Any]] = response_json.get("documentsAnalysis", False)
 
-        if not user_prompt_attack:
-            user_detections = [False]
-        else:
-            user_detections = [user_prompt_attack.get("attackDetected")]
+        user_detections = [False] if not user_prompt_attack else [user_prompt_attack.get("attackDetected")]
 
         if not documents_attack:
             document_detections = [False]

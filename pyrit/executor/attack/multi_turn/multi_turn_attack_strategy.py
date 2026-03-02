@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-import logging
+import logging  # noqa: TC003
 import uuid
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import Any, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 from pyrit.common.logger import logger
 from pyrit.executor.attack.core.attack_parameters import AttackParameters, AttackParamsT
@@ -16,11 +16,13 @@ from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,
     AttackStrategyResultT,
 )
-from pyrit.models import (
-    Message,
-    Score,
-)
-from pyrit.prompt_target import PromptTarget
+
+if TYPE_CHECKING:
+    from pyrit.models import (
+        Message,
+        Score,
+    )
+    from pyrit.prompt_target import PromptTarget
 
 MultiTurnAttackStrategyContextT = TypeVar("MultiTurnAttackStrategyContextT", bound="MultiTurnAttackContext[Any]")
 
@@ -71,7 +73,7 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         *,
         objective_target: PromptTarget,
         context_type: type[MultiTurnAttackStrategyContextT],
-        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        params_type: type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         logger: logging.Logger = logger,
     ):
         """

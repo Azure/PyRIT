@@ -9,11 +9,15 @@ Extends SeedGroup to enforce exactly one objective is present.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Sequence, Union
+from typing import TYPE_CHECKING, Any, Union
 
-from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_group import SeedGroup
 from pyrit.models.seeds.seed_objective import SeedObjective
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pyrit.models.seeds.seed import Seed
 
 
 class SeedAttackGroup(SeedGroup):
@@ -30,7 +34,7 @@ class SeedAttackGroup(SeedGroup):
     def __init__(
         self,
         *,
-        seeds: Sequence[Union[Seed, Dict[str, Any]]],
+        seeds: Sequence[Union[Seed, dict[str, Any]]],
     ):
         """
         Initialize a SeedAttackGroup.
@@ -41,6 +45,7 @@ class SeedAttackGroup(SeedGroup):
         Raises:
             ValueError: If seeds is empty.
             ValueError: If exactly one objective is not provided.
+
         """
         super().__init__(seeds=seeds)
 
@@ -52,12 +57,19 @@ class SeedAttackGroup(SeedGroup):
 
         Raises:
             ValueError: If validation fails.
+
         """
         super().validate()
         self._enforce_exactly_one_objective()
 
     def _enforce_exactly_one_objective(self) -> None:
-        """Ensure exactly one objective is present."""
+        """
+        Ensure exactly one objective is present.
+
+        Raises:
+            ValueError: If the group does not contain exactly one SeedObjective.
+
+        """
         objective_count = len([s for s in self.seeds if isinstance(s, SeedObjective)])
         if objective_count != 1:
             raise ValueError(f"SeedAttackGroup must have exactly one objective. Found {objective_count}.")
@@ -72,6 +84,7 @@ class SeedAttackGroup(SeedGroup):
 
         Returns:
             The SeedObjective for this attack group.
+
         """
         obj = self._get_objective()
         assert obj is not None, "SeedAttackGroup should always have an objective"

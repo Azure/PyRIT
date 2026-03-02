@@ -3,8 +3,8 @@
 
 
 import uuid
+from collections.abc import MutableSequence, Sequence
 from datetime import datetime
-from typing import MutableSequence, Sequence
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -12,7 +12,7 @@ import pytest
 from unit.mocks import get_mock_target
 
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import MemoryInterface, PromptMemoryEntry
 from pyrit.models import (
     Message,
@@ -22,13 +22,11 @@ from pyrit.models import (
 )
 
 
-def _test_scorer_id(name: str = "TestScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _test_scorer_id(name: str = "TestScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="tests.unit.memory",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -168,8 +166,27 @@ def test_duplicate_memory(sqlite_instance: MemoryInterface):
     all_pieces = sqlite_instance.get_message_pieces()
     assert len(all_pieces) == 9
     # Attack IDs are preserved (not changed) when duplicating
-    assert len([p for p in all_pieces if p.attack_identifier.hash == attack1.get_identifier().hash]) == 8
-    assert len([p for p in all_pieces if p.attack_identifier.hash == attack2.get_identifier().hash]) == 1
+    assert all(p.attack_identifier is not None for p in all_pieces)
+    assert (
+        len(
+            [
+                p
+                for p in all_pieces
+                if p.attack_identifier is not None and p.attack_identifier.hash == attack1.get_identifier().hash
+            ]
+        )
+        == 8
+    )
+    assert (
+        len(
+            [
+                p
+                for p in all_pieces
+                if p.attack_identifier is not None and p.attack_identifier.hash == attack2.get_identifier().hash
+            ]
+        )
+        == 1
+    )
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_1]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_2]) == 2
     assert len([p for p in all_pieces if p.conversation_id == conversation_id_3]) == 1
@@ -482,7 +499,8 @@ def test_duplicate_memory_preserves_attack_id(sqlite_instance: MemoryInterface):
     assert new_conversation_id != conversation_id
 
     # Both pieces should have the same attack ID
-    attack_ids = {p.attack_identifier.hash for p in all_pieces}
+    assert all(p.attack_identifier is not None for p in all_pieces)
+    attack_ids = {p.attack_identifier.hash for p in all_pieces if p.attack_identifier is not None}
     assert len(attack_ids) == 1
     assert attack1.get_identifier().hash in attack_ids
 
@@ -588,7 +606,7 @@ def test_duplicate_conversation_with_multiple_pieces(sqlite_instance: MemoryInte
 
     # Sequences and roles should be preserved
     for orig, new in zip(
-        sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence)
+        sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence), strict=False
     ):
         assert orig.sequence == new.sequence
         assert orig.api_role == new.api_role
@@ -1009,9 +1027,10 @@ def test_get_message_pieces_sorts(
     current_value = response[0].conversation_id
     for obj in response[1:]:
         new_value = obj.conversation_id
-        if new_value != current_value:
-            if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
-                assert False, "Conversation IDs are not grouped together"
+        if new_value != current_value and any(
+            o.conversation_id == current_value for o in response[response.index(obj) :]
+        ):
+            raise AssertionError("Conversation IDs are not grouped together")
 
 
 def test_message_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):

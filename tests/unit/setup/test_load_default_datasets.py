@@ -5,7 +5,6 @@
 Unit tests for LoadDefaultDatasets initializer.
 """
 
-from typing import List
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -118,7 +117,7 @@ class TestLoadDefaultDatasets:
         def get_scenario_side_effect(name: str):
             if name == "scenario1":
                 return mock_scenario1
-            elif name == "scenario2":
+            if name == "scenario2":
                 return mock_scenario2
             return None
 
@@ -158,7 +157,7 @@ class TestLoadDefaultDatasets:
         def get_scenario_side_effect(name: str):
             if name == "good_scenario":
                 return mock_scenario_good
-            elif name == "bad_scenario":
+            if name == "bad_scenario":
                 return mock_scenario_bad
             return None
 
@@ -195,8 +194,8 @@ class TestLoadDefaultDatasets:
         scenario_names = registry.get_names()
 
         # Collect all required datasets from all scenarios
-        missing_datasets: List[str] = []
-        scenario_dataset_map: dict[str, List[str]] = {}
+        missing_datasets: list[str] = []
+        scenario_dataset_map: dict[str, list[str]] = {}
 
         for scenario_name in scenario_names:
             scenario_class = registry.get_class(scenario_name)

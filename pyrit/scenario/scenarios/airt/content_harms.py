@@ -3,7 +3,8 @@
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar
+from collections.abc import Sequence
+from typing import Any, Optional, TypeVar
 
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
@@ -42,7 +43,7 @@ class ContentHarmsDatasetConfiguration(DatasetConfiguration):
     it filters datasets to only those matching the selected harm strategies.
     """
 
-    def get_seed_groups(self) -> Dict[str, List[SeedGroup]]:
+    def get_seed_groups(self) -> dict[str, list[SeedGroup]]:
         """
         Get seed groups filtered by harm strategies from stored scenario_composites.
 
@@ -64,7 +65,7 @@ class ContentHarmsDatasetConfiguration(DatasetConfiguration):
         )
 
         # Filter to matching datasets and map keys to harm names
-        mapped_result: Dict[str, List[SeedGroup]] = {}
+        mapped_result: dict[str, list[SeedGroup]] = {}
         for name, groups in result.items():
             matched_harm = next((harm for harm in selected_harms if harm in name), None)
             if matched_harm:
@@ -110,7 +111,7 @@ class ContentHarms(Scenario):
     VERSION: int = 1
 
     @classmethod
-    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+    def get_strategy_class(cls) -> type[ScenarioStrategy]:
         """
         Get the strategy enum class for this scenario.
 
@@ -157,7 +158,7 @@ class ContentHarms(Scenario):
         adversarial_chat: Optional[PromptChatTarget] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         scenario_result_id: Optional[str] = None,
-        objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None,
+        objectives_by_harm: Optional[dict[str, Sequence[SeedGroup]]] = None,
     ):
         """
         Initialize the Content Harms Scenario.
@@ -215,7 +216,7 @@ class ContentHarms(Scenario):
             ),
         )
 
-    def _resolve_seed_groups_by_harm(self) -> Dict[str, List[SeedAttackGroup]]:
+    def _resolve_seed_groups_by_harm(self) -> dict[str, list[SeedAttackGroup]]:
         """
         Resolve seed groups from deprecated objectives_by_harm or dataset configuration.
 
@@ -242,7 +243,7 @@ class ContentHarms(Scenario):
         self._dataset_config._scenario_composites = self._scenario_composites
         return self._dataset_config.get_seed_attack_groups()
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances for harm strategies.
 
@@ -251,7 +252,7 @@ class ContentHarms(Scenario):
         """
         seed_groups_by_harm = self._resolve_seed_groups_by_harm()
 
-        atomic_attacks: List[AtomicAttack] = []
+        atomic_attacks: list[AtomicAttack] = []
         for strategy, seed_groups in seed_groups_by_harm.items():
             atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=seed_groups))
         return atomic_attacks
@@ -260,7 +261,7 @@ class ContentHarms(Scenario):
         self,
         strategy: str,
         seed_groups: Sequence[SeedAttackGroup],
-    ) -> List[AtomicAttack]:
+    ) -> list[AtomicAttack]:
         """
         Create AtomicAttack instances for a given harm strategy.
 
@@ -269,7 +270,7 @@ class ContentHarms(Scenario):
             seed_groups (Sequence[SeedAttackGroup]): The seed attack groups associated with the harm dataset.
 
         Returns:
-            List[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
+            list[AtomicAttack]: The constructed AtomicAttack instances for each attack type.
 
         Raises:
             ValueError: If scenario is not properly initialized.
@@ -280,7 +281,7 @@ class ContentHarms(Scenario):
                 "Scenario not properly initialized. Call await scenario.initialize_async() before running."
             )
 
-        attacks: List[AtomicAttack] = [
+        attacks: list[AtomicAttack] = [
             *self._get_single_turn_attacks(strategy=strategy, seed_groups=seed_groups),
             *self._get_multi_turn_attacks(strategy=strategy, seed_groups=seed_groups),
         ]
@@ -292,7 +293,7 @@ class ContentHarms(Scenario):
         *,
         strategy: str,
         seed_groups: Sequence[SeedAttackGroup],
-    ) -> List[AtomicAttack]:
+    ) -> list[AtomicAttack]:
         """
         Create single-turn AtomicAttack instances: RolePlayAttack and PromptSendingAttack.
 
@@ -301,7 +302,7 @@ class ContentHarms(Scenario):
             seed_groups (Sequence[SeedAttackGroup]): Seed attack groups for this harm category.
 
         Returns:
-            List[AtomicAttack]: The single-turn atomic attacks.
+            list[AtomicAttack]: The single-turn atomic attacks.
         """
         prompt_sending_attack = PromptSendingAttack(
             objective_target=self._objective_target,
@@ -338,7 +339,7 @@ class ContentHarms(Scenario):
         *,
         strategy: str,
         seed_groups: Sequence[SeedAttackGroup],
-    ) -> List[AtomicAttack]:
+    ) -> list[AtomicAttack]:
         """
         Create multi-turn AtomicAttack instances: ManyShotJailbreakAttack and TreeOfAttacksWithPruningAttack.
 
@@ -347,7 +348,7 @@ class ContentHarms(Scenario):
             seed_groups (Sequence[SeedAttackGroup]): Seed attack groups for this harm category.
 
         Returns:
-            List[AtomicAttack]: The multi-turn atomic attacks.
+            list[AtomicAttack]: The multi-turn atomic attacks.
         """
         many_shot_jailbreak_attack = ManyShotJailbreakAttack(
             objective_target=self._objective_target,

@@ -5,7 +5,7 @@ import logging
 import textwrap
 from dataclasses import dataclass, field
 from string import Formatter
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.exceptions import ComponentRole, execution_context
@@ -28,7 +28,9 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import TrueFalseScorer
+
+if TYPE_CHECKING:
+    from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ class ChunkedRequestAttackContext(MultiTurnAttackContext[Any]):
     """Context for the ChunkedRequest attack strategy."""
 
     # Collected chunk responses
-    chunk_responses: List[str] = field(default_factory=list)
+    chunk_responses: list[str] = field(default_factory=list)
 
 
 class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, AttackResult]):
@@ -186,7 +188,7 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         if not context.objective or context.objective.isspace():
             raise ValueError("Attack objective must be provided and non-empty in the context")
 
-    def _generate_chunk_prompts(self, context: ChunkedRequestAttackContext) -> List[str]:
+    def _generate_chunk_prompts(self, context: ChunkedRequestAttackContext) -> list[str]:
         """
         Generate chunk request prompts based on the configured strategy.
 
@@ -375,4 +377,3 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         Args:
             context (ChunkedRequestAttackContext): The attack context containing conversation session.
         """
-        pass

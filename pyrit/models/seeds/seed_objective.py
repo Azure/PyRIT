@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from pyrit.common.path import PATHS_DICT
 from pyrit.models.seeds.seed import Seed
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +24,17 @@ logger = logging.getLogger(__name__)
 class SeedObjective(Seed):
     """Represents a seed objective with various attributes and metadata."""
 
+    is_general_technique: bool = False
+
     def __post_init__(self) -> None:
-        """Post-initialization to render the template to replace existing values."""
+        """
+        Post-initialization to render the template to replace existing values.
+
+        Raises:
+            ValueError: If is_general_technique is True.
+        """
+        if self.is_general_technique:
+            raise ValueError("SeedObjective cannot be a general technique.")
         self.value = super().render_template_value_silent(**PATHS_DICT)
 
     @classmethod
@@ -44,5 +55,6 @@ class SeedObjective(Seed):
 
         Returns:
             SeedObjective: The loaded and validated seed of the specific subclass type.
+
         """
         return cls.from_yaml_file(template_path)

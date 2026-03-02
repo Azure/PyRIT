@@ -3,7 +3,7 @@
 
 import json
 import uuid
-from typing import MutableSequence
+from collections.abc import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

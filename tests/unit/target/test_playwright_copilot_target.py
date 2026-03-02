@@ -183,7 +183,7 @@ class TestPlaywrightCopilotTarget:
         assert mock_page.locator.call_count == 2
         # Check that both calls were with the same selector
         expected_calls = [call("#test-input"), call("#test-input")]
-        actual_locator_calls = [call_args for call_args in mock_page.locator.call_args_list]
+        actual_locator_calls = list(mock_page.locator.call_args_list)
         assert actual_locator_calls == expected_calls
 
         mock_locator.click.assert_awaited_once()
@@ -404,7 +404,7 @@ class TestPlaywrightCopilotTarget:
         assert target.POLL_INTERVAL_MS == 2000
         assert target.RETRY_ATTEMPTS == 5
         assert target.RETRY_DELAY_MS == 500
-        assert target.SUPPORTED_DATA_TYPES == {"text", "image_path"}
+        assert {"text", "image_path"} == target.SUPPORTED_DATA_TYPES
 
 
 @pytest.mark.usefixtures("patch_central_database")

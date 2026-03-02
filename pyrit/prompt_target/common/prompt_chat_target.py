@@ -4,7 +4,7 @@
 import abc
 from typing import Optional
 
-from pyrit.identifiers import AttackIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -52,7 +52,7 @@ class PromptChatTarget(PromptTarget):
         *,
         system_prompt: str,
         conversation_id: str,
-        attack_identifier: Optional[AttackIdentifier] = None,
+        attack_identifier: Optional[ComponentIdentifier] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """
@@ -86,7 +86,6 @@ class PromptChatTarget(PromptTarget):
         Returns:
             bool: True if JSON response is supported, False otherwise.
         """
-        pass
 
     def is_response_format_json(self, message_piece: MessagePiece) -> bool:
         """

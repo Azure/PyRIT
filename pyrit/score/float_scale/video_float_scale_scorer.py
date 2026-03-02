@@ -1,18 +1,20 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, Optional
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleAggregatorFunc,
     FloatScaleScorerByCategory,
 )
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
-from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.video_scorer import _BaseVideoScorer
+
+if TYPE_CHECKING:
+    from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 
 
 class VideoFloatScaleScorer(
@@ -93,25 +95,27 @@ class VideoFloatScaleScorer(
             self._validate_audio_scorer(audio_scorer)
         self.audio_scorer = audio_scorer
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the scorer evaluation identifier for this scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
-        sub_scorers = [self.image_scorer]
+        sub_scorer_ids = [self.image_scorer.get_identifier()]
         if self.audio_scorer:
-            sub_scorers.append(self.audio_scorer)
+            sub_scorer_ids.append(self.audio_scorer.get_identifier())
 
         return self._create_identifier(
-            sub_scorers=sub_scorers,
-            score_aggregator=self._score_aggregator.__name__,
-            scorer_specific_params={
+            params={
+                "score_aggregator": self._score_aggregator.__name__,
                 "num_sampled_frames": self.num_sampled_frames,
                 "has_audio_scorer": self.audio_scorer is not None,
                 "image_objective_template": self.image_objective_template,
                 "audio_objective_template": self.audio_objective_template,
+            },
+            children={
+                "sub_scorers": sub_scorer_ids,
             },
         )
 
@@ -145,7 +149,7 @@ class VideoFloatScaleScorer(
         piece_id = message_piece.id if message_piece.id is not None else message_piece.original_prompt_id
 
         # Call the aggregator - all aggregators now return List[ScoreAggregatorResult]
-        aggregator_results: List[ScoreAggregatorResult] = self._score_aggregator(all_scores)
+        aggregator_results: list[ScoreAggregatorResult] = self._score_aggregator(all_scores)
 
         # Build rationale prefix
         rationale_prefix = f"Video scored by analyzing {len(frame_scores)} frames"
@@ -153,7 +157,7 @@ class VideoFloatScaleScorer(
             rationale_prefix += " and audio transcript"
 
         # Create Score objects from aggregator results
-        aggregate_scores: List[Score] = []
+        aggregate_scores: list[Score] = []
         for result in aggregator_results:
             aggregate_score = Score(
                 score_value=str(result.value),

@@ -5,12 +5,11 @@ import base64
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Tuple
 
 import numpy
 from PIL import Image
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -129,7 +128,7 @@ class TransparencyAttackConverter(PromptConverter):
         self,
         *,
         benign_image_path: Path,
-        size: Tuple[int, int] = (150, 150),
+        size: tuple[int, int] = (150, 150),
         steps: int = 1500,
         learning_rate: float = 0.001,
         convergence_threshold: float = 1e-6,
@@ -185,15 +184,15 @@ class TransparencyAttackConverter(PromptConverter):
 
         self._cached_benign_image = self._load_and_preprocess_image(str(benign_image_path))
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with transparency attack parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "benign_image_path": str(self.benign_image_path),
                 "size": self.size,
                 "steps": self.steps,
@@ -220,7 +219,7 @@ class TransparencyAttackConverter(PromptConverter):
                 img_resized = img_gray.resize(self.size, Image.Resampling.LANCZOS)
                 return numpy.array(img_resized, dtype=numpy.float32) / 255.0  # normalize to [0, 1]
         except Exception as e:
-            raise ValueError(f"Failed to load and preprocess image from {path}: {e}")
+            raise ValueError(f"Failed to load and preprocess image from {path}: {e}") from e
 
     def _compute_mse_loss(self, blended_image: numpy.ndarray, target_tensor: numpy.ndarray) -> float:  # type: ignore[type-arg, unused-ignore]
         """
@@ -285,7 +284,7 @@ class TransparencyAttackConverter(PromptConverter):
             await img_serializer.save_b64_image(data=image_str.decode())
             return img_serializer.value
         except Exception as e:
-            raise ValueError(f"Failed to save blended image: {e}")
+            raise ValueError(f"Failed to save blended image: {e}") from e
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """

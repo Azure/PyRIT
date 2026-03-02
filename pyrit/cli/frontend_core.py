@@ -19,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.setup import ConfigurationLoader
 from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
@@ -42,6 +42,8 @@ except ImportError:
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     from pyrit.models.scenario_result import ScenarioResult
     from pyrit.registry import (
         InitializerMetadata,
@@ -166,7 +168,7 @@ class FrontendCore:
         self._initialized = True
 
     @property
-    def scenario_registry(self) -> "ScenarioRegistry":
+    def scenario_registry(self) -> ScenarioRegistry:
         """
         Get the scenario registry. Must call await initialize_async() first.
 
@@ -181,7 +183,7 @@ class FrontendCore:
         return self._scenario_registry
 
     @property
-    def initializer_registry(self) -> "InitializerRegistry":
+    def initializer_registry(self) -> InitializerRegistry:
         """
         Get the initializer registry. Must call await initialize_async() first.
 
@@ -213,7 +215,7 @@ async def list_scenarios_async(*, context: FrontendCore) -> list[ScenarioMetadat
 
 async def list_initializers_async(
     *, context: FrontendCore, discovery_path: Optional[Path] = None
-) -> "Sequence[InitializerMetadata]":
+) -> Sequence[InitializerMetadata]:
     """
     List metadata for all available initializers.
 
@@ -246,7 +248,7 @@ async def run_scenario_async(
     dataset_names: Optional[list[str]] = None,
     max_dataset_size: Optional[int] = None,
     print_summary: bool = True,
-) -> "ScenarioResult":
+) -> ScenarioResult:
     """
     Run a scenario by name.
 
@@ -457,7 +459,7 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
             print("    Default Datasets: None")
 
 
-def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") -> None:
+def format_initializer_metadata(*, initializer_metadata: InitializerMetadata) -> None:
     """
     Print formatted information about an initializer class.
 

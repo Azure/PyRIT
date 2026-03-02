@@ -8,8 +8,6 @@ This module provides the SimpleInitializer class that sets up a complete
 simple configuration including converters, scorers, and targets using basic OpenAI.
 """
 
-from typing import List
-
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
@@ -73,7 +71,7 @@ class SimpleInitializer(PyRITInitializer):
         )
 
     @property
-    def required_env_vars(self) -> List[str]:
+    def required_env_vars(self) -> list[str]:
         """Get list of required environment variables."""
         return [
             "OPENAI_CHAT_ENDPOINT",

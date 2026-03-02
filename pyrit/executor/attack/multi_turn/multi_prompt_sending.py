@@ -3,7 +3,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import get_kwarg_param
@@ -46,11 +46,11 @@ class MultiPromptSendingAttackParameters(AttackParameters):
     Only accepts objective and user_messages fields.
     """
 
-    user_messages: Optional[List[Message]] = None
+    user_messages: Optional[list[Message]] = None
 
     @classmethod
     async def from_seed_group_async(
-        cls: Type["MultiPromptSendingAttackParameters"],
+        cls: type["MultiPromptSendingAttackParameters"],
         seed_group: SeedAttackGroup,
         *,
         adversarial_chat: Optional["PromptChatTarget"] = None,
@@ -275,7 +275,7 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
-        result = AttackResult(
+        return AttackResult(
             conversation_id=context.session.conversation_id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
@@ -286,8 +286,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
             outcome_reason=outcome_reason,
             executed_turns=context.executed_turns,
         )
-
-        return result
 
     def _determine_attack_outcome(
         self,
@@ -328,7 +326,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
     async def _teardown_async(self, *, context: MultiTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
-        pass
 
     async def _send_prompt_to_objective_target_async(
         self, *, current_message: Message, context: MultiTurnAttackContext[Any]

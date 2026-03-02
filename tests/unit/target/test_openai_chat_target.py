@@ -5,8 +5,8 @@ import base64
 import json
 import logging
 import os
+from collections.abc import MutableSequence
 from tempfile import NamedTemporaryFile
-from typing import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -24,7 +24,7 @@ from pyrit.exceptions.exception_classes import (
     PyritException,
     RateLimitException,
 )
-from pyrit.identifiers import AttackIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
@@ -87,25 +87,22 @@ def openai_response_json() -> dict:
 
 
 def test_init_with_no_deployment_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget()
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIChatTarget()
 
 
 def test_init_with_no_endpoint_uri_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget(
-                model_name="gpt-4",
-                endpoint="",
-                api_key="xxxxx",
-            )
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIChatTarget(
+            model_name="gpt-4",
+            endpoint="",
+            api_key="xxxxx",
+        )
 
 
 def test_init_with_no_additional_request_headers_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
 def test_init_is_json_supported_defaults_to_true(patch_central_database):
@@ -306,8 +303,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -317,8 +314,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(openai_response_j
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -382,7 +379,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
     target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
 
     # Non-content-filter BadRequestError should be re-raised
-    with pytest.raises(Exception):  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
+    with pytest.raises(Exception):  # noqa: B017  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
         await target.send_prompt_async(message=message)
 
 
@@ -400,8 +397,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -411,8 +408,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIChatT
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -448,8 +445,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -459,8 +456,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier=TargetIdentifier(class_name="target-identifier", class_module="test"),
-                attack_identifier=AttackIdentifier(class_name="test", class_module="test"),
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -510,7 +507,7 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
     target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
 
     # Non-content-filter BadRequestError should be re-raised
-    with pytest.raises(Exception):  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
+    with pytest.raises(Exception):  # noqa: B017  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
         await target.send_prompt_async(message=message)
 
 
@@ -739,13 +736,12 @@ def test_set_auth_with_api_key(patch_central_database):
 
 def test_url_validation_no_warning_for_custom_endpoint(caplog, patch_central_database):
     """Test that URL validation doesn't warn for custom endpoint paths."""
-    with patch.dict(os.environ, {}, clear=True):
-        with caplog.at_level(logging.WARNING):
-            target = OpenAIChatTarget(
-                model_name="gpt-4",
-                endpoint="https://some.provider.com/v1/custom/path",  # Incorrect endpoint
-                api_key="test-key",
-            )
+    with patch.dict(os.environ, {}, clear=True), caplog.at_level(logging.WARNING):
+        target = OpenAIChatTarget(
+            model_name="gpt-4",
+            endpoint="https://some.provider.com/v1/custom/path",  # Incorrect endpoint
+            api_key="test-key",
+        )
 
     # Should NOT warn about custom paths - they could be for custom endpoints
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
@@ -755,13 +751,12 @@ def test_url_validation_no_warning_for_custom_endpoint(caplog, patch_central_dat
 
 def test_url_validation_no_warning_for_correct_azure_endpoint(caplog, patch_central_database):
     """Test that URL validation doesn't warn for correct Azure endpoints."""
-    with patch.dict(os.environ, {}, clear=True):
-        with caplog.at_level(logging.WARNING):
-            target = OpenAIChatTarget(
-                model_name="gpt-4",
-                endpoint="https://myservice.openai.azure.com/openai/deployments/gpt-4/chat/completions",
-                api_key="test-key",
-            )
+    with patch.dict(os.environ, {}, clear=True), caplog.at_level(logging.WARNING):
+        target = OpenAIChatTarget(
+            model_name="gpt-4",
+            endpoint="https://myservice.openai.azure.com/openai/deployments/gpt-4/chat/completions",
+            api_key="test-key",
+        )
 
     # Should not have URL validation warnings
     warning_logs = [record for record in caplog.records if record.levelno >= logging.WARNING]
@@ -1084,7 +1079,7 @@ def test_get_identifier_uses_model_name_when_no_underlying_model(patch_central_d
 
         identifier = target.get_identifier()
 
-        assert identifier.model_name == "my-deployment"
+        assert identifier.params["model_name"] == "my-deployment"
         assert identifier.class_name == "OpenAIChatTarget"
 
 
@@ -1099,7 +1094,7 @@ def test_get_identifier_uses_underlying_model_when_provided_as_param(patch_centr
 
     identifier = target.get_identifier()
 
-    assert identifier.model_name == "gpt-4o"
+    assert identifier.params["model_name"] == "gpt-4o"
     assert identifier.class_name == "OpenAIChatTarget"
 
 
@@ -1114,7 +1109,7 @@ def test_get_identifier_uses_underlying_model_from_env_var(patch_central_databas
 
         identifier = target.get_identifier()
 
-        assert identifier.model_name == "gpt-4o"
+        assert identifier.params["model_name"] == "gpt-4o"
 
 
 def test_underlying_model_param_takes_precedence_over_env_var(patch_central_database):
@@ -1129,7 +1124,7 @@ def test_underlying_model_param_takes_precedence_over_env_var(patch_central_data
 
         identifier = target.get_identifier()
 
-        assert identifier.model_name == "gpt-4o-from-param"
+        assert identifier.params["model_name"] == "gpt-4o-from-param"
 
 
 def test_get_identifier_includes_endpoint(patch_central_database):
@@ -1142,7 +1137,7 @@ def test_get_identifier_includes_endpoint(patch_central_database):
 
     identifier = target.get_identifier()
 
-    assert identifier.endpoint == "https://mock.azure.com/"
+    assert identifier.params["endpoint"] == "https://mock.azure.com/"
 
 
 def test_get_identifier_includes_temperature_when_set(patch_central_database):
@@ -1156,7 +1151,7 @@ def test_get_identifier_includes_temperature_when_set(patch_central_database):
 
     identifier = target.get_identifier()
 
-    assert identifier.temperature == 0.7
+    assert identifier.params["temperature"] == 0.7
 
 
 def test_get_identifier_includes_top_p_when_set(patch_central_database):
@@ -1170,7 +1165,7 @@ def test_get_identifier_includes_top_p_when_set(patch_central_database):
 
     identifier = target.get_identifier()
 
-    assert identifier.top_p == 0.9
+    assert identifier.params["top_p"] == 0.9
 
 
 # ============================================================================

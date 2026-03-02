@@ -11,7 +11,7 @@ from typing import cast
 from PIL import Image, ImageDraw, ImageFont
 from PIL.ImageFont import FreeTypeFont
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -64,15 +64,15 @@ class AddImageTextConverter(PromptConverter):
         self._x_pos = x_pos
         self._y_pos = y_pos
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the converter identifier with image and text parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "img_to_add_path": str(self._img_to_add),
                 "font_name": self._font_name,
                 "color": self._color,
@@ -98,7 +98,7 @@ class AddImageTextConverter(PromptConverter):
             font = ImageFont.truetype(self._font_name, self._font_size)
         except OSError:
             logger.warning(f"Cannot open font resource: {self._font_name}. Using default font.")
-            font = cast(FreeTypeFont, ImageFont.load_default())
+            font = cast("FreeTypeFont", ImageFont.load_default())
         return font
 
     def _add_text_to_image(self, text: str) -> Image.Image:

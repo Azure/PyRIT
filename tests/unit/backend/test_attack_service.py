@@ -23,7 +23,7 @@ from pyrit.backend.services.attack_service import (
     AttackService,
     get_attack_service,
 )
-from pyrit.identifiers import AttackIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 
 
@@ -62,7 +62,7 @@ def make_attack_result(
     updated = updated_at or now
 
     target_identifier = (
-        TargetIdentifier(
+        ComponentIdentifier(
             class_name="TextTarget",
             class_module="pyrit.prompt_target",
         )
@@ -73,10 +73,10 @@ def make_attack_result(
     return AttackResult(
         conversation_id=conversation_id,
         objective=objective,
-        attack_identifier=AttackIdentifier(
+        attack_identifier=ComponentIdentifier(
             class_name=name,
             class_module="pyrit.backend",
-            objective_target_identifier=target_identifier,
+            children={"objective_target": target_identifier} if target_identifier else {},
         ),
         outcome=outcome,
         metadata={
@@ -212,26 +212,30 @@ class TestListAttacks:
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_converter_classes_and_logic(self, attack_service, mock_memory) -> None:
         """Test that list_attacks passes converter_classes to memory layer."""
-        from pyrit.identifiers import ConverterIdentifier
-
         ar1 = make_attack_result(conversation_id="attack-1", name="Attack One")
-        ar1.attack_identifier = AttackIdentifier(
+        ar1.attack_identifier = ComponentIdentifier(
             class_name="Attack One",
             class_module="pyrit.backend",
-            request_converter_identifiers=[
-                ConverterIdentifier(
-                    class_name="Base64Converter",
-                    class_module="pyrit.converters",
-                    supported_input_types=("text",),
-                    supported_output_types=("text",),
-                ),
-                ConverterIdentifier(
-                    class_name="ROT13Converter",
-                    class_module="pyrit.converters",
-                    supported_input_types=("text",),
-                    supported_output_types=("text",),
-                ),
-            ],
+            children={
+                "request_converters": [
+                    ComponentIdentifier(
+                        class_name="Base64Converter",
+                        class_module="pyrit.converters",
+                        params={
+                            "supported_input_types": ("text",),
+                            "supported_output_types": ("text",),
+                        },
+                    ),
+                    ComponentIdentifier(
+                        class_name="ROT13Converter",
+                        class_module="pyrit.converters",
+                        params={
+                            "supported_input_types": ("text",),
+                            "supported_output_types": ("text",),
+                        },
+                    ),
+                ],
+            },
         )
         mock_memory.get_attack_results.return_value = [ar1]
         mock_memory.get_message_pieces.return_value = []
@@ -460,7 +464,7 @@ class TestCreateAttack:
         """Test that create_attack stores AttackResult in memory."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_obj = MagicMock()
-            mock_target_obj.get_identifier.return_value = TargetIdentifier(
+            mock_target_obj.get_identifier.return_value = ComponentIdentifier(
                 class_name="TextTarget", class_module="pyrit.prompt_target"
             )
             mock_target_service = MagicMock()
@@ -481,7 +485,7 @@ class TestCreateAttack:
         """Test that create_attack stores prepended conversation messages."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_obj = MagicMock()
-            mock_target_obj.get_identifier.return_value = TargetIdentifier(
+            mock_target_obj.get_identifier.return_value = ComponentIdentifier(
                 class_name="TextTarget", class_module="pyrit.prompt_target"
             )
             mock_target_service = MagicMock()
@@ -510,7 +514,7 @@ class TestCreateAttack:
         """Test that labels are not stored in attack metadata (they live on pieces)."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_obj = MagicMock()
-            mock_target_obj.get_identifier.return_value = TargetIdentifier(
+            mock_target_obj.get_identifier.return_value = ComponentIdentifier(
                 class_name="TextTarget", class_module="pyrit.prompt_target"
             )
             mock_target_service = MagicMock()
@@ -535,7 +539,7 @@ class TestCreateAttack:
         """Test that labels are forwarded to prepended message pieces."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_obj = MagicMock()
-            mock_target_obj.get_identifier.return_value = TargetIdentifier(
+            mock_target_obj.get_identifier.return_value = ComponentIdentifier(
                 class_name="TextTarget", class_module="pyrit.prompt_target"
             )
             mock_target_service = MagicMock()
@@ -568,7 +572,7 @@ class TestCreateAttack:
         """Test that multiple prepended messages get incrementing sequence numbers and preserve lineage."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_obj = MagicMock()
-            mock_target_obj.get_identifier.return_value = TargetIdentifier(
+            mock_target_obj.get_identifier.return_value = ComponentIdentifier(
                 class_name="TextTarget", class_module="pyrit.prompt_target"
             )
             mock_target_service = MagicMock()
@@ -634,7 +638,7 @@ class TestCreateAttack:
         """Test that setdefault does not overwrite user-supplied 'source' label."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_obj = MagicMock()
-            mock_target_obj.get_identifier.return_value = TargetIdentifier(
+            mock_target_obj.get_identifier.return_value = ComponentIdentifier(
                 class_name="TextTarget", class_module="pyrit.prompt_target"
             )
             mock_target_service = MagicMock()
@@ -665,7 +669,7 @@ class TestCreateAttack:
         """Test that request.name=None uses default class_name and objective."""
         with patch("pyrit.backend.services.attack_service.get_target_service") as mock_get_target_service:
             mock_target_obj = MagicMock()
-            mock_target_obj.get_identifier.return_value = TargetIdentifier(
+            mock_target_obj.get_identifier.return_value = ComponentIdentifier(
                 class_name="TextTarget", class_module="pyrit.prompt_target"
             )
             mock_target_service = MagicMock()

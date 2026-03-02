@@ -3,11 +3,11 @@
 
 import logging
 import struct
+from collections.abc import MutableSequence, Sequence
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
-from azure.core.credentials import AccessToken
 from sqlalchemy import and_, create_engine, event, exists, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -29,6 +29,9 @@ from pyrit.models import (
     AzureBlobStorageIO,
     MessagePiece,
 )
+
+if TYPE_CHECKING:
+    from azure.core.credentials import AccessToken
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +103,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         self.SessionFactory = sessionmaker(bind=self.engine)
         self._create_tables_if_not_exist()
 
-        super(AzureSQLMemory, self).__init__()
+        super().__init__()
 
     @staticmethod
     def _resolve_sas_token(env_var_name: str, passed_value: Optional[str] = None) -> Optional[str]:
@@ -343,7 +346,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         combined_conditions = " AND ".join(harm_conditions)
 
-        targeted_harm_categories_subquery = exists().where(
+        return exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.targeted_harm_categories.isnot(None),
@@ -352,7 +355,6 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 text(f"ISJSON(targeted_harm_categories) = 1 AND {combined_conditions}").bindparams(**bindparams_dict),
             )
         )
-        return targeted_harm_categories_subquery
 
     def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
@@ -376,14 +378,13 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         combined_conditions = " AND ".join(label_conditions)
 
-        labels_subquery = exists().where(
+        return exists().where(
             and_(
                 PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
                 PromptMemoryEntry.labels.isnot(None),
                 text(f"ISJSON(labels) = 1 AND {combined_conditions}").bindparams(**bindparams_dict),
             )
         )
-        return labels_subquery
 
     def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
         """
@@ -673,10 +674,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             try:
                 for entry in entries:
                     # Ensure the entry is attached to the session. If it's detached, merge it.
-                    if not session.is_modified(entry):
-                        entry_in_session = session.merge(entry)
-                    else:
-                        entry_in_session = entry
+                    entry_in_session = session.merge(entry) if not session.is_modified(entry) else entry
                     for field, value in update_fields.items():
                         if field in vars(entry_in_session):
                             setattr(entry_in_session, field, value)

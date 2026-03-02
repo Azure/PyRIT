@@ -11,6 +11,7 @@ from openai.types import VideoSeconds, VideoSize
 from pyrit.exceptions import (
     pyrit_target_retry,
 )
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     DataTypeSerializer,
     Message,
@@ -92,7 +93,9 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         super().__init__(**kwargs)
 
-        self._n_seconds: VideoSeconds = cast(VideoSeconds, str(n_seconds)) if isinstance(n_seconds, int) else n_seconds
+        self._n_seconds: VideoSeconds = (
+            cast("VideoSeconds", str(n_seconds)) if isinstance(n_seconds, int) else n_seconds
+        )
         self._validate_duration()
         self._size: VideoSize = self._validate_resolution(resolution_dimensions=resolution_dimensions)
 
@@ -113,6 +116,20 @@ class OpenAIVideoTarget(OpenAITarget):
             ".openai.azure.com": "https://{resource}.openai.azure.com/openai/v1",
             "api.openai.com": "https://api.openai.com/v1",
         }
+
+    def _build_identifier(self) -> ComponentIdentifier:
+        """
+        Build the identifier with video generation-specific parameters.
+
+        Returns:
+            ComponentIdentifier: The identifier for this target instance.
+        """
+        return self._create_identifier(
+            params={
+                "resolution": self._size,
+                "n_seconds": self._n_seconds,
+            },
+        )
 
     def _validate_resolution(self, *, resolution_dimensions: VideoSize) -> VideoSize:
         """
@@ -364,7 +381,7 @@ class OpenAIVideoTarget(OpenAITarget):
             # Save the video to storage (include video.id for chaining remixes)
             return await self._save_video_response(request=request, video_data=video_content, video_id=video.id)
 
-        elif video.status == "failed":
+        if video.status == "failed":
             # Handle failed video generation (non-content-filter)
             error_message = str(video.error) if video.error else "Video generation failed"
             logger.error(f"Video generation failed: {error_message}")
@@ -376,16 +393,15 @@ class OpenAIVideoTarget(OpenAITarget):
                 response_type="error",
                 error="processing",
             )
-        else:
-            # Unexpected status
-            error_message = f"Video generation ended with unexpected status: {video.status}"
-            logger.error(error_message)
-            return construct_response_from_request(
-                request=request,
-                response_text_pieces=[error_message],
-                response_type="error",
-                error="unknown",
-            )
+        # Unexpected status
+        error_message = f"Video generation ended with unexpected status: {video.status}"
+        logger.error(error_message)
+        return construct_response_from_request(
+            request=request,
+            response_text_pieces=[error_message],
+            response_type="error",
+            error="unknown",
+        )
 
     async def _save_video_response(
         self, *, request: MessagePiece, video_data: bytes, video_id: Optional[str] = None
@@ -412,14 +428,12 @@ class OpenAIVideoTarget(OpenAITarget):
         prompt_metadata: Optional[dict[str, Union[str, int]]] = {"video_id": video_id} if video_id else None
 
         # Construct response
-        response_entry = construct_response_from_request(
+        return construct_response_from_request(
             request=request,
             response_text_pieces=[video_path],
             response_type="video_path",
             prompt_metadata=prompt_metadata,
         )
-
-        return response_entry
 
     def _validate_request(self, *, message: Message) -> None:
         """

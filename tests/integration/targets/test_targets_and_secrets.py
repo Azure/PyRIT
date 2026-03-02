@@ -55,17 +55,13 @@ explanation, or additional text. Output only the word "test" and nothing else.
     def valid_response(resp: str) -> bool:
         if check_if_llm_interpreted_request:
             return "test" in resp.strip().lower()
-        else:
-            return True
+        return True
 
     attempt = 0
     while attempt < max_retries:
         result = await attack.execute_async(objective=simple_prompt)
 
-        if result.last_response:
-            response = result.last_response.converted_value
-        else:
-            response = ""
+        response = result.last_response.converted_value if result.last_response else ""
 
         if valid_response(str(response)):
             return response
@@ -619,7 +615,7 @@ async def test_video_image_to_video(sqlite_instance):
     sample_image = HOME_PATH / "assets" / "pyrit_architecture.png"
     resized = Image.open(sample_image).resize((1280, 720)).convert("RGB")
 
-    tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+    tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)  # noqa: SIM115
     resized.save(tmp, format="JPEG")
     tmp.close()
     image_path = tmp.name

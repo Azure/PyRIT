@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from unit.mocks import get_mock_scorer_identifier
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.score.audio_transcript_scorer import AudioTranscriptHelper
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
@@ -41,7 +41,7 @@ def video_converter_sample_video(patch_central_database):
         video_encoding = cv2.VideoWriter_fourcc(*"mp4v")
         output_video = cv2.VideoWriter(video_path, video_encoding, 20, (width, height))
         # Create a few frames for video
-        for i in range(10):
+        for _i in range(10):
             frame = np.zeros((height, width, 3), dtype=np.uint8)
             processed_frame = cv2.flip(frame, 0)
             output_video.write(processed_frame)
@@ -70,11 +70,11 @@ class MockTrueFalseScorer(TrueFalseScorer):
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """Build the scorer evaluation identifier for this mock scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier()
 
@@ -102,11 +102,11 @@ class MockFloatScaleScorer(FloatScaleScorer):
         validator = ScorerPromptValidator(supported_data_types=["image_path"])
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """Build the scorer evaluation identifier for this mock scorer.
 
         Returns:
-            ScorerIdentifier: The identifier for this scorer.
+            ComponentIdentifier: The identifier for this scorer.
         """
         return self._create_identifier()
 
@@ -305,7 +305,7 @@ class MockAudioTrueFalseScorer(TrueFalseScorer, AudioTranscriptHelper):
         validator = ScorerPromptValidator(supported_data_types=["audio_path"])
         TrueFalseScorer.__init__(self, validator=validator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         return self._create_identifier()
 
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
