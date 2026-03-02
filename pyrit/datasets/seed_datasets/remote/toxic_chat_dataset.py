@@ -26,10 +26,11 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
         - https://arxiv.org/abs/2310.17389
     """
 
+    HF_DATASET_NAME: str = "lmsys/toxic-chat"
+
     def __init__(
         self,
         *,
-        dataset_name: str = "lmsys/toxic-chat",
         config: str = "toxicchat0124",
         split: str = "train",
     ):
@@ -37,11 +38,9 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
         Initialize the ToxicChat dataset loader.
 
         Args:
-            dataset_name: HuggingFace dataset identifier. Defaults to "lmsys/toxic-chat".
             config: Dataset configuration. Defaults to "toxicchat0124".
             split: Dataset split to load. Defaults to "train".
         """
-        self.hf_dataset_name = dataset_name
         self.config = config
         self.split = split
 
@@ -60,10 +59,10 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
         Returns:
             SeedDataset: A SeedDataset containing the ToxicChat user inputs.
         """
-        logger.info(f"Loading ToxicChat dataset from {self.hf_dataset_name}")
+        logger.info(f"Loading ToxicChat dataset from {self.HF_DATASET_NAME}")
 
         data = await self._fetch_from_huggingface(
-            dataset_name=self.hf_dataset_name,
+            dataset_name=self.HF_DATASET_NAME,
             config=self.config,
             split=self.split,
             cache=cache,
@@ -94,7 +93,7 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
                         data_type="text",
                         dataset_name=self.dataset_name,
                         description=description,
-                        source=f"https://huggingface.co/datasets/{self.hf_dataset_name}",
+                        source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
                         authors=authors,
                         groups=["UC San Diego"],
                         metadata={

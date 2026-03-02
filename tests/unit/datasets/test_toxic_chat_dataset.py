@@ -94,7 +94,6 @@ class TestToxicChatDataset:
     async def test_fetch_dataset_with_custom_config(self, mock_toxic_chat_data):
         """Test fetching with custom config."""
         loader = _ToxicChatDataset(
-            dataset_name="custom/toxic-chat",
             config="custom_config",
             split="test",
         )
@@ -105,5 +104,5 @@ class TestToxicChatDataset:
             assert len(dataset.seeds) == 2
             mock_fetch.assert_called_once()
             call_kwargs = mock_fetch.call_args.kwargs
-            assert call_kwargs["dataset_name"] == "custom/toxic-chat"
+            assert call_kwargs["dataset_name"] == "lmsys/toxic-chat"
             assert call_kwargs["config"] == "custom_config"
