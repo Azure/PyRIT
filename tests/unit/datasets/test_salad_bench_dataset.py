@@ -67,7 +67,9 @@ class TestSaladBenchDataset:
             split="attackEnhanced",
         )
 
-        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_salad_bench_data)) as mock_fetch:
+        with patch.object(
+            loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_salad_bench_data)
+        ) as mock_fetch:
             dataset = await loader.fetch_dataset()
 
             assert len(dataset.seeds) == 2
