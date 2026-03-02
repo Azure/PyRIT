@@ -61,7 +61,10 @@ class _HarmfulQADataset(_RemoteDatasetLoader):
             cache=cache,
         )
 
-        authors = ["Rishabh Bhardwaj", "Soujanya Poria"]
+        authors = [
+            "Rishabh Bhardwaj",
+            "Soujanya Poria",
+        ]
         description = (
             "HarmfulQA contains ~2k harmful questions organized by academic topic and subtopic, "
             "designed to test LLM susceptibility to harm-inducing question-answering. Introduced "
@@ -73,7 +76,7 @@ class _HarmfulQADataset(_RemoteDatasetLoader):
                 value=item["question"],
                 data_type="text",
                 dataset_name=self.dataset_name,
-                harm_categories=[item["topic"]],
+                harm_categories=[item["topic"]] if item.get("topic") else [],
                 description=description,
                 source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
                 authors=authors,
