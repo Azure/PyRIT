@@ -5,7 +5,7 @@ import json
 import logging
 import uuid
 from collections.abc import MutableSequence, Sequence
-from contextlib import closing
+from contextlib import closing, suppress
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, TypeVar, Union
@@ -483,7 +483,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 ),
             )
         )
-        return targeted_harm_categories_subquery
+        return targeted_harm_categories_subquery  # noqa: RET504
 
     def _get_attack_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
@@ -506,7 +506,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                 ),
             )
         )
-        return labels_subquery
+        return labels_subquery  # noqa: RET504
 
     def _get_attack_result_attack_type_condition(self, *, attack_type: str) -> Any:
         """
@@ -651,10 +651,8 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
 
             labels: dict[str, str] = {}
             if raw_labels and raw_labels not in ("null", "{}"):
-                try:
+                with suppress(ValueError, TypeError):
                     labels = json.loads(raw_labels)
-                except (ValueError, TypeError):
-                    pass
 
             created_at = None
             if raw_created_at is not None:

@@ -10,6 +10,7 @@ AIRT configuration including converters, scorers, and targets using Azure OpenAI
 
 import os
 from collections.abc import Callable
+from typing import Any
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
@@ -134,7 +135,7 @@ class AIRTInitializer(PyRITInitializer):
             endpoint=converter_endpoint, credential=converter_auth, model_name=converter_model_name
         )
 
-    def _setup_converter_target(self, *, endpoint: str, credential: Callable, model_name: str) -> None:
+    def _setup_converter_target(self, *, endpoint: str, credential: Callable[..., Any], model_name: str) -> None:
         """Set up the default converter target configuration."""
         default_converter_target = OpenAIChatTarget(
             endpoint=endpoint,
@@ -151,7 +152,7 @@ class AIRTInitializer(PyRITInitializer):
         )
 
     def _setup_scorers(
-        self, *, endpoint: str, credential: Callable, model_name: str, content_safety_credential: Callable
+        self, *, endpoint: str, credential: Callable[..., Any], model_name: str, content_safety_credential: Callable[..., Any]
     ) -> None:
         """Set up the composite harm and objective scorers."""
         scorer_target = OpenAIChatTarget(
@@ -215,7 +216,7 @@ class AIRTInitializer(PyRITInitializer):
                 value=default_objective_scorer_config,
             )
 
-    def _setup_adversarial_targets(self, *, endpoint: str, credential: Callable, model_name: str) -> None:
+    def _setup_adversarial_targets(self, *, endpoint: str, credential: Callable[..., Any], model_name: str) -> None:
         """Set up the adversarial target configurations for attacks."""
         adversarial_config = AttackAdversarialConfig(
             target=OpenAIChatTarget(

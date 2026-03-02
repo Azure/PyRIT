@@ -734,7 +734,7 @@ class AttackService:
         Returns:
             The number of unique sequence values.
         """
-        return len(set(p.sequence for p in pieces))
+        return len({p.sequence for p in pieces})
 
     @staticmethod
     def _get_earliest_timestamp(pieces: Sequence[PromptMemoryEntry]) -> Optional[datetime]:

@@ -5,6 +5,7 @@
 Cross-platform script to manage PyRIT UI development servers
 """
 
+import contextlib
 import json
 import os
 import platform
@@ -100,10 +101,8 @@ def find_pids_by_pattern(pattern):
 def kill_pids(pids):
     """Kill a list of processes by PID."""
     for pid in pids:
-        try:
+        with contextlib.suppress(OSError):
             os.kill(pid, signal.SIGTERM)
-        except OSError:
-            pass
 
 
 def stop_servers():
@@ -235,7 +234,7 @@ def start_detached(*, config_file: str | None = None):
     if config_file:
         cmd.extend(["--config-file", config_file])
 
-    log_fh = open(DEVPY_LOG_FILE, "w")
+    log_fh = open(DEVPY_LOG_FILE, "w")  # noqa: SIM115
     proc = subprocess.Popen(
         cmd,
         stdout=log_fh,
