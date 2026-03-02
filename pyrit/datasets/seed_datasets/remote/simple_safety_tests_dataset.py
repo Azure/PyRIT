@@ -75,16 +75,19 @@ class _SimpleSafetyTestsDataset(_RemoteDatasetLoader):
             "diagnostic set for quickly evaluating the most basic safety properties of LLMs."
         )
 
+        source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
+        groups = ["Patronus AI", "University of Oxford", "Bocconi University"]
+
         seed_prompts = [
             SeedPrompt(
-                value=item["prompt"],
+                value=f"{{% raw %}}{item['prompt']}{{% endraw %}}",
                 data_type="text",
                 dataset_name=self.dataset_name,
                 harm_categories=[item["harm_area"]] if item.get("harm_area") else [],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
+                source=source_url,
                 authors=authors,
-                groups=["Patronus AI", "University of Oxford", "Bocconi University"],
+                groups=groups,
                 metadata={"category": category} if (category := item.get("category")) else {},
             )
             for item in data
