@@ -133,6 +133,9 @@ class OpenAITarget(PromptChatTarget):
                 from the actual model. If not provided, will attempt to fetch from environment variable.
                 If it is not there either, the identifier "model_name" attribute will use the model_name.
                 Defaults to None.
+
+        Raises:
+            ValueError: If no API key is provided via parameter or environment variable.
         """
         self._headers: dict[str, str] = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
