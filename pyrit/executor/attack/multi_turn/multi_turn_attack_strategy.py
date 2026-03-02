@@ -16,6 +16,7 @@ from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,
     AttackStrategyResultT,
 )
+from pyrit.models import ConversationReference, ConversationType
 
 if TYPE_CHECKING:
     from pyrit.models import (
@@ -90,4 +91,44 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
             context_type=context_type,
             params_type=params_type,
             logger=logger,
+        )
+
+    def _rotate_conversation_for_single_turn_target(
+        self,
+        *,
+        context: MultiTurnAttackContext[Any],
+    ) -> None:
+        """
+        Create a fresh conversation_id for the objective target if it is a single-turn target.
+
+        For single-turn targets, each turn must use a separate conversation_id because the target
+        rejects conversations with prior messages. The prior turn's conversation_id is recorded
+        as a PRUNED related conversation on the attack context.
+
+        For multi-turn targets this method is a no-op.
+
+        This should be called before each turn (except the first) when sending prompts to the
+        objective target.
+
+        Args:
+            context: The current attack context.
+        """
+        if self._objective_target.supports_multi_turn:
+            return
+
+        if context.executed_turns == 0:
+            return
+
+        old_conversation_id = context.session.conversation_id
+        context.related_conversations.add(
+            ConversationReference(
+                conversation_id=old_conversation_id,
+                conversation_type=ConversationType.PRUNED,
+                description=f"single-turn target prior turn {context.executed_turns}",
+            )
+        )
+        context.session.conversation_id = str(uuid.uuid4())
+        logger.debug(
+            f"Rotated conversation_id for single-turn target: "
+            f"{old_conversation_id} -> {context.session.conversation_id}"
         )
