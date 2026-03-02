@@ -286,15 +286,14 @@ class PDFConverter(PromptConverter):
             raise ValueError("Existing PDF and injection items are required for modification.")
 
         reader = PdfReader(self._existing_pdf_bytes)
-        writer = PdfWriter()
+        # clone_from attaches all pages to the writer up-front, avoiding
+        # the deprecated PageObject.replace_contents() call on unattached pages.
+        writer = PdfWriter(clone_from=reader)
 
         # Keep a list of overlay buffers to close them after final write
         overlay_buffers = []
 
-        for page_number, page in enumerate(reader.pages):
-            # We know page_number is valid because enumerate() only provides indices in range(total_pages).
-            # Therefore, no extra check needed here.
-
+        for page_number, page in enumerate(writer.pages):
             logger.info(f"Processing page {page_number} with {len(self._injection_items)} injection items.")
 
             # Extract page dimensions for early coordinate checks
@@ -322,14 +321,11 @@ class PDFConverter(PromptConverter):
                         page, x, y, text, font, font_size, font_color
                     )
 
-                    # (2) Merge onto the page
+                    # (2) Merge onto the page (already attached to writer)
                     page.merge_page(overlay_page)
 
                     # (3) Store overlay buffer to close later
                     overlay_buffers.append(overlay_buffer)
-
-            # Add the modified page to the writer
-            writer.add_page(page)
 
         # Finalize the PDF
         output_pdf = BytesIO()
