@@ -82,16 +82,19 @@ class _ORBenchDataset(_RemoteDatasetLoader):
             "refuse safe prompts. It provides prompts that models should handle without refusing."
         )
 
+        source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
+        groups = ["UCLA", "UC Berkeley"]
+
         seed_prompts = [
             SeedPrompt(
-                value=item["prompt"],
+                value=f"{{% raw %}}{item['prompt']}{{% endraw %}}",
                 data_type="text",
                 dataset_name=self.dataset_name,
                 harm_categories=[item["category"]] if item.get("category") else [],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
+                source=source_url,
                 authors=authors,
-                groups=["UCLA", "UC Berkeley"],
+                groups=groups,
                 metadata={"or_bench_config": self.config},
             )
             for item in data
