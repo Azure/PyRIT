@@ -2,6 +2,7 @@
 # Licensed under the MIT license.
 
 import os
+from unittest.mock import patch
 
 import pytest
 
@@ -125,10 +126,10 @@ class TestAIRTTargetInitializerInitialize:
     async def test_registers_azure_content_safety_without_model(self):
         """Test that PromptShieldTarget is registered without model_name (it doesn't use one)."""
         os.environ["AZURE_CONTENT_SAFETY_API_ENDPOINT"] = "https://test.cognitiveservices.azure.com"
-        os.environ["AZURE_CONTENT_SAFETY_API_KEY"] = "test_safety_key"
 
-        init = AIRTTargetInitializer()
-        await init.initialize_async()
+        with patch("pyrit.setup.initializers.airt_targets.get_azure_token_provider", return_value=lambda: "mock-token"):
+            init = AIRTTargetInitializer()
+            await init.initialize_async()
 
         registry = TargetRegistry.get_registry_singleton()
         assert "azure_content_safety" in registry
@@ -136,13 +137,13 @@ class TestAIRTTargetInitializerInitialize:
     @pytest.mark.asyncio
     async def test_underlying_model_passed_when_set(self):
         """Test that underlying_model is passed to target when env var is set."""
-        os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"] = "https://my-deployment.openai.azure.com"
-        os.environ["AZURE_OPENAI_GPT4O_KEY"] = "test_key"
+        os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"] = "https://my-deployment.openai.azure.com/openai/v1"
         os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "my-deployment-name"
         os.environ["AZURE_OPENAI_GPT4O_UNDERLYING_MODEL"] = "gpt-4o"
 
-        init = AIRTTargetInitializer()
-        await init.initialize_async()
+        with patch("pyrit.setup.initializers.airt_targets.get_azure_openai_auth", return_value=lambda: "mock-token"):
+            init = AIRTTargetInitializer()
+            await init.initialize_async()
 
         registry = TargetRegistry.get_registry_singleton()
         target = registry.get_instance_by_name("azure_openai_gpt4o")
@@ -164,6 +165,23 @@ class TestAIRTTargetInitializerInitialize:
         target = registry.get_instance_by_name("ollama")
         assert target is not None
         assert target._model_name == "llama2"
+
+    @pytest.mark.asyncio
+    async def test_azure_target_uses_entra_auth(self):
+        """Test that Azure targets use Entra auth (token provider) instead of API key."""
+        os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"] = "https://my-deployment.openai.azure.com/openai/v1"
+        os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "gpt-4o"
+
+        mock_token_provider = lambda: "mock-token"
+        with patch("pyrit.setup.initializers.airt_targets.get_azure_openai_auth", return_value=mock_token_provider):
+            init = AIRTTargetInitializer()
+            await init.initialize_async()
+
+        registry = TargetRegistry.get_registry_singleton()
+        target = registry.get_instance_by_name("azure_openai_gpt4o")
+        assert target is not None
+        # The token provider gets wrapped by _ensure_async_token_provider, so just verify it's callable
+        assert callable(target._api_key)
 
 
 @pytest.mark.usefixtures("patch_central_database")

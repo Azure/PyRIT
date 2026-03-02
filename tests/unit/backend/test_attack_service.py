@@ -173,45 +173,45 @@ class TestListAttacks:
         assert result.items[0].attack_type == "Test Attack"
 
     @pytest.mark.asyncio
-    async def test_list_attacks_filters_by_attack_class_exact(self, attack_service, mock_memory) -> None:
-        """Test that list_attacks passes attack_class to memory layer."""
+    async def test_list_attacks_filters_by_attack_type_exact(self, attack_service, mock_memory) -> None:
+        """Test that list_attacks passes attack_type to memory layer as attack_class."""
         ar1 = make_attack_result(conversation_id="attack-1", name="CrescendoAttack")
         mock_memory.get_attack_results.return_value = [ar1]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks_async(attack_class="CrescendoAttack")
+        result = await attack_service.list_attacks_async(attack_type="CrescendoAttack")
 
         assert len(result.items) == 1
         assert result.items[0].conversation_id == "attack-1"
-        # Verify attack_class was forwarded to the memory layer
+        # Verify attack_type was forwarded to the memory layer as attack_class
         call_kwargs = mock_memory.get_attack_results.call_args[1]
         assert call_kwargs["attack_class"] == "CrescendoAttack"
 
     @pytest.mark.asyncio
-    async def test_list_attacks_attack_class_passed_to_memory(self, attack_service, mock_memory) -> None:
-        """Test that attack_class is forwarded to memory for DB-level filtering."""
+    async def test_list_attacks_attack_type_passed_to_memory(self, attack_service, mock_memory) -> None:
+        """Test that attack_type is forwarded to memory as attack_class for DB-level filtering."""
         mock_memory.get_attack_results.return_value = []
         mock_memory.get_message_pieces.return_value = []
 
-        await attack_service.list_attacks_async(attack_class="Crescendo")
+        await attack_service.list_attacks_async(attack_type="Crescendo")
 
         call_kwargs = mock_memory.get_attack_results.call_args[1]
         assert call_kwargs["attack_class"] == "Crescendo"
 
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_no_converters(self, attack_service, mock_memory) -> None:
-        """Test that converter_classes=[] is forwarded to memory for DB-level filtering."""
+        """Test that converter_types=[] is forwarded to memory for DB-level filtering."""
         mock_memory.get_attack_results.return_value = []
         mock_memory.get_message_pieces.return_value = []
 
-        await attack_service.list_attacks_async(converter_classes=[])
+        await attack_service.list_attacks_async(converter_types=[])
 
         call_kwargs = mock_memory.get_attack_results.call_args[1]
         assert call_kwargs["converter_classes"] == []
 
     @pytest.mark.asyncio
-    async def test_list_attacks_filters_by_converter_classes_and_logic(self, attack_service, mock_memory) -> None:
-        """Test that list_attacks passes converter_classes to memory layer."""
+    async def test_list_attacks_filters_by_converter_types_and_logic(self, attack_service, mock_memory) -> None:
+        """Test that list_attacks passes converter_types to memory layer."""
         ar1 = make_attack_result(conversation_id="attack-1", name="Attack One")
         ar1.attack_identifier = ComponentIdentifier(
             class_name="Attack One",
@@ -240,11 +240,11 @@ class TestListAttacks:
         mock_memory.get_attack_results.return_value = [ar1]
         mock_memory.get_message_pieces.return_value = []
 
-        result = await attack_service.list_attacks_async(converter_classes=["Base64Converter", "ROT13Converter"])
+        result = await attack_service.list_attacks_async(converter_types=["Base64Converter", "ROT13Converter"])
 
         assert len(result.items) == 1
         assert result.items[0].conversation_id == "attack-1"
-        # Verify converter_classes was forwarded to the memory layer
+        # Verify converter_types was forwarded to the memory layer as converter_classes
         call_kwargs = mock_memory.get_attack_results.call_args[1]
         assert call_kwargs["converter_classes"] == ["Base64Converter", "ROT13Converter"]
 
