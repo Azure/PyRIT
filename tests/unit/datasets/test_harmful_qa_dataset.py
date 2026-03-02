@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -40,7 +40,7 @@ class TestHarmfulQADataset:
         """Test fetching HarmfulQA dataset."""
         loader = _HarmfulQADataset()
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_harmful_qa_data):
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_harmful_qa_data)):
             dataset = await loader.fetch_dataset()
 
             assert isinstance(dataset, SeedDataset)
