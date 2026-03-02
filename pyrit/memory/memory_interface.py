@@ -244,7 +244,6 @@ class MemoryInterface(abc.ABC):
         Raises:
             SQLAlchemyError: If there's an error during the database operation.
         """
-
         with closing(self.get_session()) as session:
             try:
                 session.merge(entry)
@@ -1289,7 +1288,7 @@ class MemoryInterface(abc.ABC):
                 session.commit()
                 # Populate the attack_result_id back onto the domain objects so callers
                 # can reference the DB-assigned ID immediately after insert.
-                for ar, entry in zip(attack_results, entries):
+                for ar, entry in zip(attack_results, entries, strict=False):
                     ar.attack_result_id = str(entry.id)
             except SQLAlchemyError:
                 session.rollback()

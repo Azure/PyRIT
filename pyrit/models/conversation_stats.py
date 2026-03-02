@@ -4,13 +4,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import ClassVar, Dict, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @dataclass(frozen=True)
 class ConversationStats:
-    """Lightweight aggregate statistics for a conversation.
+    """
+    Lightweight aggregate statistics for a conversation.
 
     Used to build attack summaries without loading full message pieces.
     """
@@ -19,5 +22,5 @@ class ConversationStats:
 
     message_count: int = 0
     last_message_preview: Optional[str] = None
-    labels: Dict[str, str] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
     created_at: Optional[datetime] = None
