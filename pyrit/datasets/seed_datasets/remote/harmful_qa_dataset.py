@@ -71,6 +71,9 @@ class _HarmfulQADataset(_RemoteDatasetLoader):
             "in 'Red-Teaming Large Language Models using Chain of Utterances for Safety Alignment' (2023)."
         )
 
+        source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
+        groups = ["DeCLaRe Lab, Singapore University of Technology and Design"]
+
         seed_prompts = [
             SeedPrompt(
                 value=item["question"],
@@ -78,9 +81,9 @@ class _HarmfulQADataset(_RemoteDatasetLoader):
                 dataset_name=self.dataset_name,
                 harm_categories=[item["topic"]] if item.get("topic") else [],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
+                source=source_url,
                 authors=authors,
-                groups=["DeCLaRe Lab, Singapore University of Technology and Design"],
+                groups=groups,
                 metadata={"subtopic": subtopic} if (subtopic := item.get("subtopic")) else {},
             )
             for item in data
