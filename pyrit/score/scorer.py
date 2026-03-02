@@ -492,6 +492,7 @@ class Scorer(Identifiable, abc.ABC):
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
         attack_identifier: Optional[ComponentIdentifier] = None,
+        response_json_schema: Optional[dict[str, Any]] = None,
     ) -> UnvalidatedScore:
         """
         Send a request to a target, and take care of retries.
@@ -544,7 +545,9 @@ class Scorer(Identifiable, abc.ABC):
             conversation_id=conversation_id,
             attack_identifier=attack_identifier,
         )
-        prompt_metadata: dict[str, str | int] = {"response_format": "json"}
+        prompt_metadata: dict[str, str | int | dict[str, Any]] = {"response_format": "json"}
+        if response_json_schema:
+            prompt_metadata["json_schema"] = response_json_schema
 
         # Build message pieces - prepended text context first (if provided), then the main message being scored
         message_pieces: list[MessagePiece] = []

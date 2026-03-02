@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from tinytag import TinyTag
 
@@ -37,7 +37,7 @@ class SeedPrompt(Seed):
     # This field shadows the base class property to allow per-prompt data types
     data_type: Optional[PromptDataType] = None
 
-    response_json_schema: Optional[dict] = None
+    response_json_schema: Optional[dict[str, Any]] = None
 
     # Role of the prompt in a conversation (e.g., "user", "assistant")
     role: Optional[ChatMessageRole] = None
