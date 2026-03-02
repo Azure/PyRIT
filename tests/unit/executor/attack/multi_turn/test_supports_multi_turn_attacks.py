@@ -134,7 +134,7 @@ class TestValueErrorGuards:
             params=AttackParameters(objective="Test"),
         )
 
-        with pytest.raises(ValueError, match="CrescendoAttack does not yet support single-turn targets"):
+        with pytest.raises(ValueError, match="CrescendoAttack requires a multi-turn target"):
             await attack._setup_async(context=context)
 
     @pytest.mark.asyncio

@@ -105,6 +105,9 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
         rejects conversations with prior messages. The prior turn's conversation_id is recorded
         as a PRUNED related conversation on the attack context.
 
+        System messages (e.g., from prepended conversation) are duplicated into the new
+        conversation so that the target retains its system prompt context.
+
         For multi-turn targets this method is a no-op.
 
         This should be called before each turn (except the first) when sending prompts to the
@@ -127,7 +130,22 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
                 description=f"single-turn target prior turn {context.executed_turns}",
             )
         )
-        context.session.conversation_id = str(uuid.uuid4())
+
+        # Duplicate system messages (e.g., system prompt from prepended conversation)
+        # into the new conversation so the target retains its configuration.
+        from pyrit.memory import CentralMemory
+
+        memory = CentralMemory.get_memory_instance()
+        messages = memory.get_conversation(conversation_id=old_conversation_id)
+        system_messages = [m for m in messages if m.api_role == "system"]
+
+        if system_messages:
+            new_conversation_id, pieces = memory.duplicate_messages(messages=system_messages)
+            memory.add_message_pieces_to_memory(message_pieces=pieces)
+            context.session.conversation_id = new_conversation_id
+        else:
+            context.session.conversation_id = str(uuid.uuid4())
+
         self._logger.debug(
             f"Rotated conversation_id for single-turn target: "
             f"{old_conversation_id} -> {context.session.conversation_id}"
