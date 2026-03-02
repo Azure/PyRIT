@@ -13,6 +13,7 @@ from pyrit.exceptions import (
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
+    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -24,6 +25,14 @@ logger = logging.getLogger(__name__)
 
 class OpenAIImageTarget(OpenAITarget):
     """A target for image generation or editing using OpenAI's image models."""
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["text", "image_path"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["image_path"]),
+    }
 
     # Maximum number of image inputs supported by the OpenAI image API
     _MAX_INPUT_IMAGES = 16

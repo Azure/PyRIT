@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pyrit.common.path import HOME_PATH
+from pyrit.common.path import DATASETS_PATH, HOME_PATH
 from pyrit.executor.attack import AttackExecutor, PromptSendingAttack
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import (
@@ -192,6 +192,69 @@ async def test_connect_required_openai_response_targets(sqlite_instance, endpoin
     # OpenAIResponseTarget returns structured responses (reasoning JSON), so we just need to verify
     # we can send a prompt and get a response, not that it contains specific text
     await _assert_can_send_prompt(target, check_if_llm_interpreted_request=False)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "api_key", "model_name"),
+    [
+        (
+            "PLATFORM_OPENAI_RESPONSES_ENDPOINT",
+            "PLATFORM_OPENAI_RESPONSES_KEY",
+            "PLATFORM_OPENAI_RESPONSES_MODEL",
+        ),
+        (
+            "AZURE_OPENAI_RESPONSES_ENDPOINT",
+            "AZURE_OPENAI_RESPONSES_KEY",
+            "AZURE_OPENAI_RESPONSES_MODEL",
+        ),
+        (
+            "AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT",
+            "AZURE_OPENAI_GPT41_RESPONSES_KEY",
+            "AZURE_OPENAI_GPT41_RESPONSES_MODEL",
+        ),
+        (
+            "AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT",
+            "AZURE_OPENAI_GPT5_KEY",
+            "AZURE_OPENAI_GPT5_MODEL",
+        ),
+    ],
+)
+async def test_connect_required_openai_response_targets_image(sqlite_instance, endpoint, api_key, model_name):
+    """Verify Response API targets accept text+image input (image_url as plain string)."""
+    endpoint_value = _get_required_env_var(endpoint)
+    api_key_value = _get_required_env_var(api_key)
+    model_name_value = _get_required_env_var(model_name)
+
+    target = OpenAIResponseTarget(
+        endpoint=endpoint_value,
+        api_key=api_key_value,
+        model_name=model_name_value,
+    )
+
+    conv_id = str(uuid.uuid4())
+    test_image = str(DATASETS_PATH / "modality_test_assets" / "test_image.png")
+
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Describe this image briefly.",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+    image_piece = MessagePiece(
+        role="user",
+        original_value=test_image,
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+    message = Message([text_piece, image_piece])
+
+    result = await target.send_prompt_async(message=message)
+    assert result is not None
+    assert len(result) >= 1
+    response_text = result[0].message_pieces[-1].converted_value
+    assert response_text is not None
+    assert len(response_text) > 0
 
 
 @pytest.mark.asyncio

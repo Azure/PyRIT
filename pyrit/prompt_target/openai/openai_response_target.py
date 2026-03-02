@@ -67,6 +67,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     https://platform.openai.com/docs/api-reference/responses/create
     """
 
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["text", "image_path"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+
     def __init__(
         self,
         *,
@@ -219,7 +225,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             }
         if piece.converted_value_data_type == "image_path":
             data_url = await convert_local_image_to_data_url(piece.converted_value)
-            return {"type": "input_image", "image_url": {"url": data_url}}
+            return {"type": "input_image", "image_url": data_url}
         raise ValueError(f"Unsupported piece type for inline content: {piece.converted_value_data_type}")
 
     async def _build_input_for_multi_modal_async(self, conversation: MutableSequence[Message]) -> list[dict[str, Any]]:

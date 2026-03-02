@@ -20,7 +20,7 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.identifiers import ComponentIdentifier
-from pyrit.models import DataTypeSerializer, Message, MessagePiece, construct_response_from_request
+from pyrit.models import DataTypeSerializer, Message, MessagePiece, PromptDataType, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,13 @@ class WebSocketCopilotTarget(PromptTarget):
     """
 
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["text", "image_path"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+
     RESPONSE_TIMEOUT_SECONDS: int = 60
     CONNECTION_TIMEOUT_SECONDS: int = 30
 

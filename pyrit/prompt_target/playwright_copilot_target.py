@@ -79,6 +79,16 @@ class PlaywrightCopilotTarget(PromptTarget):
     # Supported data types
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
 
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["text", "image_path"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["image_path"]),
+        frozenset(["text", "image_path"]),
+    }
+
     # Placeholder text constants
     PLACEHOLDER_GENERATING_RESPONSE: str = "generating response"
     PLACEHOLDER_GENERATING: str = "generating"

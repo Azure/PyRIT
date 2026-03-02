@@ -11,7 +11,7 @@ from pyrit.auth import (
     get_azure_openai_auth,
     get_azure_token_provider,
 )
-from pyrit.common.path import HOME_PATH
+from pyrit.common.path import DATASETS_PATH, HOME_PATH
 from pyrit.executor.attack import PromptSendingAttack
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import (
@@ -235,6 +235,51 @@ async def test_openai_responses_target_entra_auth(sqlite_instance, endpoint, mod
     result = await attack.execute_async(objective="Hello, how are you?")
     assert result is not None
     assert result.last_response is not None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("endpoint", "model_name"),
+    [
+        ("OPENAI_RESPONSES_ENDPOINT", "OPENAI_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
+        ("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT", "AZURE_OPENAI_GPT5_MODEL"),
+    ],
+)
+async def test_openai_responses_target_entra_auth_image(sqlite_instance, endpoint, model_name):
+    """Verify Response API image input works with Entra auth (image_url as plain string)."""
+    endpoint_value = os.environ[endpoint]
+    args = {
+        "endpoint": endpoint_value,
+        "model_name": os.environ[model_name],
+        "api_key": get_azure_openai_auth(endpoint_value),
+    }
+
+    target = OpenAIResponseTarget(**args)
+
+    conv_id = str(uuid.uuid4())
+    test_image = str(DATASETS_PATH / "modality_test_assets" / "test_image.png")
+
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Describe this image briefly.",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+    image_piece = MessagePiece(
+        role="user",
+        original_value=test_image,
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+    message = Message([text_piece, image_piece])
+
+    result = await target.send_prompt_async(message=message)
+    assert result is not None
+    assert len(result) >= 1
+    response_text = result[0].message_pieces[-1].converted_value
+    assert response_text is not None
+    assert len(response_text) > 0
 
 
 @pytest.mark.asyncio

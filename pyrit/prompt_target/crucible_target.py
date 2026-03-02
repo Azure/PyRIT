@@ -12,7 +12,7 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
-from pyrit.models import Message, construct_response_from_request
+from pyrit.models import Message, PromptDataType, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
@@ -23,6 +23,9 @@ class CrucibleTarget(PromptTarget):
     """A prompt target for the Crucible service."""
 
     API_KEY_ENVIRONMENT_VARIABLE: str = "CRUCIBLE_API_KEY"
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     def __init__(
         self,

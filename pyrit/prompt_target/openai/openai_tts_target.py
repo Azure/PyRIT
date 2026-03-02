@@ -10,6 +10,7 @@ from pyrit.exceptions import (
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
+    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -25,6 +26,9 @@ TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", 
 
 class OpenAITTSTarget(OpenAITarget):
     """A prompt target for OpenAI Text-to-Speech (TTS) endpoints."""
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["audio_path"])}
 
     def __init__(
         self,

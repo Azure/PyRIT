@@ -8,7 +8,7 @@ from typing import Optional
 
 from pyrit.common import net_utility
 from pyrit.identifiers import ComponentIdentifier
-from pyrit.models import Message, construct_response_from_request
+from pyrit.models import Message, PromptDataType, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
@@ -37,6 +37,9 @@ class GandalfLevel(enum.Enum):
 
 class GandalfTarget(PromptTarget):
     """A prompt target for the Gandalf security challenge."""
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     def __init__(
         self,

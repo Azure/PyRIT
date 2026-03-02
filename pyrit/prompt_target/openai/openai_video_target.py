@@ -16,6 +16,7 @@ from pyrit.models import (
     DataTypeSerializer,
     Message,
     MessagePiece,
+    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -47,6 +48,14 @@ class OpenAIVideoTarget(OpenAITarget):
 
     Supported image formats for text+image-to-video: JPEG, PNG, WEBP
     """
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["text", "image_path"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["video_path"]),
+    }
 
     SUPPORTED_RESOLUTIONS: list[VideoSize] = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
     SUPPORTED_DURATIONS: list[VideoSeconds] = ["4", "8", "12"]

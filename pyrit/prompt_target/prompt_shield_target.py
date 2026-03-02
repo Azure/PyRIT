@@ -11,6 +11,7 @@ from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
+    PromptDataType,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -48,6 +49,9 @@ class PromptShieldTarget(PromptTarget):
 
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_ENDPOINT"
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_KEY"
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     _endpoint: str
     _api_key: str | Callable[[], str] | None

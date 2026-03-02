@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional, Protocol
 
 from pyrit.models import (
     Message,
+    PromptDataType,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -51,6 +52,12 @@ class PlaywrightTarget(PromptTarget):
 
     # Supported data types
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["text", "image_path"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     def __init__(
         self,

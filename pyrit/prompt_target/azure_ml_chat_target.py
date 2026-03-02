@@ -17,6 +17,7 @@ from pyrit.identifiers import ComponentIdentifier
 from pyrit.message_normalizer import ChatMessageNormalizer, MessageListNormalizer
 from pyrit.models import (
     Message,
+    PromptDataType,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -39,6 +40,9 @@ class AzureMLChatTarget(PromptChatTarget):
 
     endpoint_uri_environment_variable: str = "AZURE_ML_MANAGED_ENDPOINT"
     api_key_environment_variable: str = "AZURE_ML_KEY"
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     def __init__(
         self,

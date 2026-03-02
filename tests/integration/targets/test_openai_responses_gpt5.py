@@ -10,7 +10,8 @@ import jsonschema
 import pytest
 
 # from pyrit.auth import get_azure_openai_auth
-from pyrit.models import MessagePiece
+from pyrit.common.path import DATASETS_PATH
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
 
 
@@ -143,6 +144,37 @@ async def test_openai_responses_gpt5_json_object(sqlite_instance, gpt5_args):
     assert response_piece.api_role == "assistant"
     _ = json.loads(response_piece.converted_value)
     # Can't assert more, since the failure could be due to a bad generation by the model
+
+
+@pytest.mark.asyncio
+async def test_openai_responses_gpt5_image(sqlite_instance, gpt5_args):
+    """GPT-5 on the Responses API should accept text+image input (image_url as plain string)."""
+    target = OpenAIResponseTarget(**gpt5_args)
+
+    conv_id = str(uuid.uuid4())
+    test_image = str(DATASETS_PATH / "modality_test_assets" / "test_image.png")
+
+    text_piece = MessagePiece(
+        role="user",
+        original_value="Describe this image briefly.",
+        original_value_data_type="text",
+        conversation_id=conv_id,
+    )
+    image_piece = MessagePiece(
+        role="user",
+        original_value=test_image,
+        original_value_data_type="image_path",
+        conversation_id=conv_id,
+    )
+    message = Message([text_piece, image_piece])
+
+    result = await target.send_prompt_async(message=message)
+    assert result is not None
+    assert len(result) >= 1
+    # The assistant should produce a text response describing the image
+    response_text = result[0].message_pieces[-1].converted_value
+    assert response_text is not None
+    assert len(response_text) > 0
 
 
 @pytest.mark.asyncio

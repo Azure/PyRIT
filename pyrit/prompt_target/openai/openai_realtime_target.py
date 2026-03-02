@@ -18,6 +18,7 @@ from pyrit.exceptions.exception_classes import ServerErrorException
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
+    PromptDataType,
     construct_response_from_request,
     data_serializer_factory,
 )
@@ -65,6 +66,16 @@ class RealtimeTarget(OpenAITarget):
     Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
     and https://platform.openai.com/docs/guides/realtime-websocket
     """
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["text", "audio_path"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["audio_path"]),
+        frozenset(["text", "audio_path"]),
+    }
 
     def __init__(
         self,

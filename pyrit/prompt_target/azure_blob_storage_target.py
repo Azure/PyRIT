@@ -13,7 +13,7 @@ from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
 from pyrit.identifiers import ComponentIdentifier
-from pyrit.models import Message, construct_response_from_request
+from pyrit.models import Message, PromptDataType, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
@@ -48,6 +48,12 @@ class AzureBlobStorageTarget(PromptTarget):
 
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
     SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_SAS_TOKEN"
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {
+        frozenset(["text"]),
+        frozenset(["url"]),
+    }
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["url"])}
 
     def __init__(
         self,

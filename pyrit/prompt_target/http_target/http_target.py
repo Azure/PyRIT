@@ -14,6 +14,7 @@ from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
+    PromptDataType,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
@@ -39,6 +40,9 @@ class HTTPTarget(PromptTarget):
             These are the customizable functions which determine how to parse the output
         httpx_client_kwargs: (dict): additional keyword arguments to pass to the HTTP client
     """
+
+    SUPPORTED_INPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
+    SUPPORTED_OUTPUT_MODALITIES: set[frozenset[PromptDataType]] = {frozenset(["text"])}
 
     def __init__(
         self,
