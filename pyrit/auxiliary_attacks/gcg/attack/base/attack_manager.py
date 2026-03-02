@@ -365,12 +365,12 @@ class AttackPrompt:
     def target_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._target_slice.start - 1, self._target_slice.stop - 1)
-        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])  # type: ignore[no-any-return]
+        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])
 
     def control_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._control_slice.start - 1, self._control_slice.stop - 1)
-        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])  # type: ignore[no-any-return]
+        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])
 
     @property
     def assistant_str(self) -> Any:
