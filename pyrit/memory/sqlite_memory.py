@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, TypeVar, Union
 
-from sqlalchemy import and_, create_engine, exists, func, or_, text
+from sqlalchemy import and_, create_engine, func, or_, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, sessionmaker

@@ -7,7 +7,6 @@ Tests for attack service.
 The attack service uses PyRIT memory with AttackResult as the source of truth.
 """
 
-import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 

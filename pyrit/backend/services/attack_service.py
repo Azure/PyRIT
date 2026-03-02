@@ -17,9 +17,10 @@ ARCHITECTURE:
 
 import mimetypes
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Any, Dict, List, Literal, Optional, Sequence, cast
+from typing import Any, Literal, Optional, cast
 
 from pyrit.backend.mappers.attack_mappers import (
     attack_result_to_summary,
@@ -54,9 +55,11 @@ from pyrit.models import (
     AttackResult,
     ConversationStats,
     ConversationType,
-    Message as PyritMessage,
     PromptDataType,
     data_serializer_factory,
+)
+from pyrit.models import (
+    Message as PyritMessage,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 
@@ -80,7 +83,7 @@ class AttackService:
         self,
         *,
         attack_type: Optional[str] = None,
-        converter_types: Optional[List[str]] = None,
+        converter_types: Optional[list[str]] = None,
         outcome: Optional[Literal["undetermined", "success", "failure"]] = None,
         labels: Optional[dict[str, str]] = None,
         min_turns: Optional[int] = None,
@@ -136,7 +139,7 @@ class AttackService:
 
         # Phase 2: Lightweight DB aggregation for the page only.
         # Collect conversation IDs we care about (main + pruned, not adversarial).
-        all_conv_ids: List[str] = []
+        all_conv_ids: list[str] = []
         for ar in page_results:
             all_conv_ids.append(ar.conversation_id)
             all_conv_ids.extend(
@@ -148,7 +151,7 @@ class AttackService:
         stats_map = self._memory.get_conversation_stats(conversation_ids=all_conv_ids) if all_conv_ids else {}
 
         # Phase 2: Fetch pieces only for the page we're returning
-        page: List[AttackSummary] = []
+        page: list[AttackSummary] = []
         for ar in page_results:
             # Merge stats for the main conversation and its pruned relatives.
             main_stats = stats_map.get(ar.conversation_id)
@@ -396,7 +399,7 @@ class AttackService:
         all_conv_ids = [ar.conversation_id] + pruned_related_ids
         stats_map = self._memory.get_conversation_stats(conversation_ids=all_conv_ids)
 
-        conversations: List[ConversationSummary] = []
+        conversations: list[ConversationSummary] = []
         for conv_id in all_conv_ids:
             stats = stats_map.get(conv_id)
             created_at = stats.created_at.isoformat() if stats and stats.created_at else None
@@ -450,9 +453,7 @@ class AttackService:
 
         # Add to pruned_conversation_ids so user-created branches are visible in the GUI history panel.
         existing_pruned = [
-            ref.conversation_id
-            for ref in ar.related_conversations
-            if ref.conversation_type == ConversationType.PRUNED
+            ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
         ]
 
         updated_metadata = dict(ar.metadata or {})
@@ -558,17 +559,17 @@ class AttackService:
             stored_target_id = aid.get_child("objective_target") if aid else None
             if stored_target_id:
                 target_service = get_target_service()
-                request_target_obj = target_service.get_target_object(
-                    target_registry_name=request.target_registry_name
-                )
+                request_target_obj = target_service.get_target_object(target_registry_name=request.target_registry_name)
                 if request_target_obj:
                     request_target_id = request_target_obj.get_identifier()
                     # Compare class, endpoint, and model – sufficient to catch
                     # cross-target mistakes while allowing config-level changes.
                     if (
                         stored_target_id.class_name != request_target_id.class_name
-                        or (stored_target_id.params.get("endpoint") or "") != (request_target_id.params.get("endpoint") or "")
-                        or (stored_target_id.params.get("model_name") or "") != (request_target_id.params.get("model_name") or "")
+                        or (stored_target_id.params.get("endpoint") or "")
+                        != (request_target_id.params.get("endpoint") or "")
+                        or (stored_target_id.params.get("model_name") or "")
+                        != (request_target_id.params.get("model_name") or "")
                     ):
                         raise ValueError(
                             f"Target mismatch: attack was created with "
@@ -642,7 +643,7 @@ class AttackService:
         updated_metadata = dict(ar.metadata or {})
         updated_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
 
-        update_fields: Dict[str, Any] = {"attack_metadata": updated_metadata}
+        update_fields: dict[str, Any] = {"attack_metadata": updated_metadata}
 
         # Track converters used in this turn on the AttackResult.
         # Always propagate when converter_ids are provided, regardless of
@@ -652,7 +653,7 @@ class AttackService:
             new_converter_ids = [c.get_identifier() for c in converter_objs]
             aid = ar.attack_identifier
             if aid:
-                existing_converters: List[ComponentIdentifier] = list(aid.get_child_list("request_converters"))
+                existing_converters: list[ComponentIdentifier] = list(aid.get_child_list("request_converters"))
                 existing_hashes = {c.hash for c in existing_converters}
                 merged = existing_converters + [c for c in new_converter_ids if c.hash not in existing_hashes]
                 new_children = dict(aid.children)
@@ -740,7 +741,7 @@ class AttackService:
         """Return the earliest timestamp from a list of message pieces."""
         if not pieces:
             return None
-        timestamps: List[datetime] = [p.timestamp for p in pieces if p.timestamp is not None]
+        timestamps: list[datetime] = [p.timestamp for p in pieces if p.timestamp is not None]
         return min(timestamps) if timestamps else None
 
     # ========================================================================
@@ -752,7 +753,7 @@ class AttackService:
         *,
         source_conversation_id: str,
         cutoff_index: int,
-        labels_override: Optional[Dict[str, str]] = None,
+        labels_override: Optional[dict[str, str]] = None,
         remap_assistant_to_simulated: bool = False,
     ) -> str:
         """
@@ -830,7 +831,7 @@ class AttackService:
 
             serializer = data_serializer_factory(
                 category="prompt-memory-entries",
-                data_type=cast(PromptDataType, piece.data_type),
+                data_type=cast("PromptDataType", piece.data_type),
                 extension=ext,
             )
             await serializer.save_b64_image(data=piece.original_value)
@@ -864,7 +865,7 @@ class AttackService:
         target_registry_name: str,
         request: AddMessageRequest,
         sequence: int,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         """Send message to target via normalizer and store response."""
         target_obj = get_target_service().get_target_object(target_registry_name=target_registry_name)
@@ -954,9 +955,7 @@ class AttackService:
     @staticmethod
     def _strip_video_pieces(message: PyritMessage) -> None:
         """Remove video_path pieces from a message (video_id on text piece replaces them)."""
-        message.message_pieces = [
-            p for p in message.message_pieces if p.original_value_data_type != "video_path"
-        ]
+        message.message_pieces = [p for p in message.message_pieces if p.original_value_data_type != "video_path"]
 
     async def _store_message_only(
         self,
@@ -964,7 +963,7 @@ class AttackService:
         conversation_id: str,
         request: AddMessageRequest,
         sequence: int,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
     ) -> None:
         """Store message without sending (send=False)."""
         await self._persist_base64_pieces(request)

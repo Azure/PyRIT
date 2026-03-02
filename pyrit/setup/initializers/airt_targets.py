@@ -15,7 +15,7 @@ Note: This module only includes PRIMARY endpoint configurations from .env_exampl
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Optional
 
 from pyrit.prompt_target import (
     AzureMLChatTarget,
@@ -45,7 +45,7 @@ class TargetConfig:
     key_var: str = ""  # Empty string means no auth required
     model_var: Optional[str] = None
     underlying_model_var: Optional[str] = None
-    extra_kwargs: Dict[str, Any] = field(default_factory=dict)
+    extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 # Define all supported target configurations.

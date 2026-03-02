@@ -272,7 +272,7 @@ def main():
         idx = argv.index("--config-file")
         if idx + 1 < len(argv):
             config_file = argv[idx + 1]
-            argv = argv[:idx] + argv[idx + 2:]
+            argv = argv[:idx] + argv[idx + 2 :]
         else:
             print("ERROR: --config-file requires a path argument")
             sys.exit(1)
@@ -337,10 +337,7 @@ def main():
             return
         else:
             print(f"Unknown command: {command}")
-            print(
-                "Usage: python dev.py [start|stop|restart|backend|frontend|logs] "
-                "[--config-file PATH] [--detach]"
-            )
+            print("Usage: python dev.py [start|stop|restart|backend|frontend|logs] [--config-file PATH] [--detach]")
             sys.exit(1)
 
     # If --detach, re-launch in background and exit immediately

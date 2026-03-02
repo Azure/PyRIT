@@ -11,7 +11,7 @@ Targets have two concepts:
 This module defines the Instance models for runtime target management.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,7 +36,7 @@ class TargetInstance(BaseModel):
     supports_multiturn_chat: bool = Field(
         True, description="Whether the target supports multi-turn conversation history"
     )
-    target_specific_params: Optional[Dict[str, Any]] = Field(None, description="Additional target-specific parameters")
+    target_specific_params: Optional[dict[str, Any]] = Field(None, description="Additional target-specific parameters")
 
 
 class TargetListResponse(BaseModel):
