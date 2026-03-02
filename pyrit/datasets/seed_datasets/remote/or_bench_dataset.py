@@ -28,10 +28,11 @@ class _ORBenchDataset(_RemoteDatasetLoader):
         - https://arxiv.org/abs/2405.20947
     """
 
+    HF_DATASET_NAME: str = "bench-llm/OR-Bench"
+
     def __init__(
         self,
         *,
-        dataset_name: str = "bench-llm/OR-Bench",
         config: str = "or-bench-hard-1k",
         split: str = "train",
     ):
@@ -39,12 +40,10 @@ class _ORBenchDataset(_RemoteDatasetLoader):
         Initialize the OR-Bench dataset loader.
 
         Args:
-            dataset_name: HuggingFace dataset identifier. Defaults to "bench-llm/OR-Bench".
             config: Dataset configuration. One of "or-bench-hard-1k" or "or-bench-toxic".
                 Defaults to "or-bench-hard-1k".
             split: Dataset split to load. Defaults to "train".
         """
-        self.hf_dataset_name = dataset_name
         self.config = config
         self.split = split
 
@@ -63,16 +62,21 @@ class _ORBenchDataset(_RemoteDatasetLoader):
         Returns:
             SeedDataset: A SeedDataset containing the OR-Bench prompts.
         """
-        logger.info(f"Loading OR-Bench dataset from {self.hf_dataset_name} (config={self.config})")
+        logger.info(f"Loading OR-Bench dataset from {self.HF_DATASET_NAME} (config={self.config})")
 
         data = await self._fetch_from_huggingface(
-            dataset_name=self.hf_dataset_name,
+            dataset_name=self.HF_DATASET_NAME,
             config=self.config,
             split=self.split,
             cache=cache,
         )
 
-        authors = ["Justin Cui", "Wei-Lin Chiang", "Ion Stoica", "Cho-Jui Hsieh"]
+        authors = [
+            "Justin Cui",
+            "Wei-Lin Chiang",
+            "Ion Stoica",
+            "Cho-Jui Hsieh",
+        ]
         description = (
             "OR-Bench is an over-refusal benchmark that tests whether language models wrongly "
             "refuse safe prompts. It provides prompts that models should handle without refusing."
@@ -83,9 +87,9 @@ class _ORBenchDataset(_RemoteDatasetLoader):
                 value=item["prompt"],
                 data_type="text",
                 dataset_name=self.dataset_name,
-                harm_categories=[item["category"]],
+                harm_categories=[item["category"]] if item.get("category") else [],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.hf_dataset_name}",
+                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
                 authors=authors,
                 groups=["UCLA", "UC Berkeley"],
                 metadata={"or_bench_config": self.config},
