@@ -3,9 +3,10 @@
 
 import warnings
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from itertools import product
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 from pyrit.models import AttackOutcome, AttackResult
 
@@ -54,14 +55,14 @@ class AnalysisResult:
 # ---------------------------------------------------------------------------
 def _extract_attack_type(result: AttackResult) -> list[str]:
     """
-    Extract the attack type from the attack identifier dict.
+    Extract the attack type from the attack identifier.
 
-    Reads the ``__type__`` key populated by :meth:`Strategy.get_identifier`.
+    Reads the ``class_name`` attribute from the ComponentIdentifier.
 
     Returns:
         list[str]: A single-element list containing the attack type.
     """
-    return [result.attack_identifier.get("__type__", "unknown")]
+    return [result.attack_identifier.class_name if result.attack_identifier else "unknown"]
 
 
 def _extract_converter_types(result: AttackResult) -> list[str]:
