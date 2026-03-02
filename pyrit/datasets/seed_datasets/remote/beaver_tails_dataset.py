@@ -84,6 +84,9 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
             "Towards Improved Safety Alignment of LLM via a Human-Preference Dataset' (2023)."
         )
 
+        source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
+        groups = ["Institute for Artificial Intelligence", "CFCS, School of Computer Science"]
+
         seed_prompts = []
         for item in data:
             if self.unsafe_only and item["is_safe"]:
@@ -98,9 +101,9 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
                     dataset_name=self.dataset_name,
                     harm_categories=harm_categories,
                     description=description,
-                    source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
+                    source=source_url,
                     authors=authors,
-                    groups=["Institute for Artificial Intelligence", "CFCS, School of Computer Science"],
+                    groups=groups,
                 )
             )
 
