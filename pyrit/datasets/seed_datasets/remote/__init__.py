@@ -53,7 +53,9 @@ from pyrit.datasets.seed_datasets.remote.multilingual_vulnerability_dataset impo
     _MultilingualVulnerabilityDataset,
 )
 from pyrit.datasets.seed_datasets.remote.or_bench_dataset import (
-    _ORBenchDataset,
+    _ORBench80KDataset,
+    _ORBenchHardDataset,
+    _ORBenchToxicDataset,
 )  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.pku_safe_rlhf_dataset import (
     _PKUSafeRLHFDataset,
@@ -118,4 +120,7 @@ __all__ = [
     "_TDC23RedteamingDataset",
     "_VLSUMultimodalDataset",
     "_XSTestDataset",
+    "_ORBench80KDataset",
+    "_ORBenchHardDataset",
+    "_ORBenchToxicDataset",
 ]
