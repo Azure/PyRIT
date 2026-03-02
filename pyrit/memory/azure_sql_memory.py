@@ -388,37 +388,37 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             )
         )
 
-    def _get_attack_result_attack_type_condition(self, *, attack_type: str) -> Any:
+    def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
         """
-        Azure SQL implementation for filtering AttackResults by attack type.
+        Azure SQL implementation for filtering AttackResults by attack class.
         Uses JSON_VALUE() to match class_name in the attack_identifier JSON column.
 
         Args:
-            attack_type (str): Exact attack type name to match.
+            attack_class (str): Exact attack class name to match.
 
         Returns:
             Any: SQLAlchemy text condition with bound parameter.
         """
         return text(
             """ISJSON("AttackResultEntries".attack_identifier) = 1
-            AND JSON_VALUE("AttackResultEntries".attack_identifier, '$.class_name') = :attack_type"""
-        ).bindparams(attack_type=attack_type)
+            AND JSON_VALUE("AttackResultEntries".attack_identifier, '$.class_name') = :attack_class"""
+        ).bindparams(attack_class=attack_class)
 
-    def _get_attack_result_converter_types_condition(self, *, converter_types: Sequence[str]) -> Any:
+    def _get_attack_result_converter_classes_condition(self, *, converter_classes: Sequence[str]) -> Any:
         """
-        Azure SQL implementation for filtering AttackResults by converter types.
+        Azure SQL implementation for filtering AttackResults by converter classes.
 
-        When converter_types is empty, matches attacks with no converters.
-        When non-empty, uses OPENJSON() to check all specified types are present
+        When converter_classes is empty, matches attacks with no converters.
+        When non-empty, uses OPENJSON() to check all specified classes are present
         (AND logic, case-insensitive).
 
         Args:
-            converter_types (Sequence[str]): List of converter type names. Empty list means no converters.
+            converter_classes (Sequence[str]): List of converter class names. Empty list means no converters.
 
         Returns:
             Any: SQLAlchemy combined condition with bound parameters.
         """
-        if len(converter_types) == 0:
+        if len(converter_classes) == 0:
             # Explicitly "no converters": match attacks where the converter list
             # is absent, null, or empty in the stored JSON.
             return text(
@@ -430,7 +430,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
         conditions = []
         bindparams_dict: dict[str, str] = {}
-        for i, cls in enumerate(converter_types):
+        for i, cls in enumerate(converter_classes):
             param_name = f"conv_cls_{i}"
             conditions.append(
                 f'EXISTS(SELECT 1 FROM OPENJSON(JSON_QUERY("AttackResultEntries".attack_identifier, '
@@ -444,7 +444,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             **bindparams_dict
         )
 
-    def get_unique_attack_type_names(self) -> list[str]:
+    def get_unique_attack_class_names(self) -> list[str]:
         """
         Azure SQL implementation: extract unique class_name values from attack_identifier JSON.
 
@@ -462,7 +462,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             ).fetchall()
         return sorted(row[0] for row in rows)
 
-    def get_unique_converter_type_names(self) -> list[str]:
+    def get_unique_converter_class_names(self) -> list[str]:
         """
         Azure SQL implementation: extract unique converter class_name values
         from the request_converter_identifiers array in attack_identifier JSON.
