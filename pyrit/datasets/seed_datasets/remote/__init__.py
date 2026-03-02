@@ -108,7 +108,6 @@ __all__ = [
     "_LibrAIDoNotAnswerDataset",
     "_MedSafetyBenchDataset",
     "_MLCommonsAILuminateDataset",
-    "_ORBenchDataset",
     "_PKUSafeRLHFDataset",
     "PromptIntelCategory",
     "PromptIntelSeverity",
