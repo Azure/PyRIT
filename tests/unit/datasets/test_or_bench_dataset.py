@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -32,7 +32,7 @@ class TestORBenchDataset:
         """Test fetching OR-Bench dataset."""
         loader = _ORBenchDataset()
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_or_bench_data):
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_or_bench_data)):
             dataset = await loader.fetch_dataset()
 
             assert isinstance(dataset, SeedDataset)
@@ -54,7 +54,7 @@ class TestORBenchDataset:
         """Test fetching with toxic config."""
         loader = _ORBenchDataset(config="or-bench-toxic")
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_or_bench_data) as mock_fetch:
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_or_bench_data)) as mock_fetch:
             dataset = await loader.fetch_dataset()
 
             assert len(dataset.seeds) == 2
