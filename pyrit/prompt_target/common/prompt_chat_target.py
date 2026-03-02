@@ -31,7 +31,6 @@ class PromptChatTarget(PromptTarget):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
-        supports_multi_turn: Optional[bool] = None,
     ) -> None:
         """
         Initialize the PromptChatTarget.
@@ -43,15 +42,12 @@ class PromptChatTarget(PromptTarget):
             underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. Defaults to None.
-            supports_multi_turn (bool, Optional): Whether this target supports multi-turn
-                conversations. If None, uses the class default. Defaults to None.
         """
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint,
             model_name=model_name,
             underlying_model=underlying_model,
-            supports_multi_turn=supports_multi_turn,
         )
 
     def set_system_prompt(

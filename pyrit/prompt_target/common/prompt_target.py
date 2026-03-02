@@ -3,7 +3,6 @@
 
 import abc
 import logging
-from dataclasses import replace
 from typing import Any, Optional, Union
 
 from pyrit.identifiers import ComponentIdentifier, Identifiable
@@ -39,7 +38,7 @@ class PromptTarget(Identifiable):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
-        supports_multi_turn: Optional[bool] = None,
+        capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the PromptTarget.
@@ -53,10 +52,10 @@ class PromptTarget(Identifiable):
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. If not provided, `model_name` will be used for the identifier.
                 Defaults to None.
-            supports_multi_turn (bool, Optional): Whether this target supports multi-turn
-                conversations. If None, uses the class default. Can be overridden per instance
-                for targets whose multi-turn capability depends on configuration.
-                Defaults to None.
+            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+                this target instance. Useful for targets whose capabilities depend on deployment
+                configuration (e.g., Playwright, HTTP). If None, uses the class-level
+                ``_DEFAULT_CAPABILITIES``. Defaults to None.
         """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
@@ -64,12 +63,7 @@ class PromptTarget(Identifiable):
         self._endpoint = endpoint
         self._model_name = model_name
         self._underlying_model = underlying_model
-
-        # Build capabilities from class defaults with per-instance overrides
-        caps = type(self)._DEFAULT_CAPABILITIES
-        if supports_multi_turn is not None:
-            caps = replace(caps, supports_multi_turn=supports_multi_turn)
-        self._capabilities = caps
+        self._capabilities = capabilities if capabilities is not None else type(self)._DEFAULT_CAPABILITIES
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -155,13 +149,18 @@ class PromptTarget(Identifiable):
         """
         The capabilities of this target instance.
 
-        Returns the resolved capabilities, combining class defaults with any
-        per-instance overrides specified in the constructor.
+        Defaults to the class-level ``_DEFAULT_CAPABILITIES``. Can be overridden
+        per instance by setting this property, which is useful for targets whose
+        capabilities depend on deployment configuration (e.g., Playwright, HTTP).
 
         Returns:
             TargetCapabilities: The capabilities for this target.
         """
         return self._capabilities
+
+    @capabilities.setter
+    def capabilities(self, value: TargetCapabilities) -> None:
+        self._capabilities = value
 
     @property
     def supports_multi_turn(self) -> bool:

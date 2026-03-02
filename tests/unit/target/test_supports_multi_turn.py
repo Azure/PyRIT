@@ -78,8 +78,8 @@ class TestSupportsMultiTurn:
         assert target.supports_multi_turn is False
 
     def test_constructor_override_supports_multi_turn(self, patch_central_database):
-        """Test that supports_multi_turn can be overridden via the constructor."""
-        from pyrit.prompt_target import OpenAIChatTarget
+        """Test that capabilities can be overridden via the capabilities setter."""
+        from pyrit.prompt_target import OpenAIChatTarget, TargetCapabilities
 
         # By default, chat targets support multi-turn
         target = OpenAIChatTarget(
@@ -89,25 +89,22 @@ class TestSupportsMultiTurn:
         )
         assert target.supports_multi_turn is True
 
-        # Override to False via constructor
-        target_single = OpenAIChatTarget(
-            model_name="test-model",
-            endpoint="https://mock.azure.com/",
-            api_key="mock-api-key",
-            supports_multi_turn=False,
-        )
-        assert target_single.supports_multi_turn is False
+        # Override via capabilities setter
+        target.capabilities = TargetCapabilities(supports_multi_turn=False)
+        assert target.supports_multi_turn is False
 
     def test_constructor_override_single_turn_to_multi(self, patch_central_database):
         """Test that a single-turn target can be overridden to multi-turn."""
-        from pyrit.prompt_target import OpenAIImageTarget
+        from pyrit.prompt_target import OpenAIImageTarget, TargetCapabilities
 
         target = OpenAIImageTarget(
             model_name="dall-e-3",
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
-            supports_multi_turn=True,
         )
+        assert target.supports_multi_turn is False
+
+        target.capabilities = TargetCapabilities(supports_multi_turn=True)
         assert target.supports_multi_turn is True
 
     def test_capabilities_property_returns_target_capabilities(self, patch_central_database):
@@ -123,16 +120,18 @@ class TestSupportsMultiTurn:
         assert isinstance(caps, TargetCapabilities)
         assert caps.supports_multi_turn is True
 
-    def test_capabilities_override_via_constructor(self, patch_central_database):
-        """Test that capabilities are correctly built from constructor overrides."""
+    def test_capabilities_override_via_setter(self, patch_central_database):
+        """Test that capabilities are correctly overridden via the setter."""
         from pyrit.prompt_target import OpenAIChatTarget, TargetCapabilities
 
         target = OpenAIChatTarget(
             model_name="test-model",
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
-            supports_multi_turn=False,
         )
+        assert target.capabilities.supports_multi_turn is True
+
+        target.capabilities = TargetCapabilities(supports_multi_turn=False)
         caps = target.capabilities
         assert isinstance(caps, TargetCapabilities)
         assert caps.supports_multi_turn is False
