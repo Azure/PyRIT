@@ -99,23 +99,26 @@ class _SaladBenchDataset(_RemoteDatasetLoader):
             "and 65+ categories, with base, attack-enhanced, and defense-enhanced variants."
         )
 
+        source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
+        groups = [
+            "Shanghai Artificial Intelligence Laboratory",
+            "Harbin Institute of Technology",
+            "Beijing Institute of Technology",
+            "Chinese University of Hong Kong",
+            "The Hong Kong Polytechnic University",
+        ]
+
         seed_prompts = [
             SeedPrompt(
-                value=item["prompt"],
+                value=f"{{% raw %}}{item['prompt']}{{% endraw %}}",
                 data_type="text",
                 dataset_name=self.dataset_name,
                 harm_categories=[self._parse_category(c) for c in item["categories"]],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
+                source=source_url,
                 authors=authors,
-                groups=[
-                    "Shanghai Artificial Intelligence Laboratory",
-                    "Harbin Institute of Technology",
-                    "Beijing Institute of Technology",
-                    "Chinese University of Hong Kong",
-                    "The Hong Kong Polytechnic University",
-                ],
-                metadata={"original_source": item.get("source", "")},
+                groups=groups,
+                metadata={"original_source": src} if (src := item.get("source")) else {},
             )
             for item in data
         ]
