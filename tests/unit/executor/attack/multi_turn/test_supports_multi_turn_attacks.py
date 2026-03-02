@@ -42,7 +42,7 @@ class TestRotateConversationForSingleTurnTarget:
                 objective_target=target,
                 context_type=MultiTurnAttackContext,
             )
-        return strategy
+        return strategy  # noqa: RET504
 
     def test_noop_for_multi_turn_target(self):
         strategy = self._make_strategy(supports_multi_turn=True)
