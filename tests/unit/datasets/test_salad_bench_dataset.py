@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -34,7 +34,7 @@ class TestSaladBenchDataset:
         """Test fetching SALAD-Bench dataset."""
         loader = _SaladBenchDataset()
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_salad_bench_data):
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_salad_bench_data)):
             dataset = await loader.fetch_dataset()
 
             assert isinstance(dataset, SeedDataset)
@@ -67,7 +67,7 @@ class TestSaladBenchDataset:
             split="attackEnhanced",
         )
 
-        with patch.object(loader, "_fetch_from_huggingface", return_value=mock_salad_bench_data) as mock_fetch:
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_salad_bench_data)) as mock_fetch:
             dataset = await loader.fetch_dataset()
 
             assert len(dataset.seeds) == 2
