@@ -23,20 +23,19 @@ class _HarmfulQADataset(_RemoteDatasetLoader):
         - https://arxiv.org/abs/2310.18469
     """
 
+    HF_DATASET_NAME: str = "declare-lab/HarmfulQA"
+
     def __init__(
         self,
         *,
-        dataset_name: str = "declare-lab/HarmfulQA",
         split: str = "train",
     ):
         """
         Initialize the HarmfulQA dataset loader.
 
         Args:
-            dataset_name: HuggingFace dataset identifier. Defaults to "declare-lab/HarmfulQA".
             split: Dataset split to load. Defaults to "train".
         """
-        self.hf_dataset_name = dataset_name
         self.split = split
 
     @property
@@ -54,10 +53,10 @@ class _HarmfulQADataset(_RemoteDatasetLoader):
         Returns:
             SeedDataset: A SeedDataset containing the HarmfulQA questions.
         """
-        logger.info(f"Loading HarmfulQA dataset from {self.hf_dataset_name}")
+        logger.info(f"Loading HarmfulQA dataset from {self.HF_DATASET_NAME}")
 
         data = await self._fetch_from_huggingface(
-            dataset_name=self.hf_dataset_name,
+            dataset_name=self.HF_DATASET_NAME,
             split=self.split,
             cache=cache,
         )
@@ -76,7 +75,7 @@ class _HarmfulQADataset(_RemoteDatasetLoader):
                 dataset_name=self.dataset_name,
                 harm_categories=[item["topic"]],
                 description=description,
-                source=f"https://huggingface.co/datasets/{self.hf_dataset_name}",
+                source=f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}",
                 authors=authors,
                 groups=["DeCLaRe Lab, Singapore University of Technology and Design"],
                 metadata={"subtopic": subtopic} if (subtopic := item.get("subtopic")) else {},
