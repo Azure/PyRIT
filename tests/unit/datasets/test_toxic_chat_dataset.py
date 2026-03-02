@@ -99,7 +99,9 @@ class TestToxicChatDataset:
             split="test",
         )
 
-        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_toxic_chat_data)) as mock_fetch:
+        with patch.object(
+            loader, "_fetch_from_huggingface", new=AsyncMock(return_value=mock_toxic_chat_data)
+        ) as mock_fetch:
             dataset = await loader.fetch_dataset()
 
             assert len(dataset.seeds) == 2
