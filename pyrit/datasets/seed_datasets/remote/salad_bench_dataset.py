@@ -25,6 +25,9 @@ class _SaladBenchDataset(_RemoteDatasetLoader):
         - https://huggingface.co/datasets/walledai/SaladBench
         - https://arxiv.org/abs/2402.05044
         - https://github.com/OpenSafetyLab/SALAD-BENCH
+    License: Apache 2.0
+
+    Warning: This dataset contains harmful and unsafe content designed for safety evaluation.
     """
 
     HF_DATASET_NAME: str = "walledai/SaladBench"
