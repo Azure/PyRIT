@@ -8,7 +8,7 @@ All interactions are modeled as "attacks" - including manual conversations.
 This is the attack-centric API design.
 """
 
-import traceback
+import logging
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -32,6 +32,8 @@ from pyrit.backend.models.attacks import (
 )
 from pyrit.backend.models.common import ProblemDetail
 from pyrit.backend.services.attack_service import get_attack_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/attacks", tags=["attacks"])
 
@@ -406,13 +408,8 @@ async def add_message(
             detail=error_msg,
         ) from e
     except Exception as e:
-        tb = traceback.format_exception(type(e), e, e.__traceback__)
-        # Include the root cause if chained
-        cause = e.__cause__
-        if cause:
-            tb += traceback.format_exception(type(cause), cause, cause.__traceback__)
-        detail = "".join(tb)
+        logger.exception("Failed to add message to attack '%s'", attack_result_id)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=detail,
+            detail="Internal server error. Check server logs for details.",
         ) from e

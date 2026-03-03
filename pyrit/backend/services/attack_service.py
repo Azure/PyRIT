@@ -17,7 +17,6 @@ ARCHITECTURE:
 
 import mimetypes
 import uuid
-from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any, Literal, Optional, cast
@@ -49,7 +48,6 @@ from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
-from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -713,37 +711,6 @@ class AttackService:
         page = items[start_idx : start_idx + limit]
         has_more = len(items) > start_idx + limit
         return page, has_more
-
-    # ========================================================================
-    # Private Helper Methods - Conversation Info
-    # ========================================================================
-
-    @staticmethod
-    def _get_last_message_preview(pieces: Sequence[PromptMemoryEntry]) -> Optional[str]:
-        """Return a truncated preview of the last message piece's text."""
-        if not pieces:
-            return None
-        last = max(pieces, key=lambda p: p.sequence)
-        text = last.converted_value or ""
-        return text[:100] + "..." if len(text) > 100 else text
-
-    @staticmethod
-    def _count_messages(pieces: Sequence[PromptMemoryEntry]) -> int:
-        """
-        Count distinct messages (by sequence number) in a list of pieces.
-
-        Returns:
-            The number of unique sequence values.
-        """
-        return len({p.sequence for p in pieces})
-
-    @staticmethod
-    def _get_earliest_timestamp(pieces: Sequence[PromptMemoryEntry]) -> Optional[datetime]:
-        """Return the earliest timestamp from a list of message pieces."""
-        if not pieces:
-            return None
-        timestamps: list[datetime] = [p.timestamp for p in pieces if p.timestamp is not None]
-        return min(timestamps) if timestamps else None
 
     # ========================================================================
     # Private Helper Methods - Duplicate / Branch
