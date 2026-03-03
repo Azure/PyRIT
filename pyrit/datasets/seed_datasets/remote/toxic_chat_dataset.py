@@ -109,7 +109,10 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
                 )
             except Exception:
                 conv_id = item.get("conv_id", "unknown")
-                logger.debug(f"Skipping entry with conv_id={conv_id}: failed to parse as Jinja2 template")
+                logger.debug(
+                    f"Skipping entry with conv_id={conv_id}: failed to parse as Jinja2 template",
+                    exc_info=True,
+                )
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from ToxicChat dataset")
 
