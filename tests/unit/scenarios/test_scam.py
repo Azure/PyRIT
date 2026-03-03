@@ -249,7 +249,7 @@ class TestScamAttackGeneration:
         atomic_attacks = await scenario._get_atomic_attacks_async()
 
         for run in atomic_attacks:
-            assert isinstance(run._attack, ContextComplianceAttack) or isinstance(run._attack, RolePlayAttack)
+            assert isinstance(run._attack, (ContextComplianceAttack, RolePlayAttack))
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_multiturn_async(
@@ -380,7 +380,7 @@ class TestScamProperties:
             await scenario.initialize_async(objective_target=mock_objective_target, dataset_config=mock_dataset_config)
 
             objective_target = scenario._objective_target
-            scorer_target = scenario._scorer_config.objective_scorer  # type: ignore
+            scorer_target = scenario._scorer_config.objective_scorer  # type: ignore[arg-type]
             adversarial_target = scenario._adversarial_chat
 
             assert objective_target != scorer_target

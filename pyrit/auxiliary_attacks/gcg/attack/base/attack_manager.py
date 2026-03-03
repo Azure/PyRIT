@@ -368,12 +368,14 @@ class AttackPrompt:
     def target_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._target_slice.start - 1, self._target_slice.stop - 1)
-        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])  # type: ignore[no-any-return]
+        result: torch.Tensor = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])
+        return result
 
     def control_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._control_slice.start - 1, self._control_slice.stop - 1)
-        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])  # type: ignore[no-any-return]
+        result: torch.Tensor = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])
+        return result
 
     @property
     def assistant_str(self) -> Any:
@@ -1022,7 +1024,7 @@ class ProgressiveMultiPromptAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs
@@ -1262,7 +1264,7 @@ class IndividualPromptAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs
@@ -1477,7 +1479,7 @@ class EvaluateAttack:
     @staticmethod
     def filter_mpa_kwargs(**kwargs: Any) -> dict[str, Any]:
         mpa_kwargs: dict[str, Any] = {}
-        for key in kwargs.keys():
+        for key in kwargs:
             if key.startswith("mpa_"):
                 mpa_kwargs[key[4:]] = kwargs[key]
         return mpa_kwargs

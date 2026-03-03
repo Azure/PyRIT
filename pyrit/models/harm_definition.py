@@ -128,10 +128,7 @@ class HarmDefinition:
         path = Path(harm_definition_path)
 
         # If it's just a filename (no directory separators), look in the standard directory
-        if path.parent == Path("."):
-            resolved_path = HARM_DEFINITION_PATH / path
-        else:
-            resolved_path = path
+        resolved_path = HARM_DEFINITION_PATH / path if path.parent == Path(".") else path
 
         if not resolved_path.exists():
             raise FileNotFoundError(
@@ -143,7 +140,7 @@ class HarmDefinition:
             with open(resolved_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            raise ValueError(f"Invalid YAML in harm definition file {resolved_path}: {e}")
+            raise ValueError(f"Invalid YAML in harm definition file {resolved_path}: {e}") from e
 
         if not isinstance(data, dict):
             raise ValueError(f"Harm definition file {resolved_path} must contain a YAML mapping/dictionary.")

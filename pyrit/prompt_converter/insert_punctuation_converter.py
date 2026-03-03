@@ -70,7 +70,7 @@ class InsertPunctuationConverter(PromptConverter):
         Returns:
             bool: valid list and valid punctuations
         """
-        return all(str in string.punctuation for str in punctuation_list)
+        return all(char in string.punctuation for char in punctuation_list)
 
     async def convert_async(
         self, *, prompt: str, input_type: PromptDataType = "text", punctuation_list: Optional[list[str]] = None
@@ -119,7 +119,7 @@ class InsertPunctuationConverter(PromptConverter):
         # Words list contains single spaces, single word without punctuations, single punctuations
         words = re.findall(r"\w+|[^\w\s]|\s", prompt)
         # Maintains indices for actual "words", i.e. letters and numbers not divided by punctuations
-        word_indices = [i for i in range(0, len(words)) if not re.match(r"\W", words[i])]
+        word_indices = [i for i in range(len(words)) if not re.match(r"\W", words[i])]
         # Calculate the number of insertions
         num_insertions = max(
             1, round(len(word_indices) * self._word_swap_ratio)
@@ -150,10 +150,10 @@ class InsertPunctuationConverter(PromptConverter):
         """
         insert_indices = random.sample(word_indices, num_insertions)
         # Randomly choose num_insertions indices from actual word indices.
-        INSERT_BEFORE = 0
-        INSERT_AFTER = 1
+        insert_before = 0
+        insert_after = 1
         for index in insert_indices:
-            if random.randint(INSERT_BEFORE, INSERT_AFTER) == INSERT_AFTER:
+            if random.randint(insert_before, insert_after) == insert_after:
                 words[index] += random.choice(punctuation_list)
             else:
                 words[index] = random.choice(punctuation_list) + words[index]
@@ -177,7 +177,7 @@ class InsertPunctuationConverter(PromptConverter):
         # Store random indices of prompt_list into insert_indices
         # If the prompt has only 0 or 1 chars, insert at the end of the prompt
         insert_indices = (
-            [1] if len(prompt_list) <= num_insertions else random.sample(range(0, len(prompt_list) - 1), num_insertions)
+            [1] if len(prompt_list) <= num_insertions else random.sample(range(len(prompt_list) - 1), num_insertions)
         )
 
         for index in insert_indices:

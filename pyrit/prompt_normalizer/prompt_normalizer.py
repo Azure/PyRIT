@@ -51,8 +51,8 @@ class PromptNormalizer:
         message: Message,
         target: PromptTarget,
         conversation_id: Optional[str] = None,
-        request_converter_configurations: list[PromptConverterConfiguration] = [],
-        response_converter_configurations: list[PromptConverterConfiguration] = [],
+        request_converter_configurations: list[PromptConverterConfiguration] | None = None,
+        response_converter_configurations: list[PromptConverterConfiguration] | None = None,
         labels: Optional[dict[str, str]] = None,
         attack_identifier: Optional[ComponentIdentifier] = None,
     ) -> Message:
@@ -79,6 +79,8 @@ class PromptNormalizer:
             Message: The response received from the target.
         """
         # Validates that the MessagePieces in the Message are part of the same sequence
+        request_converter_configurations = request_converter_configurations or []
+        response_converter_configurations = response_converter_configurations or []
         if len({piece.sequence for piece in message.message_pieces}) > 1:
             raise ValueError("All MessagePieces in the Message must have the same sequence.")
 

@@ -296,7 +296,7 @@ class HumanLabeledDataset:
 
         entries: list[HumanLabeledEntry] = []
         for response_to_score, human_scores, objective_or_harm, data_type in zip(
-            responses_to_score, all_human_scores, objectives_or_harms, data_types
+            responses_to_score, all_human_scores, objectives_or_harms, data_types, strict=False
         ):
             response_to_score = str(response_to_score).strip()
             objective_or_harm = str(objective_or_harm).strip()
@@ -310,7 +310,7 @@ class HumanLabeledDataset:
                         MessagePiece(
                             role="assistant",
                             original_value=response_to_score,
-                            original_value_data_type=cast(PromptDataType, data_type),
+                            original_value_data_type=cast("PromptDataType", data_type),
                         )
                     ],
                 )
@@ -368,13 +368,12 @@ class HumanLabeledDataset:
             harm_def = self.get_harm_definition()
 
             # Validate that harm_definition_version matches the actual YAML file version
-            if self.harm_definition_version and harm_def:
-                if harm_def.version != self.harm_definition_version:
-                    raise ValueError(
-                        f"harm_definition_version mismatch: CSV specifies '{self.harm_definition_version}' "
-                        f"but '{self.harm_definition}' has version '{harm_def.version}'. "
-                        f"Please update the CSV or YAML to match."
-                    )
+            if self.harm_definition_version and harm_def and harm_def.version != self.harm_definition_version:
+                raise ValueError(
+                    f"harm_definition_version mismatch: CSV specifies '{self.harm_definition_version}' "
+                    f"but '{self.harm_definition}' has version '{harm_def.version}'. "
+                    f"Please update the CSV or YAML to match."
+                )
 
             harm_categories = set()
             for index, entry in enumerate(self.entries):

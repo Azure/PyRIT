@@ -8,23 +8,25 @@ import asyncio
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator, MutableMapping
 from contextlib import asynccontextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.exceptions import clear_execution_context, get_execution_context
 from pyrit.models import StrategyResultT
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, MutableMapping
+
 StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
 
 @dataclass
-class StrategyContext(ABC):
+class StrategyContext(ABC):  # noqa: B024
     """Base class for all strategy contexts."""
 
     def duplicate(self: StrategyContextT) -> StrategyContextT:
@@ -97,7 +99,6 @@ class StrategyEventHandler(ABC, Generic[StrategyContextT, StrategyResultT]):
         Args:
             event_data: Data about the event that occurred.
         """
-        pass
 
 
 class StrategyLogAdapter(logging.LoggerAdapter):  # type: ignore[type-arg]
@@ -199,7 +200,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Raises:
             Exception: If the context is invalid for this strategy.
         """
-        pass
 
     @abstractmethod
     async def _setup_async(self, *, context: StrategyContextT) -> None:
@@ -211,7 +211,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Args:
             context (StrategyContextT): The context for the strategy.
         """
-        pass
 
     @abstractmethod
     async def _perform_async(self, *, context: StrategyContextT) -> StrategyResultT:
@@ -225,7 +224,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Returns:
             StrategyResultT: The result of the strategy execution.
         """
-        pass
 
     @abstractmethod
     async def _teardown_async(self, *, context: StrategyContextT) -> None:
@@ -237,7 +235,6 @@ class Strategy(ABC, Generic[StrategyContextT, StrategyResultT]):
         Args:
             context (StrategyContextT): The context for the strategy.
         """
-        pass
 
     async def _handle_event(
         self,

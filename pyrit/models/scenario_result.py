@@ -67,7 +67,7 @@ class ScenarioResult:
         labels: Optional[dict[str, str]] = None,
         completion_time: Optional[datetime] = None,
         number_tries: int = 0,
-        id: Optional[uuid.UUID] = None,
+        id: Optional[uuid.UUID] = None,  # noqa: A002
         # Deprecated parameter - will be removed in 0.13.0
         objective_scorer: Optional["Scorer"] = None,
     ) -> None:
@@ -151,8 +151,7 @@ class ScenarioResult:
                 strategies_to_process = []
 
         for results in strategies_to_process:
-            for result in results:
-                objectives.append(result.objective)
+            objectives.extend(result.objective for result in results)
 
         return list(set(objectives))
 

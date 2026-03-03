@@ -46,8 +46,8 @@ class _JsonResponseConfig:
             if isinstance(schema_val, str):
                 try:
                     schema = json.loads(schema_val) if schema_val else None
-                except json.JSONDecodeError:
-                    raise ValueError(f"Invalid JSON schema provided: {schema_val}")
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"Invalid JSON schema provided: {schema_val}") from e
             else:
                 schema = schema_val
 

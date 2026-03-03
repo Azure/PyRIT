@@ -5,13 +5,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
-from pyrit.identifiers.component_identifier import ComponentIdentifier
-from pyrit.models.conversation_reference import ConversationReference, ConversationType
-from pyrit.models.message_piece import MessagePiece
-from pyrit.models.score import Score
 from pyrit.models.strategy_result import StrategyResult
+
+if TYPE_CHECKING:
+    from pyrit.identifiers.component_identifier import ComponentIdentifier
+    from pyrit.models.conversation_reference import ConversationReference, ConversationType
+    from pyrit.models.message_piece import MessagePiece
+    from pyrit.models.score import Score
 
 AttackResultT = TypeVar("AttackResultT", bound="AttackResult")
 
@@ -44,6 +46,10 @@ class AttackResult(StrategyResult):
 
     # Natural-language description of the attacker's objective
     objective: str
+
+    # Database-assigned unique ID for this AttackResult row.
+    # ``None`` for newly-constructed results that haven't been persisted yet.
+    attack_result_id: Optional[str] = None
 
     # Identifier of the attack strategy that produced this result
     attack_identifier: Optional[ComponentIdentifier] = None

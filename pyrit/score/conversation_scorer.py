@@ -92,7 +92,7 @@ class ConversationScorer(Scorer, ABC):
                     response_error=original_piece.response_error,
                     originator=original_piece.originator,
                     original_prompt_id=(
-                        cast(UUID, original_piece.original_prompt_id)
+                        cast("UUID", original_piece.original_prompt_id)
                         if isinstance(original_piece.original_prompt_id, str)
                         else original_piece.original_prompt_id
                     ),
@@ -127,7 +127,6 @@ class ConversationScorer(Scorer, ABC):
 
         This must be implemented by the factory-created subclass.
         """
-        pass
 
     def validate_return_scores(self, scores: list[Score]) -> None:
         """
@@ -184,7 +183,7 @@ def create_conversation_scorer(
         )
 
     # Dynamically create a class that inherits from both ConversationScorer and the scorer's base class
-    class DynamicConversationScorer(ConversationScorer, scorer_base_class):  # type: ignore
+    class DynamicConversationScorer(ConversationScorer, scorer_base_class):  # type: ignore[misc, valid-type]
         """Dynamic ConversationScorer that inherits from both ConversationScorer and the wrapped scorer's base class."""
 
         def __init__(self) -> None:

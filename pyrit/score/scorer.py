@@ -9,7 +9,6 @@ import json
 import logging
 import uuid
 from abc import abstractmethod
-from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -35,16 +34,18 @@ from pyrit.models import (
     ScoreType,
     UnvalidatedScore,
 )
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
 from pyrit.prompt_target.batch_helper import batch_task_async
-from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from pyrit.prompt_target import PromptChatTarget, PromptTarget
     from pyrit.score.scorer_evaluation.metrics_type import RegistryUpdateBehavior
     from pyrit.score.scorer_evaluation.scorer_evaluator import (
         ScorerEvalDatasetFiles,
     )
     from pyrit.score.scorer_evaluation.scorer_metrics import ScorerMetrics
+    from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +223,7 @@ class Scorer(Identifiable, abc.ABC):
 
     @abstractmethod
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _get_supported_pieces(self, message: Message) -> list[MessagePiece]:
         """
@@ -244,7 +245,7 @@ class Scorer(Identifiable, abc.ABC):
         Args:
             scores (list[Score]): The scores to be validated.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     async def evaluate_async(
         self,
@@ -410,7 +411,7 @@ class Scorer(Identifiable, abc.ABC):
         results = await batch_task_async(
             task_func=self.score_async,
             task_arguments=["message", "objective"],
-            prompt_target=cast(PromptTarget, prompt_target),
+            prompt_target=cast("PromptTarget", prompt_target),
             batch_size=batch_size,
             items_to_batch=[messages, objectives],
             role_filter=role_filter,
@@ -439,9 +440,8 @@ class Scorer(Identifiable, abc.ABC):
         Raises:
             ValueError: If the number of objectives does not match the number of image_paths.
         """
-        if objectives:
-            if len(objectives) != len(image_paths):
-                raise ValueError("The number of objectives must match the number of image_paths.")
+        if objectives and len(objectives) != len(image_paths):
+            raise ValueError("The number of objectives must match the number of image_paths.")
 
         if len(image_paths) == 0:
             return []
@@ -584,7 +584,11 @@ class Scorer(Identifiable, abc.ABC):
 
         response_json: str = ""
         try:
-            response_json = response[0].get_value()
+            # Get the text piece which contains the JSON response containing the score_value and rationale from the LLM
+            text_piece = next(
+                piece for piece in response[0].message_pieces if piece.converted_value_data_type == "text"
+            )
+            response_json = text_piece.converted_value
 
             response_json = remove_markdown_json(response_json)
             parsed_response = json.loads(response_json)
@@ -636,10 +640,10 @@ class Scorer(Identifiable, abc.ABC):
             )
 
         except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}")
+            raise InvalidJsonException(message=f"Invalid JSON response: {response_json}") from None
 
         except KeyError:
-            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}")
+            raise InvalidJsonException(message=f"Invalid JSON response, missing Key: {response_json}") from None
 
         return score
 
@@ -779,17 +783,15 @@ class Scorer(Identifiable, abc.ABC):
             return []
 
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
-        tasks = []
-
-        for scorer in scorers:
-            tasks.append(
-                scorer.score_async(
-                    message=response,
-                    objective=objective,
-                    role_filter=role_filter,
-                    skip_on_error_result=skip_on_error_result,
-                )
+        tasks = [
+            scorer.score_async(
+                message=response,
+                objective=objective,
+                role_filter=role_filter,
+                skip_on_error_result=skip_on_error_result,
             )
+            for scorer in scorers
+        ]
 
         if not tasks:
             return []

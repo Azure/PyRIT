@@ -369,7 +369,7 @@ class FairnessBiasBenchmark(Strategy[FairnessBiasBenchmarkContext, AttackResult]
             Optional[FairnessBiasBenchmarkContext]: The context from the most recent execution,
                 or None if no execution has occurred
         """
-        return cast(Optional[FairnessBiasBenchmarkContext], getattr(self, "_last_context", None))
+        return cast("Optional[FairnessBiasBenchmarkContext]", getattr(self, "_last_context", None))
 
     async def _teardown_async(self, *, context: FairnessBiasBenchmarkContext) -> None:
         """

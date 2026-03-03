@@ -122,10 +122,10 @@ class TokenizerTemplateNormalizer(MessageStringNormalizer):
         Returns:
             The loaded tokenizer.
         """
-        from transformers import AutoTokenizer, PreTrainedTokenizerBase
+        from transformers import AutoTokenizer
 
         return cast(
-            PreTrainedTokenizerBase,
+            "PreTrainedTokenizerBase",
             AutoTokenizer.from_pretrained(model_name, token=token or None),  # type: ignore[no-untyped-call, unused-ignore]
         )
 

@@ -20,7 +20,6 @@ from tqdm.auto import tqdm
 
 from pyrit.common import REQUIRED_VALUE, apply_defaults
 from pyrit.executor.attack.single_turn.prompt_sending import PromptSendingAttack
-from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.memory.memory_models import ScenarioResultEntry
 from pyrit.models import AttackResult
@@ -36,6 +35,7 @@ from pyrit.score import Scorer, TrueFalseScorer
 
 if TYPE_CHECKING:
     from pyrit.executor.attack.core.attack_config import AttackScoringConfig
+    from pyrit.identifiers import ComponentIdentifier
     from pyrit.models import SeedAttackGroup
 
 logger = logging.getLogger(__name__)
@@ -142,7 +142,6 @@ class Scenario(ABC):
         Returns:
             Type[ScenarioStrategy]: The strategy enum class (e.g., FoundryStrategy, EncodingStrategy).
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -157,7 +156,6 @@ class Scenario(ABC):
         Returns:
             ScenarioStrategy: The default aggregate strategy (e.g., FoundryStrategy.EASY, EncodingStrategy.ALL).
         """
-        pass
 
     @classmethod
     @abstractmethod
@@ -172,13 +170,12 @@ class Scenario(ABC):
         Returns:
             DatasetConfiguration: The default dataset configuration.
         """
-        pass
 
     @apply_defaults
     async def initialize_async(
         self,
         *,
-        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
         dataset_config: Optional[DatasetConfiguration] = None,
         max_concurrency: int = 10,
@@ -343,7 +340,7 @@ class Scenario(ABC):
         # Import here to avoid circular imports
         from pyrit.executor.attack.core.attack_config import AttackScoringConfig
 
-        attack_scoring_config = AttackScoringConfig(objective_scorer=cast(TrueFalseScorer, self._objective_scorer))
+        attack_scoring_config = AttackScoringConfig(objective_scorer=cast("TrueFalseScorer", self._objective_scorer))
 
         if not attack_scoring_config:
             raise ValueError("Attack scoring config is required to create baseline attack.")
@@ -518,7 +515,6 @@ class Scenario(ABC):
         Returns:
             List[AtomicAttack]: The list of AtomicAttack instances in this scenario.
         """
-        pass
 
     async def run_async(self) -> ScenarioResult:
         """

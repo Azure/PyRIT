@@ -56,7 +56,7 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         source: str = "https://raw.githubusercontent.com/apple/ml-vlsu/main/data/VLSU.csv",
         source_type: Literal["public_url", "file"] = "public_url",
         categories: Optional[list[VLSUCategory]] = None,
-        unsafe_grades: Optional[list[str]] = ["unsafe", "borderline"],
+        unsafe_grades: Optional[list[str]] = None,
         max_examples: Optional[int] = None,
     ):
         """
@@ -77,6 +77,8 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
         Raises:
             ValueError: If any of the specified categories are invalid.
         """
+        if unsafe_grades is None:
+            unsafe_grades = ["unsafe", "borderline"]
         self.source = source
         self.source_type: Literal["public_url", "file"] = source_type
         self.categories = categories
@@ -252,7 +254,11 @@ class _VLSUMultimodalDataset(_RemoteDatasetLoader):
 
         # Add browser-like headers for better success rate
         headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+                " AppleWebKit/537.36 (KHTML, like Gecko)"
+                " Chrome/120.0.0.0 Safari/537.36"
+            ),
             "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",

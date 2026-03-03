@@ -67,9 +67,13 @@ def _build_eval_dict(
         ComponentIdentifier.KEY_CLASS_MODULE: identifier.class_module,
     }
 
-    for key, value in sorted(identifier.params.items()):
-        if value is not None and (param_allowlist is None or key in param_allowlist):
-            eval_dict[key] = value
+    eval_dict.update(
+        {
+            k: v
+            for k, v in sorted(identifier.params.items())
+            if v is not None and (param_allowlist is None or k in param_allowlist)
+        }
+    )
 
     if identifier.children:
         eval_children: dict[str, Any] = {}
@@ -223,7 +227,7 @@ def _load_metrics_from_file(
 
 def find_objective_metrics_by_hash(
     *,
-    hash: str,
+    hash: str,  # noqa: A002
     file_path: Optional[Path] = None,
 ) -> Optional[ObjectiveScorerMetrics]:
     """
@@ -246,7 +250,7 @@ def find_objective_metrics_by_hash(
 
 def find_harm_metrics_by_hash(
     *,
-    hash: str,
+    hash: str,  # noqa: A002
     harm_category: str,
 ) -> Optional[HarmScorerMetrics]:
     """
@@ -266,7 +270,7 @@ def find_harm_metrics_by_hash(
 def _find_metrics_by_hash(
     *,
     file_path: Path,
-    hash: str,
+    hash: str,  # noqa: A002
     metrics_class: type[M],
 ) -> Optional[M]:
     """
@@ -436,7 +440,8 @@ def replace_evaluation_results(
             replaced = len(existing_entries) != len(filtered_entries)
             action = "Replaced" if replaced else "Added"
             logger.info(
-                f"{action} metrics for {scorer_identifier.class_name} (eval_hash={eval_hash[:8]}...) in {file_path.name}"
+                f"{action} metrics for {scorer_identifier.class_name}"
+                f" (eval_hash={eval_hash[:8]}...) in {file_path.name}"
             )
 
         except Exception as e:

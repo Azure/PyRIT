@@ -14,8 +14,7 @@ import logging
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import Sequence
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pyrit.common.yaml_loadable import YamlLoadable
 from pyrit.models.message import Message
@@ -24,6 +23,9 @@ from pyrit.models.seeds.seed import Seed
 from pyrit.models.seeds.seed_objective import SeedObjective
 from pyrit.models.seeds.seed_prompt import SeedPrompt
 from pyrit.models.seeds.seed_simulated_conversation import SeedSimulatedConversation
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 

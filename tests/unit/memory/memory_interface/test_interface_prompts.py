@@ -4,7 +4,7 @@
 
 import uuid
 from collections.abc import MutableSequence, Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -606,7 +606,7 @@ def test_duplicate_conversation_with_multiple_pieces(sqlite_instance: MemoryInte
 
     # Sequences and roles should be preserved
     for orig, new in zip(
-        sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence)
+        sorted(original_pieces, key=lambda p: p.sequence), sorted(new_pieces, key=lambda p: p.sequence), strict=False
     ):
         assert orig.sequence == new.sequence
         assert orig.api_role == new.api_role
@@ -866,12 +866,12 @@ def test_get_message_pieces_sent_after(sqlite_instance: MemoryInterface):
         ),
     ]
 
-    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
-    entries[1].timestamp = datetime(2022, 12, 25, 15, 30, 0)
+    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
+    entries[1].timestamp = datetime(2022, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_message_pieces(sent_after=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_message_pieces(sent_after=datetime(2024, 1, 1, tzinfo=timezone.utc))
 
     assert len(retrieved_entries) == 1
     assert "Hello 3" in retrieved_entries[0].original_value
@@ -899,12 +899,12 @@ def test_get_message_pieces_sent_before(sqlite_instance: MemoryInterface):
         ),
     ]
 
-    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
-    entries[1].timestamp = datetime(2021, 12, 25, 15, 30, 0)
+    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
+    entries[1].timestamp = datetime(2021, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_message_pieces(sent_before=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_message_pieces(sent_before=datetime(2024, 1, 1, tzinfo=timezone.utc))
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
@@ -1027,9 +1027,10 @@ def test_get_message_pieces_sorts(
     current_value = response[0].conversation_id
     for obj in response[1:]:
         new_value = obj.conversation_id
-        if new_value != current_value:
-            if any(o.conversation_id == current_value for o in response[response.index(obj) :]):
-                assert False, "Conversation IDs are not grouped together"
+        if new_value != current_value and any(
+            o.conversation_id == current_value for o in response[response.index(obj) :]
+        ):
+            raise AssertionError("Conversation IDs are not grouped together")
 
 
 def test_message_piece_scores_duplicate_piece(sqlite_instance: MemoryInterface):

@@ -5,9 +5,8 @@ from __future__ import annotations
 
 import enum
 import logging
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_RED_TEAM_PATH
@@ -38,7 +37,11 @@ from pyrit.models import (
     SeedPrompt,
 )
 from pyrit.prompt_normalizer import PromptNormalizer
-from pyrit.prompt_target.common.prompt_target import PromptTarget
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from pyrit.prompt_target.common.prompt_target import PromptTarget
 
 logger = logging.getLogger(__name__)
 
@@ -324,7 +327,6 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
     async def _teardown_async(self, *, context: MultiTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
-        pass
 
     async def _generate_next_prompt_async(self, context: MultiTurnAttackContext[Any]) -> Message:
         """
