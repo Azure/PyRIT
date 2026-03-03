@@ -258,6 +258,7 @@ select = [
     "CPY001",  # missing-copyright-notice
     "D",  # https://docs.astral.sh/ruff/rules/#pydocstyle-d
     "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
+    "E",  # https://docs.astral.sh/ruff/rules/#pycodestyle-e
     "F401",  # unused-import
     "I",  # isort
     "PERF",  # https://docs.astral.sh/ruff/rules/#perflint-perf

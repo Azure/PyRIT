@@ -63,7 +63,8 @@ def _ensure_async_token_provider(
 
     # Wrap synchronous token provider in async function
     logger.info(
-        "Detected synchronous token provider. Automatically wrapping in async function for compatibility with AsyncOpenAI."
+        "Detected synchronous token provider."
+        " Automatically wrapping in async function for compatibility with AsyncOpenAI."
     )
 
     async def async_token_provider() -> str:
