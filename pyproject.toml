@@ -260,6 +260,7 @@ select = [
     "E",  # https://docs.astral.sh/ruff/rules/#pycodestyle-e
     "F401",  # unused-import
     "I",  # isort
+    "PGH",  # https://docs.astral.sh/ruff/rules/#pygrep-hooks-pgh
     "PIE",  # https://docs.astral.sh/ruff/rules/#flake8-pie-pie
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
@@ -296,8 +297,11 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 [tool.ruff.lint.per-file-ignores]
 # Ignore D and DOC rules everywhere except for the pyrit/ directory
 "!pyrit/**.py" = ["D", "DOC"]
-# Ignore copyright, import-location (E402), line length (E501), and type-checking rules in doc/ directory
-"doc/**" = ["CPY001", "E402", "E501", "TCH"]
+# Ignore copyright check and notebook-inherent patterns in doc/ directory
+# E402: notebooks have imports in code cells, not at top of file
+# E501: markdown comments in notebooks can exceed line length
+# PGH003: blanket type: ignore in notebooks (not mypy-checked)
+"doc/**" = ["CPY001", "TCH", "E402", "E501", "PGH003"]
 # Temporary ignores for pyrit/ subdirectories until issue #1176
 # https://github.com/Azure/PyRIT/issues/1176 is fully resolved
 # TODO: Remove these ignores once the issues are fixed
