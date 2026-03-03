@@ -34,8 +34,9 @@ MODE_YAML_FILES: dict[str, str] = {
 class ScientificTranslationConverter(LLMGenericTextConverter):
     """
     Uses an LLM to transform simple or direct prompts into
-    scientifically-framed versions using technical terminology, chemical notation,
-    or academic phrasing. This can be useful for red-teaming scenarios to test
+    scientifically-framed versions using technical terminology,
+    chemical notation, or academic phrasing.
+    This can be useful for red-teaming scenarios to test
     whether safety filters can be bypassed through scientific translation.
 
     """
@@ -57,7 +58,8 @@ class ScientificTranslationConverter(LLMGenericTextConverter):
                 - ``academic``: Use academic/homework style framing
                 - ``technical``: Use technical jargon and terminology
                 - ``smiles``: Uses chemical notation
-                    eg SMILES [chemical structure using text notation] or IUPAC [the international standard for naming chemicals] notation)
+                    eg SMILES [chemical structure using text notation]
+                    or IUPAC [the international standard for naming chemicals] notation)
                     ie "2-(acetyloxy)benzoic acid" or "CC(=O)Oc1ccccc1C(=O)O" for aspirin
                 - ``research``: Frame as research/safety study or question
                 - ``reaction``: Frame as a step-by-step chemistry mechanism problem
