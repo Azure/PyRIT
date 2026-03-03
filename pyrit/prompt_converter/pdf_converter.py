@@ -332,11 +332,10 @@ class PDFConverter(PromptConverter):
             output_pdf = BytesIO()
             writer.write(output_pdf)
             output_pdf.seek(0)
+            return output_pdf.getvalue()
         finally:
             for buf in overlay_buffers:
                 buf.close()
-
-        return output_pdf.getvalue()
 
     def _inject_text_into_page(
         self,
