@@ -109,6 +109,7 @@ print(f"  Identity Hash: {scorer_identity.hash}")
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     SelfAskRefusalScorer,
@@ -116,11 +117,12 @@ from pyrit.score import (
 )
 
 # This is a simple objective scorer that only detects whether the response was a refusal
+gpt4o_endpoint = os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT")
 objective_scorer = TrueFalseInverterScorer(
     scorer=SelfAskRefusalScorer(
         chat_target=OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_KEY"),
+            endpoint=gpt4o_endpoint,
+            api_key=get_azure_openai_auth(gpt4o_endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_MODEL"),
         )
     )
@@ -148,13 +150,15 @@ else:
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
+gpt4o_endpoint = os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT")
 harm_scorer = SelfAskLikertScorer(
     chat_target=OpenAIChatTarget(
-        endpoint=os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT"),
-        api_key=os.environ.get("AZURE_OPENAI_GPT4O_KEY"),
+        endpoint=gpt4o_endpoint,
+        api_key=get_azure_openai_auth(gpt4o_endpoint),
         model_name=os.environ.get("AZURE_OPENAI_GPT4O_MODEL"),
     ),
     likert_scale=LikertScalePaths.EXPLOITS_SCALE,

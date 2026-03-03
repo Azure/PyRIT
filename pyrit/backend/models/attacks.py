@@ -117,18 +117,16 @@ class AttackListResponse(BaseModel):
 
 
 class AttackOptionsResponse(BaseModel):
-    """Response containing unique attack class names used across attacks."""
+    """Response containing unique attack type names used across attacks."""
 
-    attack_classes: list[str] = Field(
-        ..., description="Sorted list of unique attack class names found in attack results"
-    )
+    attack_types: list[str] = Field(..., description="Sorted list of unique attack type names found in attack results")
 
 
 class ConverterOptionsResponse(BaseModel):
-    """Response containing unique converter class names used across attacks."""
+    """Response containing unique converter type names used across attacks."""
 
-    converter_classes: list[str] = Field(
-        ..., description="Sorted list of unique converter class names found in attack results"
+    converter_types: list[str] = Field(
+        ..., description="Sorted list of unique converter type names found in attack results"
     )
 
 
