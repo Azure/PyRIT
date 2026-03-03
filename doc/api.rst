@@ -542,6 +542,7 @@ API Reference
     PromptShieldTarget
     PromptTarget
     RealtimeTarget
+    TargetCapabilities
     TextTarget
     WebSocketCopilotTarget
 
