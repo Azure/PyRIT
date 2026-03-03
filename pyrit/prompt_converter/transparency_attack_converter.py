@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class _AdamOptimizer:
     """
-    Implementation of the Adam Optimizer using np. Adam optimization is a stochastic gradient
+    Implementation of the Adam Optimizer using NumPy. Adam optimization is a stochastic gradient
     descent method that is based on adaptive estimation of first-order and second-order moments.
     For further details, see the original paper: `"Adam: A Method for Stochastic Optimization"`
     by D. P. Kingma and J. Ba, 2014: https://arxiv.org/abs/1412.6980.
