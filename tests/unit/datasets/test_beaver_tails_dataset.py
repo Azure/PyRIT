@@ -95,3 +95,35 @@ class TestBeaverTailsDataset:
         """Test dataset_name property."""
         loader = _BeaverTailsDataset()
         assert loader.dataset_name == "beaver_tails"
+
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_skips_prompt_with_template_syntax_error(self):
+        """Test that prompts causing TemplateSyntaxError are skipped gracefully."""
+
+        class MockDataset:
+            def __init__(self):
+                self._data = [
+                    {
+                        "prompt": "This contains {% endraw %} which breaks Jinja2",
+                        "response": "response",
+                        "category": {"animal_abuse": True},
+                        "is_safe": False,
+                    },
+                    {
+                        "prompt": "Normal unsafe prompt",
+                        "response": "response",
+                        "category": {"animal_abuse": True},
+                        "is_safe": False,
+                    },
+                ]
+
+            def __iter__(self):
+                return iter(self._data)
+
+        loader = _BeaverTailsDataset()
+
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=MockDataset())):
+            dataset = await loader.fetch_dataset()
+            # The broken prompt should be skipped, only the normal one remains
+            assert len(dataset.seeds) == 1
+            assert dataset.seeds[0].value == "Normal unsafe prompt"
