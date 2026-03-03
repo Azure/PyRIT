@@ -15,7 +15,7 @@ from pyrit.executor.attack import (
     RolePlayAttack,
 )
 from pyrit.identifiers import ComponentIdentifier
-from pyrit.models import SeedDataset, SeedGroup, SeedObjective
+from pyrit.models import SeedAttackGroup, SeedDataset, SeedGroup, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.scenarios.airt import (
     Psychosocial,

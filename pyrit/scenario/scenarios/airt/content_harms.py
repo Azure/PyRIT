@@ -262,6 +262,7 @@ class ContentHarms(Scenario):
 
     def _get_strategy_attacks(
         self,
+        *,
         strategy: str,
         seed_groups: Sequence[SeedAttackGroup],
     ) -> list[AtomicAttack]:
