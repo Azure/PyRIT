@@ -113,7 +113,7 @@ class _DynamicWaitRandomExponential(wait_base):
         return wait_strategy(retry_state)
 
 
-class PyritException(Exception, ABC):
+class PyritException(Exception, ABC):  # noqa: N818
     """Base exception class for PyRIT components."""
 
     def __init__(self, *, status_code: int = 500, message: str = "An error occurred") -> None:
