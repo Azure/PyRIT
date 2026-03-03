@@ -377,10 +377,6 @@ def handle_bad_request_exception(
             request=request, response_text_pieces=[resp_text], response_type="error", error="blocked"
         )
     else:
-        raise RuntimeError(
-            "Unexpected bad-request response that does not match known "
-            f"content-filter conditions. Status code: {error_code}. "
-            f"Response text: {response_text!r}"
-        )
+        raise  # noqa: PLE0704
 
     return response_entry
