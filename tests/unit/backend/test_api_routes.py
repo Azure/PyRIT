@@ -86,13 +86,13 @@ class TestAttackRoutes:
 
             response = client.get(
                 "/api/attacks",
-                params={"attack_class": "CrescendoAttack", "outcome": "success", "limit": 10},
+                params={"attack_type": "CrescendoAttack", "outcome": "success", "limit": 10},
             )
 
             assert response.status_code == status.HTTP_200_OK
             mock_service.list_attacks_async.assert_called_once_with(
-                attack_class="CrescendoAttack",
-                converter_classes=None,
+                attack_type="CrescendoAttack",
+                converter_types=None,
                 outcome="success",
                 labels=None,
                 min_turns=None,
@@ -416,7 +416,7 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["attack_classes"] == ["CrescendoAttack", "ManualAttack"]
+            assert data["attack_types"] == ["CrescendoAttack", "ManualAttack"]
 
     def test_get_converter_options(self, client: TestClient) -> None:
         """Test getting converter options from attack results."""
@@ -429,7 +429,7 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_200_OK
             data = response.json()
-            assert data["converter_classes"] == ["Base64Converter", "ROT13Converter"]
+            assert data["converter_types"] == ["Base64Converter", "ROT13Converter"]
 
     def test_parse_labels_skips_param_without_colon(self, client: TestClient) -> None:
         """Test that _parse_labels skips label params that have no colon."""
@@ -486,8 +486,8 @@ class TestAttackRoutes:
             call_kwargs = mock_service.list_attacks_async.call_args[1]
             assert call_kwargs["labels"] == {"url": "http://example.com:8080"}
 
-    def test_list_attacks_forwards_converter_classes_param(self, client: TestClient) -> None:
-        """Test that converter_classes query params are forwarded to service."""
+    def test_list_attacks_forwards_converter_types_param(self, client: TestClient) -> None:
+        """Test that converter_types query params are forwarded to service."""
         with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.list_attacks_async = AsyncMock(
@@ -498,11 +498,11 @@ class TestAttackRoutes:
             )
             mock_get_service.return_value = mock_service
 
-            response = client.get("/api/attacks?converter_classes=Base64&converter_classes=ROT13")
+            response = client.get("/api/attacks?converter_types=Base64&converter_types=ROT13")
 
             assert response.status_code == status.HTTP_200_OK
             call_kwargs = mock_service.list_attacks_async.call_args[1]
-            assert call_kwargs["converter_classes"] == ["Base64", "ROT13"]
+            assert call_kwargs["converter_types"] == ["Base64", "ROT13"]
 
 
 # ============================================================================

@@ -29,7 +29,7 @@ from pyrit.exceptions.exception_classes import (
     handle_bad_request_exception,
 )
 from pyrit.models import Message, MessagePiece
-from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.openai.openai_error_handling import (
     _extract_error_payload,
     _extract_request_id_from_exception,
@@ -78,7 +78,7 @@ def _ensure_async_token_provider(
     return async_token_provider
 
 
-class OpenAITarget(PromptChatTarget):
+class OpenAITarget(PromptTarget):
     """
     Abstract base class for OpenAI-based prompt targets.
 
@@ -133,6 +133,9 @@ class OpenAITarget(PromptChatTarget):
                 from the actual model. If not provided, will attempt to fetch from environment variable.
                 If it is not there either, the identifier "model_name" attribute will use the model_name.
                 Defaults to None.
+
+        Raises:
+            ValueError: If no API key is provided via parameter or environment variable.
         """
         self._headers: dict[str, str] = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
@@ -159,7 +162,7 @@ class OpenAITarget(PromptChatTarget):
         )
 
         # Initialize parent with endpoint and model_name
-        PromptChatTarget.__init__(
+        PromptTarget.__init__(
             self,
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint_value,
