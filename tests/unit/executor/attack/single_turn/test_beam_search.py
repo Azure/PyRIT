@@ -109,9 +109,9 @@ CONTINUATION: /.{0,1}/
         expected_grammar = """
 start: PREFIX CONTINUATION
 PREFIX: "beam{1}beam[2]()"
-CONTINUATION: /.{0,1}/
+CONTINUATION: /.{0,555666}/
 """
-        assert beam.get_grammar(n_chars=1) == expected_grammar
+        assert beam.get_grammar(n_chars=555666) == expected_grammar
 
 
 class TestTopKBeamReviewer:
