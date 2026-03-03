@@ -345,10 +345,7 @@ class RedTeamAgent(Scenario):
         # Resolve seed groups now that initialize_async has been called
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks = []
-        for composition in self._scenario_composites:
-            atomic_attacks.append(self._get_attack_from_strategy(composition))
-        return atomic_attacks
+        return [self._get_attack_from_strategy(composition) for composition in self._scenario_composites]
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
         return OpenAIChatTarget(
