@@ -115,8 +115,8 @@ class AttackService:
         attack_results = self._memory.get_attack_results(
             outcome=outcome,
             labels=labels if labels else None,
-            attack_type=attack_type,
-            converter_types=converter_types,
+            attack_class=attack_type,
+            converter_classes=converter_types,
         )
 
         filtered: list[AttackResult] = []
@@ -189,7 +189,7 @@ class AttackService:
         Returns:
             Sorted list of unique attack type names.
         """
-        return self._memory.get_unique_attack_type_names()
+        return self._memory.get_unique_attack_class_names()
 
     async def get_converter_options_async(self) -> list[str]:
         """
@@ -201,7 +201,7 @@ class AttackService:
         Returns:
             Sorted list of unique converter type names.
         """
-        return self._memory.get_unique_converter_type_names()
+        return self._memory.get_unique_converter_class_names()
 
     async def get_attack_async(self, *, attack_result_id: str) -> Optional[AttackSummary]:
         """
@@ -574,7 +574,8 @@ class AttackService:
                         raise ValueError(
                             f"Target mismatch: attack was created with "
                             f"{stored_target_id.class_name}/{stored_target_id.params.get('model_name')} "
-                            f"but request uses {request_target_id.class_name}/{request_target_id.params.get('model_name')}. "
+                            f"but request uses "
+                            f"{request_target_id.class_name}/{request_target_id.params.get('model_name')}. "
                             f"Create a new attack to use a different target."
                         )
 

@@ -203,7 +203,7 @@ class TestListAttacks:
         assert result.items[0].conversation_id == "attack-1"
         # Verify attack_type was forwarded to the memory layer
         call_kwargs = mock_memory.get_attack_results.call_args[1]
-        assert call_kwargs["attack_type"] == "CrescendoAttack"
+        assert call_kwargs["attack_class"] == "CrescendoAttack"
 
     @pytest.mark.asyncio
     async def test_list_attacks_attack_type_passed_to_memory(self, attack_service, mock_memory) -> None:
@@ -214,7 +214,7 @@ class TestListAttacks:
         await attack_service.list_attacks_async(attack_type="Crescendo")
 
         call_kwargs = mock_memory.get_attack_results.call_args[1]
-        assert call_kwargs["attack_type"] == "Crescendo"
+        assert call_kwargs["attack_class"] == "Crescendo"
 
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_no_converters(self, attack_service, mock_memory) -> None:
@@ -364,22 +364,22 @@ class TestAttackOptions:
     @pytest.mark.asyncio
     async def test_returns_empty_when_no_attacks(self, attack_service, mock_memory) -> None:
         """Test that attack options returns empty list when no attacks exist."""
-        mock_memory.get_unique_attack_type_names.return_value = []
+        mock_memory.get_unique_attack_class_names.return_value = []
 
         result = await attack_service.get_attack_options_async()
 
         assert result == []
-        mock_memory.get_unique_attack_type_names.assert_called_once()
+        mock_memory.get_unique_attack_class_names.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_returns_result_from_memory(self, attack_service, mock_memory) -> None:
         """Test that attack options delegates to memory layer."""
-        mock_memory.get_unique_attack_type_names.return_value = ["CrescendoAttack", "ManualAttack"]
+        mock_memory.get_unique_attack_class_names.return_value = ["CrescendoAttack", "ManualAttack"]
 
         result = await attack_service.get_attack_options_async()
 
         assert result == ["CrescendoAttack", "ManualAttack"]
-        mock_memory.get_unique_attack_type_names.assert_called_once()
+        mock_memory.get_unique_attack_class_names.assert_called_once()
 
 
 # ============================================================================
@@ -394,22 +394,22 @@ class TestConverterOptions:
     @pytest.mark.asyncio
     async def test_returns_empty_when_no_attacks(self, attack_service, mock_memory) -> None:
         """Test that converter options returns empty list when no attacks exist."""
-        mock_memory.get_unique_converter_type_names.return_value = []
+        mock_memory.get_unique_converter_class_names.return_value = []
 
         result = await attack_service.get_converter_options_async()
 
         assert result == []
-        mock_memory.get_unique_converter_type_names.assert_called_once()
+        mock_memory.get_unique_converter_class_names.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_returns_result_from_memory(self, attack_service, mock_memory) -> None:
         """Test that converter options delegates to memory layer."""
-        mock_memory.get_unique_converter_type_names.return_value = ["Base64Converter", "ROT13Converter"]
+        mock_memory.get_unique_converter_class_names.return_value = ["Base64Converter", "ROT13Converter"]
 
         result = await attack_service.get_converter_options_async()
 
         assert result == ["Base64Converter", "ROT13Converter"]
-        mock_memory.get_unique_converter_type_names.assert_called_once()
+        mock_memory.get_unique_converter_class_names.assert_called_once()
 
 
 # ============================================================================

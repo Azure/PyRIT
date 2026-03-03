@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 """
 Attack mappers – domain ↔ DTO translation for attack-related models.
 
@@ -11,6 +9,8 @@ Most functions are pure (no database or service calls).  The exceptions are
 and converts it to data URIs, and ``attack_result_to_summary`` which
 receives pre-fetched pieces.
 """
+
+from __future__ import annotations
 
 import base64
 import logging

@@ -114,6 +114,7 @@ import logging
 import os
 from pathlib import Path
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.executor.attack import (
     AttackAdversarialConfig,
     AttackScoringConfig,
@@ -126,9 +127,10 @@ from pyrit.score import SelfAskTrueFalseScorer
 
 logging.basicConfig(level=logging.WARNING)
 
+image_endpoint = os.environ.get("OPENAI_IMAGE_ENDPOINT")
 img_prompt_target = OpenAIImageTarget(
-    endpoint=os.environ.get("OPENAI_IMAGE_ENDPOINT"),
-    api_key=os.environ.get("OPENAI_IMAGE_API_KEY"),
+    endpoint=image_endpoint,
+    api_key=get_azure_openai_auth(image_endpoint),
     model_name=os.environ.get("OPENAI_IMAGE_MODEL"),
 )
 red_teaming_llm = OpenAIChatTarget()

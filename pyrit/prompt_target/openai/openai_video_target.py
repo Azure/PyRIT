@@ -476,8 +476,7 @@ class OpenAIVideoTarget(OpenAITarget):
         if remix_video_id and image_pieces:
             raise ValueError("Cannot use image input in remix mode. Remix uses existing video as reference.")
 
-        request = message.message_pieces[0]
-        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
+        messages = self._memory.get_conversation(conversation_id=text_piece.conversation_id)
 
         n_messages = len(messages)
         if n_messages > 0:

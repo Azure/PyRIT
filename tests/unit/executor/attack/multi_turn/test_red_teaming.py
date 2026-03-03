@@ -231,7 +231,7 @@ class TestRedTeamingAttackInitialization:
         )
 
         assert attack._adversarial_chat_seed_prompt.value == expected_value
-        if expected_type == str:
+        if expected_type is str:
             assert attack._adversarial_chat_seed_prompt.data_type == "text"
 
     def test_init_with_invalid_system_prompt_path_raises_error(

@@ -10,7 +10,6 @@ AIRT configuration including converters, scorers, and targets using Azure OpenAI
 
 import os
 from collections.abc import Callable
-from typing import Any
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
@@ -50,9 +49,11 @@ class AIRTInitializer(PyRITInitializer):
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL: Azure OpenAI model name for converters and targets
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2: Azure OpenAI endpoint for scoring
     - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2: Azure OpenAI model name for scoring
-    - AZURE_CONTENT_SAFETY_API_ENDPOINT: Azure Content Safety endpoint
 
-    Authentication is handled via Entra ID (Azure AD) using DefaultAzureCredential.
+    Optional Environment Variables:
+    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY: API key for converter endpoint. If not set, Entra ID auth is used.
+    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2: API key for scorer endpoint. If not set, Entra ID auth is used.
+    - AZURE_CONTENT_SAFETY_API_KEY: API key for content safety. If not set, Entra ID auth is used.
 
     This configuration is designed for full AI Red Team operations with:
     - Separate endpoints for attack execution vs scoring (security isolation)
@@ -112,34 +113,39 @@ class AIRTInitializer(PyRITInitializer):
         assert scorer_endpoint is not None
         # model name can be empty in certain cases (e.g., custom model deployments that don't need model name)
 
-        # Use Entra authentication via Azure token providers
-        converter_auth = get_azure_openai_auth(converter_endpoint)
-        scorer_auth = get_azure_openai_auth(scorer_endpoint)
-        content_safety_auth = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+        # Check for API keys first, fall back to Entra auth if not set
+        converter_api_key = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY") or get_azure_openai_auth(converter_endpoint)
+        scorer_api_key = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2") or get_azure_openai_auth(scorer_endpoint)
+        content_safety_api_key_str = os.getenv("AZURE_CONTENT_SAFETY_API_KEY")
+        content_safety_api_key: str | Callable[[], str] = (
+            content_safety_api_key_str
+            if content_safety_api_key_str
+            else get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+        )
 
         # 1. Setup converter target
         self._setup_converter_target(
-            endpoint=converter_endpoint, credential=converter_auth, model_name=converter_model_name
+            endpoint=converter_endpoint, api_key=converter_api_key, model_name=converter_model_name
         )
 
         # 2. Setup scorers
         self._setup_scorers(
             endpoint=scorer_endpoint,
-            credential=scorer_auth,
+            api_key=scorer_api_key,
+            content_safety_api_key=content_safety_api_key,
             model_name=scorer_model_name,
-            content_safety_credential=content_safety_auth,
         )
 
         # 3. Setup adversarial targets
         self._setup_adversarial_targets(
-            endpoint=converter_endpoint, credential=converter_auth, model_name=converter_model_name
+            endpoint=converter_endpoint, api_key=converter_api_key, model_name=converter_model_name
         )
 
-    def _setup_converter_target(self, *, endpoint: str, credential: Callable[..., Any], model_name: str) -> None:
+    def _setup_converter_target(self, *, endpoint: str, api_key: str, model_name: str) -> None:
         """Set up the default converter target configuration."""
         default_converter_target = OpenAIChatTarget(
             endpoint=endpoint,
-            api_key=credential,
+            api_key=api_key,
             model_name=model_name,
             temperature=1.1,
         )
@@ -155,14 +161,14 @@ class AIRTInitializer(PyRITInitializer):
         self,
         *,
         endpoint: str,
-        credential: Callable[..., Any],
+        api_key: str,
+        content_safety_api_key: str | Callable[[], str],
         model_name: str,
-        content_safety_credential: Callable[..., Any],
     ) -> None:
         """Set up the composite harm and objective scorers."""
         scorer_target = OpenAIChatTarget(
             endpoint=endpoint,
-            api_key=credential,
+            api_key=api_key,
             model_name=model_name,
             temperature=0.3,
         )
@@ -176,7 +182,7 @@ class AIRTInitializer(PyRITInitializer):
             aggregator=TrueFalseScoreAggregator.AND,
             scorers=[
                 FloatScaleThresholdScorer(
-                    scorer=AzureContentFilterScorer(api_key=content_safety_credential), threshold=0.5
+                    scorer=AzureContentFilterScorer(api_key=content_safety_api_key), threshold=0.5
                 ),
                 TrueFalseInverterScorer(
                     scorer=SelfAskRefusalScorer(chat_target=scorer_target),
@@ -221,12 +227,12 @@ class AIRTInitializer(PyRITInitializer):
                 value=default_objective_scorer_config,
             )
 
-    def _setup_adversarial_targets(self, *, endpoint: str, credential: Callable[..., Any], model_name: str) -> None:
+    def _setup_adversarial_targets(self, *, endpoint: str, api_key: str, model_name: str) -> None:
         """Set up the adversarial target configurations for attacks."""
         adversarial_config = AttackAdversarialConfig(
             target=OpenAIChatTarget(
                 endpoint=endpoint,
-                api_key=credential,
+                api_key=api_key,
                 model_name=model_name,
                 temperature=1.2,
             )
