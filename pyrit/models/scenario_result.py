@@ -151,8 +151,7 @@ class ScenarioResult:
                 strategies_to_process = []
 
         for results in strategies_to_process:
-            for result in results:
-                objectives.append(result.objective)
+            objectives.extend(result.objective for result in results)
 
         return list(set(objectives))
 
