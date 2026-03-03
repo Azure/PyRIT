@@ -12,24 +12,27 @@ from build_scripts.sanitize_notebook_paths import _strip_user_paths, sanitize_no
 
 class TestStripUserPaths:
     def test_windows_path(self) -> None:
-        assert _strip_user_paths(r"C:\Users\romanlutz\git\PyRIT\foo.py") == r"git\PyRIT\foo.py"
+        assert _strip_user_paths(r"C:\Users\testuser\git\PyRIT\foo.py") == "./git/PyRIT/foo.py"
 
     def test_windows_double_backslash(self) -> None:
         result = _strip_user_paths("C:\\\\Users\\\\alice\\\\AppData\\\\Local\\\\Temp\\\\file.py")
-        assert result == "AppData\\\\Local\\\\Temp\\\\file.py"
+        assert result == "./AppData/Local/Temp/file.py"
 
     def test_linux_path(self) -> None:
-        assert _strip_user_paths("/home/user1/projects/pyrit/foo.py") == "projects/pyrit/foo.py"
+        assert _strip_user_paths("/home/user1/projects/pyrit/foo.py") == "./projects/pyrit/foo.py"
 
     def test_macos_path(self) -> None:
-        assert _strip_user_paths("/Users/alice/Documents/test.txt") == "Documents/test.txt"
+        assert _strip_user_paths("/Users/alice/Documents/test.txt") == "./Documents/test.txt"
 
     def test_no_user_path(self) -> None:
         text = "just a normal string"
         assert _strip_user_paths(text) == text
 
     def test_drive_letter_d(self) -> None:
-        assert _strip_user_paths(r"D:\Users\testuser\hello.py") == "hello.py"
+        assert _strip_user_paths(r"D:\Users\testuser\hello.py") == "./hello.py"
+
+    def test_lowercase_drive_letter(self) -> None:
+        assert _strip_user_paths(r"c:\Users\testuser\project\file.py") == "./project/file.py"
 
 
 class TestSanitizeNotebookPaths:
@@ -62,7 +65,7 @@ class TestSanitizeNotebookPaths:
                 result = json.load(f)
             text = result["cells"][0]["outputs"][0]["text"][0]
             assert "Users" not in text
-            assert r"AppData\Local\Temp\file.py:10: Warning" in text
+            assert "./AppData/Local/Temp/file.py:10: Warning" in text
         finally:
             os.unlink(f_path)
 
@@ -109,9 +112,9 @@ class TestSanitizeNotebookPaths:
     @pytest.mark.parametrize(
         "path,expected_clean",
         [
-            (r"C:\Users\alice\project\main.py", r"project\main.py"),
-            ("/home/bob/src/test.py", "src/test.py"),
-            ("/Users/charlie/docs/readme.md", "docs/readme.md"),
+            (r"C:\Users\alice\project\main.py", "./project/main.py"),
+            ("/home/bob/src/test.py", "./src/test.py"),
+            ("/Users/charlie/docs/readme.md", "./docs/readme.md"),
         ],
     )
     def test_various_platforms(self, path: str, expected_clean: str) -> None:
@@ -150,6 +153,7 @@ class TestSanitizeNotebookPaths:
                 result = json.load(f)
             output = result["cells"][0]["outputs"][0]
             assert "Users" not in output["evalue"]
+            assert output["evalue"] == "./missing.py"
             for line in output["traceback"]:
                 assert "Users" not in line
         finally:
@@ -179,5 +183,32 @@ class TestSanitizeNotebookPaths:
             assert "/Users/fake/path" in data["image/png"]
             # text/plain should be sanitized
             assert "Users" not in data["text/plain"]
+        finally:
+            os.unlink(f_path)
+
+    def test_preserves_unicode_in_output(self) -> None:
+        """Verify non-ASCII characters like emojis are not escaped in the output file."""
+        nb = self._make_notebook(
+            [
+                {
+                    "output_type": "stream",
+                    "name": "stdout",
+                    "text": [
+                        "🔹 Result: passed\n",
+                        r"C:\Users\testuser\project\file.py",
+                    ],
+                }
+            ]
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ipynb", delete=False, encoding="utf-8") as f:
+            json.dump(nb, f)
+            f_path = f.name
+        try:
+            sanitize_notebook_paths(f_path)
+            # Check raw file contents to ensure unicode is not escaped
+            with open(f_path, encoding="utf-8") as f:
+                raw_content = f.read()
+            assert "🔹" in raw_content
+            assert "\\ud83d" not in raw_content  # should not be JSON-escaped
         finally:
             os.unlink(f_path)
