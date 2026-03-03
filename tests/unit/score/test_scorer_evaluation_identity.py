@@ -8,7 +8,6 @@ Covers ``ScorerEvaluationIdentity`` ClassVar values, eval-hash delegation, and
 the ``Scorer.get_eval_hash()`` convenience method.
 """
 
-
 import pytest
 
 from pyrit.identifiers import ComponentIdentifier, Identifiable, compute_eval_hash

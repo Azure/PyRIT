@@ -55,9 +55,13 @@ def _build_eval_dict(
         ComponentIdentifier.KEY_CLASS_MODULE: identifier.class_module,
     }
 
-    for key, value in sorted(identifier.params.items()):
-        if value is not None and (param_allowlist is None or key in param_allowlist):
-            eval_dict[key] = value
+    eval_dict.update(
+        {
+            key: value
+            for key, value in sorted(identifier.params.items())
+            if value is not None and (param_allowlist is None or key in param_allowlist)
+        }
+    )
 
     if identifier.children:
         eval_children: dict[str, Any] = {}
