@@ -27,32 +27,16 @@
 
 # %%
 from pyrit.analytics import analyze_results
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import AttackOutcome, AttackResult, MessagePiece
 
 
-def make_converter(name: str) -> ConverterIdentifier:
-    return ConverterIdentifier(
-        class_name=name,
-        class_module="pyrit.prompt_converter",
-        class_description=f"{name} converter",
-        identifier_type="instance",
-        supported_input_types=("text",),
-        supported_output_types=("text",),
-    )
+def make_converter(name: str) -> ComponentIdentifier:
+    return ComponentIdentifier(class_name=name, class_module="pyrit.prompt_converter")
 
 
-# Realistic attack_identifier dicts mirror Strategy.get_identifier() output
-crescendo_id = {
-    "__type__": "CrescendoAttack",
-    "__module__": "pyrit.executor.attack.multi_turn.crescendo",
-    "id": "a1b2c3d4-0001-4000-8000-000000000001",
-}
-red_team_id = {
-    "__type__": "RedTeamingAttack",
-    "__module__": "pyrit.executor.attack.multi_turn.red_teaming",
-    "id": "a1b2c3d4-0002-4000-8000-000000000002",
-}
+crescendo_id = ComponentIdentifier(class_name="CrescendoAttack", class_module="pyrit.executor.attack")
+red_team_id = ComponentIdentifier(class_name="RedTeamingAttack", class_module="pyrit.executor.attack")
 
 # Build a small set of representative attack results
 results = [
@@ -190,7 +174,7 @@ for key, stats in result.dimensions["converter_type"].items():
 # ## Composite Dimensions
 #
 # Use a tuple of dimension names to create a cross-product grouping. For example,
-# `("converter_type", "attack_type")` produces keys like `("Base64Converter", "crescendo")`.
+# `("converter_type", "attack_type")` produces keys like `("Base64Converter", "CrescendoAttack")`.
 
 # %%
 result = analyze_results(results, group_by=[("converter_type", "attack_type")])
