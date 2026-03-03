@@ -975,8 +975,7 @@ class MemoryInterface(abc.ABC):
         self, field: InstrumentedAttribute[Any], conditions: list[Any], values: Optional[Sequence[str]] = None
     ) -> None:
         if values:
-            for value in values:
-                conditions.append(field.contains(value))
+            conditions.extend(field.contains(value) for value in values)
 
     async def _serialize_seed_value(self, prompt: Seed) -> str:
         """
