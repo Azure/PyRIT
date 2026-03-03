@@ -215,3 +215,31 @@ class TestSanitizeNotebookPaths:
             assert "\\ud83d" not in raw_content  # should not be JSON-escaped
         finally:
             os.unlink(f_path)
+
+    def test_skips_application_json_mime_type(self) -> None:
+        """Verify application/json data outputs are not sanitized since they may be nested dicts."""
+        nb = self._make_notebook(
+            [
+                {
+                    "output_type": "execute_result",
+                    "data": {
+                        "application/json": {"path": r"C:\Users\testuser\data.json"},
+                        "text/plain": r"C:\Users\testuser\data.json",
+                    },
+                }
+            ]
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ipynb", delete=False, encoding="utf-8") as f:
+            json.dump(nb, f)
+            f_path = f.name
+        try:
+            sanitize_notebook_paths(f_path)
+            with open(f_path, encoding="utf-8") as f:
+                result = json.load(f)
+            data = result["cells"][0]["outputs"][0]["data"]
+            # application/json should be untouched
+            assert data["application/json"]["path"] == r"C:\Users\testuser\data.json"
+            # text/plain should be sanitized
+            assert "Users" not in data["text/plain"]
+        finally:
+            os.unlink(f_path)

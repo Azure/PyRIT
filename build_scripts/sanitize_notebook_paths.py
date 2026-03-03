@@ -53,7 +53,7 @@ def sanitize_notebook_paths(file_path: str) -> bool:
             modified = _sanitize_output_field(output, "evalue") or modified
             if "data" in output:
                 for mime_type in output["data"]:
-                    if mime_type.startswith("text/") or mime_type == "application/json":
+                    if mime_type.startswith("text/"):
                         modified = _sanitize_output_field(output["data"], mime_type) or modified
 
     if not modified:
