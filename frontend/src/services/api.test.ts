@@ -12,110 +12,6 @@ jest.mock("axios", () => ({
   })),
 }));
 
-// Mock import.meta.env before importing api
-jest.mock("./api", () => {
-  const mockApiClient = {
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    delete: jest.fn(),
-  };
-
-  return {
-    apiClient: mockApiClient,
-    healthApi: {
-      checkHealth: jest.fn(async () => {
-        const response = await mockApiClient.get("/health");
-        return response.data;
-      }),
-    },
-    versionApi: {
-      getVersion: jest.fn(async () => {
-        const response = await mockApiClient.get("/version");
-        return response.data;
-      }),
-    },
-    targetsApi: {
-      listTargets: jest.fn(async (limit = 50, cursor?: string) => {
-        const params: Record<string, string | number> = { limit };
-        if (cursor) params.cursor = cursor;
-        const response = await mockApiClient.get("/targets", { params });
-        return response.data;
-      }),
-      getTarget: jest.fn(async (targetRegistryName: string) => {
-        const response = await mockApiClient.get(
-          `/targets/${encodeURIComponent(targetRegistryName)}`
-        );
-        return response.data;
-      }),
-      createTarget: jest.fn(
-        async (request: { type: string; params: Record<string, unknown> }) => {
-          const response = await mockApiClient.post("/targets", request);
-          return response.data;
-        }
-      ),
-    },
-    attacksApi: {
-      createAttack: jest.fn(
-        async (request: {
-          target_registry_name: string;
-          name?: string;
-          labels?: Record<string, string>;
-        }) => {
-          const response = await mockApiClient.post("/attacks", request);
-          return response.data;
-        }
-      ),
-      getAttack: jest.fn(async (attackResultId: string) => {
-        const response = await mockApiClient.get(
-          `/attacks/${encodeURIComponent(attackResultId)}`
-        );
-        return response.data;
-      }),
-      getMessages: jest.fn(async (attackResultId: string, conversationId: string) => {
-        const response = await mockApiClient.get(
-          `/attacks/${encodeURIComponent(attackResultId)}/messages`,
-          { params: { conversation_id: conversationId } }
-        );
-        return response.data;
-      }),
-      addMessage: jest.fn(
-        async (
-          attackResultId: string,
-          request: {
-            role: string;
-            pieces: Array<{
-              data_type: string;
-              original_value: string;
-              mime_type?: string;
-            }>;
-            send: boolean;
-          }
-        ) => {
-          const response = await mockApiClient.post(
-            `/attacks/${encodeURIComponent(attackResultId)}/messages`,
-            request
-          );
-          return response.data;
-        }
-      ),
-      starConversation: jest.fn(
-        async (attackResultId: string, conversationId: string) => {
-          const response = await mockApiClient.post(
-            `/attacks/${encodeURIComponent(attackResultId)}/star`,
-            { conversation_id: conversationId }
-          );
-          return response.data;
-        }
-      ),
-      listAttacks: jest.fn(async (params?: Record<string, unknown>) => {
-        const response = await mockApiClient.get("/attacks", { params });
-        return response.data;
-      }),
-    },
-  };
-});
-
 import {
   apiClient,
   healthApi,
@@ -468,6 +364,9 @@ describe("api service", () => {
 
       expect(apiClient.get).toHaveBeenCalledWith("/attacks", {
         params: { limit: 10, outcome: "success" },
+        paramsSerializer: {
+          indexes: null,
+        },
       });
     });
 

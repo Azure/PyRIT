@@ -122,7 +122,8 @@ function pieceToAttachment(
   if (!isMediaDataType(dataType) || !value) return null
 
   const mime = mimeField || defaultMimeForDataType(dataType)
-  const isBase64 = !value.startsWith('data:') && !value.startsWith('http')
+  const isBase64 = !value.startsWith('data:') && !value.startsWith('http') &&
+    value.length >= 16 && /^[A-Za-z0-9+/=]+$/.test(value)
   const url = isBase64 ? buildDataUri(value, mime) : value
   const prefix = isOriginal ? 'original_' : ''
   const filename = isOriginal ? piece.original_filename : piece.converted_filename

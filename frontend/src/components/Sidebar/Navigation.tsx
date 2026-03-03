@@ -64,6 +64,7 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
         appearance="subtle"
         icon={<ChatRegular />}
         title="Chat"
+        aria-label="Chat"
         onClick={() => onNavigate('chat')}
       />
 
@@ -72,6 +73,7 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
         appearance="subtle"
         icon={<HistoryRegular />}
         title="Attack History"
+        aria-label="Attack History"
         onClick={() => onNavigate('history')}
       />
 
@@ -80,6 +82,7 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
         appearance="subtle"
         icon={<SettingsRegular />}
         title="Configuration"
+        aria-label="Configuration"
         onClick={() => onNavigate('config')}
       />
 
@@ -91,6 +94,7 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
         icon={isDarkMode ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
         onClick={onToggleTheme}
         title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
+        aria-label={isDarkMode ? 'Light Mode' : 'Dark Mode'}
       />
     </div>
   )

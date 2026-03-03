@@ -59,7 +59,7 @@ test.describe("Targets API", () => {
   });
 
   test("should list targets", async ({ request }) => {
-    const response = await request.get("/api/targets?count=50");
+    const response = await request.get("/api/targets?limit=50");
 
     expect(response.ok()).toBe(true);
     const data = await response.json();
@@ -69,7 +69,7 @@ test.describe("Targets API", () => {
 
   test("should create and retrieve a target", async ({ request }) => {
     const createPayload = {
-      target_type: "OpenAIChatTarget",
+      type: "OpenAIChatTarget",
       params: {
         endpoint: "https://e2e-test.openai.azure.com",
         model_name: "gpt-4o-e2e-test",
@@ -87,10 +87,10 @@ test.describe("Targets API", () => {
 
     const created = await createResp.json();
     expect(created).toHaveProperty("target_registry_name");
-    expect(created.target_type).toBe("OpenAIChatTarget");
+    expect(created.type).toBe("OpenAIChatTarget");
 
     // Retrieve via list and check it's there
-    const listResp = await request.get("/api/targets?count=200");
+    const listResp = await request.get("/api/targets?limit=200");
     expect(listResp.ok()).toBe(true);
     const list = await listResp.json();
     const found = list.items.find(

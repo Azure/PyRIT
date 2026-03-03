@@ -65,10 +65,8 @@ async def get_version_async() -> VersionResponse:
     try:
         memory = CentralMemory.get_memory_instance()
         db_type = type(memory).__name__
-        db_name = None
-        if memory.engine.url.database:
-            db_name = memory.engine.url.database.split("?")[0]
-        database_info = f"{db_type} ({db_name})" if db_name else db_type
+        db_backend = memory.engine.url.get_backend_name()
+        database_info = f"{db_type} ({db_backend})" if db_backend else db_type
     except (ValueError, Exception) as e:
         logger.debug(f"Could not detect database info: {e}")
 
