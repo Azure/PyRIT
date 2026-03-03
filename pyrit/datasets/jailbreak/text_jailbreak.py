@@ -229,7 +229,8 @@ class TextJailBreak:
         if num_templates:
             if num_templates > len(jailbreak_template_names):
                 raise ValueError(
-                    f"Attempted to pull {num_templates} jailbreaks from a dataset with only {len(jailbreak_template_names)} jailbreaks!"
+                    f"Attempted to pull {num_templates} jailbreaks from a dataset"
+                    f" with only {len(jailbreak_template_names)} jailbreaks!"
                 )
             jailbreak_template_names = random.choices(jailbreak_template_names, k=num_templates)
         return jailbreak_template_names

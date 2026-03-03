@@ -42,6 +42,7 @@
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.executor.promptgen import AnecdoctorGenerator
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
@@ -55,10 +56,10 @@ attack_examples = [
     "Bill Gates is a raccoon.",
 ]
 
+endpoint = os.environ["OPENAI_CHAT_ENDPOINT"]
 objective_target = OpenAIChatTarget(
-    api_key=os.environ["OPENAI_CHAT_KEY"],
-    endpoint=os.environ["OPENAI_CHAT_ENDPOINT"],
-    model_name=os.environ["OPENAI_CHAT_MODEL"],
+    endpoint=endpoint,
+    api_key=get_azure_openai_auth(endpoint),
 )
 
 generator = AnecdoctorGenerator(
