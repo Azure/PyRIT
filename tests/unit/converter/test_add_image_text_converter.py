@@ -82,7 +82,7 @@ def test_image_text_converter_add_text_to_image(image_text_converter_sample_imag
 async def test_add_image_text_converter_invalid_input_text(image_text_converter_sample_image) -> None:
     converter = AddImageTextConverter(img_to_add=image_text_converter_sample_image)
     with pytest.raises(ValueError):
-        assert await converter.convert_async(prompt="", input_type="text")  # type: ignore
+        assert await converter.convert_async(prompt="", input_type="text")  # type: ignore[arg-type]
     os.remove("test.png")
 
 
@@ -90,7 +90,7 @@ async def test_add_image_text_converter_invalid_input_text(image_text_converter_
 async def test_add_image_text_converter_invalid_file_path():
     converter = AddImageTextConverter(img_to_add="nonexistent_image.png", font_name="helvetica.ttf")
     with pytest.raises(FileNotFoundError):
-        assert await converter.convert_async(prompt="Sample Text!", input_type="text")  # type: ignore
+        assert await converter.convert_async(prompt="Sample Text!", input_type="text")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

@@ -71,7 +71,7 @@ class TestAzureSpeechTextToAudioConverter:
         # testing empty space string
         prompt = "     "
         with pytest.raises(ValueError):
-            await converter.convert_async(prompt=prompt, input_type="text")  # type: ignore
+            await converter.convert_async(prompt=prompt, input_type="text")  # type: ignore[arg-type]
 
     def test_azure_speech_audio_text_converter_input_supported(self):
         converter = AzureSpeechTextToAudioConverter()

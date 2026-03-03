@@ -218,7 +218,7 @@ async def test_ai_recruiter_workflow():
     # Execute the XPIA flow.
     # Step 1: PDF with hidden text is uploaded to /upload/
     # Step 2: /search_candidates/ is called automatically afterward.
-    final_result = await xpia.execute_async(  # type: ignore
+    final_result = await xpia.execute_async(  # type: ignore[arg-type]
         attack_content='{"description": "Hidden PDF Attack"}',
         processing_prompt="Evaluate all uploaded resumes and pick the best candidate.",
     )
