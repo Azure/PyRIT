@@ -49,7 +49,7 @@ def log_exception(retry_state: RetryCallState) -> None:
     try:
         exec_context = get_execution_context()
         if exec_context:
-            # Format: "objective scorer; TrueFalseScorer::_score_value_with_llm"
+            # Format: "objective scorer; TrueFalseScorer::_score_value_with_llm"  # noqa: ERA001
             role_display = exec_context.component_role.value.replace("_", " ")
             if exec_context.component_name:
                 for_clause = f"{role_display}. {exec_context.component_name}::{fn_name}"
