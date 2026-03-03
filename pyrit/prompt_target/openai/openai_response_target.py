@@ -178,6 +178,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 "max_output_tokens": self._max_output_tokens,
                 "reasoning_effort": self._reasoning_effort,
                 "reasoning_summary": self._reasoning_summary,
+                "extra_body_parameters": self._extra_body_parameters,
             },
         )
 
