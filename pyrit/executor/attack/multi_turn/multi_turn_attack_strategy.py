@@ -16,6 +16,7 @@ from pyrit.executor.attack.core.attack_strategy import (
     AttackStrategy,
     AttackStrategyResultT,
 )
+from pyrit.memory import CentralMemory
 from pyrit.models import ConversationReference, ConversationType
 
 if TYPE_CHECKING:
@@ -133,8 +134,6 @@ class MultiTurnAttackStrategy(AttackStrategy[MultiTurnAttackStrategyContextT, At
 
         # Duplicate system messages (e.g., system prompt from prepended conversation)
         # into the new conversation so the target retains its configuration.
-        from pyrit.memory import CentralMemory
-
         memory = CentralMemory.get_memory_instance()
         messages = memory.get_conversation(conversation_id=old_conversation_id)
         system_messages = [m for m in messages if m.api_role == "system"]

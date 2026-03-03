@@ -118,7 +118,9 @@ class OpenAITarget(PromptTarget):
             endpoint (str, Optional): The target URL for the OpenAI service.
             api_key (str | Callable[[], str | Awaitable[str]], Optional): The API key for accessing the
                 OpenAI service, or a callable that returns an access token (sync or async).
-                For Azure endpoints with Entra authentication, pass a token provider from pyrit.auth
+                For Azure endpoints, if no API key is provided (via parameter or environment variable),
+                Entra ID authentication is used automatically.
+                You can also explicitly pass a token provider from pyrit.auth
                 (e.g., get_azure_openai_auth(endpoint) for async, or get_azure_token_provider(scope) for sync).
                 Synchronous token providers are automatically wrapped to work with async clients.
                 Defaults to the target-specific API key environment variable.
@@ -135,7 +137,7 @@ class OpenAITarget(PromptTarget):
                 Defaults to None.
 
         Raises:
-            ValueError: If no API key is provided via parameter or environment variable.
+            ValueError: If no API key is provided and the endpoint is not an Azure endpoint.
         """
         self._headers: dict[str, str] = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}
@@ -170,13 +172,28 @@ class OpenAITarget(PromptTarget):
             underlying_model=underlying_model_value,
         )
 
-        # API key is required - either from parameter or environment variable
-        self._api_key = default_values.get_required_value(
-            env_var_name=self.api_key_environment_variable, passed_value=api_key
-        )
+        # API key: use passed value, env var, or fall back to Entra ID for Azure endpoints
+        resolved_api_key: str | Callable[[], str | Awaitable[str]]
+        if api_key is not None and callable(api_key):
+            resolved_api_key = api_key
+        else:
+            api_key_value = default_values.get_non_required_value(
+                env_var_name=self.api_key_environment_variable, passed_value=api_key
+            )
+            if api_key_value:
+                resolved_api_key = api_key_value
+            elif "azure" in endpoint_value.lower():
+                from pyrit.auth import get_azure_openai_auth
+
+                resolved_api_key = get_azure_openai_auth(endpoint_value)
+            else:
+                raise ValueError(
+                    f"Environment variable {self.api_key_environment_variable} is required for non-Azure endpoints. "
+                    "For Azure endpoints, Entra ID authentication is used automatically."
+                )
 
         # Ensure api_key is async-compatible (wrap sync token providers if needed)
-        self._api_key = _ensure_async_token_provider(self._api_key)
+        self._api_key = _ensure_async_token_provider(resolved_api_key)
 
         self._initialize_openai_client()
 
