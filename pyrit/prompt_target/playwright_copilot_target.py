@@ -140,6 +140,13 @@ class PlaywrightCopilotTarget(PromptTarget):
         if page and self.M365_URL_IDENTIFIER not in page.url and copilot_type == CopilotType.M365:
             raise ValueError("The provided page URL does not indicate M365 Copilot, but the type is set to m365.")
 
+    @property
+    def supports_multi_turn(self) -> bool:
+        """
+        Playwright Copilot targets maintain state via browser page across turns.
+        """
+        return True
+
     def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with Copilot-specific parameters.
