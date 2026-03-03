@@ -155,6 +155,7 @@ class EvaluationIdentity(ABC):
     BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]]
 
     def __init__(self, identifier: ComponentIdentifier) -> None:
+        """Wrap a ComponentIdentifier and eagerly compute its eval hash."""
         self._identifier = identifier
         self._eval_hash = compute_eval_hash(
             identifier,

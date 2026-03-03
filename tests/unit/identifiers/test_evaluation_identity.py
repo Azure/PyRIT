@@ -15,10 +15,10 @@ import pytest
 from pyrit.identifiers import ComponentIdentifier, compute_eval_hash
 from pyrit.identifiers.evaluation_identity import EvaluationIdentity, _build_eval_dict
 
-
 # ---------------------------------------------------------------------------
 # Concrete subclass for testing the ABC
 # ---------------------------------------------------------------------------
+
 
 class _StubEvaluationIdentity(EvaluationIdentity):
     """Minimal concrete subclass for testing the abstract base class."""
@@ -106,8 +106,12 @@ class TestComputeEvalHash:
     def test_deterministic(self):
         """Test that the same identifier + config produces the same hash."""
         identifier = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score")
-        h1 = compute_eval_hash(identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
-        h2 = compute_eval_hash(identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        h1 = compute_eval_hash(
+            identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        )
+        h2 = compute_eval_hash(
+            identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        )
         assert h1 == h2
 
     def test_empty_target_child_keys_returns_component_hash(self):
@@ -133,7 +137,9 @@ class TestComputeEvalHash:
     def test_returns_64_char_hex(self):
         """Test that the hash is a 64-char lowercase hex string (SHA-256)."""
         identifier = ComponentIdentifier(class_name="S", class_module="m")
-        result = compute_eval_hash(identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result = compute_eval_hash(
+            identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        )
         assert len(result) == 64
         assert all(c in "0123456789abcdef" for c in result)
 

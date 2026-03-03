@@ -8,7 +8,6 @@ Covers ``ScorerEvaluationIdentity`` ClassVar values, eval-hash delegation, and
 the ``Scorer.get_eval_hash()`` convenience method.
 """
 
-from typing import ClassVar
 
 import pytest
 
@@ -21,11 +20,11 @@ class TestScorerEvaluationIdentityConstants:
 
     def test_target_child_keys(self):
         """Test that TARGET_CHILD_KEYS contains the expected scorer target names."""
-        assert ScorerEvaluationIdentity.TARGET_CHILD_KEYS == frozenset({"prompt_target", "converter_target"})
+        assert frozenset({"prompt_target", "converter_target"}) == ScorerEvaluationIdentity.TARGET_CHILD_KEYS
 
     def test_behavioral_child_params(self):
         """Test that BEHAVIORAL_CHILD_PARAMS contains the expected behavioral params."""
-        assert ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS == frozenset({"model_name", "temperature", "top_p"})
+        assert frozenset({"model_name", "temperature", "top_p"}) == ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
 
 
 class TestScorerEvaluationIdentityEvalHash:
@@ -93,7 +92,6 @@ class TestScorerGetEvalHash:
         """Test that Scorer.get_eval_hash() delegates to ScorerEvaluationIdentity."""
 
         class FakeScorer(Identifiable):
-
             def _build_identifier(self) -> ComponentIdentifier:
                 child = ComponentIdentifier(
                     class_name="Target",
@@ -117,7 +115,6 @@ class TestScorerGetEvalHash:
         """Test that Scorer.get_eval_hash() filters operational params from target children."""
 
         class ScorerLike(Identifiable):
-
             def __init__(self, *, endpoint: str):
                 self._endpoint = endpoint
 
@@ -144,7 +141,6 @@ class TestScorerGetEvalHash:
         """Test that eval hash equals component hash when there are no target children."""
 
         class SimpleScorer(Identifiable):
-
             def _build_identifier(self) -> ComponentIdentifier:
                 return ComponentIdentifier.of(self, params={"key": "value"})
 
