@@ -227,6 +227,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 "max_output_tokens": self._max_output_tokens,
                 "reasoning_effort": self._reasoning_effort,
                 "reasoning_summary": self._reasoning_summary,
+                "extra_body_parameters": self._extra_body_parameters,
             },
         )
 
@@ -305,9 +306,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
             # System message (remapped to developer)
             if pieces[0].api_role == "system":
-                system_content = []
-                for piece in pieces:
-                    system_content.append({"type": "input_text", "text": piece.converted_value})
+                system_content = [{"type": "input_text", "text": piece.converted_value} for piece in pieces]
                 input_items.append({"role": "developer", "content": system_content})
                 continue
 

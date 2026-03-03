@@ -342,6 +342,7 @@ API Reference
     ChatMessageListDictContent
     construct_response_from_request
     ConversationReference
+    ConversationStats
     ConversationType
     DataTypeSerializer
     data_serializer_factory
