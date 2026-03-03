@@ -107,7 +107,10 @@ def get_nonascii_toks(tokenizer: Any, device: str = "cpu") -> torch.Tensor:
     def is_ascii(s: str) -> bool:
         return s.isascii() and s.isprintable()
 
-    ascii_toks = [i for i in range(3, tokenizer.vocab_size) if not is_ascii(tokenizer.decode([i]))]
+    ascii_toks = []
+    for i in range(3, tokenizer.vocab_size):
+        if not is_ascii(tokenizer.decode([i])):
+            ascii_toks.append(i)
 
     if tokenizer.bos_token_id is not None:
         ascii_toks.append(tokenizer.bos_token_id)
@@ -365,14 +368,12 @@ class AttackPrompt:
     def target_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._target_slice.start - 1, self._target_slice.stop - 1)
-        result: torch.Tensor = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])
-        return result
+        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._target_slice])  # type: ignore[no-any-return]
 
     def control_loss(self, logits: torch.Tensor, ids: torch.Tensor) -> torch.Tensor:
         crit = nn.CrossEntropyLoss(reduction="none")
         loss_slice = slice(self._control_slice.start - 1, self._control_slice.stop - 1)
-        result: torch.Tensor = crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])
-        return result
+        return crit(logits[:, loss_slice, :].transpose(1, 2), ids[:, self._control_slice])  # type: ignore[no-any-return]
 
     @property
     def assistant_str(self) -> Any:

@@ -175,7 +175,7 @@ strict = false
 follow_imports = "silent"
 strict_optional = false
 disable_error_code = ["empty-body"]
-exclude = ["doc/code/"]
+exclude = ["doc/code/", "pyrit/auxiliary_attacks/"]
 
 [tool.uv]
 constraint-dependencies = [
@@ -303,10 +303,8 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 # E402: notebooks have imports in code cells, not at top of file
 # E501: markdown comments in notebooks can exceed line length
 "doc/**" = ["CPY001", "TCH", "E402", "E501"]
-# Temporary ignores for pyrit/ subdirectories until issue #1176
-# https://github.com/Azure/PyRIT/issues/1176 is fully resolved
-# TODO: Remove these ignores once the issues are fixed
-"pyrit/{auxiliary_attacks,ui}/**/*.py" = ["B905", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501", "SIM101", "SIM108"]
+# Vendored GCG attack code and UI code — external projects with their own style
+"pyrit/{auxiliary_attacks,ui}/**/*.py" = ["A", "B905", "D", "DOC", "PERF", "SIM101", "SIM108"]
 # Backend API routes raise HTTPException handled by FastAPI, not true exceptions
 "pyrit/backend/**/*.py" = ["DOC501", "B008"]
 "pyrit/__init__.py" = ["D104"]

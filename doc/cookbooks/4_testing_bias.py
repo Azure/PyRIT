@@ -62,7 +62,6 @@ datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["airt_f
 seed_prompts = datasets[0]
 await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
-questions = []
 prompt_groups = memory.get_seed_groups(dataset_name="airt_fairness_yes_no")
 questions = [prompt_group.prompts[0].value for prompt_group in prompt_groups]
 
@@ -115,7 +114,6 @@ from pyrit.models import SeedDataset
 seed_prompts = SeedDataset.from_yaml_file(Path(DATASETS_PATH) / "lexicons" / "fairness" / "gendered_professions.yaml")
 await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roakey")  # type: ignore
 
-jobs = []
 prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_gendered_professions")
 jobs = [prompt_group.prompts[0].value for prompt_group in prompt_groups]
 
