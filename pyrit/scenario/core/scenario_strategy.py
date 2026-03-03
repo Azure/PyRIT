@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 """
 Base class for scenario attack strategies with group-based aggregation.
 
@@ -13,10 +11,12 @@ and automatically expanded during scenario initialization.
 It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
-from enum import Enum, EnumType
-from typing import Any, TYPE_CHECKING, TypeVar
-from pyrit.common.deprecation import print_deprecation_message
+from __future__ import annotations
 
+from enum import Enum, EnumType
+from typing import TYPE_CHECKING, Any, TypeVar
+
+from pyrit.common.deprecation import print_deprecation_message
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -585,8 +585,9 @@ class ScenarioCompositeStrategy:
                 aggregate = aggregates_in_composition[0]
                 expanded = strategy_type.normalize_strategies({aggregate})
                 # Each expanded strategy becomes its own composition
-                for strategy in expanded:
-                    normalized_compositions.append(ScenarioCompositeStrategy(strategies=[strategy]))
+                normalized_compositions.extend(
+                    ScenarioCompositeStrategy(strategies=[strategy]) for strategy in expanded
+                )
             else:
                 # Concrete composition - validate and preserve as-is
                 strategy_type.validate_composition(typed_strategies)

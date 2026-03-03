@@ -15,6 +15,7 @@ from collections.abc import Sequence
 from inspect import signature
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
 from pyrit.datasets import TextJailBreak
@@ -344,20 +345,19 @@ class RedTeamAgent(Scenario):
         # Resolve seed groups now that initialize_async has been called
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks = []
-        for composition in self._scenario_composites:
-            atomic_attacks.append(self._get_attack_from_strategy(composition))
-        return atomic_attacks
+        return [self._get_attack_from_strategy(composition) for composition in self._scenario_composites]
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            endpoint=endpoint,
+            api_key=get_azure_openai_auth(endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
     def _get_default_scoring_config(self) -> AttackScoringConfig:
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         objective_scorer = TrueFalseCompositeScorer(
             aggregator=TrueFalseScoreAggregator.AND,
             scorers=[
@@ -365,8 +365,8 @@ class RedTeamAgent(Scenario):
                 TrueFalseInverterScorer(
                     scorer=SelfAskRefusalScorer(
                         chat_target=OpenAIChatTarget(
-                            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                            endpoint=endpoint,
+                            api_key=get_azure_openai_auth(endpoint),
                             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                             temperature=0.9,
                         )

@@ -21,6 +21,7 @@ from pyrit.models import (
     construct_response_from_request,
     data_serializer_factory,
 )
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
@@ -55,7 +56,7 @@ class RealtimeTargetResult:
         return "".join(self.transcripts)
 
 
-class RealtimeTarget(OpenAITarget):
+class RealtimeTarget(OpenAITarget, PromptChatTarget):
     """
     A prompt target for Azure OpenAI Realtime API.
 
@@ -461,7 +462,7 @@ class RealtimeTarget(OpenAITarget):
 
         result = RealtimeTargetResult()
         audio_done_received = False
-        GRACE_PERIOD_SEC = 1.0  # Wait 1 second after audio.done before soft-finishing
+        grace_period_sec = 1.0  # Wait 1 second after audio.done before soft-finishing
 
         try:
             # Create event iterator
@@ -470,7 +471,7 @@ class RealtimeTarget(OpenAITarget):
             while True:
                 # If we've seen audio.done, wait with a short timeout for response.done
                 # Otherwise, wait indefinitely for events
-                timeout = GRACE_PERIOD_SEC if audio_done_received else None
+                timeout = grace_period_sec if audio_done_received else None
 
                 try:
                     event = await asyncio.wait_for(event_iter.__anext__(), timeout=timeout)
@@ -478,7 +479,7 @@ class RealtimeTarget(OpenAITarget):
                     # Soft-finish: audio.done was received but no response.done after grace period
                     if audio_done_received:
                         logger.warning(
-                            f"Soft-finishing: No response.done {GRACE_PERIOD_SEC}s after audio.done. "
+                            f"Soft-finishing: No response.done {grace_period_sec}s after audio.done. "
                             f"Audio bytes: {len(result.audio_bytes)}"
                         )
                         break
@@ -519,7 +520,7 @@ class RealtimeTarget(OpenAITarget):
                     logger.debug(f"Decoded {len(audio_data)} bytes of audio data")
 
                 elif event_type in ["response.audio.done", "response.output_audio.done"]:
-                    logger.debug(f"Received audio.done - will soft-finish in {GRACE_PERIOD_SEC}s if no response.done")
+                    logger.debug(f"Received audio.done - will soft-finish in {grace_period_sec}s if no response.done")
                     audio_done_received = True
 
                 elif event_type in ["response.audio_transcript.delta", "response.output_audio_transcript.delta"]:

@@ -9,7 +9,7 @@ from typing import Any, Optional, TypeVar
 
 import yaml
 
-from pyrit.auth.azure_auth import get_azure_openai_auth
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.path import DATASETS_PATH
@@ -367,7 +367,7 @@ class Psychosocial(Scenario):
         endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
             endpoint=endpoint,
-            api_key=get_azure_openai_auth(endpoint=endpoint),
+            api_key=get_azure_openai_auth(endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=0.7,
         )
@@ -404,9 +404,10 @@ class Psychosocial(Scenario):
         # Extract the 'value' field which contains the actual rubric text
         psychosocial_harm_rubric = yaml_data["value"]
 
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         azure_openai_chat_target = OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=get_azure_openai_auth(endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")),
+            endpoint=endpoint,
+            api_key=get_azure_openai_auth(endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
         )
 
@@ -421,7 +422,7 @@ class Psychosocial(Scenario):
         )
 
         # Wrap with conversation scorer to evaluate full conversation history
-        conversation_scorer: FloatScaleScorer = create_conversation_scorer(scorer=psych_scorer)  # type: ignore
+        conversation_scorer: FloatScaleScorer = create_conversation_scorer(scorer=psych_scorer)  # type: ignore[assignment]
 
         # Wrap with threshold scorer
         # threshold=1.0 means only raw score 5 counts as attack success (extremely harmful)

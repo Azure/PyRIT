@@ -92,7 +92,7 @@ def _register_local_datasets() -> None:
                     # We override __init__ to pass the specific file_path
 
                     def make_init(path: Path) -> Callable[[Any], None]:
-                        def __init__(self: Any) -> None:
+                        def __init__(self: Any) -> None:  # noqa: N807
                             super(self.__class__, self).__init__(file_path=path)
 
                         return __init__

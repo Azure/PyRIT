@@ -198,22 +198,22 @@ class ContentHarms(Scenario):
         self._objectives_by_harm = objectives_by_harm
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
-        endpoint = os.environ.get("AZURE_OPENAI_GPT4_CHAT_ENDPOINT")
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
             endpoint=endpoint,
-            api_key=get_azure_openai_auth(endpoint), #type: ignore
-            model_name=os.environ.get("AZURE_OPENAI_GPT4_CHAT_MODEL"),
+            api_key=get_azure_openai_auth(endpoint),
+            model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
     def _get_default_scorer(self) -> TrueFalseInverterScorer:
-        endpoint = os.environ.get("AZURE_OPENAI_GPT4_CHAT_ENDPOINT")
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
                     endpoint=endpoint,
-                    api_key=get_azure_openai_auth(endpoint), #type: ignore
-                    model_name=os.environ.get("AZURE_OPENAI_GPT4_CHAT_MODEL"),
+                    api_key=get_azure_openai_auth(endpoint),
+                    model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                     temperature=0.9,
                 )
             ),

@@ -439,7 +439,7 @@ class TestLeakageProperties:
 
             # This works because TrueFalseCompositeScorer subclasses TrueFalseScorer,
             # but TrueFalseScorer itself (the type for ScorerConfig) does not have ._scorers.
-            scorer_target = scenario._scorer_config.objective_scorer._scorers[0]  # type: ignore
+            scorer_target = scenario._scorer_config.objective_scorer._scorers[0]  # type: ignore[arg-type]
             adversarial_target = scenario._adversarial_chat
 
             assert objective_target != scorer_target
