@@ -2,13 +2,11 @@
 # Licensed under the MIT license.
 
 
-from typing import ClassVar
-
 import pytest
 
 import pyrit
-from pyrit.identifiers import ComponentIdentifier, Identifiable, config_hash
-from pyrit.identifiers.component_identifier import _build_eval_dict
+from pyrit.identifiers import ComponentIdentifier, Identifiable, compute_eval_hash, config_hash
+from pyrit.identifiers.evaluation_identity import _build_eval_dict
 
 # Test constants mirroring Scorer's ClassVars — keeps tests decoupled from pyrit.score
 _TARGET_CHILD_KEYS = frozenset({"prompt_target", "converter_target"})
@@ -723,73 +721,6 @@ class TestIdentifiable:
         assert identifier.params["key"] == "val"
 
 
-class TestResolveEvalConfig:
-    """Tests for ComponentIdentifier._resolve_eval_config dynamic class lookup."""
-
-    def test_resolves_scorer_class_vars(self):
-        """Test that _resolve_eval_config returns Scorer's ClassVars for a Scorer identifier."""
-        from pyrit.score import Scorer
-
-        identifier = ComponentIdentifier(
-            class_name="Scorer",
-            class_module="pyrit.score.scorer",
-        )
-        keys, params = identifier._resolve_eval_config()
-
-        assert keys == Scorer.EVAL_TARGET_CHILD_KEYS
-        assert params == Scorer.EVAL_BEHAVIORAL_CHILD_PARAMS
-        # Verify specific members to catch accidental ClassVar drift
-        assert "prompt_target" in keys
-        assert "converter_target" in keys
-        assert "model_name" in params
-        assert "temperature" in params
-        assert "top_p" in params
-
-    def test_returns_empty_for_unresolvable_module(self):
-        """Test that _resolve_eval_config returns empty frozensets for a module that cannot be imported."""
-        identifier = ComponentIdentifier(
-            class_name="DoesNotExist",
-            class_module="no.such.module.exists",
-        )
-        keys, params = identifier._resolve_eval_config()
-
-        assert keys == frozenset()
-        assert params == frozenset()
-
-    def test_returns_empty_for_nonexistent_class(self):
-        """Test that _resolve_eval_config returns empty frozensets when the class name doesn't exist in the module."""
-        identifier = ComponentIdentifier(
-            class_name="NoSuchClassName",
-            class_module="pyrit.score.scorer",
-        )
-        keys, params = identifier._resolve_eval_config()
-
-        assert keys == frozenset()
-        assert params == frozenset()
-
-    def test_returns_empty_for_class_without_classvars(self):
-        """Test that _resolve_eval_config returns empty frozensets when the class has no eval ClassVars."""
-        identifier = ComponentIdentifier(
-            class_name="ComponentIdentifier",
-            class_module="pyrit.identifiers.component_identifier",
-        )
-        keys, params = identifier._resolve_eval_config()
-
-        assert keys == frozenset()
-        assert params == frozenset()
-
-    def test_returns_identifiable_defaults_for_base_class(self):
-        """Test that _resolve_eval_config returns Identifiable's default empty frozensets."""
-        identifier = ComponentIdentifier(
-            class_name="Identifiable",
-            class_module="pyrit.identifiers.component_identifier",
-        )
-        keys, params = identifier._resolve_eval_config()
-
-        assert keys == frozenset()
-        assert params == frozenset()
-
-
 class TestBuildEvalDict:
     """Tests for the _build_eval_dict function."""
 
@@ -1113,9 +1044,7 @@ class TestBuildEvalDict:
 
 
 class TestComputeEvalHash:
-    """Tests for ComponentIdentifier.compute_eval_hash (explicit and zero-arg paths)."""
-
-    # --- Explicit-arg tests ---
+    """Tests for the compute_eval_hash free function."""
 
     def test_deterministic_for_same_identifier(self):
         """Test that compute_eval_hash returns the same hash for the same identifier."""
@@ -1124,11 +1053,13 @@ class TestComputeEvalHash:
             class_module="pyrit.score",
             params={"threshold": 0.5},
         )
-        hash1 = identifier.compute_eval_hash(
+        hash1 = compute_eval_hash(
+            identifier,
             target_child_keys=_TARGET_CHILD_KEYS,
             behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
-        hash2 = identifier.compute_eval_hash(
+        hash2 = compute_eval_hash(
+            identifier,
             target_child_keys=_TARGET_CHILD_KEYS,
             behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
@@ -1141,7 +1072,8 @@ class TestComputeEvalHash:
             class_name="HexScorer",
             class_module="pyrit.score",
         )
-        result = identifier.compute_eval_hash(
+        result = compute_eval_hash(
+            identifier,
             target_child_keys=_TARGET_CHILD_KEYS,
             behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
@@ -1155,12 +1087,10 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="ScorerA", class_module="pyrit.score")
         id2 = ComponentIdentifier(class_name="ScorerB", class_module="pyrit.score")
 
-        assert id1.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
-        ) != id2.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+        assert compute_eval_hash(
+            id1, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        ) != compute_eval_hash(
+            id2, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
     def test_different_params_produce_different_hashes(self):
@@ -1168,16 +1098,14 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", params={"threshold": 0.5})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", params={"threshold": 0.8})
 
-        assert id1.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
-        ) != id2.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+        assert compute_eval_hash(
+            id1, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        ) != compute_eval_hash(
+            id2, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
     def test_eval_hash_differs_from_component_hash(self):
-        """Test that eval hash differs from hash when target children have operational params."""
+        """Test that eval hash differs from component hash when target children have operational params."""
         child = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
@@ -1189,7 +1117,8 @@ class TestComputeEvalHash:
             children={"prompt_target": child},
         )
 
-        eval_hash = identifier.compute_eval_hash(
+        eval_hash = compute_eval_hash(
+            identifier,
             target_child_keys=_TARGET_CHILD_KEYS,
             behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
@@ -1220,12 +1149,10 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert id1.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
-        ) == id2.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+        assert compute_eval_hash(
+            id1, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        ) == compute_eval_hash(
+            id2, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
     def test_behavioral_child_params_affect_eval_hash(self):
@@ -1243,12 +1170,10 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert id1.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
-        ) != id2.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+        assert compute_eval_hash(
+            id1, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        ) != compute_eval_hash(
+            id2, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
     def test_scorer_own_params_all_included(self):
@@ -1260,169 +1185,28 @@ class TestComputeEvalHash:
             class_name="Scorer", class_module="pyrit.score", params={"system_prompt_template": "template_b"}
         )
 
-        assert id1.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
-        ) != id2.compute_eval_hash(
-            target_child_keys=_TARGET_CHILD_KEYS,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+        assert compute_eval_hash(
+            id1, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        ) != compute_eval_hash(
+            id2, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
-    # --- Zero-arg / dynamic-lookup tests ---
-
-    def test_zero_arg_matches_explicit_args_for_scorer(self):
-        """Test that zero-arg compute_eval_hash matches explicit-arg version for Scorer class."""
-        from pyrit.score import Scorer
-
-        child = ComponentIdentifier(
-            class_name="OpenAIChatTarget",
-            class_module="pyrit.prompt_target.openai.openai_chat_target",
-            params={"model_name": "gpt-4", "endpoint": "https://api.example.com"},
-        )
-        identifier = ComponentIdentifier(
-            class_name="Scorer",
-            class_module="pyrit.score.scorer",
-            children={"prompt_target": child},
-        )
-
-        zero_arg_hash = identifier.compute_eval_hash()
-        explicit_hash = identifier.compute_eval_hash(
-            target_child_keys=Scorer.EVAL_TARGET_CHILD_KEYS,
-            behavioral_child_params=Scorer.EVAL_BEHAVIORAL_CHILD_PARAMS,
-        )
-
-        assert zero_arg_hash == explicit_hash
-
-    def test_zero_arg_returns_self_hash_for_unresolvable_class(self):
-        """Test that zero-arg compute_eval_hash falls back to self.hash when class is unresolvable."""
-        identifier = ComponentIdentifier(
-            class_name="NonExistentScorer",
-            class_module="no.such.module",
-            params={"threshold": 0.5},
-        )
-
-        assert identifier.compute_eval_hash() == identifier.hash
-
-    def test_zero_arg_returns_self_hash_for_class_without_classvars(self):
-        """Test that zero-arg compute_eval_hash returns self.hash when class has no eval ClassVars."""
-        identifier = ComponentIdentifier(
-            class_name="ComponentIdentifier",
-            class_module="pyrit.identifiers.component_identifier",
-            params={"some_param": "value"},
-        )
-
-        assert identifier.compute_eval_hash() == identifier.hash
-
-    def test_partial_args_target_keys_only(self):
-        """Test compute_eval_hash with only target_child_keys provided (behavioral_child_params resolved)."""
-        from pyrit.score import Scorer
-
+    def test_empty_target_child_keys_returns_component_hash(self):
+        """Test that empty target_child_keys means no filtering — returns component hash."""
         child = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
-            params={"model_name": "gpt-4", "endpoint": "https://api.example.com"},
+            params={"model_name": "gpt-4", "endpoint": "https://example.com"},
         )
         identifier = ComponentIdentifier(
             class_name="Scorer",
-            class_module="pyrit.score.scorer",
+            class_module="pyrit.score",
             children={"prompt_target": child},
         )
 
-        partial_hash = identifier.compute_eval_hash(
-            target_child_keys=Scorer.EVAL_TARGET_CHILD_KEYS,
+        result = compute_eval_hash(
+            identifier,
+            target_child_keys=frozenset(),
+            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
-        full_hash = identifier.compute_eval_hash(
-            target_child_keys=Scorer.EVAL_TARGET_CHILD_KEYS,
-            behavioral_child_params=Scorer.EVAL_BEHAVIORAL_CHILD_PARAMS,
-        )
-
-        assert partial_hash == full_hash
-
-    def test_partial_args_behavioral_params_only(self):
-        """Test compute_eval_hash with only behavioral_child_params provided (target_child_keys resolved)."""
-        from pyrit.score import Scorer
-
-        child = ComponentIdentifier(
-            class_name="Target",
-            class_module="pyrit.target",
-            params={"model_name": "gpt-4", "endpoint": "https://api.example.com"},
-        )
-        identifier = ComponentIdentifier(
-            class_name="Scorer",
-            class_module="pyrit.score.scorer",
-            children={"prompt_target": child},
-        )
-
-        partial_hash = identifier.compute_eval_hash(
-            behavioral_child_params=Scorer.EVAL_BEHAVIORAL_CHILD_PARAMS,
-        )
-        full_hash = identifier.compute_eval_hash(
-            target_child_keys=Scorer.EVAL_TARGET_CHILD_KEYS,
-            behavioral_child_params=Scorer.EVAL_BEHAVIORAL_CHILD_PARAMS,
-        )
-
-        assert partial_hash == full_hash
-
-
-class TestGetEvalHash:
-    """Tests for Identifiable.get_eval_hash convenience method."""
-
-    def test_get_eval_hash_uses_classvars(self):
-        """Test that get_eval_hash passes ClassVar overrides to compute_eval_hash."""
-
-        class FakeScorer(Identifiable):
-            EVAL_TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"my_target"})
-            EVAL_BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name"})
-
-            def _build_identifier(self) -> ComponentIdentifier:
-                child = ComponentIdentifier(
-                    class_name="Target",
-                    class_module="pyrit.target",
-                    params={"model_name": "gpt-4", "endpoint": "https://example.com"},
-                )
-                return ComponentIdentifier.of(self, children={"my_target": child})
-
-        scorer = FakeScorer()
-        eval_hash = scorer.get_eval_hash()
-
-        expected = scorer.get_identifier().compute_eval_hash(
-            target_child_keys=frozenset({"my_target"}),
-            behavioral_child_params=frozenset({"model_name"}),
-        )
-        assert eval_hash == expected
-
-    def test_get_eval_hash_equals_component_hash_when_no_classvars(self):
-        """Test that get_eval_hash returns component hash when no ClassVar overrides."""
-
-        class SimpleComponent(Identifiable):
-            def _build_identifier(self) -> ComponentIdentifier:
-                return ComponentIdentifier.of(self, params={"key": "value"})
-
-        component = SimpleComponent()
-        assert component.get_eval_hash() == component.get_identifier().hash
-
-    def test_get_eval_hash_filters_operational_params(self):
-        """Test that get_eval_hash filters operational params from target children."""
-
-        class ScorerLike(Identifiable):
-            EVAL_TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"target"})
-            EVAL_BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name"})
-
-            def __init__(self, *, endpoint: str):
-                self._endpoint = endpoint
-
-            def _build_identifier(self) -> ComponentIdentifier:
-                child = ComponentIdentifier(
-                    class_name="Target",
-                    class_module="pyrit.target",
-                    params={"model_name": "gpt-4", "endpoint": self._endpoint},
-                )
-                return ComponentIdentifier.of(self, children={"target": child})
-
-        scorer_a = ScorerLike(endpoint="https://endpoint-a.com")
-        scorer_b = ScorerLike(endpoint="https://endpoint-b.com")
-
-        # Different endpoints should produce same eval hash (operational param filtered)
-        assert scorer_a.get_eval_hash() == scorer_b.get_eval_hash()
-        # But different component hashes (endpoint is in full identity)
-        assert scorer_a.get_identifier().hash != scorer_b.get_identifier().hash
+        assert result == identifier.hash

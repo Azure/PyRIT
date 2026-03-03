@@ -13,7 +13,6 @@ from collections.abc import Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Optional,
     Union,
     cast,
@@ -55,11 +54,6 @@ class Scorer(Identifiable, abc.ABC):
     Abstract base class for scorers.
     """
 
-    # Eval-hash configuration: which children are "targets" (operational params stripped)
-    # and which target params are behavioral (kept in eval hash).
-    EVAL_TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"prompt_target", "converter_target"})
-    EVAL_BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature", "top_p"})
-
     # Evaluation configuration - maps input dataset files to a result file.
     # Specifies glob patterns for datasets and a result file name.
     evaluation_file_mapping: Optional[ScorerEvalDatasetFiles] = None
@@ -74,6 +68,22 @@ class Scorer(Identifiable, abc.ABC):
             validator (ScorerPromptValidator): Validator for message pieces and scorer configuration.
         """
         self._validator = validator
+
+    def get_eval_hash(self) -> str:
+        """
+        Compute a behavioral equivalence hash for evaluation grouping.
+
+        Delegates to ``ScorerEvaluationIdentity`` which filters target children
+        (prompt_target, converter_target) to behavioral params only, so the same
+        scorer configuration on different deployments produces the same eval hash.
+
+        Returns:
+            str: A hex-encoded SHA256 hash suitable for eval registry keying.
+        """
+        # Deferred import to avoid circular dependency (scorer_evaluation_identity → identifiers → …)
+        from pyrit.score.scorer_evaluation.scorer_evaluation_identity import ScorerEvaluationIdentity
+
+        return ScorerEvaluationIdentity(self.get_identifier()).eval_hash
 
     @property
     def scorer_type(self) -> ScoreType:

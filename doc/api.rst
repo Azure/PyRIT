@@ -273,7 +273,9 @@ API Reference
 
     class_name_to_snake_case
     ComponentIdentifier
+    compute_eval_hash
     config_hash
+    EvaluationIdentity
     Identifiable
     snake_case_to_class_name
 

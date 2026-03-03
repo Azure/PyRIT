@@ -17,7 +17,6 @@ Design principles:
 from __future__ import annotations
 
 import hashlib
-import importlib
 import json
 import logging
 from abc import ABC, abstractmethod
@@ -99,78 +98,6 @@ def _build_hash_dict(
     return hash_dict
 
 
-def _build_eval_dict(
-    identifier: ComponentIdentifier,
-    *,
-    target_child_keys: frozenset[str],
-    behavioral_child_params: frozenset[str],
-    param_allowlist: Optional[frozenset[str]] = None,
-) -> dict[str, Any]:
-    """
-    Build a filtered dictionary for eval-hash computation.
-
-    Includes only behavioral parameters. For child components whose names appear
-    in ``target_child_keys``, only params in ``behavioral_child_params`` are kept
-    (stripping operational params like endpoint, max_requests_per_minute).
-    Non-target children receive full eval treatment recursively.
-
-    Args:
-        identifier (ComponentIdentifier): The component identity to process.
-        target_child_keys (frozenset[str]): Child names that are targets
-            (e.g., ``{"prompt_target", "converter_target"}``).
-        behavioral_child_params (frozenset[str]): Param allowlist applied to
-            target children (e.g., ``{"model_name", "temperature", "top_p"}``).
-        param_allowlist (Optional[frozenset[str]]): If provided, only include
-            params whose keys are in the allowlist. If None, include all params.
-
-    Returns:
-        dict[str, Any]: The filtered dictionary suitable for hashing.
-    """
-    eval_dict: dict[str, Any] = {
-        ComponentIdentifier.KEY_CLASS_NAME: identifier.class_name,
-        ComponentIdentifier.KEY_CLASS_MODULE: identifier.class_module,
-    }
-
-    for key, value in sorted(identifier.params.items()):
-        if value is not None and (param_allowlist is None or key in param_allowlist):
-            eval_dict[key] = value
-
-    if identifier.children:
-        eval_children: dict[str, Any] = {}
-        for name in sorted(identifier.children):
-            child_list = identifier.get_child_list(name)
-            if name in target_child_keys:
-                # Targets: filter to behavioral params only
-                hashes = [
-                    config_hash(
-                        _build_eval_dict(
-                            c,
-                            target_child_keys=target_child_keys,
-                            behavioral_child_params=behavioral_child_params,
-                            param_allowlist=behavioral_child_params,
-                        )
-                    )
-                    for c in child_list
-                ]
-            else:
-                # Non-targets (e.g., sub-scorers): full eval treatment, recurse without param filtering
-                hashes = [
-                    config_hash(
-                        _build_eval_dict(
-                            c,
-                            target_child_keys=target_child_keys,
-                            behavioral_child_params=behavioral_child_params,
-                        )
-                    )
-                    for c in child_list
-                ]
-            eval_children[name] = hashes[0] if len(hashes) == 1 else hashes
-        if eval_children:
-            eval_dict["children"] = eval_children
-
-    return eval_dict
-
-
 @dataclass(frozen=True)
 class ComponentIdentifier:
     """
@@ -237,82 +164,6 @@ class ComponentIdentifier:
             str: Unique name combining class name and short hash.
         """
         return f"{self.class_name}::{self.short_hash}"
-
-    def compute_eval_hash(
-        self,
-        *,
-        target_child_keys: Optional[frozenset[str]] = None,
-        behavioral_child_params: Optional[frozenset[str]] = None,
-    ) -> str:
-        """
-        Compute a behavioral equivalence hash for evaluation grouping.
-
-        Unlike ``hash`` (which includes all params of self and children), the eval
-        hash filters child components that are "targets" to only their behavioral
-        params (e.g., model_name, temperature, top_p), stripping operational params
-        like endpoint or max_requests_per_minute. This ensures the same logical
-        configuration on different deployments produces the same eval hash.
-
-        Non-target children (e.g., sub-scorers) receive full recursive eval treatment.
-
-        When ``target_child_keys`` and ``behavioral_child_params`` are not provided,
-        the method dynamically resolves the class from ``class_module`` / ``class_name``
-        and reads its ``EVAL_TARGET_CHILD_KEYS`` and ``EVAL_BEHAVIORAL_CHILD_PARAMS``
-        ClassVars. If the class cannot be resolved, returns ``self.hash``.
-
-        When ``target_child_keys`` is empty (explicitly or from the resolved class),
-        no child filtering occurs and the result equals ``self.hash``.
-
-        Args:
-            target_child_keys (Optional[frozenset[str]]): Child names that are targets.
-                If None, resolved dynamically from the component class.
-            behavioral_child_params (Optional[frozenset[str]]): Param allowlist for
-                target children. If None, resolved dynamically from the component class.
-
-        Returns:
-            str: A hex-encoded SHA256 hash suitable for eval registry keying.
-        """
-        if target_child_keys is None or behavioral_child_params is None:
-            resolved_keys, resolved_params = self._resolve_eval_config()
-            if target_child_keys is None:
-                target_child_keys = resolved_keys
-            if behavioral_child_params is None:
-                behavioral_child_params = resolved_params
-
-        if not target_child_keys:
-            return self.hash
-
-        eval_dict = _build_eval_dict(
-            self,
-            target_child_keys=target_child_keys,
-            behavioral_child_params=behavioral_child_params,
-        )
-        return config_hash(eval_dict)
-
-    def _resolve_eval_config(self) -> tuple[frozenset[str], frozenset[str]]:
-        """
-        Dynamically resolve eval-hash configuration from the component class.
-
-        Uses ``importlib`` to import ``self.class_module`` and look up
-        ``self.class_name`` to read ``EVAL_TARGET_CHILD_KEYS`` and
-        ``EVAL_BEHAVIORAL_CHILD_PARAMS`` ClassVars. Returns empty frozensets
-        if the class cannot be resolved.
-
-        Returns:
-            Tuple of (target_child_keys, behavioral_child_params) frozensets.
-        """
-        empty: tuple[frozenset[str], frozenset[str]] = (frozenset(), frozenset())
-        try:
-            module = importlib.import_module(self.class_module)
-            cls = getattr(module, self.class_name, None)
-            if cls is None:
-                return empty
-            return (
-                getattr(cls, "EVAL_TARGET_CHILD_KEYS", frozenset()),
-                getattr(cls, "EVAL_BEHAVIORAL_CHILD_PARAMS", frozenset()),
-            )
-        except Exception:
-            return empty
 
     @classmethod
     def of(
@@ -601,20 +452,7 @@ class Identifiable(ABC):
     Components implement ``_build_identifier()`` to return a frozen ComponentIdentifier
     snapshot. The identifier is built lazily on first access and cached for the
     component's lifetime.
-
-    Subclasses that participate in evaluation grouping (e.g., scorers, attack strategies)
-    should override ``EVAL_TARGET_CHILD_KEYS`` and ``EVAL_BEHAVIORAL_CHILD_PARAMS`` to
-    declare which children are "targets" and which target params are behavioral. The
-    ``get_eval_hash()`` convenience method uses these ClassVars to compute a behavioral
-    equivalence hash via ``ComponentIdentifier.compute_eval_hash()``.
     """
-
-    # Override in subclasses to declare which children are "targets" whose operational
-    # params (endpoint, max_requests_per_minute, etc.) should be stripped for eval hashing.
-    EVAL_TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset()
-    # Override in subclasses to declare which target child params are behavioral
-    # (kept in eval hash). Only used when EVAL_TARGET_CHILD_KEYS is non-empty.
-    EVAL_BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset()
 
     _identifier: Optional[ComponentIdentifier] = None
 
@@ -650,20 +488,3 @@ class Identifiable(ABC):
         if self._identifier is None:
             self._identifier = self._build_identifier()
         return self._identifier
-
-    def get_eval_hash(self) -> str:
-        """
-        Compute a behavioral equivalence hash for evaluation grouping.
-
-        Uses the class-level ``EVAL_TARGET_CHILD_KEYS`` and
-        ``EVAL_BEHAVIORAL_CHILD_PARAMS`` to determine which children are targets
-        and which target params are behavioral. When both are empty (the default),
-        returns ``self.get_identifier().hash`` — equivalent to the full identity hash.
-
-        Returns:
-            str: A hex-encoded SHA256 hash suitable for eval registry keying.
-        """
-        return self.get_identifier().compute_eval_hash(
-            target_child_keys=self.EVAL_TARGET_CHILD_KEYS,
-            behavioral_child_params=self.EVAL_BEHAVIORAL_CHILD_PARAMS,
-        )
