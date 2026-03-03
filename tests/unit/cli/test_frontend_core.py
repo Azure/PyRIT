@@ -18,13 +18,15 @@ from pyrit.registry import InitializerMetadata, ScenarioMetadata
 class TestFrontendCore:
     """Tests for FrontendCore class."""
 
-    def test_init_with_defaults(self):
+    @patch("pyrit.setup.configuration_loader.DEFAULT_CONFIG_PATH")
+    def test_init_with_defaults(self, mock_default_config_path):
         """Test initialization with default parameters."""
+        mock_default_config_path.exists.return_value = False
         context = frontend_core.FrontendCore()
 
         assert context._database == frontend_core.SQLITE
         assert context._initialization_scripts is None
-        assert context._initializer_names == ["airt", "airt_targets"]
+        assert context._initializer_names is None
         assert context._log_level == logging.WARNING
         assert context._initialized is False
 

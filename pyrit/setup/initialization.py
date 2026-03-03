@@ -305,6 +305,8 @@ async def run_initializers_async(
 
     Raises:
         ValueError: If initializers are invalid or scripts cannot be loaded.
+        FileNotFoundError: If an initialization script path does not exist.
+        Exception: If an initialization script fails to import or execute.
     """
     all_initializers = list(initializers) if initializers else []
 
