@@ -9,7 +9,7 @@ import warnings
 import weakref
 from collections.abc import MutableSequence, Sequence
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
@@ -975,8 +975,7 @@ class MemoryInterface(abc.ABC):
         self, field: InstrumentedAttribute[Any], conditions: list[Any], values: Optional[Sequence[str]] = None
     ) -> None:
         if values:
-            for value in values:
-                conditions.append(field.contains(value))
+            conditions.extend(field.contains(value) for value in values)
 
     async def _serialize_seed_value(self, prompt: Seed) -> str:
         """
@@ -1022,7 +1021,7 @@ class MemoryInterface(abc.ABC):
             ValueError: If the 'added_by' attribute is not set for each prompt.
         """
         entries: MutableSequence[SeedEntry] = []
-        current_time = datetime.now()
+        current_time = datetime.now(tz=timezone.utc)
         for prompt in seeds:
             if added_by:
                 prompt.added_by = added_by
@@ -1071,7 +1070,7 @@ class MemoryInterface(abc.ABC):
         try:
             entries: Sequence[SeedEntry] = self._query_entries(
                 SeedEntry,
-                conditions=and_(SeedEntry.dataset_name is not None, SeedEntry.dataset_name != ""),  # type: ignore
+                conditions=and_(SeedEntry.dataset_name.isnot(None), SeedEntry.dataset_name != ""),
                 distinct=True,
             )
             # Extract unique dataset names from the entries
@@ -1266,7 +1265,7 @@ class MemoryInterface(abc.ABC):
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"exported_conversations_on_{datetime.now().strftime('%Y_%m_%d')}.{export_type}"
+            file_name = f"exported_conversations_on_{datetime.now(tz=timezone.utc).strftime('%Y_%m_%d')}.{export_type}"
             file_path = DB_DATA_PATH / file_name
 
         self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)
@@ -1590,7 +1589,7 @@ class MemoryInterface(abc.ABC):
             scenario_result = scenario_results[0]
 
             # Update the scenario run state
-            scenario_result.scenario_run_state = scenario_run_state  # type: ignore
+            scenario_result.scenario_run_state = scenario_run_state  # type: ignore[assignment]
 
             # Save updated result back to memory using update
             entry = ScenarioResultEntry(entry=scenario_result)

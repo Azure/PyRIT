@@ -56,7 +56,9 @@ class OpenAIImageTarget(OpenAITarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            image_size (Literal["256x256", "512x512", "1024x1024", "1536x1024", "1024x1536", "1792x1024", "1024x1792"], Optional): The size of the generated image.
+            image_size (Literal, Optional): The size of the generated image.
+                Accepts "256x256", "512x512", "1024x1024", "1536x1024",
+                "1024x1536", "1792x1024", or "1024x1792".
                 Different models support different image sizes.
                 GPT image models support "1024x1024", "1536x1024" and "1024x1536".
                 DALL-E-3 supports "1024x1024", "1792x1024" and "1024x1792".

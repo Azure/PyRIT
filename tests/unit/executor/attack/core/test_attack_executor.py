@@ -517,7 +517,7 @@ class TestParamsTypeIntegration:
     async def test_excluded_params_type_rejects_excluded_fields(self):
         """Test that params_type.excluding() properly rejects fields."""
         # Create a params type that excludes next_message
-        LimitedParams = AttackParameters.excluding("next_message", "prepended_conversation")
+        LimitedParams = AttackParameters.excluding("next_message", "prepended_conversation")  # noqa: N806
 
         attack = create_mock_attack(params_type=LimitedParams)
         attack.execute_with_context_async.return_value = create_attack_result("Test")
