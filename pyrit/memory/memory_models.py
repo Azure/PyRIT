@@ -852,6 +852,7 @@ class AttackResultEntry(Base):
 
         return AttackResult(
             conversation_id=self.conversation_id,
+            attack_result_id=str(self.id),
             objective=self.objective,
             attack_identifier=ComponentIdentifier.from_dict(self.attack_identifier) if self.attack_identifier else None,
             last_response=self.last_response.get_message_piece() if self.last_response else None,
