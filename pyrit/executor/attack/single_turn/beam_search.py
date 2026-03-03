@@ -175,7 +175,8 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): The prompt normalizer to use.
             params_type (Type[AttackParamsT]): The type of attack parameters to use.
-            prepended_conversation_config (Optional[PrependedConversationConfig]): Configuration for prepended conversation.
+            prepended_conversation_config (Optional[PrependedConversationConfig]): Configuration for prepended
+                conversation.
             num_beams (int): The number of beams to use in the search.
             max_iterations (int): The maximum number of iterations to perform.
             num_chars_per_step (int): The number of characters to generate per step.
