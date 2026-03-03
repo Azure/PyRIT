@@ -151,7 +151,8 @@ class Jailbreak(Scenario):
             jailbreak_names = []
         if jailbreak_names and num_templates:
             raise ValueError(
-                "Please provide only one of `num_templates` (random selection) or `jailbreak_names` (specific selection)."
+                "Please provide only one of `num_templates` (random selection)"
+                " or `jailbreak_names` (specific selection)."
             )
 
         if not objective_scorer:
