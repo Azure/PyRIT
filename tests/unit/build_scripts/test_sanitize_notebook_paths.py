@@ -126,3 +126,58 @@ class TestSanitizeNotebookPaths:
             assert result["cells"][0]["outputs"][0]["text"][0] == expected_clean
         finally:
             os.unlink(f_path)
+
+    def test_sanitizes_traceback_field(self) -> None:
+        nb = self._make_notebook(
+            [
+                {
+                    "output_type": "error",
+                    "ename": "FileNotFoundError",
+                    "evalue": r"C:\Users\testuser\missing.py",
+                    "traceback": [
+                        r'File "C:\Users\testuser\project\main.py", line 5',
+                        r"  in C:\Users\testuser\project\utils.py",
+                    ],
+                }
+            ]
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ipynb", delete=False, encoding="utf-8") as f:
+            json.dump(nb, f)
+            f_path = f.name
+        try:
+            assert sanitize_notebook_paths(f_path) is True
+            with open(f_path, encoding="utf-8") as f:
+                result = json.load(f)
+            output = result["cells"][0]["outputs"][0]
+            assert "Users" not in output["evalue"]
+            for line in output["traceback"]:
+                assert "Users" not in line
+        finally:
+            os.unlink(f_path)
+
+    def test_skips_binary_mime_types(self) -> None:
+        nb = self._make_notebook(
+            [
+                {
+                    "output_type": "display_data",
+                    "data": {
+                        "image/png": "iVBORw0KGgoAAAANSUhEUgA/Users/fake/path",
+                        "text/plain": r"C:\Users\testuser\image.png",
+                    },
+                }
+            ]
+        )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".ipynb", delete=False, encoding="utf-8") as f:
+            json.dump(nb, f)
+            f_path = f.name
+        try:
+            sanitize_notebook_paths(f_path)
+            with open(f_path, encoding="utf-8") as f:
+                result = json.load(f)
+            data = result["cells"][0]["outputs"][0]["data"]
+            # image/png should be untouched
+            assert "/Users/fake/path" in data["image/png"]
+            # text/plain should be sanitized
+            assert "Users" not in data["text/plain"]
+        finally:
+            os.unlink(f_path)

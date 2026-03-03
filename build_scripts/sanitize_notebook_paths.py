@@ -34,9 +34,12 @@ def sanitize_notebook_paths(file_path: str) -> bool:
     for cell in content.get("cells", []):
         for output in cell.get("outputs", []):
             _sanitize_output_field(output, "text")
+            _sanitize_output_field(output, "traceback")
+            _sanitize_output_field(output, "evalue")
             if "data" in output:
-                for key in output["data"]:
-                    _sanitize_output_field(output["data"], key)
+                for mime_type in output["data"]:
+                    if mime_type.startswith("text/") or mime_type == "application/json":
+                        _sanitize_output_field(output["data"], mime_type)
 
     modified = json.dumps(content)
     if modified != original:
