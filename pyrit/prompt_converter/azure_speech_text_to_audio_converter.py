@@ -175,7 +175,7 @@ class AzureSpeechTextToAudioConverter(PromptConverter):
                 if cancellation_details.reason == speechsdk.CancellationReason.Error:
                     logger.error(f"Error details: {cancellation_details.error_details}")
                 raise RuntimeError(
-                    f"Speech synthesis canceled: {cancellation_details.reason}"
+                    f"Speech synthesis canceled: {cancellation_details.reason}. "
                     f"Error details: {cancellation_details.error_details}"
                 )
         except Exception as e:
