@@ -12,12 +12,7 @@ import sys
 from argparse import ArgumentParser, Namespace, RawDescriptionHelpFormatter
 from typing import Optional
 
-# Ensure emoji and other Unicode characters don't crash on Windows consoles
-# that use legacy encodings like cp1252.
-sys.stdout.reconfigure(errors="replace")  # type: ignore[union-attr]
-sys.stderr.reconfigure(errors="replace")  # type: ignore[union-attr]
-
-from pyrit.cli import frontend_core  # noqa: E402
+from pyrit.cli import frontend_core
 
 
 def parse_args(*, args: Optional[list[str]] = None) -> Namespace:
@@ -196,6 +191,11 @@ def main(*, args: Optional[list[str]] = None) -> int:
     Returns:
         int: Exit code (0 for success, 1 for error).
     """
+    # Ensure emoji and other Unicode characters don't crash on Windows consoles
+    # that use legacy encodings like cp1252.
+    sys.stdout.reconfigure(errors="replace")  # type: ignore[union-attr]
+    sys.stderr.reconfigure(errors="replace")  # type: ignore[union-attr]
+
     try:
         parsed_args = parse_args(args=args)
     except SystemExit as e:
