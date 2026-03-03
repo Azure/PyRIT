@@ -14,7 +14,7 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from jinja2 import Environment, StrictUndefined, Template, Undefined
@@ -113,7 +113,7 @@ class Seed(YamlLoadable):
     source: Optional[str] = None
 
     # Date when the prompt was added to the dataset
-    date_added: Optional[datetime] = field(default_factory=lambda: datetime.now())
+    date_added: Optional[datetime] = field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
     # User who added the prompt to the dataset
     added_by: Optional[str] = None

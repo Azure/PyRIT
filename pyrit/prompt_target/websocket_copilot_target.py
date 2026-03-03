@@ -508,16 +508,16 @@ class WebSocketCopilotTarget(PromptTarget):
 
                 is_user_input = input_msg.get("type") == CopilotMessageType.USER_PROMPT
 
-                MAX_MESSAGE_ITERATIONS = 1000
+                max_message_iterations = 1000
                 iteration_count = 0
                 stop_polling = False
 
                 while not stop_polling:
                     # Prevent infinite loops (e.g. if Copilot somehow never sends a terminating message)
                     iteration_count += 1
-                    if iteration_count > MAX_MESSAGE_ITERATIONS:
+                    if iteration_count > max_message_iterations:
                         raise RuntimeError(
-                            f"Exceeded maximum message iterations ({MAX_MESSAGE_ITERATIONS}) "
+                            f"Exceeded maximum message iterations ({max_message_iterations}) "
                             "while waiting for Copilot response."
                         )
 

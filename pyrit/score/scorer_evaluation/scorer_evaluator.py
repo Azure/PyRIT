@@ -108,9 +108,9 @@ class ScorerEvaluator(abc.ABC):
         if not metrics_type:
             metrics_type = MetricsType.OBJECTIVE if isinstance(scorer, TrueFalseScorer) else MetricsType.HARM
 
-        _EVALUATOR_MAP = {MetricsType.HARM: HarmScorerEvaluator, MetricsType.OBJECTIVE: ObjectiveScorerEvaluator}
+        evaluator_map = {MetricsType.HARM: HarmScorerEvaluator, MetricsType.OBJECTIVE: ObjectiveScorerEvaluator}
 
-        evaluator = _EVALUATOR_MAP.get(metrics_type, HarmScorerEvaluator)
+        evaluator = evaluator_map.get(metrics_type, HarmScorerEvaluator)
         return evaluator(scorer=scorer)
 
     async def run_evaluation_async(
