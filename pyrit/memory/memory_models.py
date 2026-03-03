@@ -232,14 +232,14 @@ class PromptMemoryEntry(Base):
         )
 
         self.original_value = entry.original_value
-        self.original_value_data_type = entry.original_value_data_type  # type: ignore
+        self.original_value_data_type = entry.original_value_data_type  # type: ignore[assignment]
         self.original_value_sha256 = entry.original_value_sha256
 
         self.converted_value = entry.converted_value
-        self.converted_value_data_type = entry.converted_value_data_type  # type: ignore
+        self.converted_value_data_type = entry.converted_value_data_type  # type: ignore[assignment]
         self.converted_value_sha256 = entry.converted_value_sha256
 
-        self.response_error = entry.response_error  # type: ignore
+        self.response_error = entry.response_error  # type: ignore[assignment]
 
         self.original_prompt_id = entry.original_prompt_id
         self.pyrit_version = pyrit.__version__
@@ -562,7 +562,7 @@ class SeedEntry(Base):
         self.data_type = entry.data_type
         self.name = entry.name
         self.dataset_name = entry.dataset_name
-        self.harm_categories = entry.harm_categories  # type: ignore
+        self.harm_categories = entry.harm_categories  # type: ignore[assignment]
         self.description = entry.description
         self.authors = list(entry.authors) if entry.authors else None
         self.groups = list(entry.groups) if entry.groups else None
@@ -852,6 +852,7 @@ class AttackResultEntry(Base):
 
         return AttackResult(
             conversation_id=self.conversation_id,
+            attack_result_id=str(self.id),
             objective=self.objective,
             attack_identifier=ComponentIdentifier.from_dict(self.attack_identifier) if self.attack_identifier else None,
             last_response=self.last_response.get_message_piece() if self.last_response else None,

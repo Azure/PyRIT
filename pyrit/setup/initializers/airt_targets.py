@@ -15,8 +15,9 @@ Note: This module only includes PRIMARY endpoint configurations from .env_exampl
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Optional
 
+from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.prompt_target import (
     AzureMLChatTarget,
     OpenAIChatTarget,
@@ -45,7 +46,7 @@ class TargetConfig:
     key_var: str = ""  # Empty string means no auth required
     model_var: Optional[str] = None
     underlying_model_var: Optional[str] = None
-    extra_kwargs: Dict[str, Any] = field(default_factory=dict)
+    extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 # Define all supported target configurations.
@@ -400,12 +401,21 @@ class AIRTTargetInitializer(PyRITInitializer):
         if not endpoint:
             return
 
-        # If key_var is empty, use placeholder (for targets like Ollama that don't require auth)
-        # If key_var is set, look up the env var and skip registration if not found
+        # Try API key first, fall back to Entra auth for Azure endpoints
         if config.key_var:
-            api_key = os.getenv(config.key_var)
-            if not api_key:
+            api_key: Any = os.getenv(config.key_var)
+            if not api_key and "azure" in endpoint.lower():
+                if config.target_class is PromptShieldTarget:
+                    api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+                else:
+                    api_key = get_azure_openai_auth(endpoint)
+            elif not api_key:
                 return
+        elif "azure" in endpoint.lower():
+            if config.target_class is PromptShieldTarget:
+                api_key = get_azure_token_provider("https://cognitiveservices.azure.com/.default")
+            else:
+                api_key = get_azure_openai_auth(endpoint)
         else:
             api_key = "not-needed"
 
