@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 """
 Attack mappers – domain ↔ DTO translation for attack-related models.
 
 All functions are pure (no database or service calls) so they are easy to test.
 The one exception is `attack_result_to_summary` which receives pre-fetched pieces.
 """
+
+from __future__ import annotations
 
 import mimetypes
 import uuid
