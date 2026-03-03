@@ -245,10 +245,12 @@ class WebSocketCopilotTarget(PromptTarget):
             f"X-SessionId={session_id}",
             f"ConversationId={copilot_conversation_id}",
             f"access_token={access_token}",
-            "X-variants=feature.includeExternal,feature.AssistantConnectorsContentSources,"
-            "3S.BizChatWprBoostAssistant,3S.EnableMEFromSkillDiscovery,feature.EnableAuthErrorMessage,"
-            "EnableRequestPlugins,feature.EnableSensitivityLabels,feature.IsEntityAnnotationsEnabled,"
-            "EnableUnsupportedUrlDetector",
+            (
+                "X-variants=feature.includeExternal,feature.AssistantConnectorsContentSources,"
+                "3S.BizChatWprBoostAssistant,3S.EnableMEFromSkillDiscovery,feature.EnableAuthErrorMessage,"
+                "EnableRequestPlugins,feature.EnableSensitivityLabels,feature.IsEntityAnnotationsEnabled,"
+                "EnableUnsupportedUrlDetector"
+            ),
             "source=%22officeweb%22",
             "scenario=OfficeWebIncludedCopilot",
         ]

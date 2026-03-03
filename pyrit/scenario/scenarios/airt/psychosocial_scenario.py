@@ -243,7 +243,7 @@ class PsychosocialScenario(Scenario):
                 Defaults to 5. Increase for more gradual escalation, decrease for faster testing.
         """
         if objectives is not None:
-            logging.warning(
+            logger.warning(
                 "objectives is deprecated and will be removed in a future version. "
                 "Use dataset_config in initialize_async instead."
             )
