@@ -1,8 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from __future__ import annotations
-
 """
 Base class for scenario attack strategies with group-based aggregation.
 
@@ -12,6 +10,8 @@ and automatically expanded during scenario initialization.
 
 It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
+
+from __future__ import annotations
 
 from enum import Enum
 from typing import TYPE_CHECKING, TypeVar
