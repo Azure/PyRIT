@@ -436,7 +436,8 @@ def replace_evaluation_results(
             replaced = len(existing_entries) != len(filtered_entries)
             action = "Replaced" if replaced else "Added"
             logger.info(
-                f"{action} metrics for {scorer_identifier.class_name} (eval_hash={eval_hash[:8]}...) in {file_path.name}"
+                f"{action} metrics for {scorer_identifier.class_name}"
+                f" (eval_hash={eval_hash[:8]}...) in {file_path.name}"
             )
 
         except Exception as e:
