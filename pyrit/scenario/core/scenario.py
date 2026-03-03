@@ -175,7 +175,7 @@ class Scenario(ABC):
     async def initialize_async(
         self,
         *,
-        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore
+        objective_target: PromptTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         scenario_strategies: Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]] = None,
         dataset_config: Optional[DatasetConfiguration] = None,
         max_concurrency: int = 10,
