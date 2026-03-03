@@ -89,8 +89,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             rationale_lines = score.score_rationale.split("\n")
             if len(rationale_lines) > 1:
                 lines.append(f"{indent}- **Rationale:**")
-                for line in rationale_lines:
-                    lines.append(f"{indent}  {line}")
+                lines.extend(f"{indent}  {line}" for line in rationale_lines)
             else:
                 lines.append(f"{indent}- **Rationale:** {score.score_rationale}")
 
@@ -274,8 +273,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             List[str]: List of markdown strings representing the system message.
         """
         lines = ["\n### System Message\n"]
-        for piece in message.message_pieces:
-            lines.append(f"{piece.converted_value}\n")
+        lines.extend(f"{piece.converted_value}\n" for piece in message.message_pieces)
         return lines
 
     async def _format_user_message_async(self, *, message: Message, turn_number: int) -> list[str]:
@@ -462,8 +460,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
             scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
             if scores:
                 lines.append("\n##### Scores\n")
-                for score in scores:
-                    lines.append(self._format_score(score, indent=""))
+                lines.extend(self._format_score(score, indent="") for score in scores)
                 lines.append("")
         return lines
 
@@ -573,8 +570,7 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
                 scores = self._memory.get_prompt_scores(prompt_ids=[str(piece.id)])
                 if scores:
                     markdown_lines.append("\n**Score:**\n")
-                    for score in scores:
-                        markdown_lines.append(self._format_score(score, indent=""))
+                    markdown_lines.extend(self._format_score(score, indent="") for score in scores)
 
         return markdown_lines
 
