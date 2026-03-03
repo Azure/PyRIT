@@ -262,10 +262,7 @@ def analyze_results(
         group_by = list(extractors.keys())
 
     # Resolve deprecated aliases and validate dimension names
-    resolved_group_by: list[Union[str, tuple[str, ...]]] = []
-    for spec in group_by:
-        resolved_group_by.append(_resolve_dimension_spec(spec=spec, extractors=extractors))
-    group_by = resolved_group_by
+    group_by = [_resolve_dimension_spec(spec=spec, extractors=extractors) for spec in group_by]
 
     # Accumulators
     overall_counts: defaultdict[str, int] = defaultdict(int)
