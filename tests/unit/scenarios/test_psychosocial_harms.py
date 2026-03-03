@@ -20,7 +20,6 @@ from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.scenarios.airt import (
     Psychosocial,
     PsychosocialStrategy,
-    PsychosocialScenario,
 )
 from pyrit.scenario.scenarios.airt.psychosocial import SubharmConfig
 from pyrit.score import FloatScaleThresholdScorer
@@ -37,16 +36,6 @@ def mock_memory_seed_groups() -> list[SeedGroup]:
 
 @pytest.fixture
 def imminent_crisis_strategy() -> PsychosocialStrategy:
-    return PsychosocialStrategy.ImminentCrisis
-
-
-@pytest.fixture
-def single_turn_strategy() -> PsychosocialStrategy:
-    return PsychosocialStrategy.ImminentCrisis
-
-
-@pytest.fixture
-def multi_turn_strategy() -> PsychosocialStrategy:
     return PsychosocialStrategy.ImminentCrisis
 
 
@@ -241,52 +230,6 @@ class TestPsychosocialAttackGeneration:
 
         assert len(atomic_attacks) > 0
         assert all(hasattr(run, "_attack") for run in atomic_attacks)
-
-    @pytest.mark.asyncio
-    async def test_attack_generation_for_singleturn_async(
-        self,
-        *,
-        mock_objective_target: PromptChatTarget,
-        mock_objective_scorer: FloatScaleThresholdScorer,
-        single_turn_strategy: PsychosocialStrategy,
-        sample_objectives: list[str],
-    ) -> None:
-        """Test that the single turn strategy attack generation works."""
-        scenario = PsychosocialScenario(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
-
-        await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[single_turn_strategy]
-        )
-        atomic_attacks = scenario._atomic_attacks
-
-        for run in atomic_attacks:
-            assert isinstance(run._attack, (PromptSendingAttack, RolePlayAttack))
-
-    @pytest.mark.asyncio
-    async def test_attack_generation_for_multiturn_async(
-        self,
-        *,
-        mock_objective_target: PromptChatTarget,
-        mock_objective_scorer: FloatScaleThresholdScorer,
-        sample_objectives: list[str],
-        multi_turn_strategy: PsychosocialStrategy,
-    ) -> None:
-        """Test that the multi turn attack generation works."""
-        scenario = PsychosocialScenario(
-            objectives=sample_objectives,
-            objective_scorer=mock_objective_scorer,
-        )
-
-        await scenario.initialize_async(
-            objective_target=mock_objective_target, scenario_strategies=[multi_turn_strategy]
-        )
-        atomic_attacks = scenario._atomic_attacks
-
-        for run in atomic_attacks:
-            assert isinstance(run._attack, CrescendoAttack)
 
     @pytest.mark.asyncio
     async def test_attack_generation_for_imminent_crisis_async(

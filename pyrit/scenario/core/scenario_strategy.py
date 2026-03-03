@@ -11,8 +11,6 @@ and automatically expanded during scenario initialization.
 It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
-from __future__ import annotations
-
 from enum import Enum, EnumType
 from typing import TYPE_CHECKING, Any, TypeVar
 
