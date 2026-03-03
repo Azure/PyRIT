@@ -153,7 +153,7 @@ def test_hashes_generated_files_unknown_type():
         MessagePiece(
             role="user",
             original_value="Hello1",
-            original_value_data_type="new_unknown_type",  # type: ignore
+            original_value_data_type="new_unknown_type",  # type: ignore[arg-type]
         )
 
 
@@ -363,7 +363,7 @@ def test_message_piece_no_roles():
         Message(
             message_pieces=[
                 MessagePiece(
-                    role="",  # type: ignore
+                    role="",  # type: ignore[arg-type]
                     converted_value_data_type="text",
                     original_value="Hello",
                     converted_value="Hello",

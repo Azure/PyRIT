@@ -40,11 +40,11 @@ def test_image_compression_converter_initialization_output_format_validation():
     """Test validation of output_format parameter."""
     for unsupported_format in ["GIF", "BMP", "TIFF", "ICO", "WEBM", "SVG", "jpg", "png"]:
         with pytest.raises(ValueError, match="Output format must be one of 'JPEG', 'PNG', or 'WEBP'"):
-            ImageCompressionConverter(output_format=unsupported_format)  # type: ignore
+            ImageCompressionConverter(output_format=unsupported_format)  # type: ignore[arg-type]
 
     supported_formats = ["JPEG", "PNG", "WEBP"]
     for supported_format in supported_formats:
-        converter = ImageCompressionConverter(output_format=supported_format)  # type: ignore
+        converter = ImageCompressionConverter(output_format=supported_format)  # type: ignore[arg-type]
         assert converter._output_format == supported_format
 
     converter = ImageCompressionConverter(output_format=None)
@@ -117,7 +117,7 @@ def test_image_compression_converter_initialization_background_color_validation(
 
     for invalid_color in invalid_colors:
         with pytest.raises(ValueError, match="Background color must be a tuple of three integers between 0 and 255"):
-            ImageCompressionConverter(background_color=invalid_color)  # type: ignore
+            ImageCompressionConverter(background_color=invalid_color)  # type: ignore[arg-type]
 
     valid_colors = [
         (0, 0, 0),

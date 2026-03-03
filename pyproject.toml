@@ -268,6 +268,7 @@ select = [
     "ICN",  # https://docs.astral.sh/ruff/rules/#flake8-import-conventions-icn
     "ISC",  # https://docs.astral.sh/ruff/rules/#flake8-implicit-str-concat-isc
     "LOG",  # https://docs.astral.sh/ruff/rules/#flake8-logging-log
+    "PGH",  # https://docs.astral.sh/ruff/rules/#pygrep-hooks-pgh
     "PIE",  # https://docs.astral.sh/ruff/rules/#flake8-pie-pie
     "PLE",  # https://docs.astral.sh/ruff/rules/#pylint-ple
     "Q",  # https://docs.astral.sh/ruff/rules/#flake8-quotes-q
@@ -308,8 +309,15 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 [tool.ruff.lint.per-file-ignores]
 # Ignore D and DOC rules everywhere except for the pyrit/ directory
 "!pyrit/**.py" = ["D", "DOC"]
-# Ignore rules in doc/ that conflict with notebook cell structure and demo code style
-"doc/**" = ["A", "CPY001", "E402", "E501", "E712", "E722", "ERA001", "LOG015", "PLE1142", "TCH"]
+# Ignore copyright check and notebook-inherent patterns in doc/ directory
+# E402: notebooks have imports in code cells, not at top of file
+# E501: markdown comments in notebooks can exceed line length
+# PGH003: blanket type: ignore in notebooks (not mypy-checked)
+"doc/**" = ["CPY001", "TCH", "E402", "E501", "PGH003"]
+# Temporary ignores for pyrit/ subdirectories until issue #1176
+# https://github.com/Azure/PyRIT/issues/1176 is fully resolved
+# TODO: Remove these ignores once the issues are fixed
+"pyrit/{auxiliary_attacks,ui}/**/*.py" = ["B905", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501", "SIM101", "SIM108"]
 # Backend API routes raise HTTPException handled by FastAPI, not true exceptions
 "pyrit/backend/**/*.py" = ["DOC501", "B008"]
 # Vendored GCG attack code — external project with its own style
