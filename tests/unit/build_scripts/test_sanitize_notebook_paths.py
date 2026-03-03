@@ -34,6 +34,9 @@ class TestStripUserPaths:
     def test_lowercase_drive_letter(self) -> None:
         assert _strip_user_paths(r"c:\Users\testuser\project\file.py") == "./project/file.py"
 
+    def test_lowercase_users_segment(self) -> None:
+        assert _strip_user_paths(r"C:\users\testuser\project\file.py") == "./project/file.py"
+
 
 class TestSanitizeNotebookPaths:
     def _make_notebook(self, outputs: list) -> dict:

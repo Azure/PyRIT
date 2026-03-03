@@ -7,7 +7,10 @@ import sys
 from re import Match
 
 # Windows path: captures user prefix AND remaining path for normalization
-_WINDOWS_PATH_PATTERN = re.compile(r"[A-Za-z]:\\+Users\\+[^\\]+\\+((?:[^\\\s\"',:;]+\\+)*[^\\\s\"',:;]*)")
+_WINDOWS_PATH_PATTERN = re.compile(
+    r"[A-Za-z]:\\+Users\\+[^\\]+\\+((?:[^\\\s\"',:;]+\\+)*[^\\\s\"',:;]*)",
+    re.IGNORECASE,
+)
 # Unix paths: just match the prefix
 _UNIX_PATH_PATTERNS = [
     re.compile(r"/Users/[^/]+/"),  # macOS
