@@ -263,7 +263,8 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
         """
         if not self._objective_target.supports_multi_turn:
             raise ValueError(
-                "CrescendoAttack does not yet support single-turn targets. "
+                "CrescendoAttack requires a multi-turn target. Crescendo fundamentally relies on "
+                "multi-turn conversation history to gradually escalate prompts. "
                 "Use RedTeamingAttack or TreeOfAttacksWithPruning instead."
             )
 

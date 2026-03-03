@@ -13,6 +13,7 @@ from pyrit.models import (
     construct_response_from_request,
     data_serializer_factory,
 )
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
@@ -26,10 +27,7 @@ TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", 
 class OpenAITTSTarget(OpenAITarget):
     """A prompt target for OpenAI Text-to-Speech (TTS) endpoints."""
 
-    @property
-    def supports_multi_turn(self) -> bool:
-        """TTS is stateless and single-turn."""
-        return False
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
 
     def __init__(
         self,

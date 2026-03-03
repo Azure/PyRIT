@@ -507,7 +507,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for turn in conversation:
             if len(turn.message_pieces) != 1:
                 return False
-            if turn.message_pieces[0].converted_value_data_type != "text":
+            if turn.message_pieces[0].converted_value_data_type not in ("text", "error"):
                 return False
         return True
 
@@ -535,7 +535,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
             message_piece = message.message_pieces[0]
 
-            if message_piece.converted_value_data_type != "text":
+            if message_piece.converted_value_data_type not in ("text", "error"):
                 raise ValueError("_build_chat_messages_for_text only supports text.")
 
             chat_message = ChatMessage(role=message_piece.api_role, content=message_piece.converted_value)
@@ -581,13 +581,13 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 ):
                     continue
 
-                if message_piece.converted_value_data_type == "text":
+                if message_piece.converted_value_data_type in ("text", "error"):
                     entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
                 elif message_piece.converted_value_data_type == "image_path":
                     data_base64_encoded_url = await convert_local_image_to_data_url(message_piece.converted_value)
                     image_url_entry = {"url": data_base64_encoded_url}
-                    entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore
+                    entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore[dict-item]
                     content.append(entry)
                 elif message_piece.converted_value_data_type == "audio_path":
                     ext = DataTypeSerializer.get_extension(message_piece.converted_value)
@@ -608,7 +608,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                     base64_data = await audio_serializer.read_data_base64()
                     audio_format = ext.lower().lstrip(".")
                     input_audio_entry = {"data": base64_data, "format": audio_format}
-                    entry = {"type": "input_audio", "input_audio": input_audio_entry}  # type: ignore
+                    entry = {"type": "input_audio", "input_audio": input_audio_entry}  # type: ignore[dict-item]
                     content.append(entry)
                 else:
                     raise ValueError(

@@ -19,6 +19,7 @@ from pyrit.models import (
     construct_response_from_request,
     data_serializer_factory,
 )
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_error_handling import _is_content_filter_error
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
@@ -51,11 +52,7 @@ class OpenAIVideoTarget(OpenAITarget):
     SUPPORTED_RESOLUTIONS: list[VideoSize] = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
     SUPPORTED_DURATIONS: list[VideoSeconds] = ["4", "8", "12"]
     SUPPORTED_IMAGE_FORMATS: list[str] = ["image/jpeg", "image/png", "image/webp"]
-
-    @property
-    def supports_multi_turn(self) -> bool:
-        """Video generation is stateless and single-turn."""
-        return False
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
 
     def __init__(
         self,
@@ -481,12 +478,13 @@ class OpenAIVideoTarget(OpenAITarget):
         if remix_video_id and image_pieces:
             raise ValueError("Cannot use image input in remix mode. Remix uses existing video as reference.")
 
-        request = message.message_pieces[0]
-        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
-        if len(messages) > 0:
+        messages = self._memory.get_conversation(conversation_id=text_piece.conversation_id)
+
+        n_messages = len(messages)
+        if n_messages > 0:
             raise ValueError(
                 "This target only supports a single turn conversation. "
-                f"Received: {len(messages)} messages which indicates a prior turn."
+                f"Received: {n_messages} messages which indicates a prior turn."
             )
 
     def is_json_response_supported(self) -> bool:

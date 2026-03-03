@@ -8,6 +8,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 # Avoid errors for users who don't have playwright installed
@@ -51,6 +52,7 @@ class PlaywrightTarget(PromptTarget):
 
     # Supported data types
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=True)
 
     def __init__(
         self,

@@ -8,6 +8,7 @@ from typing import Any, Optional, Union
 from pyrit.identifiers import ComponentIdentifier, Identifiable
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.models import Message
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,8 @@ class PromptTarget(Identifiable):
 
     _identifier: Optional[ComponentIdentifier] = None
 
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities()
+
     def __init__(
         self,
         verbose: bool = False,
@@ -35,6 +38,7 @@ class PromptTarget(Identifiable):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
+        capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the PromptTarget.
@@ -48,6 +52,10 @@ class PromptTarget(Identifiable):
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. If not provided, `model_name` will be used for the identifier.
                 Defaults to None.
+            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+                this target instance. Useful for targets whose capabilities depend on deployment
+                configuration (e.g., Playwright, HTTP). If None, uses the class-level
+                ``_DEFAULT_CAPABILITIES``. Defaults to None.
         """
         self._memory = CentralMemory.get_memory_instance()
         self._verbose = verbose
@@ -55,6 +63,7 @@ class PromptTarget(Identifiable):
         self._endpoint = endpoint
         self._model_name = model_name
         self._underlying_model = underlying_model
+        self._capabilities = capabilities if capabilities is not None else type(self)._DEFAULT_CAPABILITIES
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -128,6 +137,7 @@ class PromptTarget(Identifiable):
             "model_name": model_name,
             "max_requests_per_minute": self._max_requests_per_minute,
             "supports_conversation_history": isinstance(self, PromptChatTarget),
+            "supports_multi_turn": self.supports_multi_turn,
         }
         if params:
             all_params.update(params)
@@ -135,18 +145,34 @@ class PromptTarget(Identifiable):
         return ComponentIdentifier.of(self, params=all_params, children=children)
 
     @property
+    def capabilities(self) -> TargetCapabilities:
+        """
+        The capabilities of this target instance.
+
+        Defaults to the class-level ``_DEFAULT_CAPABILITIES``. Can be overridden
+        per instance by setting this property, which is useful for targets whose
+        capabilities depend on deployment configuration (e.g., Playwright, HTTP).
+
+        Returns:
+            TargetCapabilities: The capabilities for this target.
+        """
+        return self._capabilities
+
+    @capabilities.setter
+    def capabilities(self, value: TargetCapabilities) -> None:
+        self._capabilities = value
+
+    @property
     def supports_multi_turn(self) -> bool:
         """
         Whether this target supports multi-turn conversations.
 
-        Single-turn targets process each message independently without using
-        conversation history. Multi-turn targets either retrieve conversation
-        history from memory or maintain state externally (e.g., WebSocket).
+        Convenience property that delegates to ``self.capabilities.supports_multi_turn``.
 
         Returns:
             bool: False by default. Subclasses that support multi-turn should override.
         """
-        return False
+        return self._capabilities.supports_multi_turn
 
     def _build_identifier(self) -> ComponentIdentifier:
         """

@@ -18,6 +18,7 @@ from pyrit.models import (
 )
 from pyrit.models.literals import PromptDataType
 from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,7 @@ class PlaywrightCopilotTarget(PromptTarget):
 
     # Supported data types
     SUPPORTED_DATA_TYPES = {"text", "image_path"}
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=True)
 
     # Placeholder text constants
     PLACEHOLDER_GENERATING_RESPONSE: str = "generating response"

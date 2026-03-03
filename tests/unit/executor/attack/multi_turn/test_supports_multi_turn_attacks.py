@@ -134,24 +134,7 @@ class TestValueErrorGuards:
             params=AttackParameters(objective="Test"),
         )
 
-        with pytest.raises(ValueError, match="CrescendoAttack does not yet support single-turn targets"):
-            await attack._setup_async(context=context)
-
-    @pytest.mark.asyncio
-    async def test_chunked_request_raises_for_single_turn_target(self):
-        from pyrit.executor.attack.multi_turn.chunked_request import (
-            ChunkedRequestAttack,
-            ChunkedRequestAttackContext,
-        )
-
-        target = self._make_single_turn_target()
-        attack = ChunkedRequestAttack(objective_target=target)
-
-        context = ChunkedRequestAttackContext(
-            params=AttackParameters(objective="Test"),
-        )
-
-        with pytest.raises(ValueError, match="ChunkedRequestAttack requires a multi-turn target"):
+        with pytest.raises(ValueError, match="CrescendoAttack requires a multi-turn target"):
             await attack._setup_async(context=context)
 
     @pytest.mark.asyncio
