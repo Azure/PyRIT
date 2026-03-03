@@ -3,6 +3,8 @@
 
 import logging
 
+from jinja2 import TemplateError
+
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
@@ -90,10 +92,11 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
 
         seed_prompts: list[SeedPrompt] = []
         for item in data:
+            user_input = item["user_input"]
             try:
                 seed_prompts.append(
                     SeedPrompt(
-                        value=f"{{% raw %}}{item['user_input']}{{% endraw %}}",
+                        value=f"{{% raw %}}{user_input}{{% endraw %}}",
                         data_type="text",
                         dataset_name=self.dataset_name,
                         description=description,
@@ -107,7 +110,7 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
                         },
                     )
                 )
-            except Exception:
+            except TemplateError:
                 conv_id = item.get("conv_id", "unknown")
                 logger.debug(
                     f"Skipping entry with conv_id={conv_id}: failed to parse as Jinja2 template",
