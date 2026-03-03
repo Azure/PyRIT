@@ -223,7 +223,7 @@ class Scorer(Identifiable, abc.ABC):
 
     @abstractmethod
     async def _score_piece_async(self, message_piece: MessagePiece, *, objective: Optional[str] = None) -> list[Score]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _get_supported_pieces(self, message: Message) -> list[MessagePiece]:
         """
@@ -245,7 +245,7 @@ class Scorer(Identifiable, abc.ABC):
         Args:
             scores (list[Score]): The scores to be validated.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     async def evaluate_async(
         self,
@@ -783,17 +783,15 @@ class Scorer(Identifiable, abc.ABC):
             return []
 
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
-        tasks = []
-
-        for scorer in scorers:
-            tasks.append(
-                scorer.score_async(
-                    message=response,
-                    objective=objective,
-                    role_filter=role_filter,
-                    skip_on_error_result=skip_on_error_result,
-                )
+        tasks = [
+            scorer.score_async(
+                message=response,
+                objective=objective,
+                role_filter=role_filter,
+                skip_on_error_result=skip_on_error_result,
             )
+            for scorer in scorers
+        ]
 
         if not tasks:
             return []
