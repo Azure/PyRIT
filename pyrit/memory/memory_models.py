@@ -4,7 +4,7 @@
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict
@@ -57,6 +57,21 @@ LEGACY_PYRIT_VERSION = "<0.10.0"
 # Maximum length for string values in ComponentIdentifier.to_dict() when storing to the database.
 # Longer values are truncated with a "..." suffix.
 MAX_IDENTIFIER_VALUE_LENGTH: int = 80
+
+
+def _ensure_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """
+    Attach UTC tzinfo to a naive datetime (as returned by SQLite).
+
+    Args:
+        dt (Optional[datetime]): The datetime to normalize, or None.
+
+    Returns:
+        Optional[datetime]: The datetime with UTC tzinfo attached if it was naive, or None.
+    """
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 class CustomUUID(TypeDecorator[uuid.UUID]):
@@ -291,7 +306,7 @@ class PromptMemoryEntry(Base):
             converted_value_data_type=self.converted_value_data_type,
             response_error=self.response_error,
             original_prompt_id=self.original_prompt_id,
-            timestamp=self.timestamp,
+            timestamp=_ensure_utc(self.timestamp),
         )
         message_piece.scores = [score.get_score() for score in self.scores]
         return message_piece
@@ -416,7 +431,7 @@ class ScoreEntry(Base):
             score_metadata=self.score_metadata,
             scorer_class_identifier=scorer_identifier,
             message_piece_id=self.prompt_request_response_id,
-            timestamp=self.timestamp,
+            timestamp=_ensure_utc(self.timestamp),
             objective=self.objective,
         )
 
@@ -621,7 +636,7 @@ class SeedEntry(Base):
                 authors=self.authors,
                 groups=self.groups,
                 source=self.source,
-                date_added=self.date_added,
+                date_added=_ensure_utc(self.date_added),
                 added_by=self.added_by,
                 metadata=self.prompt_metadata,
                 prompt_group_id=self.prompt_group_id,
@@ -641,7 +656,7 @@ class SeedEntry(Base):
                 authors=self.authors,
                 groups=self.groups,
                 source=self.source,
-                date_added=self.date_added,
+                date_added=_ensure_utc(self.date_added),
                 added_by=self.added_by,
                 metadata=self.prompt_metadata,
                 prompt_group_id=self.prompt_group_id,
@@ -663,7 +678,7 @@ class SeedEntry(Base):
             authors=self.authors,
             groups=self.groups,
             source=self.source,
-            date_added=self.date_added,
+            date_added=_ensure_utc(self.date_added),
             added_by=self.added_by,
             metadata=self.prompt_metadata,
             parameters=self.parameters,
@@ -774,7 +789,7 @@ class AttackResultEntry(Base):
             ref.conversation_id for ref in entry.get_conversations_by_type(ConversationType.ADVERSARIAL)
         ] or None
 
-        self.timestamp = datetime.now()
+        self.timestamp = datetime.now(tz=timezone.utc)
         self.pyrit_version = pyrit.__version__
 
     @staticmethod
@@ -958,7 +973,7 @@ class ScenarioResultEntry(Base):
             serialized_attack_results[attack_name] = [result.conversation_id for result in results]
         self.attack_results_json = json.dumps(serialized_attack_results)
 
-        self.timestamp = datetime.now()
+        self.timestamp = datetime.now(tz=timezone.utc)
 
     def get_scenario_result(self) -> ScenarioResult:
         """
