@@ -316,7 +316,11 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 # E402: notebooks have imports in code cells, not at top of file
 # E501: markdown comments in notebooks can exceed line length
 # PGH003: blanket type: ignore in notebooks (not mypy-checked)
-"doc/**" = ["CPY001", "TCH", "E402", "E501", "PGH003"]
+# A: notebook code commonly uses builtins like id, dir, display
+# ERA001: jupytext markdown cells look like commented-out code
+# LOG: notebooks use root logger for convenience
+# PLE1142: top-level await is valid in Jupyter notebooks
+"doc/**" = ["CPY001", "TCH", "E402", "E501", "PGH003", "A", "ERA001", "LOG", "PLE1142"]
 # Temporary ignores for pyrit/ subdirectories until issue #1176
 # https://github.com/Azure/PyRIT/issues/1176 is fully resolved
 # TODO: Remove these ignores once the issues are fixed
