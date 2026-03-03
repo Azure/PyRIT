@@ -116,8 +116,8 @@ class BrailleConverter(PromptConverter):
 
         output = ""
 
+        is_number = False
         for char in text:
-            is_number = False
             if char in escapeCharacters:
                 output += char
             elif char.isupper():

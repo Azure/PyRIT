@@ -15,9 +15,9 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
     """
     Loader for the BeaverTails dataset from HuggingFace.
 
-    BeaverTails contains 330k+ question-answer pairs annotated across 14 harm categories.
-    It is widely used for safety alignment research. This loader filters to unsafe entries
-    by default.
+    BeaverTails contains 330k+ entries annotated across 14 harm categories.
+    It is widely used for safety alignment research. This loader extracts only the
+    prompts (not the responses) and filters to unsafe entries by default.
 
     References:
         - https://huggingface.co/datasets/PKU-Alignment/BeaverTails
@@ -83,9 +83,10 @@ class _BeaverTailsDataset(_RemoteDatasetLoader):
             "Yaodong Yang",
         ]
         description = (
-            "BeaverTails is a collection of 330k+ human-LLM QA pairs annotated across 14 harm "
-            "categories, designed for safety alignment research. Introduced in 'BeaverTails: "
-            "Towards Improved Safety Alignment of LLM via a Human-Preference Dataset' (2023)."
+            "This seed dataset exposes only the prompts/questions derived from BeaverTails and does "
+            "not include the corresponding answers. BeaverTails contains 330k+ entries annotated "
+            "across 14 harm categories, designed for safety alignment research. Introduced in "
+            "'BeaverTails: Towards Improved Safety Alignment of LLM via a Human-Preference Dataset' (2023)."
         )
 
         source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
