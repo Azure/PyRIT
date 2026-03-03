@@ -31,6 +31,7 @@ class PromptChatTarget(PromptTarget):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
+        capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the PromptChatTarget.
@@ -42,12 +43,15 @@ class PromptChatTarget(PromptTarget):
             underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. Defaults to None.
+            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+                this target instance. If None, uses the class-level defaults. Defaults to None.
         """
         super().__init__(
             max_requests_per_minute=max_requests_per_minute,
             endpoint=endpoint,
             model_name=model_name,
             underlying_model=underlying_model,
+            capabilities=capabilities,
         )
 
     def set_system_prompt(

@@ -84,6 +84,7 @@ class WebSocketCopilotTarget(PromptTarget):
         model_name: str = "copilot",
         response_timeout_seconds: int = RESPONSE_TIMEOUT_SECONDS,
         authenticator: Optional[Union[CopilotAuthenticator, ManualCopilotAuthenticator]] = None,
+        capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the WebSocketCopilotTarget.
@@ -97,6 +98,8 @@ class WebSocketCopilotTarget(PromptTarget):
             authenticator (Optional[Union[CopilotAuthenticator, ManualCopilotAuthenticator]]): Authenticator
                 instance. Supports both ``CopilotAuthenticator`` and ``ManualCopilotAuthenticator``.
                 If None, a new ``CopilotAuthenticator`` instance will be created with default settings.
+            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+                this target instance. If None, uses the class-level defaults. Defaults to None.
 
         Raises:
             ValueError: If ``response_timeout_seconds`` is not a positive integer.
@@ -119,6 +122,7 @@ class WebSocketCopilotTarget(PromptTarget):
             max_requests_per_minute=max_requests_per_minute,
             endpoint=self._websocket_base_url,
             model_name=model_name,
+            capabilities=capabilities,
         )
 
     def _build_identifier(self) -> ComponentIdentifier:

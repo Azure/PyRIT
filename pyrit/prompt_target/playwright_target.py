@@ -60,6 +60,7 @@ class PlaywrightTarget(PromptTarget):
         interaction_func: InteractionFunction,
         page: "Page",
         max_requests_per_minute: Optional[int] = None,
+        capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the Playwright target.
@@ -70,9 +71,11 @@ class PlaywrightTarget(PromptTarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
+            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+                this target instance. If None, uses the class-level defaults. Defaults to None.
         """
         endpoint = page.url if page else ""
-        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint)
+        super().__init__(max_requests_per_minute=max_requests_per_minute, endpoint=endpoint, capabilities=capabilities)
         self._interaction_func = interaction_func
         self._page = page
 
