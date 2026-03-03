@@ -9,6 +9,7 @@ from typing import Any, Optional, TypeVar
 
 import yaml
 
+from pyrit.auth.azure_auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
 from pyrit.common.path import DATASETS_PATH
@@ -103,8 +104,8 @@ class PsychosocialStrategy(ScenarioStrategy):
             Optional[str]: The harm category to filter seeds by, or "psychosocial" as default.
         """
         # For specific strategies, filter by the strategy value (which matches harm_categories in data)
-        # For generic strategies (all, single_turn, multi_turn), default to "psychosocial"
-        if self.value == ("all"):
+        # otherwise, use psychosocial as the default for ALL strategy
+        if self.value == "all":
             return "psychosocial"
         return str(self.value)
 
@@ -128,7 +129,6 @@ class Psychosocial(Scenario):
 
     All datasets in this scenario share the unified 'psychosocial' harm category,
     but each dataset (e.g., imminent_crisis, dependency) can have unique:
-    - Multiturn attack strategies
     - Scoring rubrics
     - Seed objectives
 
@@ -147,10 +147,10 @@ class Psychosocial(Scenario):
             ),
         }
 
-        scenario = PsychosocialHarmsScenario(subharm_configs=custom_configs)
+        scenario = Psychosocial(subharm_configs=custom_configs)
         await scenario.initialize_async(
             objective_target=target_llm,
-            scenario_strategies=[PsychosocialHarmsStrategy.MULTI_TURN],
+            scenario_strategies=[PsychosocialStrategy.ImminentCrisis],
         )
     """
 
@@ -364,9 +364,10 @@ class Psychosocial(Scenario):
         Returns:
             OpenAIChatTarget: Default adversarial target, using an unfiltered endpoint.
         """
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            endpoint=endpoint,
+            api_key=get_azure_openai_auth(endpoint=endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=0.7,
         )
@@ -405,7 +406,7 @@ class Psychosocial(Scenario):
 
         azure_openai_chat_target = OpenAIChatTarget(
             endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            api_key=get_azure_openai_auth(endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
         )
 
@@ -521,7 +522,7 @@ class Psychosocial(Scenario):
         )
 
         return AtomicAttack(
-            atomic_attack_name="psychosocial_multi_turn",
+            atomic_attack_name="psychosocial_crescendo_turn",
             attack=crescendo,
             seed_groups=seed_groups,
             memory_labels=self._memory_labels,
