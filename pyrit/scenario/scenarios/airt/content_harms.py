@@ -2,8 +2,10 @@
 # Licensed under the MIT license.
 
 import os
-from typing import Any, Dict, List, Optional, Sequence, Type, TypeVar
+from collections.abc import Sequence
+from typing import Any, Optional, TypeVar
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import (
     AttackScoringConfig,
@@ -37,7 +39,7 @@ class ContentHarmsDatasetConfiguration(DatasetConfiguration):
     it filters datasets to only those matching the selected harm strategies.
     """
 
-    def get_seed_groups(self) -> Dict[str, List[SeedGroup]]:
+    def get_seed_groups(self) -> dict[str, list[SeedGroup]]:
         """
         Get seed groups filtered by harm strategies from stored scenario_composites.
 
@@ -59,7 +61,7 @@ class ContentHarmsDatasetConfiguration(DatasetConfiguration):
         )
 
         # Filter to matching datasets and map keys to harm names
-        mapped_result: Dict[str, List[SeedGroup]] = {}
+        mapped_result: dict[str, list[SeedGroup]] = {}
         for name, groups in result.items():
             matched_harm = next((harm for harm in selected_harms if harm in name), None)
             if matched_harm:
@@ -107,7 +109,7 @@ class ContentHarms(Scenario):
     VERSION: int = 1
 
     @classmethod
-    def get_strategy_class(cls) -> Type[ScenarioStrategy]:
+    def get_strategy_class(cls) -> type[ScenarioStrategy]:
         """
         Get the strategy enum class for this scenario.
 
@@ -154,7 +156,7 @@ class ContentHarms(Scenario):
         adversarial_chat: Optional[PromptChatTarget] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         scenario_result_id: Optional[str] = None,
-        objectives_by_harm: Optional[Dict[str, Sequence[SeedGroup]]] = None,
+        objectives_by_harm: Optional[dict[str, Sequence[SeedGroup]]] = None,
     ):
         """
         Initialize the Content Harms Scenario.
@@ -187,26 +189,28 @@ class ContentHarms(Scenario):
         self._objectives_by_harm = objectives_by_harm
 
     def _get_default_adversarial_target(self) -> OpenAIChatTarget:
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            endpoint=endpoint,
+            api_key=get_azure_openai_auth(endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
 
     def _get_default_scorer(self) -> TrueFalseInverterScorer:
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    endpoint=endpoint,
+                    api_key=get_azure_openai_auth(endpoint),
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                     temperature=0.9,
                 )
             ),
         )
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Retrieve the list of AtomicAttack instances for harm strategies.
 
@@ -219,7 +223,7 @@ class ContentHarms(Scenario):
         # Get seed attack groups by harm strategy, already filtered by scenario_composites
         seed_groups_by_harm = self._dataset_config.get_seed_attack_groups()
 
-        atomic_attacks: List[AtomicAttack] = []
+        atomic_attacks: list[AtomicAttack] = []
         for strategy, seed_groups in seed_groups_by_harm.items():
             atomic_attacks.extend(self._get_strategy_attacks(strategy=strategy, seed_groups=seed_groups))
         return atomic_attacks
@@ -228,7 +232,7 @@ class ContentHarms(Scenario):
         self,
         strategy: str,
         seed_groups: Sequence[SeedAttackGroup],
-    ) -> List[AtomicAttack]:
+    ) -> list[AtomicAttack]:
         """
         Create AtomicAttack instances for a given harm strategy. RolePlayAttack, ManyShotJailbreakAttack,
         PromptSendingAttack, and RedTeamingAttack are run for all harm strategies.

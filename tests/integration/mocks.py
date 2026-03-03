@@ -1,7 +1,8 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Generator, Optional
+from collections.abc import Generator
+from typing import Optional
 
 from sqlalchemy import inspect
 
@@ -38,9 +39,9 @@ def get_sqlite_memory() -> Generator[SQLiteMemory, None, None]:
 class MockPromptTarget(PromptChatTarget):
     prompt_sent: list[str]
 
-    def __init__(self, id=None, rpm=None) -> None:
+    def __init__(self, id=None, rpm=None) -> None:  # noqa: A002
         super().__init__(max_requests_per_minute=rpm)
-        self.id = id
+        self.id = id  # noqa: A003
         self.prompt_sent = []
 
     def set_system_prompt(

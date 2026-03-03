@@ -6,7 +6,7 @@ import json
 import logging
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -55,7 +55,7 @@ class NodeMockConfig:
     completed: bool = True
     off_topic: bool = False
     objective_score_value: Optional[float] = None
-    auxiliary_scores: Dict[str, float] = field(default_factory=dict)
+    auxiliary_scores: dict[str, float] = field(default_factory=dict)
     objective_target_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     adversarial_chat_conversation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
@@ -135,7 +135,7 @@ class MockNodeFactory:
         return node
 
     @staticmethod
-    def create_nodes_with_scores(scores: List[float]) -> List[_TreeOfAttacksNode]:
+    def create_nodes_with_scores(scores: list[float]) -> list[_TreeOfAttacksNode]:
         """Create multiple nodes with the given objective scores."""
         return [
             MockNodeFactory.create_node(NodeMockConfig(node_id=f"node_{i}", objective_score_value=score))
@@ -150,8 +150,8 @@ class AttackBuilder:
         self.objective_target: Optional[PromptTarget] = None
         self.adversarial_chat: Optional[PromptChatTarget] = None
         self.objective_scorer: Optional[Scorer] = None
-        self.auxiliary_scorers: List[Scorer] = []
-        self.tree_params: Dict[str, Any] = {}
+        self.auxiliary_scorers: list[Scorer] = []
+        self.tree_params: dict[str, Any] = {}
         self.converters: Optional[AttackConverterConfig] = None
         self.successful_threshold: float = 0.8
         self.prompt_normalizer: Optional[PromptNormalizer] = None
@@ -182,7 +182,7 @@ class AttackBuilder:
         """Add a mock prompt normalizer."""
         normalizer = MagicMock(spec=PromptNormalizer)
         normalizer.send_prompt_async = AsyncMock(return_value=None)
-        self.prompt_normalizer = cast(PromptNormalizer, normalizer)
+        self.prompt_normalizer = cast("PromptNormalizer", normalizer)
         return self
 
     def build(self) -> TreeOfAttacksWithPruningAttack:
@@ -225,7 +225,7 @@ class AttackBuilder:
             class_name="MockTarget",
             class_module="test_module",
         )
-        return cast(PromptTarget, target)
+        return cast("PromptTarget", target)
 
     @staticmethod
     def _create_mock_chat() -> PromptChatTarget:
@@ -236,7 +236,7 @@ class AttackBuilder:
             class_name="MockChatTarget",
             class_module="test_module",
         )
-        return cast(PromptChatTarget, chat)
+        return cast("PromptChatTarget", chat)
 
     @staticmethod
     def _create_mock_scorer(name: str) -> TrueFalseScorer:
@@ -247,7 +247,7 @@ class AttackBuilder:
             class_name=name,
             class_module="test_module",
         )
-        return cast(TrueFalseScorer, scorer)
+        return cast("TrueFalseScorer", scorer)
 
     @staticmethod
     def _create_mock_aux_scorer(name: str) -> Scorer:
@@ -259,7 +259,7 @@ class AttackBuilder:
             class_name=name,
             class_module="test_module",
         )
-        return cast(Scorer, scorer)
+        return cast("Scorer", scorer)
 
 
 class TestHelpers:
@@ -378,9 +378,9 @@ class TestHelpers:
         )
 
     @staticmethod
-    def add_nodes_to_tree(context: TAPAttackContext, nodes: List[_TreeOfAttacksNode], parent: str = "root"):
+    def add_nodes_to_tree(context: TAPAttackContext, nodes: list[_TreeOfAttacksNode], parent: str = "root"):
         """Add nodes to the context's tree visualization."""
-        for i, node in enumerate(nodes):
+        for _i, node in enumerate(nodes):
             score_str = ""
             if node.objective_score:
                 score_str = f": Score {node.objective_score.get_value()}"

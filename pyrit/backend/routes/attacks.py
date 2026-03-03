@@ -8,7 +8,7 @@ All interactions are modeled as "attacks" - including manual conversations.
 This is the attack-centric API design.
 """
 
-from typing import Dict, List, Literal, Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 
@@ -30,7 +30,7 @@ from pyrit.backend.services.attack_service import get_attack_service
 router = APIRouter(prefix="/attacks", tags=["attacks"])
 
 
-def _parse_labels(label_params: Optional[List[str]]) -> Optional[Dict[str, str]]:
+def _parse_labels(label_params: Optional[list[str]]) -> Optional[dict[str, str]]:
     """
     Parse label query params in 'key:value' format to a dict.
 
@@ -52,13 +52,15 @@ def _parse_labels(label_params: Optional[List[str]]) -> Optional[Dict[str, str]]
     response_model=AttackListResponse,
 )
 async def list_attacks(
-    attack_class: Optional[str] = Query(None, description="Filter by exact attack class name"),
-    converter_classes: Optional[List[str]] = Query(
+    attack_type: Optional[str] = Query(None, description="Filter by exact attack type name"),
+    converter_types: Optional[list[str]] = Query(
         None,
-        description="Filter by converter class names (repeatable, AND logic). Pass empty to match no-converter attacks.",
+        description=(
+            "Filter by converter type names (repeatable, AND logic). Pass empty to match no-converter attacks."
+        ),
     ),
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Query(None, description="Filter by outcome"),
-    label: Optional[List[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
+    label: Optional[list[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
     min_turns: Optional[int] = Query(None, ge=0, description="Filter by minimum executed turns"),
     max_turns: Optional[int] = Query(None, ge=0, description="Filter by maximum executed turns"),
     limit: int = Query(20, ge=1, le=100, description="Maximum items per page"),
@@ -76,8 +78,8 @@ async def list_attacks(
     service = get_attack_service()
     labels = _parse_labels(label)
     return await service.list_attacks_async(
-        attack_class=attack_class,
-        converter_classes=converter_classes,
+        attack_type=attack_type,
+        converter_types=converter_types,
         outcome=outcome,
         labels=labels,
         min_turns=min_turns,
@@ -93,17 +95,17 @@ async def list_attacks(
 )
 async def get_attack_options() -> AttackOptionsResponse:
     """
-    Get unique attack class names used across all attacks.
+    Get unique attack type names used across all attacks.
 
-    Returns all attack class names found in stored attack results.
+    Returns all attack type names found in stored attack results.
     Useful for populating attack type filter dropdowns in the GUI.
 
     Returns:
-        AttackOptionsResponse: Sorted list of unique attack class names.
+        AttackOptionsResponse: Sorted list of unique attack type names.
     """
     service = get_attack_service()
     class_names = await service.get_attack_options_async()
-    return AttackOptionsResponse(attack_classes=class_names)
+    return AttackOptionsResponse(attack_types=class_names)
 
 
 @router.get(
@@ -112,17 +114,17 @@ async def get_attack_options() -> AttackOptionsResponse:
 )
 async def get_converter_options() -> ConverterOptionsResponse:
     """
-    Get unique converter class names used across all attacks.
+    Get unique converter type names used across all attacks.
 
-    Returns all converter class names found in stored attack results.
+    Returns all converter type names found in stored attack results.
     Useful for populating converter filter dropdowns in the GUI.
 
     Returns:
-        ConverterOptionsResponse: Sorted list of unique converter class names.
+        ConverterOptionsResponse: Sorted list of unique converter type names.
     """
     service = get_attack_service()
     class_names = await service.get_converter_options_async()
-    return ConverterOptionsResponse(converter_classes=class_names)
+    return ConverterOptionsResponse(converter_types=class_names)
 
 
 @router.post(
@@ -153,7 +155,7 @@ async def create_attack(request: CreateAttackRequest) -> CreateAttackResponse:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
-        )
+        ) from e
 
 
 @router.get(
@@ -280,13 +282,13 @@ async def add_message(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=error_msg,
-            )
+            ) from e
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error_msg,
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to add message: {str(e)}",
-        )
+        ) from e

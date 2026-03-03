@@ -5,7 +5,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import EXECUTOR_SEED_PROMPT_PATH
@@ -51,6 +51,9 @@ from pyrit.score import (
 )
 from pyrit.score.score_utils import normalize_score_to_float
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,7 +80,7 @@ class CrescendoAttackResult(AttackResult):
         Returns:
             int: The number of backtracks.
         """
-        return cast(int, self.metadata.get("backtrack_count", 0))
+        return cast("int", self.metadata.get("backtrack_count", 0))
 
     @backtrack_count.setter
     def backtrack_count(self, value: int) -> None:
@@ -402,7 +405,6 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
             context (CrescendoAttackContext): The attack context.
         """
         # Nothing to be done here, no-op
-        pass
 
     @pyrit_json_retry
     async def _get_attack_prompt_async(

@@ -338,6 +338,7 @@ API Reference
     ChatMessageListDictContent
     construct_response_from_request
     ConversationReference
+    ConversationStats
     ConversationType
     DataTypeSerializer
     data_serializer_factory
@@ -370,6 +371,7 @@ API Reference
     ScoreType
     Seed
     SeedAttackGroup
+    SeedAttackTechniqueGroup
     SeedDataset
     SeedGroup
     SeedObjective
@@ -404,7 +406,11 @@ API Reference
     AsciiSmugglerConverter
     AskToDecodeConverter
     AtbashConverter
+    AudioEchoConverter
     AudioFrequencyConverter
+    AudioSpeedConverter
+    AudioVolumeConverter
+    AudioWhiteNoiseConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base2048Converter

@@ -11,7 +11,7 @@ import logging
 import threading
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, TypeVar
+from typing import Any, Optional, TypeVar
 
 from pyrit.common.path import (
     SCORER_EVALS_PATH,
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Thread locks for writing (module-level, persists for application lifetime)
 # Locks are created per file path to ensure thread-safe writes
-_file_write_locks: Dict[str, threading.Lock] = {}
+_file_write_locks: dict[str, threading.Lock] = {}
 
 M = TypeVar("M", bound=ScorerMetrics)
 
@@ -43,7 +43,7 @@ def _build_eval_dict(
     identifier: ComponentIdentifier,
     *,
     param_allowlist: Optional[frozenset[str]] = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Build a dictionary for eval hashing.
 
@@ -62,17 +62,21 @@ def _build_eval_dict(
     Returns:
         Dict[str, Any]: The filtered dictionary suitable for hashing.
     """
-    eval_dict: Dict[str, Any] = {
+    eval_dict: dict[str, Any] = {
         ComponentIdentifier.KEY_CLASS_NAME: identifier.class_name,
         ComponentIdentifier.KEY_CLASS_MODULE: identifier.class_module,
     }
 
-    for key, value in sorted(identifier.params.items()):
-        if value is not None and (param_allowlist is None or key in param_allowlist):
-            eval_dict[key] = value
+    eval_dict.update(
+        {
+            k: v
+            for k, v in sorted(identifier.params.items())
+            if v is not None and (param_allowlist is None or k in param_allowlist)
+        }
+    )
 
     if identifier.children:
-        eval_children: Dict[str, Any] = {}
+        eval_children: dict[str, Any] = {}
         for name in sorted(identifier.children):
             child_list = identifier.get_child_list(name)
             if name in _TARGET_CHILD_KEYS:
@@ -106,7 +110,7 @@ def compute_eval_hash(identifier: ComponentIdentifier) -> str:
     return config_hash(_build_eval_dict(identifier))
 
 
-def _metrics_to_registry_dict(metrics: ScorerMetrics) -> Dict[str, Any]:
+def _metrics_to_registry_dict(metrics: ScorerMetrics) -> dict[str, Any]:
     """
     Convert metrics to a dictionary suitable for registry storage.
 
@@ -127,7 +131,7 @@ def _metrics_to_registry_dict(metrics: ScorerMetrics) -> Dict[str, Any]:
 
 def get_all_objective_metrics(
     file_path: Optional[Path] = None,
-) -> List[ScorerMetricsWithIdentity[ObjectiveScorerMetrics]]:
+) -> list[ScorerMetricsWithIdentity[ObjectiveScorerMetrics]]:
     """
     Load all objective scorer metrics with full scorer identity for comparison.
 
@@ -153,7 +157,7 @@ def get_all_objective_metrics(
 
 def get_all_harm_metrics(
     harm_category: str,
-) -> List[ScorerMetricsWithIdentity[HarmScorerMetrics]]:
+) -> list[ScorerMetricsWithIdentity[HarmScorerMetrics]]:
     """
     Load all harm scorer metrics for a specific harm category.
 
@@ -176,8 +180,8 @@ def get_all_harm_metrics(
 def _load_metrics_from_file(
     *,
     file_path: Path,
-    metrics_class: Type[M],
-) -> List[ScorerMetricsWithIdentity[M]]:
+    metrics_class: type[M],
+) -> list[ScorerMetricsWithIdentity[M]]:
     """
     Load scorer metrics from a JSONL file with the specified metrics class.
 
@@ -190,7 +194,7 @@ def _load_metrics_from_file(
     Returns:
         List[ScorerMetricsWithIdentity[M]]: List of metrics with scorer identity.
     """
-    results: List[ScorerMetricsWithIdentity[M]] = []
+    results: list[ScorerMetricsWithIdentity[M]] = []
     entries = _load_jsonl(file_path)
 
     for entry in entries:
@@ -223,7 +227,7 @@ def _load_metrics_from_file(
 
 def find_objective_metrics_by_hash(
     *,
-    hash: str,
+    hash: str,  # noqa: A002
     file_path: Optional[Path] = None,
 ) -> Optional[ObjectiveScorerMetrics]:
     """
@@ -246,7 +250,7 @@ def find_objective_metrics_by_hash(
 
 def find_harm_metrics_by_hash(
     *,
-    hash: str,
+    hash: str,  # noqa: A002
     harm_category: str,
 ) -> Optional[HarmScorerMetrics]:
     """
@@ -266,8 +270,8 @@ def find_harm_metrics_by_hash(
 def _find_metrics_by_hash(
     *,
     file_path: Path,
-    hash: str,
-    metrics_class: Type[M],
+    hash: str,  # noqa: A002
+    metrics_class: type[M],
 ) -> Optional[M]:
     """
     Find scorer metrics by configuration hash in a specific file.
@@ -337,7 +341,7 @@ def add_evaluation_results(
     logger.info(f"Added metrics for {scorer_identifier.class_name} to {file_path.name}")
 
 
-def _load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
+def _load_jsonl(file_path: Path) -> list[dict[str, Any]]:
     """
     Load entries from a JSONL file.
 
@@ -353,7 +357,7 @@ def _load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
 
     entries = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if line:
@@ -367,7 +371,7 @@ def _load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
     return entries
 
 
-def _append_jsonl_entry(file_path: Path, lock: threading.Lock, entry: Dict[str, Any]) -> None:
+def _append_jsonl_entry(file_path: Path, lock: threading.Lock, entry: dict[str, Any]) -> None:
     """
     Append an entry to a JSONL file with thread safety.
 
@@ -436,7 +440,8 @@ def replace_evaluation_results(
             replaced = len(existing_entries) != len(filtered_entries)
             action = "Replaced" if replaced else "Added"
             logger.info(
-                f"{action} metrics for {scorer_identifier.class_name} (eval_hash={eval_hash[:8]}...) in {file_path.name}"
+                f"{action} metrics for {scorer_identifier.class_name}"
+                f" (eval_hash={eval_hash[:8]}...) in {file_path.name}"
             )
 
         except Exception as e:

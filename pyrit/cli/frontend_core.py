@@ -19,7 +19,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.setup import ConfigurationLoader
 from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
@@ -32,16 +32,18 @@ except ImportError:
     HAS_TERMCOLOR = False
 
     # Create a dummy termcolor module for fallback
-    class termcolor:  # type: ignore
+    class termcolor:  # type: ignore[no-redef]  # noqa: N801
         """Dummy termcolor fallback for colored printing if termcolor is not installed."""
 
         @staticmethod
-        def cprint(text: str, color: str = None, attrs: list = None) -> None:  # type: ignore
+        def cprint(text: str, color: str = None, attrs: list = None) -> None:  # type: ignore[type-arg]
             """Print text without color."""
             print(text)
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     from pyrit.models.scenario_result import ScenarioResult
     from pyrit.registry import (
         InitializerMetadata,
@@ -166,7 +168,7 @@ class FrontendCore:
         self._initialized = True
 
     @property
-    def scenario_registry(self) -> "ScenarioRegistry":
+    def scenario_registry(self) -> ScenarioRegistry:
         """
         Get the scenario registry. Must call await initialize_async() first.
 
@@ -181,7 +183,7 @@ class FrontendCore:
         return self._scenario_registry
 
     @property
-    def initializer_registry(self) -> "InitializerRegistry":
+    def initializer_registry(self) -> InitializerRegistry:
         """
         Get the initializer registry. Must call await initialize_async() first.
 
@@ -213,7 +215,7 @@ async def list_scenarios_async(*, context: FrontendCore) -> list[ScenarioMetadat
 
 async def list_initializers_async(
     *, context: FrontendCore, discovery_path: Optional[Path] = None
-) -> "Sequence[InitializerMetadata]":
+) -> Sequence[InitializerMetadata]:
     """
     List metadata for all available initializers.
 
@@ -246,7 +248,7 @@ async def run_scenario_async(
     dataset_names: Optional[list[str]] = None,
     max_dataset_size: Optional[int] = None,
     print_summary: bool = True,
-) -> "ScenarioResult":
+) -> ScenarioResult:
     """
     Run a scenario by name.
 
@@ -457,7 +459,7 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
             print("    Default Datasets: None")
 
 
-def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") -> None:
+def format_initializer_metadata(*, initializer_metadata: InitializerMetadata) -> None:
     """
     Print formatted information about an initializer class.
 
@@ -716,8 +718,8 @@ def get_default_initializer_discovery_path() -> Path:
     Returns:
         Path to the scenarios initializers directory.
     """
-    PYRIT_PATH = Path(__file__).parent.parent.resolve()
-    return PYRIT_PATH / "setup" / "initializers" / "scenarios"
+    pyrit_path = Path(__file__).parent.parent.resolve()
+    return pyrit_path / "setup" / "initializers" / "scenarios"
 
 
 async def print_scenarios_list_async(*, context: FrontendCore) -> int:

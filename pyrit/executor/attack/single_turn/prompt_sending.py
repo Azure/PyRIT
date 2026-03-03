@@ -3,7 +3,7 @@
 
 import logging
 import uuid
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import warn_if_set
@@ -58,7 +58,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
-        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        params_type: type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
@@ -274,7 +274,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     async def _teardown_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
-        pass
 
     def _get_message(self, context: SingleTurnAttackContext[Any]) -> Message:
         """

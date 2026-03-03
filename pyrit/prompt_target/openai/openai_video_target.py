@@ -93,7 +93,9 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         super().__init__(**kwargs)
 
-        self._n_seconds: VideoSeconds = cast(VideoSeconds, str(n_seconds)) if isinstance(n_seconds, int) else n_seconds
+        self._n_seconds: VideoSeconds = (
+            cast("VideoSeconds", str(n_seconds)) if isinstance(n_seconds, int) else n_seconds
+        )
         self._validate_duration()
         self._size: VideoSize = self._validate_resolution(resolution_dimensions=resolution_dimensions)
 
@@ -473,6 +475,15 @@ class OpenAIVideoTarget(OpenAITarget):
         remix_video_id = text_piece.prompt_metadata.get("video_id") if text_piece.prompt_metadata else None
         if remix_video_id and image_pieces:
             raise ValueError("Cannot use image input in remix mode. Remix uses existing video as reference.")
+
+        messages = self._memory.get_conversation(conversation_id=text_piece.conversation_id)
+
+        n_messages = len(messages)
+        if n_messages > 0:
+            raise ValueError(
+                "This target only supports a single turn conversation. "
+                f"Received: {n_messages} messages which indicates a prior turn."
+            )
 
     def is_json_response_supported(self) -> bool:
         """

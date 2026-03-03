@@ -3,7 +3,7 @@
 
 
 import uuid
-from typing import Optional, Sequence
+from typing import TYPE_CHECKING, Optional
 
 from pyrit.common.utils import to_sha256
 from pyrit.identifiers import ComponentIdentifier
@@ -17,6 +17,9 @@ from pyrit.models import (
     MessagePiece,
     Score,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def create_message_piece(conversation_id: str, prompt_num: int, targeted_harm_categories=None, labels=None):
@@ -123,7 +126,11 @@ def test_get_attack_results_by_ids(sqlite_instance: MemoryInterface):
 
 
 def test_get_attack_results_by_conversation_id(sqlite_instance: MemoryInterface):
-    """Test retrieving attack results by conversation ID."""
+    """Test retrieving attack results by conversation ID.
+
+    When duplicate rows exist for the same conversation_id (legacy bug),
+    get_attack_results deduplicates and returns only the newest entry.
+    """
     # Create and add attack results
     attack_result1 = AttackResult(
         conversation_id="conv_1",
@@ -134,7 +141,7 @@ def test_get_attack_results_by_conversation_id(sqlite_instance: MemoryInterface)
     )
 
     attack_result2 = AttackResult(
-        conversation_id="conv_1",  # Same conversation ID
+        conversation_id="conv_1",  # Same conversation ID (simulates legacy duplicate)
         objective="Test objective 2",
         executed_turns=3,
         execution_time_ms=500,
@@ -152,13 +159,11 @@ def test_get_attack_results_by_conversation_id(sqlite_instance: MemoryInterface)
     # Add all attack results to memory
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2, attack_result3])
 
-    # Retrieve attack results by conversation ID
+    # Retrieve attack results by conversation ID — deduplication keeps only the newest
     retrieved_results = sqlite_instance.get_attack_results(conversation_id="conv_1")
 
-    # Verify correct results were retrieved
-    assert len(retrieved_results) == 2
-    for result in retrieved_results:
-        assert result.conversation_id == "conv_1"
+    assert len(retrieved_results) == 1
+    assert retrieved_results[0].conversation_id == "conv_1"
 
 
 def test_get_attack_results_by_objective(sqlite_instance: MemoryInterface):
@@ -557,8 +562,8 @@ def test_attack_result_with_attack_generation_conversation_ids(sqlite_instance: 
 
     entry: AttackResultEntry = sqlite_instance._query_entries(AttackResultEntry)[0]
 
-    assert set(entry.pruned_conversation_ids) == pruned_ids  # type: ignore
-    assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids  # type: ignore
+    assert set(entry.pruned_conversation_ids) == pruned_ids  # type: ignore[arg-type]
+    assert set(entry.adversarial_chat_conversation_ids) == adversarial_ids  # type: ignore[arg-type]
 
     retrieved_result = entry.get_attack_result()
     assert {
@@ -588,6 +593,128 @@ def test_attack_result_without_attack_generation_conversation_ids(sqlite_instanc
     retrieved_result = entry.get_attack_result()
     assert not retrieved_result.get_conversations_by_type(ConversationType.PRUNED)
     assert not retrieved_result.get_conversations_by_type(ConversationType.ADVERSARIAL)
+
+
+def test_update_attack_result_adversarial_chat_conversation_ids_round_trip(sqlite_instance: MemoryInterface):
+    """Test that updating adversarial_chat_conversation_ids is reflected when reading back.
+
+    This catches a regression where the conversation count in the attack history
+    was always showing 1 instead of the actual number of conversations.
+    """
+    # Create attack with no related conversations
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test conversation count",
+        outcome=AttackOutcome.UNDETERMINED,
+        metadata={"created_at": "2026-01-01T00:00:00", "updated_at": "2026-01-01T00:00:00"},
+    )
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Verify initial state: no related conversations
+    results = sqlite_instance.get_attack_results(conversation_id="conv_1")
+    assert len(results) == 1
+    assert len(results[0].related_conversations) == 0
+
+    # Add first related conversation
+    sqlite_instance.update_attack_result(
+        conversation_id="conv_1",
+        update_fields={"adversarial_chat_conversation_ids": ["branch-1"]},
+    )
+
+    results = sqlite_instance.get_attack_results(conversation_id="conv_1")
+    assert len(results[0].related_conversations) == 1
+    assert {r.conversation_id for r in results[0].related_conversations} == {"branch-1"}
+
+    # Add second related conversation (preserving the first)
+    sqlite_instance.update_attack_result(
+        conversation_id="conv_1",
+        update_fields={"adversarial_chat_conversation_ids": ["branch-1", "branch-2"]},
+    )
+
+    results = sqlite_instance.get_attack_results(conversation_id="conv_1")
+    assert len(results[0].related_conversations) == 2
+    assert {r.conversation_id for r in results[0].related_conversations} == {"branch-1", "branch-2"}
+
+    # Verify they are all ADVERSARIAL type
+    for ref in results[0].related_conversations:
+        assert ref.conversation_type == ConversationType.ADVERSARIAL
+
+
+def test_update_attack_result_metadata_does_not_clobber_conversation_ids(sqlite_instance: MemoryInterface):
+    """Regression test: updating only attack_metadata must not erase adversarial_chat_conversation_ids.
+
+    This was the root cause of the conversation-count bug. The old _update_entries
+    used session.merge() which copied ALL attributes from the (potentially stale)
+    detached entry, silently overwriting JSON columns that were not in update_fields.
+    """
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test metadata update preserves conversation ids",
+        outcome=AttackOutcome.UNDETERMINED,
+        metadata={"created_at": "2026-01-01T00:00:00"},
+    )
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Step 1: add related conversations
+    sqlite_instance.update_attack_result(
+        conversation_id="conv_1",
+        update_fields={"adversarial_chat_conversation_ids": ["branch-1", "branch-2"]},
+    )
+
+    # Step 2: update ONLY metadata (this is what add_message_async does)
+    sqlite_instance.update_attack_result(
+        conversation_id="conv_1",
+        update_fields={"attack_metadata": {"created_at": "2026-01-01T00:00:00", "updated_at": "2026-01-02T00:00:00"}},
+    )
+
+    # Verify conversation ids are still present
+    results = sqlite_instance.get_attack_results(conversation_id="conv_1")
+    assert len(results[0].related_conversations) == 2, (
+        "Updating attack_metadata must not erase adversarial_chat_conversation_ids"
+    )
+    assert {r.conversation_id for r in results[0].related_conversations} == {"branch-1", "branch-2"}
+
+
+def test_update_attack_result_stale_entry_does_not_overwrite(sqlite_instance: MemoryInterface):
+    """Regression test: merging a stale entry must not overwrite concurrent updates.
+
+    Simulates the race condition where entry is loaded, then another update modifies
+    the DB, and finally the stale entry is used for an unrelated update.
+    """
+    from pyrit.memory.memory_models import AttackResultEntry
+
+    attack_result = AttackResult(
+        conversation_id="conv_1",
+        objective="Test stale merge",
+        outcome=AttackOutcome.UNDETERMINED,
+        metadata={"created_at": "2026-01-01T00:00:00"},
+    )
+    sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result])
+
+    # Load entry (will become stale)
+    stale_entries = sqlite_instance._query_entries(
+        AttackResultEntry, conditions=AttackResultEntry.conversation_id == "conv_1"
+    )
+    assert stale_entries[0].adversarial_chat_conversation_ids is None
+
+    # Concurrent update adds conversation ids
+    sqlite_instance.update_attack_result(
+        conversation_id="conv_1",
+        update_fields={"adversarial_chat_conversation_ids": ["branch-1"]},
+    )
+
+    # Now update with the stale entry (only metadata)
+    sqlite_instance._update_entries(
+        entries=[stale_entries[0]],
+        update_fields={"attack_metadata": {"updated_at": "2026-01-02T00:00:00"}},
+    )
+
+    # Verify the concurrent update was NOT lost
+    results = sqlite_instance.get_attack_results(conversation_id="conv_1")
+    assert len(results[0].related_conversations) == 1, (
+        "Stale entry merge must not overwrite concurrent adversarial_chat_conversation_ids update"
+    )
+    assert results[0].related_conversations.pop().conversation_id == "branch-1"
 
 
 def test_get_attack_results_by_harm_category_single(sqlite_instance: MemoryInterface):

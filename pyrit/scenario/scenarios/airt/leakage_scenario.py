@@ -3,10 +3,11 @@
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 from PIL import Image
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH, SCORER_SEED_PROMPT_PATH
 from pyrit.executor.attack import (
@@ -131,7 +132,7 @@ class LeakageScenario(Scenario):
         self,
         *,
         adversarial_chat: Optional[PromptChatTarget] = None,
-        objectives: Optional[List[str]] = None,
+        objectives: Optional[list[str]] = None,
         objective_scorer: Optional[TrueFalseScorer] = None,
         include_baseline: bool = True,
         scenario_result_id: Optional[str] = None,
@@ -182,10 +183,11 @@ class LeakageScenario(Scenario):
         Returns:
             TrueFalseCompositeScorer: Default objective scorer with backstop and leakage evaluation.
         """
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         presence_of_leakage = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(
-                endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                endpoint=endpoint,
+                api_key=get_azure_openai_auth(endpoint),
                 model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             ),
             true_false_question_path=SCORER_SEED_PROMPT_PATH / "true_false_question" / "leakage.yaml",
@@ -197,8 +199,8 @@ class LeakageScenario(Scenario):
         backstop = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    endpoint=endpoint,
+                    api_key=get_azure_openai_auth(endpoint),
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
@@ -215,9 +217,10 @@ class LeakageScenario(Scenario):
         Returns:
             OpenAIChatTarget: Default adversarial target using an unfiltered endpoint.
         """
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            endpoint=endpoint,
+            api_key=get_azure_openai_auth(endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
@@ -354,7 +357,7 @@ class LeakageScenario(Scenario):
             attack_scoring_config=self._scorer_config,
         )
 
-    def _resolve_seed_groups(self) -> List[SeedAttackGroup]:
+    def _resolve_seed_groups(self) -> list[SeedAttackGroup]:
         """
         Resolve objectives to SeedAttackGroup format required by AtomicAttack.
 
@@ -363,7 +366,7 @@ class LeakageScenario(Scenario):
         """
         return [SeedAttackGroup(seeds=[SeedObjective(value=obj)]) for obj in self._objectives]
 
-    async def _get_atomic_attacks_async(self) -> List[AtomicAttack]:
+    async def _get_atomic_attacks_async(self) -> list[AtomicAttack]:
         """
         Generate atomic attacks for each strategy.
 
@@ -373,11 +376,8 @@ class LeakageScenario(Scenario):
         # Resolve objectives to seed groups format
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks: List[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=LeakageStrategy
         )
 
-        for strategy in strategies:
-            atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
-        return atomic_attacks
+        return [await self._get_atomic_attack_from_strategy_async(strategy) for strategy in strategies]

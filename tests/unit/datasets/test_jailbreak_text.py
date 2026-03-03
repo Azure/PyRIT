@@ -191,6 +191,24 @@ def test_template_source_tracking(jailbreak_dir):
     assert jailbreak_string.template_source == "<string_template>"
 
 
+def test_all_jailbreak_yaml_templates_have_is_general_technique(jailbreak_dir):
+    """Test that all jailbreak YAML templates have is_general_technique set to true."""
+    yaml_files = list(jailbreak_dir.rglob("*.yaml"))
+    assert len(yaml_files) > 0, "No YAML templates found in jailbreak directory"
+
+    missing = []
+    for yaml_file in yaml_files:
+        seed = SeedPrompt.from_yaml_file(yaml_file)
+        if seed.is_general_technique is not True:
+            missing.append(str(yaml_file.relative_to(jailbreak_dir)))
+
+    if missing:
+        pytest.fail(
+            f"{len(missing)} jailbreak template(s) missing is_general_technique: true:\n"
+            + "\n".join(f"  - {f}" for f in missing)
+        )
+
+
 class TestTextJailBreakTemplateCache:
     """Tests for the template file caching mechanism."""
 
@@ -205,7 +223,7 @@ class TestTextJailBreakTemplateCache:
     def test_scan_template_files_excludes_multi_parameter(self) -> None:
         """Test that _scan_template_files excludes files under multi_parameter directories."""
         result = TextJailBreak._scan_template_files()
-        for filename, paths in result.items():
+        for paths in result.values():
             for path in paths:
                 assert "multi_parameter" not in path.parts
 

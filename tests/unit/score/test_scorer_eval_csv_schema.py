@@ -10,7 +10,6 @@ standardized column naming conventions defined in scorer_evaluator.py.
 
 import csv
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -32,11 +31,11 @@ class TestObjectiveScorerEvalCSVSchema:
     """Test that all objective scorer evaluation CSVs have the correct schema."""
 
     @pytest.fixture(scope="class")
-    def objective_csv_files(self) -> List[Path]:
+    def objective_csv_files(self) -> list[Path]:
         """Get all CSV files in the objective scorer evals directory."""
         return list(Path(SCORER_EVALS_OBJECTIVE_PATH).glob("*.csv"))
 
-    def test_objective_csv_files_exist(self, objective_csv_files: List[Path]) -> None:
+    def test_objective_csv_files_exist(self, objective_csv_files: list[Path]) -> None:
         """Verify that objective CSV files exist."""
         assert len(objective_csv_files) > 0, "No objective CSV files found"
 
@@ -55,7 +54,7 @@ class TestObjectiveScorerEvalCSVSchema:
         - human_score: The human-labeled ground truth score
         - data_type: The type of data (e.g., "text")
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             # Skip version line if present
             first_line = f.readline()
             if not first_line.startswith("# dataset_version="):
@@ -88,7 +87,7 @@ class TestObjectiveScorerEvalCSVSchema:
 
         This ensures no typos or legacy column names remain.
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             # Skip version line if present
             first_line = f.readline()
             if not first_line.startswith("# dataset_version="):
@@ -116,11 +115,11 @@ class TestHarmScorerEvalCSVSchema:
     """Test that all harm scorer evaluation CSVs have the correct schema."""
 
     @pytest.fixture(scope="class")
-    def harm_csv_files(self) -> List[Path]:
+    def harm_csv_files(self) -> list[Path]:
         """Get all CSV files in the harm scorer evals directory."""
         return list(Path(SCORER_EVALS_HARM_PATH).glob("*.csv"))
 
-    def test_harm_csv_files_exist(self, harm_csv_files: List[Path]) -> None:
+    def test_harm_csv_files_exist(self, harm_csv_files: list[Path]) -> None:
         """Verify that harm CSV files exist."""
         assert len(harm_csv_files) > 0, "No harm CSV files found"
 
@@ -143,7 +142,7 @@ class TestHarmScorerEvalCSVSchema:
         Note: Harm CSVs may have additional human_score_2, human_score_3, etc.
         for multi-annotator datasets.
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             # Skip version line if present
             first_line = f.readline()
             if not first_line.startswith("# dataset_version="):
@@ -179,7 +178,7 @@ class TestHarmScorerEvalCSVSchema:
         - human_score_2 (optional)
         - human_score_3 (optional)
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             # Skip version line if present
             first_line = f.readline()
             if not first_line.startswith("# dataset_version="):
@@ -203,11 +202,11 @@ class TestRefusalScorerEvalCSVSchema:
     """Test that all refusal scorer evaluation CSVs have the correct schema."""
 
     @pytest.fixture(scope="class")
-    def refusal_csv_files(self) -> List[Path]:
+    def refusal_csv_files(self) -> list[Path]:
         """Get all CSV files in the refusal scorer evals directory."""
         return list(Path(SCORER_EVALS_REFUSAL_SCORER_PATH).glob("*.csv"))
 
-    def test_refusal_csv_files_exist(self, refusal_csv_files: List[Path]) -> None:
+    def test_refusal_csv_files_exist(self, refusal_csv_files: list[Path]) -> None:
         """Verify that refusal CSV files exist."""
         assert len(refusal_csv_files) > 0, "No refusal CSV files found"
 
@@ -226,7 +225,7 @@ class TestRefusalScorerEvalCSVSchema:
         - human_score: The human-labeled ground truth score
         - data_type: The type of data (e.g., "text")
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             # Skip version line if present
             first_line = f.readline()
             if not first_line.startswith("# dataset_version="):
@@ -258,7 +257,7 @@ class TestRefusalScorerEvalCSVSchema:
 
         This ensures no typos or legacy column names remain.
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             # Skip version line if present
             first_line = f.readline()
             if not first_line.startswith("# dataset_version="):
@@ -284,7 +283,7 @@ class TestCSVVersionMetadata:
     """Test that all CSV files have version metadata."""
 
     @pytest.fixture(scope="class")
-    def all_csv_files(self) -> List[Path]:
+    def all_csv_files(self) -> list[Path]:
         """Get all CSV files from all scorer eval directories."""
         files: list[Path] = []
         files.extend(Path(SCORER_EVALS_OBJECTIVE_PATH).glob("*.csv"))
@@ -305,7 +304,7 @@ class TestCSVVersionMetadata:
 
         Version line format: # dataset_version=X.Y
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             first_line = f.readline().strip()
 
             assert first_line.startswith("#") and "dataset_version=" in first_line, (
@@ -324,7 +323,7 @@ class TestCSVVersionMetadata:
 
         Format: # dataset_version=X.Y, harm_definition=path/to/definition.yaml
         """
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             first_line = f.readline().strip()
 
             assert "harm_definition=" in first_line, (
@@ -348,7 +347,7 @@ class TestCSVVersionMetadata:
         """
         from pyrit.models.harm_definition import HarmDefinition
 
-        with open(csv_file, "r", encoding="utf-8") as f:
+        with open(csv_file, encoding="utf-8") as f:
             first_line = f.readline().strip()
 
         # Parse harm_definition from the comment line
