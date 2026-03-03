@@ -47,7 +47,7 @@ def single_turn_strategy() -> PsychosocialStrategy:
 
 @pytest.fixture
 def multi_turn_strategy() -> PsychosocialStrategy:
-    return PsychosocialStrategy.ALL
+    return PsychosocialStrategy.ImminentCrisis
 
 
 @pytest.fixture
