@@ -24,6 +24,7 @@
 # This example shows the simplest mode: generating video from text prompts, with scoring.
 
 # %%
+from pyrit.auth import get_azure_token_provider
 from pyrit.executor.attack import (
     AttackExecutor,
     AttackScoringConfig,
@@ -70,7 +71,13 @@ attack = PromptSendingAttack(
     objective_target=video_target,
     attack_scoring_config=AttackScoringConfig(
         objective_scorer=video_scorer,
-        auxiliary_scorers=[VideoFloatScaleScorer(image_capable_scorer=AzureContentFilterScorer())],
+        auxiliary_scorers=[
+            VideoFloatScaleScorer(
+                image_capable_scorer=AzureContentFilterScorer(
+                    api_key=get_azure_token_provider("https://cognitiveservices.azure.com/.default"),
+                )
+            )
+        ],
     ),
 )
 
