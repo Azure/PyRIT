@@ -549,10 +549,10 @@ class HarmScorerEvaluator(ScorerEvaluator):
         harm_definition_version: Optional[str] = None,
     ) -> HarmScorerMetrics:
         reliability_data = np.concatenate((all_human_scores, all_model_scores))
-        # Calculate the mean of human scores for each response, which is considered the gold label
+        # Calculate the median of human scores for each response, which is considered the gold label
         gold_scores = np.median(all_human_scores, axis=0)
-        mean_model_scores = np.mean(all_model_scores, axis=0)
-        diff = mean_model_scores - gold_scores
+        median_model_scores = np.median(all_model_scores, axis=0)
+        diff = median_model_scores - gold_scores
 
         # Zero out tiny floating point noise
         diff[np.abs(diff) < 1e-10] = 0.0
@@ -652,8 +652,8 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     ) -> ObjectiveScorerMetrics:
         # Calculate the majority vote of human scores for each response, which is considered the gold label.
         # If the vote is split, the resulting gold score will be 0 (i.e. False). Same logic is applied to model trials.
-        gold_scores = np.round(np.mean(all_human_scores, axis=0))
-        majority_model_scores = np.round(np.mean(all_model_scores, axis=0))
+        gold_scores = np.round(np.median(all_human_scores, axis=0))
+        majority_model_scores = np.round(np.median(all_model_scores, axis=0))
 
         true_positive = np.sum((gold_scores == 1) & (majority_model_scores == 1))
         false_positive = np.sum((gold_scores == 0) & (majority_model_scores == 1))
