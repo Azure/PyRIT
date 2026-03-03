@@ -40,6 +40,16 @@ def imminent_crisis_strategy() -> PsychosocialStrategy:
 
 
 @pytest.fixture
+def single_turn_strategy() -> PsychosocialStrategy:
+    return PsychosocialStrategy.ImminentCrisis
+
+
+@pytest.fixture
+def multi_turn_strategy() -> PsychosocialStrategy:
+    return PsychosocialStrategy.ALL
+
+
+@pytest.fixture
 def psychosocial_prompts() -> list[str]:
     return SEED_PROMPT_LIST
 
