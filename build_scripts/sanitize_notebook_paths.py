@@ -120,10 +120,7 @@ def _strip_user_paths(text: str) -> str:
 
 
 if __name__ == "__main__":
-    modified_files = []
-    for file_path in sys.argv[1:]:
-        if sanitize_notebook_paths(file_path):
-            modified_files.append(file_path)
+    modified_files = [file_path for file_path in sys.argv[1:] if sanitize_notebook_paths(file_path)]
     if modified_files:
         print("Sanitized user paths in:", modified_files)
         sys.exit(1)
