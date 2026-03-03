@@ -103,6 +103,16 @@ CONTINUATION: /.{0,1}/
 """
         assert beam.get_grammar(n_chars=1) == expected_grammar
 
+    def test_grammar_with_braces_brackets_parens(self):
+        beam = Beam(id=str(uuid.uuid4()), text="beam{1}beam[2]()", score=0.9)
+
+        expected_grammar = """
+start: PREFIX CONTINUATION
+PREFIX: "beam{1}beam[2]()"
+CONTINUATION: /.{0,1}/
+"""
+        assert beam.get_grammar(n_chars=1) == expected_grammar
+
 
 class TestTopKBeamReviewer:
     @pytest.mark.parametrize("k", [0, -1])
