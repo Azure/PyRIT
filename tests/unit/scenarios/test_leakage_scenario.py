@@ -464,7 +464,7 @@ class TestLeakageStrategyEnum:
         assert "single_turn" in LeakageStrategy.FirstLetter.tags
 
     def test_strategy_crescendo_exists(self):
-        """Test that CRESCENDO strategy exists."""
+        """Test that Crescendo strategy exists."""
         assert LeakageStrategy.Crescendo is not None
         assert LeakageStrategy.Crescendo.value == "crescendo"
         assert "multi_turn" in LeakageStrategy.Crescendo.tags
