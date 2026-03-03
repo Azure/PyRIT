@@ -90,7 +90,12 @@ class Score:
         from pyrit.identifiers.component_identifier import ComponentIdentifier
 
         self.id = id if id else uuid.uuid4()
-        self.timestamp = timestamp if timestamp else datetime.now(tz=timezone.utc)
+        if timestamp is None:
+            self.timestamp = datetime.now(tz=timezone.utc)
+        elif timestamp.tzinfo is None:
+            self.timestamp = timestamp.replace(tzinfo=timezone.utc)
+        else:
+            self.timestamp = timestamp
 
         self.validate(score_type, score_value)
 

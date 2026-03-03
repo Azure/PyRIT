@@ -129,7 +129,7 @@ class BrailleConverter(PromptConverter):
                     is_number = True
                     output += character_unicodes["num"]
                 output += character_unicodes[char]
-            if is_number and char not in number_punctuations:
+            if is_number and not char.isdigit() and char not in number_punctuations:
                 is_number = False
 
         return output
