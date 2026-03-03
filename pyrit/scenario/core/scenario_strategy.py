@@ -11,7 +11,9 @@ and automatically expanded during scenario initialization.
 It also provides ScenarioCompositeStrategy for representing composed attack strategies.
 """
 
-from enum import Enum, EnumType
+from __future__ import annotations
+
+from enum import Enum, EnumMeta
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from pyrit.common.deprecation import print_deprecation_message
@@ -23,7 +25,7 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="ScenarioStrategy")
 
 
-class _DeprecatedEnumMeta(EnumType):
+class _DeprecatedEnumMeta(EnumMeta):
     """
     Custom Enum metaclass that supports deprecated member aliases.
 
