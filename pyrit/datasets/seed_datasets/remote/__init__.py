@@ -52,6 +52,11 @@ from pyrit.datasets.seed_datasets.remote.mlcommons_ailuminate_dataset import (
 from pyrit.datasets.seed_datasets.remote.multilingual_vulnerability_dataset import (  # noqa: F401
     _MultilingualVulnerabilityDataset,
 )
+from pyrit.datasets.seed_datasets.remote.or_bench_dataset import (
+    _ORBench80KDataset,
+    _ORBenchHardDataset,
+    _ORBenchToxicDataset,
+)  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.pku_safe_rlhf_dataset import (
     _PKUSafeRLHFDataset,
 )  # noqa: F401
@@ -92,7 +97,8 @@ from pyrit.datasets.seed_datasets.remote.xstest_dataset import (
 )  # noqa: F401
 
 __all__ = [
-    "_RemoteDatasetLoader",
+    "PromptIntelCategory",
+    "PromptIntelSeverity",
     "_AegisContentSafetyDataset",
     "_AyaRedteamingDataset",
     "_BabelscapeAlertDataset",
@@ -104,18 +110,23 @@ __all__ = [
     "_HarmBenchMultimodalDataset",
     "_JBBBehaviorsDataset",
     "_LibrAIDoNotAnswerDataset",
+    "_LLMLatentAdversarialTrainingDataset",
     "_MedSafetyBenchDataset",
     "_MLCommonsAILuminateDataset",
+    "_MultilingualVulnerabilityDataset",
+    "_ORBench80KDataset",
+    "_ORBenchHardDataset",
+    "_ORBenchToxicDataset",
     "_PKUSafeRLHFDataset",
-    "PromptIntelCategory",
-    "PromptIntelSeverity",
     "_PromptIntelDataset",
     "_RedTeamSocialBiasDataset",
+    "_RemoteDatasetLoader",
     "_SaladBenchDataset",
     "_SimpleSafetyTestsDataset",
-    "_SorryBenchDataset",
     "_SOSBenchDataset",
+    "_SorryBenchDataset",
     "_TDC23RedteamingDataset",
+    "_TransphobiaAwarenessDataset",
     "_VLSUMultimodalDataset",
     "_XSTestDataset",
 ]

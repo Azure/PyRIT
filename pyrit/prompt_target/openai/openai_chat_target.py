@@ -644,8 +644,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         }
 
         if self._extra_body_parameters:
-            for key, value in self._extra_body_parameters.items():
-                body_parameters[key] = value
+            body_parameters.update(self._extra_body_parameters)
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}
