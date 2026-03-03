@@ -12,7 +12,7 @@ def read_json(file: IO[Any]) -> list[dict[str, str]]:
     Returns:
         List[Dict[str, str]]: Parsed JSON content.
     """
-    return cast(list[dict[str, str]], json.load(file))
+    return cast("list[dict[str, str]]", json.load(file))
 
 
 def write_json(file: IO[Any], examples: list[dict[str, str]]) -> None:

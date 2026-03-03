@@ -114,7 +114,9 @@ def discover_in_package(
         Tuples of (registry_name, class) for each discovered subclass.
     """
     if name_builder is None:
-        name_builder = lambda prefix, name: name if not prefix else f"{prefix}.{name}"
+
+        def name_builder(prefix: str, name: str) -> str:
+            return name if not prefix else f"{prefix}.{name}"
 
     for _, module_name, is_pkg in pkgutil.iter_modules([str(package_path)]):
         if module_name.startswith("_"):
@@ -127,7 +129,7 @@ def discover_in_package(
 
             # For non-package modules, find and yield subclasses
             if not is_pkg:
-                for name, obj in inspect.getmembers(module, inspect.isclass):
+                for _name, obj in inspect.getmembers(module, inspect.isclass):
                     if issubclass(obj, base_class) and obj is not base_class and not inspect.isabstract(obj):
                         # Build the registry name including any prefix
                         registry_name = name_builder(_prefix, module_name)
@@ -186,6 +188,6 @@ def discover_subclasses_in_loaded_modules(
         if any(module_name.startswith(prefix) for prefix in exclude_module_prefixes):
             continue
 
-        for name, obj in inspect.getmembers(module, inspect.isclass):
+        for _name, obj in inspect.getmembers(module, inspect.isclass):
             if issubclass(obj, base_class) and obj is not base_class and not inspect.isabstract(obj):
                 yield (module_name, obj)

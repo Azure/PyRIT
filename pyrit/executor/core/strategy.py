@@ -8,23 +8,25 @@ import asyncio
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator, MutableMapping
 from contextlib import asynccontextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 
 from pyrit.common import default_values
 from pyrit.common.logger import logger
 from pyrit.exceptions import clear_execution_context, get_execution_context
 from pyrit.models import StrategyResultT
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, MutableMapping
+
 StrategyContextT = TypeVar("StrategyContextT", bound="StrategyContext")
 
 
 @dataclass
-class StrategyContext(ABC):
+class StrategyContext(ABC):  # noqa: B024
     """Base class for all strategy contexts."""
 
     def duplicate(self: StrategyContextT) -> StrategyContextT:

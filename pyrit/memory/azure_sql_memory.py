@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import logging
 import struct
 from collections.abc import MutableSequence, Sequence
-from contextlib import closing
+from contextlib import closing, suppress
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
-from azure.core.credentials import AccessToken
 from sqlalchemy import and_, create_engine, event, exists, text
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -28,8 +28,12 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AzureBlobStorageIO,
+    ConversationStats,
     MessagePiece,
 )
+
+if TYPE_CHECKING:
+    from azure.core.credentials import AccessToken
 
 logger = logging.getLogger(__name__)
 
@@ -386,7 +390,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
 
     def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
         """
-        Azure SQL implementation for filtering AttackResults by attack type.
+        Azure SQL implementation for filtering AttackResults by attack class.
         Uses JSON_VALUE() to match class_name in the attack_identifier JSON column.
 
         Args:
@@ -400,7 +404,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             AND JSON_VALUE("AttackResultEntries".attack_identifier, '$.class_name') = :attack_class"""
         ).bindparams(attack_class=attack_class)
 
-    def _get_attack_result_converter_condition(self, *, converter_classes: Sequence[str]) -> Any:
+    def _get_attack_result_converter_classes_condition(self, *, converter_classes: Sequence[str]) -> Any:
         """
         Azure SQL implementation for filtering AttackResults by converter classes.
 
@@ -478,6 +482,86 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                 )
             ).fetchall()
         return sorted(row[0] for row in rows)
+
+    def get_conversation_stats(self, *, conversation_ids: Sequence[str]) -> dict[str, ConversationStats]:
+        """
+        Azure SQL implementation: lightweight aggregate stats per conversation.
+
+        Executes a single SQL query that returns message count (distinct
+        sequences), a truncated last-message preview, the first non-empty
+        labels dict, and the earliest timestamp for each conversation_id.
+
+        Args:
+            conversation_ids (Sequence[str]): The conversation IDs to query.
+
+        Returns:
+            Mapping from conversation_id to ConversationStats.
+        """
+        if not conversation_ids:
+            return {}
+
+        placeholders = ", ".join(f":cid{i}" for i in range(len(conversation_ids)))
+        params = {f"cid{i}": cid for i, cid in enumerate(conversation_ids)}
+
+        max_len = ConversationStats.PREVIEW_MAX_LEN
+        sql = text(
+            f"""
+            SELECT
+                pme.conversation_id,
+                COUNT(DISTINCT pme.sequence) AS msg_count,
+                (
+                    SELECT TOP 1 LEFT(p2.converted_value, {max_len + 3})
+                    FROM "PromptMemoryEntries" p2
+                    WHERE p2.conversation_id = pme.conversation_id
+                    ORDER BY p2.sequence DESC, p2.id DESC
+                ) AS last_preview,
+                (
+                    SELECT TOP 1 p3.labels
+                    FROM "PromptMemoryEntries" p3
+                    WHERE p3.conversation_id = pme.conversation_id
+                      AND p3.labels IS NOT NULL
+                      AND p3.labels != '{{}}'
+                      AND p3.labels != 'null'
+                    ORDER BY p3.sequence ASC, p3.id ASC
+                ) AS first_labels,
+                MIN(pme.timestamp) AS created_at
+            FROM "PromptMemoryEntries" pme
+            WHERE pme.conversation_id IN ({placeholders})
+            GROUP BY pme.conversation_id
+            """
+        )
+
+        with closing(self.get_session()) as session:
+            rows = session.execute(sql, params).fetchall()
+
+        result: dict[str, ConversationStats] = {}
+        for row in rows:
+            conv_id, msg_count, last_preview, raw_labels, raw_created_at = row
+
+            preview = None
+            if last_preview:
+                preview = last_preview[:max_len] + "..." if len(last_preview) > max_len else last_preview
+
+            labels: dict[str, str] = {}
+            if raw_labels and raw_labels not in ("null", "{}"):
+                with suppress(ValueError, TypeError):
+                    labels = json.loads(raw_labels)
+
+            created_at = None
+            if raw_created_at is not None:
+                if isinstance(raw_created_at, str):
+                    created_at = datetime.fromisoformat(raw_created_at)
+                else:
+                    created_at = raw_created_at
+
+            result[conv_id] = ConversationStats(
+                message_count=msg_count,
+                last_message_preview=preview,
+                labels=labels,
+                created_at=created_at,
+            )
+
+        return result
 
     def _get_scenario_result_label_condition(self, *, labels: dict[str, str]) -> Any:
         """
@@ -648,7 +732,7 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
                     return query.distinct().all()
                 return query.all()
             except SQLAlchemyError as e:
-                logger.exception(f"Error fetching data from table {model_class.__tablename__}: {e}")  # type: ignore
+                logger.exception(f"Error fetching data from table {model_class.__tablename__}: {e}")  # type: ignore[attr-defined]
                 raise
 
     def _update_entries(self, *, entries: MutableSequence[Base], update_fields: dict[str, Any]) -> bool:
@@ -671,8 +755,14 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
         with closing(self.get_session()) as session:
             try:
                 for entry in entries:
-                    # Ensure the entry is attached to the session. If it's detached, merge it.
-                    entry_in_session = session.merge(entry) if not session.is_modified(entry) else entry
+                    # Load a fresh copy by primary key so we only touch the
+                    # requested fields.  Using merge() would copy ALL
+                    # attributes from the (potentially stale) detached object
+                    # and silently overwrite concurrent updates to columns
+                    # that are NOT in update_fields.
+                    entry_in_session = session.get(type(entry), entry.id)  # type: ignore[attr-defined]
+                    if entry_in_session is None:
+                        entry_in_session = session.merge(entry)
                     for field, value in update_fields.items():
                         if field in vars(entry_in_session):
                             setattr(entry_in_session, field, value)

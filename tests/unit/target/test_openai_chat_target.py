@@ -158,8 +158,8 @@ async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
 
     assert len(messages) == 1
     assert messages[0]["role"] == "user"
-    assert messages[0]["content"][0]["type"] == "text"  # type: ignore
-    assert messages[0]["content"][1]["type"] == "image_url"  # type: ignore
+    assert messages[0]["content"][0]["type"] == "text"  # type: ignore[method-assign]
+    assert messages[0]["content"][1]["type"] == "image_url"  # type: ignore[method-assign]
 
     os.remove(image_request.original_value)
 
@@ -379,7 +379,7 @@ async def test_send_prompt_async_bad_request_error_adds_to_memory(target: OpenAI
     target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
 
     # Non-content-filter BadRequestError should be re-raised
-    with pytest.raises(Exception):  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
+    with pytest.raises(Exception):  # noqa: B017  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
         await target.send_prompt_async(message=message)
 
 
@@ -507,7 +507,7 @@ async def test_send_prompt_async_bad_request_error(target: OpenAIChatTarget):
     target._async_client.chat.completions.create = AsyncMock(side_effect=side_effect)  # type: ignore[method-assign]
 
     # Non-content-filter BadRequestError should be re-raised
-    with pytest.raises(Exception):  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
+    with pytest.raises(Exception):  # noqa: B017  # Will raise since handle_bad_request_exception re-raises non-content-filter errors
         await target.send_prompt_async(message=message)
 
 
@@ -540,7 +540,7 @@ async def test_send_prompt_async_content_filter_200(target: OpenAIChatTarget):
 
 def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
     image_piece = get_image_message_piece()
-    image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
+    image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore[method-assign]
     message = Message(
         message_pieces=[
             MessagePiece(

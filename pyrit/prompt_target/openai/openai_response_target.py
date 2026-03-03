@@ -178,6 +178,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                 "max_output_tokens": self._max_output_tokens,
                 "reasoning_effort": self._reasoning_effort,
                 "reasoning_summary": self._reasoning_summary,
+                "extra_body_parameters": self._extra_body_parameters,
             },
         )
 
@@ -256,9 +257,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
             # System message (remapped to developer)
             if pieces[0].api_role == "system":
-                system_content = []
-                for piece in pieces:
-                    system_content.append({"type": "input_text", "text": piece.converted_value})
+                system_content = [{"type": "input_text", "text": piece.converted_value} for piece in pieces]
                 input_items.append({"role": "developer", "content": system_content})
                 continue
 
@@ -533,7 +532,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
             # Use unified error handling - automatically detects Response and validates
             result = await self._handle_openai_request(
-                api_call=lambda: self._async_client.responses.create(**body),
+                api_call=lambda body=body: self._async_client.responses.create(**body),
                 request=message,
             )
 
@@ -720,7 +719,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     continue
                 if isinstance(section, dict) and section.get("type") == "function_call":
                     # Do NOT skip function_call even if status == "completed" — we still need to emit the output.
-                    return cast(dict[str, Any], section)
+                    return cast("dict[str, Any]", section)
         return None
 
     async def _execute_call_section(self, tool_call_section: dict[str, Any]) -> dict[str, Any]:
@@ -755,7 +754,7 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         except Exception:
             # If arguments are not valid JSON, surface a structured error (or raise)
             if self._fail_on_missing_function:
-                raise ValueError(f"Malformed arguments for function '{name}': {args_json}")
+                raise ValueError(f"Malformed arguments for function '{name}': {args_json}") from None
             logger.warning("Malformed arguments for function '%s': %s", name, args_json)
             return {
                 "error": "malformed_arguments",

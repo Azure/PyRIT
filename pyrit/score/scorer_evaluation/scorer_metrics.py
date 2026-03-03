@@ -5,14 +5,15 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
 from typing import TYPE_CHECKING, Generic, Optional, TypeVar, Union
-
-import numpy as np
 
 from pyrit.common.utils import verify_and_resolve_path
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
+    import numpy as np
+
     from pyrit.identifiers import ComponentIdentifier
     from pyrit.models.harm_definition import HarmDefinition
 

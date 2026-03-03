@@ -1,7 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
@@ -10,9 +10,11 @@ from pyrit.score.float_scale.float_scale_score_aggregator import (
     FloatScaleScorerByCategory,
 )
 from pyrit.score.float_scale.float_scale_scorer import FloatScaleScorer
-from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 from pyrit.score.scorer_prompt_validator import ScorerPromptValidator
 from pyrit.score.video_scorer import _BaseVideoScorer
+
+if TYPE_CHECKING:
+    from pyrit.score.score_aggregator_result import ScoreAggregatorResult
 
 
 class VideoFloatScaleScorer(

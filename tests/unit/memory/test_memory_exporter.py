@@ -60,7 +60,7 @@ def test_export_to_json_creates_file(tmp_path, export_type):
     # Convert each MessagePiece instance to a dictionary
     expected_content = [message_piece.to_dict() for message_piece in sample_conversation_entries]
 
-    for expected, actual in zip(expected_content, content):
+    for expected, actual in zip(expected_content, content, strict=False):
         assert expected["role"] == actual["role"]
         assert expected["converted_value"] == actual["converted_value"]
         assert expected["conversation_id"] == actual["conversation_id"]

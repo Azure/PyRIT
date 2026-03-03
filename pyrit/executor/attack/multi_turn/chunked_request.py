@@ -5,7 +5,7 @@ import logging
 import textwrap
 from dataclasses import dataclass, field
 from string import Formatter
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.exceptions import ComponentRole, execution_context
@@ -28,7 +28,9 @@ from pyrit.models import (
 )
 from pyrit.prompt_normalizer import PromptNormalizer
 from pyrit.prompt_target import PromptTarget
-from pyrit.score import TrueFalseScorer
+
+if TYPE_CHECKING:
+    from pyrit.score import TrueFalseScorer
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +102,8 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
             chunk_size (int): Size of each chunk to request (default: 50).
             total_length (int): Estimated total length of the target value (default: 200).
             chunk_type (str): Type of chunk to request (e.g., "characters", "bytes", "words").
-            request_template (str): Template for generating chunk requests (default: "Give me {chunk_type} {start}-{end} of '{objective}'").
+            request_template (str): Template for generating chunk requests
+                (default: "Give me {chunk_type} {start}-{end} of '{objective}'").
             attack_converter_config (Optional[AttackConverterConfig]): Configuration for prompt converters.
             attack_scoring_config (Optional[AttackScoringConfig]): Configuration for scoring components.
             prompt_normalizer (Optional[PromptNormalizer]): Normalizer for handling prompts.

@@ -263,7 +263,7 @@ class ImageCompressionConverter(PromptConverter):
                 response.raise_for_status()
                 return await response.read()
         except aiohttp.ClientError as e:
-            raise RuntimeError(f"Failed to download content from URL {url}: {str(e)}")
+            raise RuntimeError(f"Failed to download content from URL {url}: {str(e)}") from e
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "image_path") -> ConverterResult:
         """

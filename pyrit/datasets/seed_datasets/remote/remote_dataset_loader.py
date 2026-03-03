@@ -92,7 +92,7 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         self._validate_file_type(file_type)
         with cache_file.open("r", encoding="utf-8") as file:
-            return cast(list[dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](file))
+            return cast("list[dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](file))
 
     def _write_cache(self, *, cache_file: Path, examples: list[dict[str, str]], file_type: str) -> None:
         """
@@ -130,9 +130,11 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         if response.status_code == 200:
             if file_type in FILE_TYPE_HANDLERS:
                 if file_type == "json":
-                    return cast(list[dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text)))
+                    return cast(
+                        "list[dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO(response.text))
+                    )
                 return cast(
-                    list[dict[str, str]],
+                    "list[dict[str, str]]",
                     FILE_TYPE_HANDLERS[file_type]["read"](io.StringIO("\n".join(response.text.splitlines()))),
                 )
             valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
@@ -155,7 +157,7 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         """
         with open(source, encoding="utf-8") as file:
             if file_type in FILE_TYPE_HANDLERS:
-                return cast(list[dict[str, str]], FILE_TYPE_HANDLERS[file_type]["read"](file))
+                return cast("list[dict[str, str]]", FILE_TYPE_HANDLERS[file_type]["read"](file))
             valid_types = ", ".join(FILE_TYPE_HANDLERS.keys())
             raise ValueError(f"Invalid file_type. Expected one of: {valid_types}.")
 

@@ -438,7 +438,7 @@ class TestJailbreakProperties:
             await scenario.initialize_async(objective_target=mock_objective_target)
 
             objective_target = scenario._objective_target
-            scorer_target = scenario._scorer_config.objective_scorer  # type: ignore
+            scorer_target = scenario._scorer_config.objective_scorer  # type: ignore[arg-type]
 
             assert objective_target != scorer_target
 
