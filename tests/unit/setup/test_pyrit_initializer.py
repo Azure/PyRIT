@@ -32,7 +32,7 @@ class TestPyRITInitializerBase:
     def test_cannot_instantiate_abstract_class(self):
         """Test that PyRITInitializer cannot be instantiated directly."""
         with pytest.raises(TypeError):
-            PyRITInitializer()  # type: ignore[arg-type]
+            PyRITInitializer()  # type: ignore[abstract]
 
     def test_concrete_initializer_can_be_created(self):
         """Test that concrete subclass can be instantiated."""
@@ -64,7 +64,7 @@ class TestPyRITInitializerBase:
                 pass
 
         with pytest.raises(TypeError):
-            MissingName()  # type: ignore[arg-type]
+            MissingName()  # type: ignore[abstract]
 
     def test_initialize_method_is_abstract(self):
         """Test that initialize method must be implemented."""
@@ -79,7 +79,7 @@ class TestPyRITInitializerBase:
                 return "Missing initialize"
 
         with pytest.raises(TypeError):
-            MissingInitialize()  # type: ignore[arg-type]
+            MissingInitialize()  # type: ignore[abstract]
 
     def test_default_execution_order_is_one(self):
         """Test that default execution order is 1."""
@@ -287,7 +287,7 @@ class TestInitializeWithTracking:
 
         # Verify the global variable was set
         assert hasattr(sys.modules["__main__"], "tracked_var")
-        assert sys.modules["__main__"].tracked_var == "test_value"  # type: ignore[arg-type]
+        assert sys.modules["__main__"].tracked_var == "test_value"
 
 
 class TestGetInfo:

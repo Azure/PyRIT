@@ -1071,7 +1071,7 @@ class MemoryInterface(abc.ABC):
         try:
             entries: Sequence[SeedEntry] = self._query_entries(
                 SeedEntry,
-                conditions=and_(SeedEntry.dataset_name is not None, SeedEntry.dataset_name != ""),  # type: ignore[arg-type]
+                conditions=and_(SeedEntry.dataset_name.isnot(None), SeedEntry.dataset_name != ""),
                 distinct=True,
             )
             # Extract unique dataset names from the entries
