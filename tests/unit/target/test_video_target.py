@@ -910,3 +910,20 @@ class TestVideoTargetEdgeCases:
                 n_seconds=duration,
             )
             assert target._n_seconds == duration
+
+
+def test_video_validate_previous_conversations(
+    video_target: OpenAIVideoTarget, sample_conversations: MutableSequence[MessagePiece]
+):
+    message_piece = sample_conversations[0]
+
+    mock_memory = MagicMock()
+    mock_memory.get_conversation.return_value = sample_conversations
+    mock_memory.add_message_to_memory = AsyncMock()
+
+    video_target._memory = mock_memory
+
+    request = Message(message_pieces=[message_piece])
+
+    with pytest.raises(ValueError, match="This target only supports a single turn conversation."):
+        video_target._validate_request(message=request)
