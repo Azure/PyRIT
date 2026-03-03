@@ -308,12 +308,14 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 [tool.ruff.lint.per-file-ignores]
 # Ignore D and DOC rules everywhere except for the pyrit/ directory
 "!pyrit/**.py" = ["D", "DOC"]
-# Ignore copyright, import ordering, line length, commented code, async-outside-function, and type-checking in doc/
-"doc/**" = ["CPY001", "E402", "E501", "ERA001", "PLE1142", "TCH"]
+# Ignore rules in doc/ that conflict with notebook cell structure and demo code style
+"doc/**" = ["A", "CPY001", "E402", "E501", "E712", "E722", "ERA001", "LOG015", "PLE1142", "TCH"]
 # Backend API routes raise HTTPException handled by FastAPI, not true exceptions
 "pyrit/backend/**/*.py" = ["DOC501", "B008"]
+# Vendored GCG attack code — external project with its own style
+"pyrit/auxiliary_attacks/**/*.py" = ["A", "B905", "D", "DOC", "SIM101", "SIM108"]
 # UI code has incomplete docstrings (external contributor code)
-"pyrit/ui/**/*.py" = ["D101", "D102", "D107", "D404", "DOC201", "DOC501"]
+"pyrit/ui/**/*.py" = ["D", "DOC201", "DOC501"]
 "pyrit/__init__.py" = ["D104"]
 # Allow broad pytest.raises(Exception) in tests
 "tests/**/*.py" = ["B017"]

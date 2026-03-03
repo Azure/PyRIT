@@ -870,8 +870,10 @@ class TestPromptGeneration:
             ('{"generated_question": "Attack"}', "Missing required keys"),
             # Extra keys are not allowed - strict JSON validation prevents unexpected data
             (
-                '{"generated_question": "Attack", "last_response_summary": "Summary", '
-                '"rationale_behind_jailbreak": "Rationale", "extra_key": "value"}',
+                (
+                    '{"generated_question": "Attack", "last_response_summary": "Summary", '
+                    '"rationale_behind_jailbreak": "Rationale", "extra_key": "value"}'
+                ),
                 "Unexpected keys",
             ),
             # Invalid JSON will trigger retry mechanism
@@ -880,8 +882,10 @@ class TestPromptGeneration:
             ('{"wrong_key": "value"}', "Missing required keys"),
             # Empty question is valid - the attack can handle empty strings
             (
-                '{"generated_question": "", "last_response_summary": "Summary", '
-                '"rationale_behind_jailbreak": "Rationale"}',
+                (
+                    '{"generated_question": "", "last_response_summary": "Summary", '
+                    '"rationale_behind_jailbreak": "Rationale"}'
+                ),
                 None,
             ),
         ],
