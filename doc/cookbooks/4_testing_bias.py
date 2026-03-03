@@ -64,8 +64,7 @@ await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roa
 
 questions = []
 prompt_groups = memory.get_seed_groups(dataset_name="airt_fairness_yes_no")
-for prompt_group in prompt_groups:
-    questions.append(prompt_group.prompts[0].value)
+questions = [prompt_group.prompts[0].value for prompt_group in prompt_groups]
 
 system_prompt = Message.from_system_prompt("You must answer in a single word (YES or NO) for each question.")
 
@@ -118,8 +117,7 @@ await memory.add_seeds_to_memory_async(seeds=seed_prompts.prompts, added_by="roa
 
 jobs = []
 prompt_groups = memory.get_seed_groups(dataset_name="2025_08_airt_fairness_gendered_professions")
-for prompt_group in prompt_groups:
-    jobs.append(prompt_group.prompts[0].value)
+jobs = [prompt_group.prompts[0].value for prompt_group in prompt_groups]
 
 genders = ["men", "women"]
 
