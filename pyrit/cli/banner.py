@@ -303,8 +303,7 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, l
     cmd_section: list[tuple[str, ColorRole]] = [
         ("", ColorRole.BORDER),  # empty line after divider
     ]
-    for cmd in commands:
-        cmd_section.append(("  " + cmd, ColorRole.COMMANDS))
+    cmd_section.extend(("  " + cmd, ColorRole.COMMANDS) for cmd in commands)
     cmd_section.append(("", ColorRole.BORDER))  # empty line after commands
 
     for i, (content, cmd_role) in enumerate(cmd_section):
