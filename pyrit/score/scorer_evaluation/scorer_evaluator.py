@@ -226,7 +226,7 @@ class ScorerEvaluator(abc.ABC):
                 return existing_metrics
 
         # Run evaluation
-        metrics = await self._run_evaluation_async(
+        metrics = await self.evaluate_dataset_async(
             labeled_dataset=combined_dataset,
             num_scorer_trials=num_scorer_trials,
             max_concurrency=max_concurrency,
@@ -333,7 +333,7 @@ class ScorerEvaluator(abc.ABC):
             logger.warning(f"Error checking for existing metrics: {e}")
             return (False, None)
 
-    async def _run_evaluation_async(
+    async def evaluate_dataset_async(
         self,
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
@@ -343,6 +343,8 @@ class ScorerEvaluator(abc.ABC):
         Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
 
         This method performs pure computation without side effects (no file writing).
+        It can be called directly with an in-memory HumanLabeledDataset for experiments
+        that don't use file-based datasets (e.g., iterative rubric tuning with custom splits).
 
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate the scorer against.
