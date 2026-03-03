@@ -402,13 +402,12 @@ class AttackService:
         conversations: list[ConversationSummary] = []
         for conv_id in all_conv_ids:
             stats = stats_map.get(conv_id)
-            created_at = stats.created_at.isoformat() if stats and stats.created_at else None
             conversations.append(
                 ConversationSummary(
                     conversation_id=conv_id,
                     message_count=stats.message_count if stats else 0,
                     last_message_preview=stats.last_message_preview if stats else None,
-                    created_at=created_at,
+                    created_at=stats.created_at if stats else None,
                 )
             )
 
