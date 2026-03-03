@@ -9,7 +9,7 @@ from typing import Any, Optional, TypeVar
 
 import yaml
 
-from pyrit.auth.azure_auth import get_azure_openai_auth
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import (

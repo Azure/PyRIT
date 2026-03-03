@@ -5,7 +5,7 @@ import os
 from collections.abc import Sequence
 from typing import Any, Optional, TypeVar
 
-from pyrit.auth.azure_auth import get_azure_openai_auth
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.executor.attack import (
     AttackScoringConfig,

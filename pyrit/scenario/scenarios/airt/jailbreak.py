@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 
-from pyrit.auth.azure_auth import get_azure_openai_auth
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (

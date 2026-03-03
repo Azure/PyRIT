@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
-from pyrit.auth.azure_auth import get_azure_openai_auth
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.path import (
     EXECUTOR_RED_TEAM_PATH,

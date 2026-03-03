@@ -15,7 +15,7 @@ from collections.abc import Sequence
 from inspect import signature
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
-from pyrit.auth.azure_auth import get_azure_openai_auth
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.deprecation import print_deprecation_message
 from pyrit.datasets import TextJailBreak
