@@ -55,8 +55,8 @@ class Scorer(Identifiable, abc.ABC):
     Abstract base class for scorers.
     """
 
-    # Evaluation configuration - maps input dataset files to a result file
-    # Specifies glob patterns for datasets and a result file name
+    # Evaluation configuration - maps input dataset files to a result file.
+    # Specifies glob patterns for datasets and a result file name.
     evaluation_file_mapping: Optional[ScorerEvalDatasetFiles] = None
 
     _identifier: Optional[ComponentIdentifier] = None
@@ -69,6 +69,22 @@ class Scorer(Identifiable, abc.ABC):
             validator (ScorerPromptValidator): Validator for message pieces and scorer configuration.
         """
         self._validator = validator
+
+    def get_eval_hash(self) -> str:
+        """
+        Compute a behavioral equivalence hash for evaluation grouping.
+
+        Delegates to ``ScorerEvaluationIdentity`` which filters target children
+        (prompt_target, converter_target) to behavioral params only, so the same
+        scorer configuration on different deployments produces the same eval hash.
+
+        Returns:
+            str: A hex-encoded SHA256 hash suitable for eval registry keying.
+        """
+        # Deferred import to avoid circular dependency (scorer_evaluation_identity → identifiers → …)
+        from pyrit.score.scorer_evaluation.scorer_evaluation_identity import ScorerEvaluationIdentity
+
+        return ScorerEvaluationIdentity(self.get_identifier()).eval_hash
 
     @property
     def scorer_type(self) -> ScoreType:
