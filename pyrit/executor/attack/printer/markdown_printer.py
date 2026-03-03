@@ -171,9 +171,8 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         # Footer
         markdown_lines.append("\n---")
-        markdown_lines.append(
-            f"*Report generated at {datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')} UTC*"
-        )
+        timestamp_utc = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+        markdown_lines.append(f"*Report generated at {timestamp_utc}*")
 
         self._render_markdown(markdown_lines)
 
