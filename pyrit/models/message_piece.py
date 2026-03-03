@@ -91,7 +91,7 @@ class MessagePiece:
         """
         self.id = id if id else uuid4()
 
-        if role not in ChatMessageRole.__args__:  # type: ignore
+        if role not in ChatMessageRole.__args__:  # type: ignore[attr-defined]
             raise ValueError(f"Role {role} is not a valid role.")
 
         self._role: ChatMessageRole = role
@@ -251,14 +251,20 @@ class MessagePiece:
             ValueError: If the role is not a valid ChatMessageRole.
 
         """
-        if value not in ChatMessageRole.__args__:  # type: ignore
+        if value not in ChatMessageRole.__args__:  # type: ignore[attr-defined]
             raise ValueError(f"Role {value} is not a valid role.")
         self._role = value
 
-    def to_message(self) -> Message:  # type: ignore # noqa F821
+    def to_message(self) -> Message:  # type: ignore[name-defined] # noqa: F821
+        """
+        Convert this message piece into a Message.
+
+        Returns:
+            Message: A Message containing this piece.
+        """
         from pyrit.models.message import Message
 
-        return Message([self])  # noqa F821
+        return Message([self])  # noqa: F821
 
     def has_error(self) -> bool:
         """
