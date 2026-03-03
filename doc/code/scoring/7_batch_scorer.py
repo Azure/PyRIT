@@ -45,9 +45,7 @@ results = await AttackExecutor().execute_attack_async(  # type: ignore
 )
 
 # Get prompt IDs of the prompts sent by evaluating results
-conversation_ids = []
-for result in results:
-    conversation_ids.append(result.conversation_id)
+conversation_ids = [result.conversation_id for result in results]
 
 memory = CentralMemory.get_memory_instance()
 
@@ -57,8 +55,7 @@ for id in conversation_ids:
         conversation_id=id,
     )
 
-    for piece in pieces:
-        prompt_ids.append(piece.id)
+    prompt_ids.extend(piece.id for piece in pieces)
 
 # %% [markdown]
 # Once the prompts are in the database (which again, is often automatic) we can use `BatchScorer` to score them with whatever scorers we want. It works in parallel with batches.

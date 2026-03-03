@@ -957,14 +957,13 @@ class FuzzerGenerator(
         Returns:
             List of template strings.
         """
-        other_templates = []
         node_ids_on_path = {node.id for node in context.mcts_selected_path}
 
-        for prompt_node in context.initial_prompt_nodes + context.new_prompt_nodes:
-            if prompt_node.id not in node_ids_on_path:
-                other_templates.append(prompt_node.template)
-
-        return other_templates
+        return [
+            prompt_node.template
+            for prompt_node in context.initial_prompt_nodes + context.new_prompt_nodes
+            if prompt_node.id not in node_ids_on_path
+        ]
 
     def _generate_prompts_from_template(self, *, template: SeedPrompt, prompts: list[str]) -> list[str]:
         """
