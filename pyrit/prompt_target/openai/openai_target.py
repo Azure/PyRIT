@@ -63,7 +63,8 @@ def _ensure_async_token_provider(
 
     # Wrap synchronous token provider in async function
     logger.info(
-        "Detected synchronous token provider. Automatically wrapping in async function for compatibility with AsyncOpenAI."
+        "Detected synchronous token provider."
+        " Automatically wrapping in async function for compatibility with AsyncOpenAI."
     )
 
     async def async_token_provider() -> str:
@@ -133,6 +134,9 @@ class OpenAITarget(PromptTarget):
                 from the actual model. If not provided, will attempt to fetch from environment variable.
                 If it is not there either, the identifier "model_name" attribute will use the model_name.
                 Defaults to None.
+
+        Raises:
+            ValueError: If no API key is provided via parameter or environment variable.
         """
         self._headers: dict[str, str] = {}
         self._httpx_client_kwargs = httpx_client_kwargs or {}

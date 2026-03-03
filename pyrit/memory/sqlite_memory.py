@@ -508,29 +508,29 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
         )
         return labels_subquery  # noqa: RET504
 
-    def _get_attack_result_attack_type_condition(self, *, attack_type: str) -> Any:
+    def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
         """
-        SQLite implementation for filtering AttackResults by attack type.
+        SQLite implementation for filtering AttackResults by attack class.
         Uses json_extract() to match class_name in the attack_identifier JSON column.
 
         Returns:
-            Any: A SQLAlchemy condition for filtering by attack type.
+            Any: A SQLAlchemy condition for filtering by attack class.
         """
-        return func.json_extract(AttackResultEntry.attack_identifier, "$.class_name") == attack_type
+        return func.json_extract(AttackResultEntry.attack_identifier, "$.class_name") == attack_class
 
-    def _get_attack_result_converter_types_condition(self, *, converter_types: Sequence[str]) -> Any:
+    def _get_attack_result_converter_classes_condition(self, *, converter_classes: Sequence[str]) -> Any:
         """
-        SQLite implementation for filtering AttackResults by converter types.
+        SQLite implementation for filtering AttackResults by converter classes.
 
-        When converter_types is empty, matches attacks with no converters
+        When converter_classes is empty, matches attacks with no converters
         (request_converter_identifiers is absent or null in the JSON).
-        When non-empty, uses json_each() to check all specified types are present
+        When non-empty, uses json_each() to check all specified classes are present
         (AND logic, case-insensitive).
 
         Returns:
-            Any: A SQLAlchemy condition for filtering by converter types.
+            Any: A SQLAlchemy condition for filtering by converter classes.
         """
-        if len(converter_types) == 0:
+        if len(converter_classes) == 0:
             # Explicitly "no converters": match attacks where the converter list
             # is absent, null, or empty in the stored JSON.
             converter_json = func.json_extract(AttackResultEntry.attack_identifier, "$.request_converter_identifiers")
@@ -542,7 +542,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             )
 
         conditions = []
-        for i, cls in enumerate(converter_types):
+        for i, cls in enumerate(converter_classes):
             param_name = f"conv_cls_{i}"
             conditions.append(
                 text(
@@ -553,7 +553,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             )
         return and_(*conditions)
 
-    def get_unique_attack_type_names(self) -> list[str]:
+    def get_unique_attack_class_names(self) -> list[str]:
         """
         SQLite implementation: extract unique class_name values from attack_identifier JSON.
 
@@ -569,7 +569,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             )
         return sorted(row[0] for row in rows)
 
-    def get_unique_converter_type_names(self) -> list[str]:
+    def get_unique_converter_class_names(self) -> list[str]:
         """
         SQLite implementation: extract unique converter class_name values
         from the request_converter_identifiers array in attack_identifier JSON.
@@ -629,6 +629,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
                       AND p3.labels IS NOT NULL
                       AND p3.labels != '{{}}'
                       AND p3.labels != 'null'
+                    ORDER BY p3.sequence ASC, p3.id ASC
                     LIMIT 1
                 ) AS first_labels,
                 MIN(pme.timestamp) AS created_at

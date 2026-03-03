@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from sqlalchemy import MetaData, and_, or_
 from sqlalchemy.engine.base import Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 from pyrit.common.path import DB_DATA_PATH
@@ -243,8 +244,6 @@ class MemoryInterface(abc.ABC):
         Raises:
             SQLAlchemyError: If there's an error during the database operation.
         """
-        from sqlalchemy.exc import SQLAlchemyError
-
         with closing(self.get_session()) as session:
             try:
                 session.merge(entry)
@@ -291,33 +290,33 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _get_attack_result_attack_type_condition(self, *, attack_type: str) -> Any:
+    def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
         """
-        Return a database-specific condition for filtering AttackResults by attack type
+        Return a database-specific condition for filtering AttackResults by attack class
         (class_name in the attack_identifier JSON column).
 
         Args:
-            attack_type: Exact attack type name to match.
+            attack_class: Exact attack class name to match.
 
         Returns:
             Database-specific SQLAlchemy condition.
         """
 
     @abc.abstractmethod
-    def _get_attack_result_converter_types_condition(self, *, converter_types: Sequence[str]) -> Any:
+    def _get_attack_result_converter_classes_condition(self, *, converter_classes: Sequence[str]) -> Any:
         """
-        Return a database-specific condition for filtering AttackResults by converter types
+        Return a database-specific condition for filtering AttackResults by converter classes
         in the request_converter_identifiers array within attack_identifier JSON column.
 
-        This method is only called when converter filtering is requested (converter_types
+        This method is only called when converter filtering is requested (converter_classes
         is not None). The caller handles the None-vs-list distinction:
 
-        - ``len(converter_types) == 0``: return a condition matching attacks with NO converters.
-        - ``len(converter_types) > 0``: return a condition requiring ALL specified converter
-          type names to be present (AND logic, case-insensitive).
+        - ``len(converter_classes) == 0``: return a condition matching attacks with NO converters.
+        - ``len(converter_classes) > 0``: return a condition requiring ALL specified converter
+          class names to be present (AND logic, case-insensitive).
 
         Args:
-            converter_types: Converter type names to require. An empty sequence means
+            converter_classes: Converter class names to require. An empty sequence means
                 "match only attacks that have no converters".
 
         Returns:
@@ -325,27 +324,27 @@ class MemoryInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_unique_attack_type_names(self) -> list[str]:
+    def get_unique_attack_class_names(self) -> list[str]:
         """
-        Return sorted unique attack type names from all stored attack results.
+        Return sorted unique attack class names from all stored attack results.
 
         Extracts class_name from the attack_identifier JSON column via a
         database-level DISTINCT query.
 
         Returns:
-            Sorted list of unique attack type name strings.
+            Sorted list of unique attack class name strings.
         """
 
     @abc.abstractmethod
-    def get_unique_converter_type_names(self) -> list[str]:
+    def get_unique_converter_class_names(self) -> list[str]:
         """
-        Return sorted unique converter type names used across all attack results.
+        Return sorted unique converter class names used across all attack results.
 
         Extracts class_name values from the request_converter_identifiers array
         within the attack_identifier JSON column via a database-level query.
 
         Returns:
-            Sorted list of unique converter type name strings.
+            Sorted list of unique converter class name strings.
         """
 
     @abc.abstractmethod
@@ -1283,22 +1282,13 @@ class MemoryInterface(abc.ABC):
             SQLAlchemyError: If the database transaction fails.
         """
         entries = [AttackResultEntry(entry=attack_result) for attack_result in attack_results]
-        # Capture the DB-assigned IDs before insert (they'll be set after flush/commit).
-        # _insert_entries closes the session, so we must read `entry.id` *inside*
-        # the session.  Since _insert_entries uses a context manager, we instead
-        # read the ids from the entries *before* the session closes by doing the
-        # insert inline.
-        from contextlib import closing
-
         with closing(self.get_session()) as session:
-            from sqlalchemy.exc import SQLAlchemyError
-
             try:
                 session.add_all(entries)
                 session.commit()
                 # Populate the attack_result_id back onto the domain objects so callers
                 # can reference the DB-assigned ID immediately after insert.
-                for ar, entry in zip(attack_results, entries, strict=True):
+                for ar, entry in zip(attack_results, entries, strict=False):
                     ar.attack_result_id = str(entry.id)
             except SQLAlchemyError:
                 session.rollback()
@@ -1323,6 +1313,9 @@ class MemoryInterface(abc.ABC):
         Raises:
             ValueError: If update_fields is empty.
         """
+        if not update_fields:
+            raise ValueError("update_fields must not be empty")
+
         entries: MutableSequence[AttackResultEntry] = self._query_entries(
             AttackResultEntry,
             conditions=AttackResultEntry.conversation_id == conversation_id,
@@ -1347,9 +1340,18 @@ class MemoryInterface(abc.ABC):
         Returns:
             True if the update was successful, False if the entry was not found.
         """
+        try:
+            attack_result_uuid = uuid.UUID(attack_result_id)
+        except (ValueError, TypeError):
+            logger.warning(
+                "Invalid attack_result_id '%s' passed to update_attack_result_by_id",
+                attack_result_id,
+            )
+            return False
+
         entries: MutableSequence[AttackResultEntry] = self._query_entries(
             AttackResultEntry,
-            conditions=AttackResultEntry.id == attack_result_id,
+            conditions=AttackResultEntry.id == attack_result_uuid,
         )
         if not entries:
             return False
@@ -1364,8 +1366,8 @@ class MemoryInterface(abc.ABC):
         objective: Optional[str] = None,
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
-        attack_type: Optional[str] = None,
-        converter_types: Optional[Sequence[str]] = None,
+        attack_class: Optional[str] = None,
+        converter_classes: Optional[Sequence[str]] = None,
         targeted_harm_categories: Optional[Sequence[str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
@@ -1380,9 +1382,9 @@ class MemoryInterface(abc.ABC):
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
                 Defaults to None.
-            attack_type (Optional[str], optional): Filter by exact attack class_name in attack_identifier.
+            attack_class (Optional[str], optional): Filter by exact attack class_name in attack_identifier.
                 Defaults to None.
-            converter_types (Optional[Sequence[str]], optional): Filter by converter type names.
+            converter_classes (Optional[Sequence[str]], optional): Filter by converter class names.
                 Returns only attacks that used ALL specified converters (AND logic, case-insensitive).
                 Defaults to None.
             targeted_harm_categories (Optional[Sequence[str]], optional):
@@ -1416,14 +1418,14 @@ class MemoryInterface(abc.ABC):
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
 
-        if attack_type:
+        if attack_class:
             # Use database-specific JSON query method
-            conditions.append(self._get_attack_result_attack_type_condition(attack_type=attack_type))
+            conditions.append(self._get_attack_result_attack_class_condition(attack_class=attack_class))
 
-        if converter_types is not None:
-            # converter_types=[] means "only attacks with no converters"
-            # converter_types=["A","B"] means "must have all listed converters"
-            conditions.append(self._get_attack_result_converter_types_condition(converter_types=converter_types))
+        if converter_classes is not None:
+            # converter_classes=[] means "only attacks with no converters"
+            # converter_classes=["A","B"] means "must have all listed converters"
+            conditions.append(self._get_attack_result_converter_classes_condition(converter_classes=converter_classes))
 
         if targeted_harm_categories:
             # Use database-specific JSON query method
