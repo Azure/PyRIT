@@ -5,10 +5,12 @@
 Unit tests for the pyrit_shell CLI module.
 """
 
+import cmd
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyrit.cli import pyrit_shell
+from pyrit.cli import banner, pyrit_shell
+from pyrit.cli.banner import get_static_banner
 
 
 class TestPyRITShell:
@@ -41,8 +43,6 @@ class TestPyRITShell:
         assert shell.prompt == "pyrit> "
         # intro is now set dynamically in cmdloop via banner.play_animation
         # Verify that calling play_animation with no_animation produces expected content
-        from pyrit.cli.banner import get_static_banner
-
         static = get_static_banner()
         assert "Interactive Shell" in static
 
@@ -490,6 +490,34 @@ class TestPyRITShell:
         with patch("cmd.Cmd.do_help") as mock_parent_help:
             shell.do_help("run")
             mock_parent_help.assert_called_with("run")
+
+    @patch.object(cmd.Cmd, "cmdloop")
+    @patch.object(banner, "play_animation")
+    def test_cmdloop_sets_intro_via_play_animation(self, mock_play: MagicMock, mock_cmdloop: MagicMock):
+        """Test cmdloop wires banner.play_animation into intro and threads --no-animation."""
+        mock_context = MagicMock()
+        mock_context.initialize_async = AsyncMock()
+
+        mock_play.return_value = "animated banner"
+
+        shell = pyrit_shell.PyRITShell(context=mock_context, no_animation=True)
+        shell.cmdloop()
+
+        mock_play.assert_called_once_with(no_animation=True)
+        assert shell.intro == "animated banner"
+        mock_cmdloop.assert_called_once_with(intro="animated banner")
+
+    @patch.object(cmd.Cmd, "cmdloop")
+    def test_cmdloop_honors_explicit_intro(self, mock_cmdloop: MagicMock):
+        """Test cmdloop honors a non-None intro argument without calling play_animation."""
+        mock_context = MagicMock()
+        mock_context.initialize_async = AsyncMock()
+
+        shell = pyrit_shell.PyRITShell(context=mock_context)
+        shell.cmdloop(intro="custom intro")
+
+        assert shell.intro == "custom intro"
+        mock_cmdloop.assert_called_once_with(intro="custom intro")
 
     def test_do_exit(self, capsys):
         """Test do_exit command."""

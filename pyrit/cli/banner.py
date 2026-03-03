@@ -148,7 +148,8 @@ def can_animate() -> bool:
     if os.environ.get("PYRIT_NO_ANIMATION"):
         return False
     # CI environments
-    return not os.environ.get("CI")
+    ci_val = os.environ.get("CI", "").strip().lower()
+    return ci_val not in ("1", "true", "yes", "on")
 
 
 # ── Raccoon braille art ────────────────────────────────────────────────────────
@@ -201,7 +202,8 @@ def _box_line(content: str) -> str:
     Returns:
         The content wrapped in box border characters.
     """
-    return "║" + content.ljust(BOX_W) + "║"
+    truncated_content = content[:BOX_W]
+    return "║" + truncated_content.ljust(BOX_W) + "║"
 
 
 def _empty_line() -> str:
@@ -400,11 +402,22 @@ def _build_animation_frames() -> list[AnimationFrame]:
                         star = star_chars[(s_row + i) % len(star_chars)]
                         content = content[:s_col] + star + content[s_col + 1 :]
                         line_idx = len(lines)
-                        seg_colors.setdefault(line_idx, []).append(
-                            (s_col + 1, s_col + 2, ColorRole.SPARKLE)  # +1 for ║
-                        )
+                        seg_colors.setdefault(line_idx, [])
+            line_idx = len(lines)
+            boxed_line = "║" + content + "║"
+            if line_idx in seg_colors:
+                # Add base segments (border + raccoon body) before sparkle segments
+                base_segs = [
+                    (0, 1, ColorRole.BORDER),
+                    (1, len(boxed_line) - 1, ColorRole.RACCOON_BODY),
+                    (len(boxed_line) - 1, len(boxed_line), ColorRole.BORDER),
+                ]
+                for s_row, s_col in star_positions[: i - 1]:
+                    if r_idx == s_row and s_col < BOX_W:
+                        base_segs.append((s_col + 1, s_col + 2, ColorRole.SPARKLE))  # +1 for ║
+                seg_colors[line_idx] = base_segs
             color_map[len(lines)] = ColorRole.RACCOON_BODY
-            lines.append("║" + content + "║")
+            lines.append(boxed_line)
         color_map[len(lines)] = ColorRole.BORDER
         lines.append(empty)
         color_map[len(lines)] = ColorRole.BORDER
@@ -489,10 +502,16 @@ def _build_animation_frames() -> list[AnimationFrame]:
             full_line = _box_line(r_part + p_part)
             line_idx = len(lines)
 
-            # Add sparkle characters
+            # Add sparkle characters (+1 to account for left ║ border)
             for s_row, s_col, s_char in spots:
-                if row_i == s_row and 1 < s_col < BOX_W and full_line[s_col] == " ":
-                    full_line = full_line[:s_col] + s_char + full_line[s_col + 1 :]
+                target_col = s_col + 1
+                if (
+                    row_i == s_row
+                    and 1 < s_col < BOX_W
+                    and target_col < len(full_line) - 1
+                    and full_line[target_col] == " "
+                ):
+                    full_line = full_line[:target_col] + s_char + full_line[target_col + 1 :]
 
             # Per-segment colors
             segs = [
@@ -502,12 +521,16 @@ def _build_animation_frames() -> list[AnimationFrame]:
             pyrit_start = 1 + RACCOON_COL
             if 0 <= pyrit_idx < len(PYRIT_LETTERS):
                 segs.append((pyrit_start, pyrit_start + PYRIT_WIDTH, ColorRole.PYRIT_TEXT))
+                segs.append((pyrit_start + PYRIT_WIDTH, len(full_line) - 1, ColorRole.BORDER))
             elif row_i in (subtitle_row_1, subtitle_row_2):
                 segs.append((pyrit_start, len(full_line) - 1, ColorRole.SUBTITLE))
-            # Add sparkle color segments
+            else:
+                segs.append((pyrit_start, len(full_line) - 1, ColorRole.BORDER))
+            # Add sparkle color segments (+1 to account for left ║ border)
             for s_row, s_col, _ in spots:
-                if row_i == s_row and 1 < s_col < BOX_W:
-                    segs.append((s_col, s_col + 1, ColorRole.SPARKLE))
+                target_col = s_col + 1
+                if row_i == s_row and 1 < s_col < BOX_W and target_col < len(full_line) - 1:
+                    segs.append((target_col, target_col + 1, ColorRole.SPARKLE))
             segs.append((len(full_line) - 1, len(full_line), ColorRole.BORDER))
             seg_colors[line_idx] = segs
             color_map[line_idx] = ColorRole.RACCOON_BODY
@@ -644,7 +667,8 @@ def play_animation(no_animation: bool = False) -> str:
         no_animation: If True, skip animation and return static banner.
 
     Returns:
-        The final static banner string (to be used as the shell intro).
+        The static banner string when animation is skipped or unsupported.
+        Returns empty string when animation ran (output was written directly to stdout).
     """
     if no_animation or not can_animate():
         return get_static_banner()

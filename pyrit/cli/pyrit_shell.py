@@ -98,10 +98,12 @@ class PyRITShell(cmd.Cmd):
 
     def cmdloop(self, intro: Optional[str] = None) -> None:
         """Override cmdloop to play animated banner before starting the REPL."""
-        # Wait for background init to finish BEFORE animation,
-        # so its log output doesn't interfere with cursor positioning
-        self._init_complete.wait()
-        self.intro = banner.play_animation(no_animation=self._no_animation)
+        if intro is None:
+            # Wait for background init to finish BEFORE animation,
+            # so its log output doesn't interfere with cursor positioning
+            self._init_complete.wait()
+            intro = banner.play_animation(no_animation=self._no_animation)
+        self.intro = intro
         super().cmdloop(intro=self.intro)
 
     def do_list_scenarios(self, arg: str) -> None:
