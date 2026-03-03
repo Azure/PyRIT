@@ -20,6 +20,7 @@ from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget
 from pyrit.scenario.scenarios.airt import (
     Psychosocial,
     PsychosocialStrategy,
+    PsychosocialScenario,
 )
 from pyrit.scenario.scenarios.airt.psychosocial import SubharmConfig
 from pyrit.score import FloatScaleThresholdScorer
