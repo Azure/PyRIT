@@ -88,23 +88,28 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
         source_url = f"https://huggingface.co/datasets/{self.HF_DATASET_NAME}"
         groups = ["UC San Diego"]
 
-        seed_prompts = [
-            SeedPrompt(
-                value=f"{{% raw %}}{item['user_input']}{{% endraw %}}",
-                data_type="text",
-                dataset_name=self.dataset_name,
-                description=description,
-                source=source_url,
-                authors=authors,
-                groups=groups,
-                metadata={
-                    "toxicity": str(item.get("toxicity", "")),
-                    "jailbreaking": str(item.get("jailbreaking", "")),
-                    "human_annotation": str(item.get("human_annotation", "")),
-                },
-            )
-            for item in data
-        ]
+        seed_prompts: list[SeedPrompt] = []
+        for item in data:
+            try:
+                seed_prompts.append(
+                    SeedPrompt(
+                        value=f"{{% raw %}}{item['user_input']}{{% endraw %}}",
+                        data_type="text",
+                        dataset_name=self.dataset_name,
+                        description=description,
+                        source=source_url,
+                        authors=authors,
+                        groups=groups,
+                        metadata={
+                            "toxicity": str(item.get("toxicity", "")),
+                            "jailbreaking": str(item.get("jailbreaking", "")),
+                            "human_annotation": str(item.get("human_annotation", "")),
+                        },
+                    )
+                )
+            except Exception:
+                conv_id = item.get("conv_id", "unknown")
+                logger.debug(f"Skipping entry with conv_id={conv_id}: failed to parse as Jinja2 template")
 
         logger.info(f"Successfully loaded {len(seed_prompts)} prompts from ToxicChat dataset")
 

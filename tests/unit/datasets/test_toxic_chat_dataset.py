@@ -86,6 +86,47 @@ class TestToxicChatDataset:
             assert dataset.seeds[0].value == "Normal question"
             assert dataset.seeds[1].value == "<!DOCTYPE html>{%block%}broken"
 
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_skips_jinja2_incompatible_entries(self):
+        """Test that entries with Jinja2-incompatible content are skipped."""
+        data_with_endraw = [
+            {
+                "conv_id": "good1",
+                "user_input": "Normal question",
+                "model_output": "Normal answer.",
+                "human_annotation": "False",
+                "toxicity": 0,
+                "jailbreaking": 0,
+                "openai_moderation": "[]",
+            },
+            {
+                "conv_id": "bad1",
+                "user_input": "This has {% endraw %} in it",
+                "model_output": "N/A",
+                "human_annotation": "False",
+                "toxicity": 0,
+                "jailbreaking": 0,
+                "openai_moderation": "[]",
+            },
+            {
+                "conv_id": "good2",
+                "user_input": "Another normal question",
+                "model_output": "Another answer.",
+                "human_annotation": "False",
+                "toxicity": 0,
+                "jailbreaking": 0,
+                "openai_moderation": "[]",
+            },
+        ]
+        loader = _ToxicChatDataset()
+
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=data_with_endraw)):
+            dataset = await loader.fetch_dataset()
+
+            assert len(dataset.seeds) == 2
+            assert dataset.seeds[0].value == "Normal question"
+            assert dataset.seeds[1].value == "Another normal question"
+
     def test_dataset_name(self):
         """Test dataset_name property."""
         loader = _ToxicChatDataset()
@@ -109,3 +150,5 @@ class TestToxicChatDataset:
             call_kwargs = mock_fetch.call_args.kwargs
             assert call_kwargs["dataset_name"] == "lmsys/toxic-chat"
             assert call_kwargs["config"] == "custom_config"
+            assert call_kwargs["split"] == "test"
+            assert call_kwargs["cache"] is True
