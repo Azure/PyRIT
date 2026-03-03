@@ -182,13 +182,13 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
 
     assert len(messages) == 3
     assert messages[0]["role"] == "user"
-    assert messages[0]["content"][0]["type"] == "input_text"  # type: ignore
-    assert messages[0]["content"][1]["type"] == "input_image"  # type: ignore
+    assert messages[0]["content"][0]["type"] == "input_text"  # type: ignore[method-assign]
+    assert messages[0]["content"][1]["type"] == "input_image"  # type: ignore[method-assign]
     assert messages[1]["role"] == "assistant"
-    assert messages[1]["content"][0]["type"] == "output_text"  # type: ignore
+    assert messages[1]["content"][0]["type"] == "output_text"  # type: ignore[method-assign]
     assert messages[2]["role"] == "user"
-    assert messages[2]["content"][0]["type"] == "input_text"  # type: ignore
-    assert messages[2]["content"][1]["type"] == "input_image"  # type: ignore
+    assert messages[2]["content"][0]["type"] == "input_text"  # type: ignore[method-assign]
+    assert messages[2]["content"][1]["type"] == "input_image"  # type: ignore[method-assign]
 
     os.remove(image_request.original_value)
 
@@ -570,7 +570,7 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
 
 def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
     image_piece = get_image_message_piece()
-    image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
+    image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore[method-assign]
     message = Message(
         message_pieces=[
             MessagePiece(
