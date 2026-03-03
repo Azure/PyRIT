@@ -248,7 +248,8 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
             # Ensure 16-bit audio
             if audio.sample_width != AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH:
                 logger.info(
-                    f"Converting sample width from {audio.sample_width * 8}-bit to {AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH * 8}-bit"
+                    f"Converting sample width from {audio.sample_width * 8}-bit"
+                    f" to {AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH * 8}-bit"
                 )
                 audio = audio.set_sample_width(AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH)
 
