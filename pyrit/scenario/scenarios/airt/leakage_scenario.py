@@ -373,11 +373,8 @@ class LeakageScenario(Scenario):
         # Resolve objectives to seed groups format
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks: list[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=LeakageStrategy
         )
 
-        for strategy in strategies:
-            atomic_attacks.append(await self._get_atomic_attack_from_strategy_async(strategy))
-        return atomic_attacks
+        return [await self._get_atomic_attack_from_strategy_async(strategy) for strategy in strategies]

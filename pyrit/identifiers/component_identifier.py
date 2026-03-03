@@ -80,9 +80,7 @@ def _build_hash_dict(
 
     # Only include non-None params — adding an optional param with None default
     # won't change existing hashes, making the schema backward-compatible.
-    for key, value in sorted(params.items()):
-        if value is not None:
-            hash_dict[key] = value
+    hash_dict.update({key: value for key, value in sorted(params.items()) if value is not None})
 
     # Children contribute their hashes, not their full structure.
     if children:

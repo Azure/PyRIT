@@ -791,17 +791,15 @@ class Scorer(Identifiable, abc.ABC):
             return []
 
         # Create all scoring tasks, note TEMPORARY fix to prevent multi-piece responses from breaking scoring logic
-        tasks = []
-
-        for scorer in scorers:
-            tasks.append(
-                scorer.score_async(
-                    message=response,
-                    objective=objective,
-                    role_filter=role_filter,
-                    skip_on_error_result=skip_on_error_result,
-                )
+        tasks = [
+            scorer.score_async(
+                message=response,
+                objective=objective,
+                role_filter=role_filter,
+                skip_on_error_result=skip_on_error_result,
             )
+            for scorer in scorers
+        ]
 
         if not tasks:
             return []

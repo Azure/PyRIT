@@ -63,8 +63,8 @@ class AttackService:
     async def list_attacks_async(
         self,
         *,
-        attack_class: Optional[str] = None,
-        converter_classes: Optional[list[str]] = None,
+        attack_type: Optional[str] = None,
+        converter_types: Optional[list[str]] = None,
         outcome: Optional[Literal["undetermined", "success", "failure"]] = None,
         labels: Optional[dict[str, str]] = None,
         min_turns: Optional[int] = None,
@@ -78,8 +78,8 @@ class AttackService:
         Queries AttackResult entries from the database.
 
         Args:
-            attack_class: Filter by exact attack class_name (case-sensitive).
-            converter_classes: Filter by converter usage.
+            attack_type: Filter by exact attack class_name (case-sensitive).
+            converter_types: Filter by converter usage.
                 None = no filter, [] = only attacks with no converters,
                 ["A", "B"] = only attacks using ALL specified converters (AND logic, case-insensitive).
             outcome: Filter by attack outcome.
@@ -96,8 +96,8 @@ class AttackService:
         attack_results = self._memory.get_attack_results(
             outcome=outcome,
             labels=labels,
-            attack_class=attack_class,
-            converter_classes=converter_classes,
+            attack_class=attack_type,
+            converter_classes=converter_types,
         )
 
         filtered: list[AttackResult] = []
