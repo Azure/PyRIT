@@ -124,15 +124,14 @@ async def evaluate_scorers() -> None:
     )
 
     # Harm Scorers
-    likert_scorers_gpt_4o = []
-    for scale in LikertScalePaths:
-        if scale.evaluation_files is not None:
-            likert_scorers_gpt_4o.append(
-                SelfAskLikertScorer(
-                    chat_target=gpt_4o_target,
-                    likert_scale=scale,
-                )
-            )
+    likert_scorers_gpt_4o = [
+        SelfAskLikertScorer(
+            chat_target=gpt_4o_target,
+            likert_scale=scale,
+        )
+        for scale in LikertScalePaths
+        if scale.evaluation_files is not None
+    ]
 
     acs_hate = AzureContentFilterScorer(harm_categories=[TextCategory.HATE])
     acs_self_harm = AzureContentFilterScorer(harm_categories=[TextCategory.SELF_HARM])
