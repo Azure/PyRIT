@@ -172,7 +172,9 @@ class TestAIRTTargetInitializerInitialize:
         os.environ["AZURE_OPENAI_GPT4O_ENDPOINT"] = "https://my-deployment.openai.azure.com/openai/v1"
         os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "gpt-4o"
 
-        mock_token_provider = lambda: "mock-token"
+        def mock_token_provider() -> str:
+            return "mock-token"
+
         with patch("pyrit.setup.initializers.airt_targets.get_azure_openai_auth", return_value=mock_token_provider):
             init = AIRTTargetInitializer()
             await init.initialize_async()
