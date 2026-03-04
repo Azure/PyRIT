@@ -66,6 +66,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
  && apt-get install -y nodejs \
  && npm install -g npm@latest \
  && npm install -g @github/copilot@0.0.421 \
+ && npm cache clean --force \
+ && rm -rf /root/.npm \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
