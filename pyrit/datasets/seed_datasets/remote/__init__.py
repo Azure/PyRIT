@@ -16,6 +16,9 @@ from pyrit.datasets.seed_datasets.remote.aya_redteaming_dataset import (
 from pyrit.datasets.seed_datasets.remote.babelscape_alert_dataset import (
     _BabelscapeAlertDataset,
 )  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.beaver_tails_dataset import (
+    _BeaverTailsDataset,
+)  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.ccp_sensitive_prompts_dataset import (
     _CCPSensitivePromptsDataset,
 )  # noqa: F401
@@ -86,6 +89,9 @@ from pyrit.datasets.seed_datasets.remote.sosbench_dataset import (
 from pyrit.datasets.seed_datasets.remote.tdc23_redteaming_dataset import (
     _TDC23RedteamingDataset,
 )  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.toxic_chat_dataset import (
+    _ToxicChatDataset,
+)  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.transphobia_awareness_dataset import (  # noqa: F401
     _TransphobiaAwarenessDataset,
 )
@@ -102,6 +108,7 @@ __all__ = [
     "_AegisContentSafetyDataset",
     "_AyaRedteamingDataset",
     "_BabelscapeAlertDataset",
+    "_BeaverTailsDataset",
     "_CCPSensitivePromptsDataset",
     "_DarkBenchDataset",
     "_EquityMedQADataset",
@@ -126,6 +133,7 @@ __all__ = [
     "_SOSBenchDataset",
     "_SorryBenchDataset",
     "_TDC23RedteamingDataset",
+    "_ToxicChatDataset",
     "_TransphobiaAwarenessDataset",
     "_VLSUMultimodalDataset",
     "_XSTestDataset",

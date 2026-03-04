@@ -345,9 +345,7 @@ class TestPlaywrightTargetEdgeCases:
 
         async def complex_interaction_func(page, message):
             # Simulate processing all pieces
-            processed_values = []
-            for piece in message.message_pieces:
-                processed_values.append(f"Processed[{piece.converted_value}]")
+            processed_values = [f"Processed[{piece.converted_value}]" for piece in message.message_pieces]
             return " | ".join(processed_values)
 
         target = PlaywrightTarget(interaction_func=complex_interaction_func, page=mock_page)
