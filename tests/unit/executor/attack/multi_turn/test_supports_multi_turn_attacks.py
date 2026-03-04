@@ -305,6 +305,66 @@ class TestSystemPromptCarryoverOnRotation:
         assert new_messages[0].api_role == "system"
         assert new_messages[0].get_value() == "Only a system message"
 
+    def test_multipiece_system_message_fully_duplicated(self):
+        """A system Message with multiple pieces (same sequence) is fully duplicated."""
+        strategy = _make_strategy(supports_multi_turn=False)
+        context = _make_context()
+        memory = CentralMemory.get_memory_instance()
+
+        # Two system pieces at the same sequence form one multi-piece Message
+        sys_text = MessagePiece(
+            original_value="System text instruction",
+            role="system",
+            conversation_id=context.session.conversation_id,
+            sequence=0,
+        )
+        sys_image = MessagePiece(
+            original_value="image_placeholder",
+            role="system",
+            conversation_id=context.session.conversation_id,
+            sequence=0,
+            original_value_data_type="image_path",
+        )
+        user_piece = MessagePiece(
+            original_value="Hello",
+            role="user",
+            conversation_id=context.session.conversation_id,
+            sequence=1,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys_text, sys_image, user_piece])
+
+        context.executed_turns = 1
+        strategy._rotate_conversation_for_single_turn_target(context=context)
+
+        new_messages = memory.get_conversation(conversation_id=context.session.conversation_id)
+        assert len(new_messages) == 1
+        assert new_messages[0].api_role == "system"
+        # Both pieces should be present in the duplicated message
+        assert len(new_messages[0].message_pieces) == 2
+        values = {p.converted_value for p in new_messages[0].message_pieces}
+        assert values == {"System text instruction", "image_placeholder"}
+
+    def test_old_conversation_untouched_after_rotation(self):
+        """Rotation must not alter messages in the old conversation."""
+        strategy = _make_strategy(supports_multi_turn=False)
+        context = _make_context()
+        memory = CentralMemory.get_memory_instance()
+        old_id = context.session.conversation_id
+
+        _seed_conversation(
+            conversation_id=old_id,
+            system_prompt="Original system prompt",
+            user_text="Original user message",
+        )
+
+        context.executed_turns = 1
+        strategy._rotate_conversation_for_single_turn_target(context=context)
+
+        # Old conversation should still have both messages intact
+        old_messages = memory.get_conversation(conversation_id=old_id)
+        old_roles = [m.api_role for m in old_messages]
+        assert old_roles == ["system", "user"]
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestTAPNodeDuplicateSystemMessages:
@@ -556,6 +616,67 @@ class TestTAPNodeDuplicateSystemMessages:
         dup_messages = memory.get_conversation(conversation_id=duplicate.objective_target_conversation_id)
         assert len(dup_messages) == 1
         assert dup_messages[0].get_value() == long_prompt
+
+    def test_original_conversation_untouched_after_duplicate(self):
+        """Duplicating must not alter the original node's conversation."""
+        node = self._make_tap_node(supports_multi_turn=False)
+        memory = CentralMemory.get_memory_instance()
+
+        sys_piece = MessagePiece(
+            original_value="System prompt",
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=0,
+        )
+        user_piece = MessagePiece(
+            original_value="User attack",
+            role="user",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=1,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys_piece, user_piece])
+
+        node.duplicate()
+
+        # Original conversation should still have both messages
+        orig_messages = memory.get_conversation(conversation_id=node.objective_target_conversation_id)
+        orig_roles = [m.api_role for m in orig_messages]
+        assert orig_roles == ["system", "user"]
+
+    def test_single_turn_multipiece_system_message_duplicated(self):
+        """A multi-piece system Message (same sequence) is fully duplicated in TAP."""
+        node = self._make_tap_node(supports_multi_turn=False)
+        memory = CentralMemory.get_memory_instance()
+
+        sys_text = MessagePiece(
+            original_value="System text",
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=0,
+        )
+        sys_image = MessagePiece(
+            original_value="image_data",
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=0,
+            original_value_data_type="image_path",
+        )
+        user_piece = MessagePiece(
+            original_value="Attack",
+            role="user",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=1,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys_text, sys_image, user_piece])
+
+        duplicate = node.duplicate()
+
+        dup_messages = memory.get_conversation(conversation_id=duplicate.objective_target_conversation_id)
+        assert len(dup_messages) == 1
+        assert dup_messages[0].api_role == "system"
+        assert len(dup_messages[0].message_pieces) == 2
+        dup_values = {p.converted_value for p in dup_messages[0].message_pieces}
+        assert dup_values == {"System text", "image_data"}
 
 
 @pytest.mark.usefixtures("patch_central_database")
