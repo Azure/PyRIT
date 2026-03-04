@@ -12,7 +12,7 @@ import random
 import uuid
 import warnings
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pyrit.common import utils
@@ -121,7 +121,7 @@ class SeedDataset(YamlLoadable):
         self.authors = authors or []
         self.groups = groups or []
         self.source = source
-        self.date_added = date_added or datetime.now()
+        self.date_added = date_added or datetime.now(tz=timezone.utc)
         self.added_by = added_by
 
         # Convert any dictionaries in `seeds` to SeedPrompt and/or SeedObjective objects

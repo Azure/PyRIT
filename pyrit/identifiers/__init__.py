@@ -8,10 +8,13 @@ from pyrit.identifiers.class_name_utils import (
     snake_case_to_class_name,
 )
 from pyrit.identifiers.component_identifier import ComponentIdentifier, Identifiable, config_hash
+from pyrit.identifiers.evaluation_identity import EvaluationIdentity, compute_eval_hash
 
 __all__ = [
     "class_name_to_snake_case",
     "ComponentIdentifier",
+    "compute_eval_hash",
+    "EvaluationIdentity",
     "Identifiable",
     "snake_case_to_class_name",
     "config_hash",
