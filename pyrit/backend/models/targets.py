@@ -33,9 +33,7 @@ class TargetInstance(BaseModel):
     temperature: Optional[float] = Field(None, description="Temperature parameter for generation")
     top_p: Optional[float] = Field(None, description="Top-p parameter for generation")
     max_requests_per_minute: Optional[int] = Field(None, description="Maximum requests per minute")
-    supports_multiturn_chat: bool = Field(
-        True, description="Whether the target supports multi-turn conversation history"
-    )
+    supports_multi_turn: bool = Field(True, description="Whether the target supports multi-turn conversation history")
     target_specific_params: Optional[dict[str, Any]] = Field(None, description="Additional target-specific parameters")
 
 

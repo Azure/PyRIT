@@ -6,7 +6,7 @@ Target mappers – domain → DTO translation for target-related models.
 """
 
 from pyrit.backend.models.targets import TargetInstance
-from pyrit.prompt_target import PromptChatTarget, PromptTarget
+from pyrit.prompt_target import PromptTarget
 
 
 def target_object_to_instance(target_registry_name: str, target_obj: PromptTarget) -> TargetInstance:
@@ -33,6 +33,6 @@ def target_object_to_instance(target_registry_name: str, target_obj: PromptTarge
         temperature=identifier.params.get("temperature"),
         top_p=identifier.params.get("top_p"),
         max_requests_per_minute=identifier.params.get("max_requests_per_minute"),
-        supports_multiturn_chat=isinstance(target_obj, PromptChatTarget),
+        supports_multi_turn=target_obj.capabilities.supports_multi_turn,
         target_specific_params=identifier.params.get("target_specific_params"),
     )

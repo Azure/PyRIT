@@ -34,6 +34,7 @@ from pyrit.backend.mappers.target_mappers import target_object_to_instance
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.models.conversation_stats import ConversationStats
+from pyrit.prompt_target import PromptTarget, TargetCapabilities
 
 # ============================================================================
 # Helpers
@@ -973,11 +974,10 @@ class TestTargetObjectToInstance:
         assert result.endpoint is None
         assert result.model_name is None
 
-    def test_supports_multiturn_chat_true_for_prompt_chat_target(self) -> None:
-        """Test that PromptChatTarget subclasses have supports_multiturn_chat=True."""
-        from pyrit.prompt_target import PromptChatTarget
-
-        target_obj = MagicMock(spec=PromptChatTarget)
+    def test_supports_multi_turn_true_when_capability_set(self) -> None:
+        """Test that targets with supports_multi_turn capability have supports_multi_turn=True."""
+        target_obj = MagicMock(spec=PromptTarget)
+        target_obj.capabilities = TargetCapabilities(supports_multi_turn=True)
         mock_identifier = ComponentIdentifier(
             class_name="OpenAIChatTarget",
             class_module="pyrit.prompt_target",
@@ -990,13 +990,12 @@ class TestTargetObjectToInstance:
 
         result = target_object_to_instance("t-1", target_obj)
 
-        assert result.supports_multiturn_chat is True
+        assert result.supports_multi_turn is True
 
-    def test_supports_multiturn_chat_false_for_plain_prompt_target(self) -> None:
-        """Test that plain PromptTarget (non-chat) has supports_multiturn_chat=False."""
-        from pyrit.prompt_target import PromptTarget
-
+    def test_supports_multi_turn_false_when_capability_not_set(self) -> None:
+        """Test that targets without supports_multi_turn capability have supports_multi_turn=False."""
         target_obj = MagicMock(spec=PromptTarget)
+        target_obj.capabilities = TargetCapabilities(supports_multi_turn=False)
         mock_identifier = ComponentIdentifier(
             class_name="TextTarget",
             class_module="pyrit.prompt_target",
@@ -1005,7 +1004,7 @@ class TestTargetObjectToInstance:
 
         result = target_object_to_instance("t-1", target_obj)
 
-        assert result.supports_multiturn_chat is False
+        assert result.supports_multi_turn is False
 
 
 # ============================================================================
