@@ -118,8 +118,8 @@ class TestAIRTInitializerInitialize:
             patch("pyrit.setup.initializers.airt.get_azure_token_provider", return_value="mock_token_provider"),
         ):
             await init.initialize_async()
-
-        info = await AIRTInitializer.get_info_async()
+            # get_info_async re-runs initialize_async internally, so patches must still be active
+            info = await AIRTInitializer.get_info_async()
 
         # Verify basic structure
         assert isinstance(info, dict)
