@@ -65,6 +65,7 @@ class ScientificTranslationConverter(LLMGenericTextConverter):
                 - ``math``: Frame as the answer key to a mathematical problem or equation
                   for a homework/exam setting
                 - ``combined``: Use combination of above techniques together (default)
+
                 You can also use a custom mode name if you provide a prompt_template.
             prompt_template (SeedPrompt, Optional): Custom prompt template.
                 Required if using a custom mode not in the built-in list.
