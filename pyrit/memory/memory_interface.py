@@ -410,7 +410,7 @@ class MemoryInterface(abc.ABC):
                 message_piece_id = score.message_piece_id
                 pieces = self.get_message_pieces(prompt_ids=[str(message_piece_id)])
                 if not pieces:
-                    logging.error(f"MessagePiece with ID {message_piece_id} not found in memory.")
+                    logger.error(f"MessagePiece with ID {message_piece_id} not found in memory.")
                     continue
                 # auto-link score to the original prompt id if the prompt is a duplicate
                 if pieces[0].original_prompt_id != pieces[0].id:
