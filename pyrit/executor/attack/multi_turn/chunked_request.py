@@ -267,9 +267,6 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
         # Send each chunk request and collect responses
         response = None
         for idx, chunk_prompt in enumerate(chunk_prompts):
-            # For single-turn targets, rotate conversation_id so each chunk gets a fresh conversation
-            self._rotate_conversation_for_single_turn_target(context=context)
-
             logger.info(f"Sending chunk request {idx + 1}/{len(chunk_prompts)}")
 
             # Create message for this chunk request
