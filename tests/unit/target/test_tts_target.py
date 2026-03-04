@@ -32,8 +32,12 @@ def test_tts_initializes(tts_target: OpenAITTSTarget):
 
 
 def test_tts_initializes_calls_get_required_parameters(patch_central_database):
-    with patch("pyrit.common.default_values.get_required_value") as mock_get_required:
+    with (
+        patch("pyrit.common.default_values.get_required_value") as mock_get_required,
+        patch("pyrit.common.default_values.get_non_required_value") as mock_get_non_required,
+    ):
         mock_get_required.side_effect = lambda env_var_name, passed_value: passed_value
+        mock_get_non_required.side_effect = lambda env_var_name, passed_value: passed_value
 
         target = OpenAITTSTarget(
             model_name="deploymenttest",
@@ -41,7 +45,7 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
             api_key="keytest",
         )
 
-        assert mock_get_required.call_count == 3
+        assert mock_get_required.call_count == 2
 
         mock_get_required.assert_any_call(
             env_var_name=target.endpoint_environment_variable, passed_value="endpointtest"
@@ -49,7 +53,7 @@ def test_tts_initializes_calls_get_required_parameters(patch_central_database):
         mock_get_required.assert_any_call(
             env_var_name=target.model_name_environment_variable, passed_value="deploymenttest"
         )
-        mock_get_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
+        mock_get_non_required.assert_any_call(env_var_name=target.api_key_environment_variable, passed_value="keytest")
 
 
 @pytest.mark.asyncio
