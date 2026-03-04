@@ -112,7 +112,7 @@ async def test_evaluate_dataset_async_objective(mock_objective_scorer):
 
 @pytest.mark.asyncio
 async def test_evaluate_dataset_async_objective_returns_metrics(mock_objective_scorer):
-    """Test that evaluate_dataset_async returns metrics without side effects."""
+    """Test that evaluate_dataset_async returns metrics without registry or file side effects."""
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]

@@ -443,8 +443,7 @@ class HumanLabeledDataset:
                 nan_count = eval_df[col].isna().sum()
                 raise ValueError(
                     f"Human score column '{col}' contains {nan_count} NaN value(s). "
-                    f"All human score cells must be filled. If this is a multi-annotator dataset "
-                    f"with missing scores, fill or remove the NaN values before loading."
+                    f"All human score cells must be filled."
                 )
 
     @staticmethod
