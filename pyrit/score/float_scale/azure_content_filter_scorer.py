@@ -3,6 +3,7 @@
 
 import asyncio
 import base64
+import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
 
@@ -134,6 +135,15 @@ class AzureContentFilterScorer(FloatScaleScorer):
                 raise ValueError(
                     "Async token providers are not supported by AzureContentFilterScorer. "
                     "Use a synchronous token provider (e.g., get_azure_token_provider) instead."
+                )
+            # Guard against sync callables that return coroutines/awaitables (e.g., lambda: async_fn())
+            test_result = api_key()
+            if inspect.isawaitable(test_result):
+                if hasattr(test_result, "close"):
+                    test_result.close()  # prevent "coroutine was never awaited" warning
+                raise ValueError(
+                    "The provided token provider returns a coroutine/awaitable, which is not supported "
+                    "by AzureContentFilterScorer. Use a synchronous token provider instead."
                 )
             resolved_api_key = api_key
         else:
