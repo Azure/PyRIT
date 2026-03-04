@@ -163,7 +163,8 @@ class PromptTarget(Identifiable):
         Convenience property that delegates to ``self.capabilities.supports_multi_turn``.
 
         Returns:
-            bool: False by default. Subclasses that support multi-turn should override.
+            bool: False by default. Subclasses declare multi-turn support by setting
+                ``_DEFAULT_CAPABILITIES`` or passing ``capabilities`` to the constructor.
         """
         return self._capabilities.supports_multi_turn
 
