@@ -587,7 +587,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 elif message_piece.converted_value_data_type == "image_path":
                     data_base64_encoded_url = await convert_local_image_to_data_url(message_piece.converted_value)
                     image_url_entry = {"url": data_base64_encoded_url}
-                    entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore
+                    entry = {"type": "image_url", "image_url": image_url_entry}  # type: ignore[dict-item]
                     content.append(entry)
                 elif message_piece.converted_value_data_type == "audio_path":
                     ext = DataTypeSerializer.get_extension(message_piece.converted_value)
@@ -608,7 +608,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                     base64_data = await audio_serializer.read_data_base64()
                     audio_format = ext.lower().lstrip(".")
                     input_audio_entry = {"data": base64_data, "format": audio_format}
-                    entry = {"type": "input_audio", "input_audio": input_audio_entry}  # type: ignore
+                    entry = {"type": "input_audio", "input_audio": input_audio_entry}  # type: ignore[dict-item]
                     content.append(entry)
                 else:
                     raise ValueError(
@@ -644,8 +644,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         }
 
         if self._extra_body_parameters:
-            for key, value in self._extra_body_parameters.items():
-                body_parameters[key] = value
+            body_parameters.update(self._extra_body_parameters)
 
         # Filter out None values
         return {k: v for k, v in body_parameters.items() if v is not None}

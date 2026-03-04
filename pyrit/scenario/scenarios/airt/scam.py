@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.common.path import (
     EXECUTOR_RED_TEAM_PATH,
@@ -192,10 +193,11 @@ class Scam(Scenario):
         Returns:
             TrueFalseCompositeScorer: Default objective scorer with backstop and scam materials evaluation.
         """
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         scam_materials = SelfAskTrueFalseScorer(
             chat_target=OpenAIChatTarget(
-                endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                endpoint=endpoint,
+                api_key=get_azure_openai_auth(endpoint),
                 model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 temperature=0.9,
             ),
@@ -205,8 +207,8 @@ class Scam(Scenario):
         backstop = TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    endpoint=endpoint,
+                    api_key=get_azure_openai_auth(endpoint),
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
@@ -221,9 +223,10 @@ class Scam(Scenario):
         Returns:
             OpenAIChatTarget: Target that supplies the persuasion script rephrasing.
         """
+        endpoint = os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            endpoint=endpoint,
+            api_key=get_azure_openai_auth(endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )
@@ -325,12 +328,8 @@ class Scam(Scenario):
         # Resolve seed groups from deprecated objectives or dataset config
         self._seed_groups = self._resolve_seed_groups()
 
-        atomic_attacks: list[AtomicAttack] = []
         strategies = ScenarioCompositeStrategy.extract_single_strategy_values(
             composites=self._scenario_composites, strategy_type=ScamStrategy
         )
 
-        for strategy in strategies:
-            atomic_attacks.append(self._get_atomic_attack_from_strategy(strategy))
-
-        return atomic_attacks
+        return [self._get_atomic_attack_from_strategy(strategy) for strategy in strategies]

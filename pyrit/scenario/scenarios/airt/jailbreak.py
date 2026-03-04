@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Optional, Union
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import apply_defaults
 from pyrit.datasets import TextJailBreak
 from pyrit.executor.attack.core.attack_config import (
@@ -151,7 +152,8 @@ class Jailbreak(Scenario):
             jailbreak_names = []
         if jailbreak_names and num_templates:
             raise ValueError(
-                "Please provide only one of `num_templates` (random selection) or `jailbreak_names` (specific selection)."
+                "Please provide only one of `num_templates` (random selection)"
+                " or `jailbreak_names` (specific selection)."
             )
 
         if not objective_scorer:
@@ -201,11 +203,12 @@ class Jailbreak(Scenario):
         Returns:
             TrueFalseScorer: A scorer that returns True when the model does NOT refuse.
         """
+        endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return TrueFalseInverterScorer(
             scorer=SelfAskRefusalScorer(
                 chat_target=OpenAIChatTarget(
-                    endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-                    api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+                    endpoint=endpoint,
+                    api_key=get_azure_openai_auth(endpoint),
                     model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
                 )
             )
@@ -218,9 +221,10 @@ class Jailbreak(Scenario):
         Returns:
             OpenAIChatTarget: A fresh adversarial target using an unfiltered endpoint.
         """
+        endpoint = os.getenv("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT")
         return OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY"),
+            endpoint=endpoint,
+            api_key=get_azure_openai_auth(endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL"),
             temperature=1.2,
         )

@@ -14,10 +14,10 @@ import logging
 import re
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
-from jinja2 import BaseLoader, Environment, StrictUndefined, Template, Undefined
+from jinja2 import Environment, StrictUndefined, Template, Undefined
 
 from pyrit.common.yaml_loadable import YamlLoadable
 
@@ -113,7 +113,7 @@ class Seed(YamlLoadable):
     source: Optional[str] = None
 
     # Date when the prompt was added to the dataset
-    date_added: Optional[datetime] = field(default_factory=lambda: datetime.now())
+    date_added: Optional[datetime] = field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
     # User who added the prompt to the dataset
     added_by: Optional[str] = None
@@ -194,14 +194,14 @@ class Seed(YamlLoadable):
                 return self.value
 
         # Create a Jinja template with PartialUndefined placeholders
-        env = Environment(loader=BaseLoader, undefined=PartialUndefined)  # type: ignore
+        env = Environment(undefined=PartialUndefined)
         jinja_template = env.from_string(self.value)
 
         try:
             # Render the template with the provided kwargs
             return jinja_template.render(**kwargs)
         except Exception as e:
-            logging.error("Error rendering template: %s", e)
+            logger.error("Error rendering template: %s", e)
             return self.value
 
     async def set_sha256_value_async(self) -> None:
