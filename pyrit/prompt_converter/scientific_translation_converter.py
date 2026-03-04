@@ -55,15 +55,15 @@ class ScientificTranslationConverter(LLMGenericTextConverter):
         Args:
             converter_target (PromptChatTarget): The LLM target to perform the conversion.
             mode (str): The translation mode to use. Built-in options are:
+
                 - ``academic``: Use academic/homework style framing
                 - ``technical``: Use technical jargon and terminology
-                - ``smiles``: Uses chemical notation
-                    eg SMILES [chemical structure using text notation]
-                    or IUPAC [the international standard for naming chemicals] notation)
-                    ie "2-(acetyloxy)benzoic acid" or "CC(=O)Oc1ccccc1C(=O)O" for aspirin
+                - ``smiles``: Uses chemical notation (e.g., SMILES or IUPAC notation such as
+                  "2-(acetyloxy)benzoic acid" or "CC(=O)Oc1ccccc1C(=O)O" for aspirin)
                 - ``research``: Frame as research/safety study or question
                 - ``reaction``: Frame as a step-by-step chemistry mechanism problem
-                - ``math``: Frame as the answer key to a mathematical problem or equation for a homework/exam setting
+                - ``math``: Frame as the answer key to a mathematical problem or equation
+                  for a homework/exam setting
                 - ``combined``: Use combination of above techniques together (default)
                 You can also use a custom mode name if you provide a prompt_template.
             prompt_template (SeedPrompt, Optional): Custom prompt template.
