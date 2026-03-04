@@ -23,6 +23,7 @@ from openai._exceptions import (
     AuthenticationError,
 )
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common import default_values
 from pyrit.exceptions.exception_classes import (
     RateLimitException,
@@ -189,8 +190,6 @@ class OpenAITarget(PromptTarget):
             if api_key_value:
                 resolved_api_key = api_key_value
             elif "azure" in endpoint_value.lower():
-                from pyrit.auth import get_azure_openai_auth
-
                 resolved_api_key = get_azure_openai_auth(endpoint_value)
             else:
                 raise ValueError(

@@ -146,17 +146,14 @@ class PromptTarget(Identifiable):
         The capabilities of this target instance.
 
         Defaults to the class-level ``_DEFAULT_CAPABILITIES``. Can be overridden
-        per instance by setting this property, which is useful for targets whose
-        capabilities depend on deployment configuration (e.g., Playwright, HTTP).
+        per instance via the ``capabilities`` constructor parameter, which is useful
+        for targets whose capabilities depend on deployment configuration
+        (e.g., Playwright, HTTP).
 
         Returns:
             TargetCapabilities: The capabilities for this target.
         """
         return self._capabilities
-
-    @capabilities.setter
-    def capabilities(self, value: TargetCapabilities) -> None:
-        self._capabilities = value
 
     @property
     def supports_multi_turn(self) -> bool:
