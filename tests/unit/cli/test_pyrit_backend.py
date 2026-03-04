@@ -42,7 +42,6 @@ class TestInitializeAndRun:
         ):
             mock_core = MagicMock()
             mock_core.initialize_async = AsyncMock()
-            mock_core.run_initializers_async = AsyncMock()
             mock_core_class.return_value = mock_core
 
             mock_server = MagicMock()
