@@ -9,7 +9,7 @@ import warnings
 import weakref
 from collections.abc import MutableSequence, Sequence
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
@@ -410,7 +410,7 @@ class MemoryInterface(abc.ABC):
                 message_piece_id = score.message_piece_id
                 pieces = self.get_message_pieces(prompt_ids=[str(message_piece_id)])
                 if not pieces:
-                    logging.error(f"MessagePiece with ID {message_piece_id} not found in memory.")
+                    logger.error(f"MessagePiece with ID {message_piece_id} not found in memory.")
                     continue
                 # auto-link score to the original prompt id if the prompt is a duplicate
                 if pieces[0].original_prompt_id != pieces[0].id:
@@ -1021,7 +1021,7 @@ class MemoryInterface(abc.ABC):
             ValueError: If the 'added_by' attribute is not set for each prompt.
         """
         entries: MutableSequence[SeedEntry] = []
-        current_time = datetime.now()
+        current_time = datetime.now(tz=timezone.utc)
         for prompt in seeds:
             if added_by:
                 prompt.added_by = added_by
@@ -1265,7 +1265,7 @@ class MemoryInterface(abc.ABC):
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"exported_conversations_on_{datetime.now().strftime('%Y_%m_%d')}.{export_type}"
+            file_name = f"exported_conversations_on_{datetime.now(tz=timezone.utc).strftime('%Y_%m_%d')}.{export_type}"
             file_path = DB_DATA_PATH / file_name
 
         self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)
