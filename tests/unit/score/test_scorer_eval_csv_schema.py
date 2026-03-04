@@ -137,7 +137,7 @@ class TestHarmScorerEvalCSVSchema:
         - objective: The objective/prompt context
         - assistant_response: The model's response
         - data_type: The type of data (e.g., "text")
-        - human_score_1: The primary human-labeled ground truth score
+        - At least one column starting with 'human_score' (e.g., human_score, human_score_1, etc.)
 
         Note: Harm CSVs may have additional human_score_2, human_score_3, etc.
         for multi-annotator datasets.
@@ -156,12 +156,19 @@ class TestHarmScorerEvalCSVSchema:
                 STANDARD_OBJECTIVE_COL,
                 STANDARD_ASSISTANT_RESPONSE_COL,
                 STANDARD_DATA_TYPE_COL,
-                "human_score_1",  # Harm CSVs use numbered human scores
             }
 
             missing_columns = required_columns - columns
             assert not missing_columns, (
                 f"CSV {csv_file.name} is missing required columns: {missing_columns}. Found columns: {columns}"
+            )
+
+            # Check for at least one human_score column (matches production logic in from_csv)
+            human_score_cols = {col for col in columns if col.startswith(STANDARD_HUMAN_LABEL_COL)}
+            assert human_score_cols, (
+                f"CSV {csv_file.name} has no human score columns. "
+                f"Expected at least one column starting with '{STANDARD_HUMAN_LABEL_COL}'. "
+                f"Found columns: {columns}"
             )
 
     @pytest.mark.parametrize(
@@ -171,12 +178,10 @@ class TestHarmScorerEvalCSVSchema:
     )
     def test_harm_csv_has_human_score_columns(self, csv_file: Path) -> None:
         """
-        Test that harm CSVs have at least one human_score_N column.
+        Test that harm CSVs have at least one human score column.
 
-        Harm CSVs support multiple annotators with columns:
-        - human_score_1 (required)
-        - human_score_2 (optional)
-        - human_score_3 (optional)
+        Harm CSVs support multiple annotators with columns starting with
+        STANDARD_HUMAN_LABEL_COL (e.g., human_score, human_score_1, human_score_2).
         """
         with open(csv_file, encoding="utf-8") as f:
             # Skip version line if present
@@ -187,14 +192,13 @@ class TestHarmScorerEvalCSVSchema:
             reader = csv.DictReader(f)
             columns = set(reader.fieldnames or [])
 
-            # Find all human_score_* columns
-            human_score_cols = {col for col in columns if col.startswith("human_score_")}
+            # Find all human_score* columns (matches production logic in from_csv)
+            human_score_cols = {col for col in columns if col.startswith(STANDARD_HUMAN_LABEL_COL)}
 
-            assert human_score_cols, f"CSV {csv_file.name} has no human_score_* columns. Found columns: {columns}"
-
-            # Verify human_score_1 specifically exists
-            assert "human_score_1" in human_score_cols, (
-                f"CSV {csv_file.name} must have human_score_1 column. Found human_score columns: {human_score_cols}"
+            assert human_score_cols, (
+                f"CSV {csv_file.name} has no human score columns. "
+                f"Expected at least one column starting with '{STANDARD_HUMAN_LABEL_COL}'. "
+                f"Found columns: {columns}"
             )
 
 
