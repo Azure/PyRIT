@@ -13,6 +13,7 @@ from pyrit.identifiers.atomic_attack_identifier import (
     compute_attack_eval_hash,
 )
 from pyrit.identifiers.component_identifier import ComponentIdentifier, Identifiable, config_hash
+from pyrit.identifiers.evaluation_identity import EvaluationIdentity, compute_eval_hash
 
 __all__ = [
     "build_atomic_attack_identifier",
@@ -20,6 +21,8 @@ __all__ = [
     "class_name_to_snake_case",
     "ComponentIdentifier",
     "compute_attack_eval_hash",
+    "compute_eval_hash",
+    "EvaluationIdentity",
     "Identifiable",
     "snake_case_to_class_name",
     "config_hash",

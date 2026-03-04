@@ -226,7 +226,16 @@ class ChunkedRequestAttack(MultiTurnAttackStrategy[ChunkedRequestAttackContext, 
 
         Args:
             context (ChunkedRequestAttackContext): The attack context containing attack parameters.
+
+        Raises:
+            ValueError: If the objective target does not support multi-turn conversations.
         """
+        if not self._objective_target.supports_multi_turn:
+            raise ValueError(
+                "ChunkedRequestAttack requires a multi-turn target. "
+                "The objective target does not support multi-turn conversations."
+            )
+
         # Ensure the context has a session
         context.session = ConversationSession()
 

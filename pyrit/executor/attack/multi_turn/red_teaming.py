@@ -526,6 +526,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
         """
         logger.info(f"Sending prompt to target: {message.get_value()[:50]}...")
 
+        # For single-turn targets, rotate conversation_id so each turn starts fresh
+        self._rotate_conversation_for_single_turn_target(context=context)
+
         with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name=self.__class__.__name__,

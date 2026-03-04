@@ -253,6 +253,7 @@ fixable = [
     "YTT",
 ]
 select = [
+    "A",  # https://docs.astral.sh/ruff/rules/#flake8-builtins-a
     "B",  # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     "C4",  # https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
     "CPY001",  # missing-copyright-notice
@@ -260,14 +261,25 @@ select = [
     "DOC",  # https://docs.astral.sh/ruff/rules/#pydoclint-doc
     "DTZ",  # https://docs.astral.sh/ruff/rules/#flake8-datetimez-dtz
     "E",  # https://docs.astral.sh/ruff/rules/#pycodestyle-e
+    "ERA",  # https://docs.astral.sh/ruff/rules/#eradicate-era
+    "EXE",  # https://docs.astral.sh/ruff/rules/#flake8-executable-exe
     "F401",  # unused-import
+    "FA",  # https://docs.astral.sh/ruff/rules/#flake8-future-annotations-fa
+    "FLY",  # https://docs.astral.sh/ruff/rules/#flynt-fly
     "I",  # isort
+    "ICN",  # https://docs.astral.sh/ruff/rules/#flake8-import-conventions-icn
+    "ISC",  # https://docs.astral.sh/ruff/rules/#flake8-implicit-str-concat-isc
+    "LOG",  # https://docs.astral.sh/ruff/rules/#flake8-logging-log
     "N",  # https://docs.astral.sh/ruff/rules/#pep8-naming-n
     "PERF",  # https://docs.astral.sh/ruff/rules/#perflint-perf
     "PGH",  # https://docs.astral.sh/ruff/rules/#pygrep-hooks-pgh
     "PIE",  # https://docs.astral.sh/ruff/rules/#flake8-pie-pie
+    "PLE",  # https://docs.astral.sh/ruff/rules/#pylint-ple
+    "Q",  # https://docs.astral.sh/ruff/rules/#flake8-quotes-q
     "RET",  # https://docs.astral.sh/ruff/rules/#flake8-return-ret
+    "RSE",  # https://docs.astral.sh/ruff/rules/#flake8-raise-rse
     "SIM",  # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "SLOT",  # https://docs.astral.sh/ruff/rules/#flake8-slots-slot
     "T10",  # https://docs.astral.sh/ruff/rules/#flake8-debugger-t10
     "TCH",  # https://docs.astral.sh/ruff/rules/#flake8-type-checking-tch
     "TID",  # https://docs.astral.sh/ruff/rules/#flake8-tidy-imports-tid
@@ -309,13 +321,18 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 # E402: notebooks have imports in code cells, not at top of file
 # E501: markdown comments in notebooks can exceed line length
 # PGH003: blanket type: ignore in notebooks (not mypy-checked)
-"doc/**" = ["CPY001", "TCH", "E402", "E501", "PGH003"]
-# Temporary ignores for pyrit/ subdirectories until issue #1176
-# https://github.com/Azure/PyRIT/issues/1176 is fully resolved
-# TODO: Remove these ignores once the issues are fixed
+# A: notebook code commonly uses builtins like id, dir, display
+# ERA001: jupytext markdown cells look like commented-out code
+# LOG: notebooks use root logger for convenience
+# PLE1142: top-level await is valid in Jupyter notebooks
+"doc/**" = ["CPY001", "TCH", "E402", "E501", "PGH003", "A", "ERA001", "LOG", "PLE1142"]
 "pyrit/{auxiliary_attacks,ui}/**/*.py" = ["B905", "D101", "D102", "D103", "D104", "D105", "D106", "D107", "D401", "D404", "D417", "D418", "DOC102", "DOC201", "DOC202", "DOC402", "DOC501", "N", "PERF", "SIM101", "SIM108"]
 # Backend API routes raise HTTPException handled by FastAPI, not true exceptions
 "pyrit/backend/**/*.py" = ["DOC501", "B008"]
+# Vendored GCG attack code — external project with its own style
+"pyrit/auxiliary_attacks/**/*.py" = ["A", "B905", "D", "DOC", "SIM101", "SIM108"]
+# UI code has incomplete docstrings (external contributor code)
+"pyrit/ui/**/*.py" = ["D", "DOC201", "DOC501"]
 "pyrit/__init__.py" = ["D104"]
 # Allow broad pytest.raises(Exception) in tests
 "tests/**/*.py" = ["B017"]

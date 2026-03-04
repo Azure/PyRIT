@@ -777,9 +777,22 @@ class _TreeOfAttacksNode:
         )
 
         # Duplicate the conversations to preserve history
-        duplicate_node.objective_target_conversation_id = self._memory.duplicate_conversation(
-            conversation_id=self.objective_target_conversation_id
-        )
+        # For single-turn targets, duplicate only the system messages (e.g., system prompt
+        # from prepended conversation) so the target retains its configuration without
+        # carrying over attack turn history that would cause validation errors.
+        if self._objective_target.supports_multi_turn:
+            duplicate_node.objective_target_conversation_id = self._memory.duplicate_conversation(
+                conversation_id=self.objective_target_conversation_id
+            )
+        else:
+            messages = self._memory.get_conversation(conversation_id=self.objective_target_conversation_id)
+            system_messages = [m for m in messages if m.api_role == "system"]
+            if system_messages:
+                new_id, pieces = self._memory.duplicate_messages(messages=system_messages)
+                self._memory.add_message_pieces_to_memory(message_pieces=pieces)
+                duplicate_node.objective_target_conversation_id = new_id
+            else:
+                duplicate_node.objective_target_conversation_id = str(uuid.uuid4())
 
         duplicate_node.adversarial_chat_conversation_id = self._memory.duplicate_conversation(
             conversation_id=self.adversarial_chat_conversation_id

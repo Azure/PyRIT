@@ -59,7 +59,7 @@ class Score:
         score_type: ScoreType,
         score_rationale: str,
         message_piece_id: str | uuid.UUID,
-        id: Optional[uuid.UUID | str] = None,
+        id: Optional[uuid.UUID | str] = None,  # noqa: A002
         score_category: Optional[list[str]] = None,
         score_metadata: Optional[dict[str, Union[str, int, float]]] = None,
         scorer_class_identifier: Union[ComponentIdentifier, dict[str, Any]],

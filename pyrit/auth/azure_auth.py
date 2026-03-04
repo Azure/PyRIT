@@ -325,7 +325,7 @@ def get_speech_config(resource_id: Union[str, None], key: Union[str, None], regi
     except ModuleNotFoundError as e:
         logger.error(
             "Could not import azure.cognitiveservices.speech. "
-            + "You may need to install it via 'pip install pyrit[speech]'"
+            "You may need to install it via 'pip install pyrit[speech]'"
         )
         raise e
 
@@ -361,7 +361,7 @@ def get_speech_config_from_default_azure_credential(resource_id: str, region: st
     except ModuleNotFoundError as e:
         logger.error(
             "Could not import azure.cognitiveservices.speech. "
-            + "You may need to install it via 'pip install pyrit[speech]'"
+            "You may need to install it via 'pip install pyrit[speech]'"
         )
         raise e
 
