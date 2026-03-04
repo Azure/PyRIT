@@ -1,7 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import json
 import logging
+from typing import Any
 
 from jinja2 import TemplateSyntaxError
 
@@ -32,6 +34,8 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
 
     HF_DATASET_NAME: str = "lmsys/toxic-chat"
 
+    OPENAI_MODERATION_THRESHOLD: float = 0.8
+
     def __init__(
         self,
         *,
@@ -52,6 +56,34 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
     def dataset_name(self) -> str:
         """Return the dataset name."""
         return "toxic_chat"
+
+    def _extract_harm_categories(self, item: dict[str, Any]) -> list[str]:
+        """
+        Extract harm categories from toxicity, jailbreaking, and openai_moderation fields.
+
+        Args:
+            item: A single dataset row.
+
+        Returns:
+            list[str]: Harm category labels for this entry.
+        """
+        categories: list[str] = []
+
+        if item.get("toxicity") == 1:
+            categories.append("toxicity")
+        if item.get("jailbreaking") == 1:
+            categories.append("jailbreaking")
+
+        openai_mod = item.get("openai_moderation", "[]")
+        try:
+            moderation_scores = json.loads(openai_mod) if isinstance(openai_mod, str) else openai_mod
+            for category, score in moderation_scores:
+                if score > self.OPENAI_MODERATION_THRESHOLD:
+                    categories.append(category)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            logger.debug(f"Could not parse openai_moderation for conv_id={item.get('conv_id', 'unknown')}")
+
+        return categories
 
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
@@ -96,6 +128,7 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
         seed_prompts: list[SeedPrompt] = []
         for item in data:
             user_input = item["user_input"]
+            harm_categories = self._extract_harm_categories(item)
             try:
                 prompt = SeedPrompt(
                     value=f"{{% raw %}}{user_input}{{% endraw %}}",
@@ -105,6 +138,7 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
                     source=source_url,
                     authors=authors,
                     groups=groups,
+                    harm_categories=harm_categories,
                     metadata={
                         "toxicity": str(item.get("toxicity", "")),
                         "jailbreaking": str(item.get("jailbreaking", "")),
