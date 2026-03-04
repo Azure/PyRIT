@@ -437,10 +437,15 @@ class HumanLabeledDataset:
                 f"Expected at least one column starting with '{STANDARD_HUMAN_LABEL_COL}'."
             )
 
-        # Validate human score columns don't have NaN
+        # Validate human score columns don't have any NaN values.
         for col in human_score_cols:
-            if eval_df[col].isna().all():
-                raise ValueError(f"Human score column '{col}' contains NaN values.")
+            if eval_df[col].isna().any():
+                nan_count = eval_df[col].isna().sum()
+                raise ValueError(
+                    f"Human score column '{col}' contains {nan_count} NaN value(s). "
+                    f"All human score cells must be filled. If this is a multi-annotator dataset "
+                    f"with missing scores, fill or remove the NaN values before loading."
+                )
 
     @staticmethod
     def _construct_harm_entry(*, messages: list[Message], harm: str, human_scores: list[Any]) -> HarmHumanLabeledEntry:
