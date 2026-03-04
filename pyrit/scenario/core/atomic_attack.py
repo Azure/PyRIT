@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
 from pyrit.executor.attack.core.attack_executor import AttackExecutorResult
+from pyrit.identifiers import build_atomic_attack_identifier
 from pyrit.models import AttackResult, SeedAttackGroup
 
 if TYPE_CHECKING:
@@ -206,6 +207,9 @@ class AtomicAttack:
                 **self._attack_execute_params,
             )
 
+            # Enrich atomic_attack_identifier with general technique seed identifiers
+            self._enrich_atomic_attack_identifiers(results=results)
+
             # Log completion status
             if results.has_incomplete:
                 logger.warning(
@@ -222,3 +226,26 @@ class AtomicAttack:
         except Exception as e:
             logger.error(f"Atomic attack execution failed: {str(e)}")
             raise ValueError(f"Failed to execute atomic attack: {str(e)}") from e
+
+    def _enrich_atomic_attack_identifiers(
+        self, *, results: AttackExecutorResult[AttackResult]
+    ) -> None:
+        """
+        Enrich each AttackResult's atomic_attack_identifier with seed group information.
+
+        Maps completed results back to their corresponding seed groups by objective,
+        then rebuilds the atomic_attack_identifier to include the general technique
+        seed identifiers from the seed group.
+
+        Args:
+            results (AttackExecutorResult[AttackResult]): The execution results to enrich.
+        """
+        objective_to_seed_group = {sg.objective.value: sg for sg in self._seed_groups}
+
+        for result in results.completed_results:
+            seed_group = objective_to_seed_group.get(result.objective)
+            if seed_group and result.attack_identifier:
+                result.atomic_attack_identifier = build_atomic_attack_identifier(
+                    attack_identifier=result.attack_identifier,
+                    seed_group=seed_group,
+                )

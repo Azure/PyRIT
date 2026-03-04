@@ -15,6 +15,7 @@ from pyrit.executor.attack.single_turn.single_turn_attack_strategy import (
     SingleTurnAttackContext,
     SingleTurnAttackStrategy,
 )
+from pyrit.identifiers import build_atomic_attack_identifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -231,6 +232,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             conversation_id=context.conversation_id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
+            atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=self.get_identifier()),
             last_response=response.get_piece() if response else None,
             last_score=score,
             related_conversations=context.related_conversations,

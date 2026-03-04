@@ -54,6 +54,10 @@ class AttackResult(StrategyResult):
     # Identifier of the attack strategy that produced this result
     attack_identifier: Optional[ComponentIdentifier] = None
 
+    # Composite identifier combining the attack strategy identity with
+    # general technique seed identifiers from the dataset
+    atomic_attack_identifier: Optional[ComponentIdentifier] = None
+
     # Evidence
     # Model response generated in the final turn of the attack
     last_response: Optional[MessagePiece] = None
