@@ -95,9 +95,10 @@ class _ToxicChatDataset(_RemoteDatasetLoader):
 
         seed_prompts: list[SeedPrompt] = []
         for item in data:
+            user_input = item["user_input"]
             try:
                 prompt = SeedPrompt(
-                    value=f"{{% raw %}}{item['user_input']}{{% endraw %}}",
+                    value=f"{{% raw %}}{user_input}{{% endraw %}}",
                     data_type="text",
                     dataset_name=self.dataset_name,
                     description=description,
