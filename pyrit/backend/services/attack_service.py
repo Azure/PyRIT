@@ -56,9 +56,6 @@ from pyrit.models import (
     PromptDataType,
     data_serializer_factory,
 )
-from pyrit.models import (
-    Message as PyritMessage,
-)
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 
 
@@ -849,10 +846,6 @@ class AttackService:
             labels=labels,
         )
 
-        # Propagate video_id from the most recent video response so the target
-        # can perform a remix instead of generating from scratch.
-        self._inject_video_id_from_history(conversation_id=conversation_id, message=pyrit_message)
-
         converter_configs = self._get_converter_configs(request)
 
         normalizer = PromptNormalizer()
@@ -864,66 +857,6 @@ class AttackService:
             labels=labels,
         )
         # PromptNormalizer stores both request and response in memory automatically
-
-    def _inject_video_id_from_history(self, *, conversation_id: str, message: PyritMessage) -> None:
-        """
-        Find the most recent video_id and attach it to the text piece's
-        prompt_metadata so the video target can remix.
-
-        When a video_id is found and injected, any video_path pieces are
-        removed from the message since the target uses the video_id for
-        remix instead of re-uploading the video content.
-
-        Lookup order:
-        1. original_prompt_id on any piece in the message (traces back to
-           a copied/remixed piece whose metadata may contain the video_id).
-        2. Conversation history (newest first) for a piece with video_id.
-        """
-        text_piece = None
-        for p in message.message_pieces:
-            if p.original_value_data_type == "text":
-                text_piece = p
-                break
-
-        if not text_piece:
-            return
-
-        # Already has a video_id — don't override
-        if text_piece.prompt_metadata and text_piece.prompt_metadata.get("video_id"):
-            self._strip_video_pieces(message)
-            return
-
-        video_id = None
-
-        # 1. Check original_prompt_id on any piece (e.g. copied video attachment)
-        for p in message.message_pieces:
-            if p.original_prompt_id:
-                source_pieces = self._memory.get_message_pieces(prompt_ids=[str(p.original_prompt_id)])
-                for src in source_pieces:
-                    if src.prompt_metadata and src.prompt_metadata.get("video_id"):
-                        video_id = src.prompt_metadata["video_id"]
-                        break
-            if video_id:
-                break
-
-        # 2. Search conversation history (newest first) for a video_id
-        if not video_id:
-            existing = self._memory.get_message_pieces(conversation_id=conversation_id)
-            for piece in reversed(existing):
-                if piece.prompt_metadata and piece.prompt_metadata.get("video_id"):
-                    video_id = piece.prompt_metadata["video_id"]
-                    break
-
-        if video_id:
-            if text_piece.prompt_metadata is None:
-                text_piece.prompt_metadata = {}
-            text_piece.prompt_metadata["video_id"] = video_id
-            self._strip_video_pieces(message)
-
-    @staticmethod
-    def _strip_video_pieces(message: PyritMessage) -> None:
-        """Remove video_path pieces from a message (video_id on text piece replaces them)."""
-        message.message_pieces = [p for p in message.message_pieces if p.original_value_data_type != "video_path"]
 
     async def _store_message_only(
         self,

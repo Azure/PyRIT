@@ -177,6 +177,10 @@ class OpenAIVideoTarget(OpenAITarget):
         - Text+Image-to-video: Text piece + image_path piece (image becomes first frame)
         - Remix: Text piece with prompt_metadata["video_id"] set to an existing video ID
 
+        If no video_id is provided in prompt_metadata, the target automatically
+        looks up the most recent video_id from conversation history to enable
+        chained remixes.
+
         Args:
             message: The message object containing the prompt.
 
@@ -190,6 +194,10 @@ class OpenAIVideoTarget(OpenAITarget):
         self._validate_request(message=message)
 
         text_piece = message.get_piece_by_type(data_type="text")
+
+        # Auto-inject video_id from history for seamless remix chaining
+        self._inject_video_id_from_history(message=message)
+
         image_piece = message.get_piece_by_type(data_type="image_path")
         prompt = text_piece.converted_value
 
@@ -444,6 +452,7 @@ class OpenAIVideoTarget(OpenAITarget):
         Accepts:
         - Single text piece (text-to-video or remix mode)
         - Text piece + image_path piece (text+image-to-video mode)
+        - Text piece + video_path piece (remix mode via history lookup)
 
         Args:
             message: The message to validate.
@@ -453,16 +462,19 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         text_pieces = message.get_pieces_by_type(data_type="text")
         image_pieces = message.get_pieces_by_type(data_type="image_path")
+        video_pieces = message.get_pieces_by_type(data_type="video_path")
 
         # Check for unsupported types
-        supported_count = len(text_pieces) + len(image_pieces)
+        supported_count = len(text_pieces) + len(image_pieces) + len(video_pieces)
         if supported_count != len(message.message_pieces):
             other_types = [
                 p.converted_value_data_type
                 for p in message.message_pieces
-                if p.converted_value_data_type not in ("text", "image_path")
+                if p.converted_value_data_type not in ("text", "image_path", "video_path")
             ]
-            raise ValueError(f"Unsupported piece types: {other_types}. Only 'text' and 'image_path' are supported.")
+            raise ValueError(
+                f"Unsupported piece types: {other_types}. Only 'text', 'image_path', and 'video_path' are supported."
+            )
 
         # Must have exactly one text piece
         if len(text_pieces) != 1:
@@ -477,6 +489,10 @@ class OpenAIVideoTarget(OpenAITarget):
         remix_video_id = text_piece.prompt_metadata.get("video_id") if text_piece.prompt_metadata else None
         if remix_video_id and image_pieces:
             raise ValueError("Cannot use image input in remix mode. Remix uses existing video as reference.")
+
+        # Cannot combine video_path and image_path
+        if video_pieces and image_pieces:
+            raise ValueError("Cannot combine video_path and image_path pieces.")
 
         messages = self._memory.get_conversation(conversation_id=text_piece.conversation_id)
 
@@ -495,3 +511,71 @@ class OpenAIVideoTarget(OpenAITarget):
             bool: False, as video generation doesn't return JSON content.
         """
         return False
+
+    def _inject_video_id_from_history(self, *, message: Message) -> None:
+        """
+        Find the most recent video_id from conversation history and attach it
+        to the text piece's prompt_metadata so remix mode activates automatically.
+
+        When a video_id is found and injected, any video_path pieces are
+        removed from the message since the target uses the video_id for
+        remix instead of re-uploading the video content.
+
+        Lookup order:
+        1. original_prompt_id on any piece in the message (traces back to
+           a copied/remixed piece whose metadata may contain the video_id).
+        2. Conversation history (newest first) for a piece with video_id.
+
+        Raises:
+            ValueError: If a video_path piece is present but no video_id can be resolved.
+        """
+        text_piece = None
+        for p in message.message_pieces:
+            if p.original_value_data_type == "text":
+                text_piece = p
+                break
+
+        if not text_piece:
+            return
+
+        # Already has a video_id — don't override
+        if text_piece.prompt_metadata and text_piece.prompt_metadata.get("video_id"):
+            self._strip_video_pieces(message)
+            return
+
+        video_id = None
+
+        # 1. Check original_prompt_id on any piece (e.g. copied video attachment)
+        for p in message.message_pieces:
+            if p.original_prompt_id:
+                source_pieces = self._memory.get_message_pieces(prompt_ids=[str(p.original_prompt_id)])
+                for src in source_pieces:
+                    if src.prompt_metadata and src.prompt_metadata.get("video_id"):
+                        video_id = src.prompt_metadata["video_id"]
+                        break
+            if video_id:
+                break
+
+        # 2. Search conversation history (newest first) for a video_id
+        if not video_id:
+            existing = self._memory.get_message_pieces(conversation_id=text_piece.conversation_id)
+            for piece in reversed(existing):
+                if piece.prompt_metadata and piece.prompt_metadata.get("video_id"):
+                    video_id = piece.prompt_metadata["video_id"]
+                    break
+
+        if video_id:
+            if text_piece.prompt_metadata is None:
+                text_piece.prompt_metadata = {}
+            text_piece.prompt_metadata["video_id"] = video_id
+            self._strip_video_pieces(message)
+        elif any(p.converted_value_data_type == "video_path" for p in message.message_pieces):
+            raise ValueError(
+                "Message contains video_path piece(s) for remix, but no video_id could be "
+                "resolved from prompt_metadata, original_prompt_id lineage, or conversation history."
+            )
+
+    @staticmethod
+    def _strip_video_pieces(message: Message) -> None:
+        """Remove video_path pieces from a message (video_id on text piece replaces them)."""
+        message.message_pieces = [p for p in message.message_pieces if p.converted_value_data_type != "video_path"]
