@@ -752,3 +752,154 @@ class TestValueErrorGuards:
 
         with pytest.raises(ValueError, match="ChunkedRequestAttack requires a multi-turn target"):
             await attack._setup_async(context=context)
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestTAPBranchingPreservesSystemPrompts:
+    """Integration test: TAP branching with real memory verifies system prompt carryover."""
+
+    def _make_tap_node(self, *, supports_multi_turn: bool):
+        """Create a _TreeOfAttacksNode with real memory."""
+        from pyrit.executor.attack.multi_turn.tree_of_attacks import _TreeOfAttacksNode
+
+        target = MagicMock()
+        target.supports_multi_turn = supports_multi_turn
+        target.get_identifier.return_value = MagicMock()
+
+        adversarial_chat = MagicMock()
+        adversarial_chat.get_identifier.return_value = MagicMock()
+
+        scorer = MagicMock()
+        scorer.get_identifier.return_value = MagicMock()
+
+        seed = MagicMock()
+        seed.render_template_value.return_value = "template"
+
+        return _TreeOfAttacksNode(
+            objective_target=target,
+            adversarial_chat=adversarial_chat,
+            adversarial_chat_seed_prompt=seed,
+            adversarial_chat_prompt_template=seed,
+            adversarial_chat_system_seed_prompt=seed,
+            desired_response_prefix="Sure,",
+            objective_scorer=scorer,
+            on_topic_scorer=None,
+            request_converters=[],
+            response_converters=[],
+            auxiliary_scorers=None,
+            attack_id=MagicMock(),
+            attack_strategy_name="TAP",
+        )
+
+    def test_branching_single_turn_target_preserves_system_across_depths(self):
+        """Simulate TAP branching across 2 depths and verify system prompts survive.
+
+        Depth 1: Create a node, seed system + user + assistant messages.
+        Depth 2: duplicate() the node (simulating branching). For single-turn targets,
+        only the system message should be in the duplicate's conversation.
+        Then simulate another turn on the duplicate (add user + assistant).
+        Depth 3: duplicate() again. System message should still be there.
+        """
+        memory = CentralMemory.get_memory_instance()
+        node = self._make_tap_node(supports_multi_turn=False)
+
+        # Depth 1: seed the conversation with system prompt + a completed turn
+        sys_piece = MessagePiece(
+            original_value="You are a red team assistant.",
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=0,
+        )
+        user_piece = MessagePiece(
+            original_value="Tell me about X",
+            role="user",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=1,
+        )
+        asst_piece = MessagePiece(
+            original_value="Here is info about X",
+            role="assistant",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=2,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys_piece, user_piece, asst_piece])
+
+        # Depth 2: branch (duplicate) — single-turn means only system msg is copied
+        branch1 = node.duplicate()
+
+        branch1_msgs = memory.get_conversation(conversation_id=branch1.objective_target_conversation_id)
+        assert len(branch1_msgs) == 1
+        assert branch1_msgs[0].api_role == "system"
+        assert branch1_msgs[0].get_value() == "You are a red team assistant."
+
+        # Simulate depth-2 turn on branch1: add user + assistant on branch1's conversation
+        user2 = MessagePiece(
+            original_value="Now tell me about Y",
+            role="user",
+            conversation_id=branch1.objective_target_conversation_id,
+            sequence=1,
+        )
+        asst2 = MessagePiece(
+            original_value="Here is info about Y",
+            role="assistant",
+            conversation_id=branch1.objective_target_conversation_id,
+            sequence=2,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[user2, asst2])
+
+        # Verify branch1 now has system + user + assistant
+        branch1_full = memory.get_conversation(conversation_id=branch1.objective_target_conversation_id)
+        assert [m.api_role for m in branch1_full] == ["system", "user", "assistant"]
+
+        # Depth 3: branch again from branch1
+        branch2 = branch1.duplicate()
+
+        branch2_msgs = memory.get_conversation(conversation_id=branch2.objective_target_conversation_id)
+        assert len(branch2_msgs) == 1
+        assert branch2_msgs[0].api_role == "system"
+        assert branch2_msgs[0].get_value() == "You are a red team assistant."
+
+    def test_branching_multi_turn_target_preserves_full_history(self):
+        """For multi-turn targets, branching should preserve the full conversation."""
+        memory = CentralMemory.get_memory_instance()
+        node = self._make_tap_node(supports_multi_turn=True)
+
+        # Seed system + user + assistant
+        sys_piece = MessagePiece(
+            original_value="System prompt",
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=0,
+        )
+        user_piece = MessagePiece(
+            original_value="User message",
+            role="user",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=1,
+        )
+        asst_piece = MessagePiece(
+            original_value="Assistant response",
+            role="assistant",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=2,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys_piece, user_piece, asst_piece])
+
+        branch = node.duplicate()
+
+        branch_msgs = memory.get_conversation(conversation_id=branch.objective_target_conversation_id)
+        assert [m.api_role for m in branch_msgs] == ["system", "user", "assistant"]
+
+        # Add another turn on the branch
+        user2 = MessagePiece(
+            original_value="Follow-up",
+            role="user",
+            conversation_id=branch.objective_target_conversation_id,
+            sequence=3,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[user2])
+
+        # Branch again — should have all 4 messages
+        branch2 = branch.duplicate()
+        branch2_msgs = memory.get_conversation(conversation_id=branch2.objective_target_conversation_id)
+        assert [m.api_role for m in branch2_msgs] == ["system", "user", "assistant", "user"]
