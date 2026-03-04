@@ -232,6 +232,79 @@ class TestSystemPromptCarryoverOnRotation:
         roles = [m.api_role for m in new_messages]
         assert roles == ["system"], f"Expected only system, got {roles}"
 
+    def test_multiple_system_messages_all_carried_over(self):
+        """When multiple system messages exist (different sequences), all are duplicated."""
+        strategy = _make_strategy(supports_multi_turn=False)
+        context = _make_context()
+        memory = CentralMemory.get_memory_instance()
+
+        # Two system messages at different sequences (e.g., system prompt + safety instructions
+        # injected at different points in a prepended conversation)
+        sys1 = MessagePiece(
+            original_value="System prompt 1",
+            role="system",
+            conversation_id=context.session.conversation_id,
+            sequence=0,
+        )
+        user_piece = MessagePiece(
+            original_value="Hello",
+            role="user",
+            conversation_id=context.session.conversation_id,
+            sequence=1,
+        )
+        sys2 = MessagePiece(
+            original_value="Safety instructions",
+            role="system",
+            conversation_id=context.session.conversation_id,
+            sequence=2,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys1, user_piece, sys2])
+
+        context.executed_turns = 1
+        strategy._rotate_conversation_for_single_turn_target(context=context)
+
+        new_messages = memory.get_conversation(conversation_id=context.session.conversation_id)
+        system_values = sorted(m.get_value() for m in new_messages if m.api_role == "system")
+        assert system_values == ["Safety instructions", "System prompt 1"]
+        assert all(m.api_role == "system" for m in new_messages)
+
+    def test_empty_conversation_yields_fresh_id(self):
+        """When the conversation has zero messages, rotation still produces a new ID."""
+        strategy = _make_strategy(supports_multi_turn=False)
+        context = _make_context()
+        old_id = context.session.conversation_id
+
+        # Don't seed any messages — conversation is completely empty
+        context.executed_turns = 1
+        strategy._rotate_conversation_for_single_turn_target(context=context)
+
+        assert context.session.conversation_id != old_id
+        memory = CentralMemory.get_memory_instance()
+        new_messages = memory.get_conversation(conversation_id=context.session.conversation_id)
+        assert len(new_messages) == 0
+
+    def test_only_system_messages_all_carried_over(self):
+        """When the conversation contains only system messages (no user/assistant), all are carried."""
+        strategy = _make_strategy(supports_multi_turn=False)
+        context = _make_context()
+        memory = CentralMemory.get_memory_instance()
+
+        sys_piece = MessagePiece(
+            original_value="Only a system message",
+            role="system",
+            conversation_id=context.session.conversation_id,
+            sequence=0,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys_piece])
+
+        context.executed_turns = 1
+        strategy._rotate_conversation_for_single_turn_target(context=context)
+
+        new_messages = memory.get_conversation(conversation_id=context.session.conversation_id)
+        assert len(new_messages) == 1
+        assert new_messages[0].api_role == "system"
+        assert new_messages[0].get_value() == "Only a system message"
+
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestTAPNodeDuplicateSystemMessages:
@@ -395,6 +468,94 @@ class TestTAPNodeDuplicateSystemMessages:
         dup_adv_messages = memory.get_conversation(conversation_id=duplicate.adversarial_chat_conversation_id)
         roles = [m.api_role for m in dup_adv_messages]
         assert roles == ["system", "user"]
+
+    def test_single_turn_multiple_system_messages_all_duplicated(self):
+        """For single-turn targets with multiple system messages, all are duplicated."""
+        node = self._make_tap_node(supports_multi_turn=False)
+        memory = CentralMemory.get_memory_instance()
+
+        sys1 = MessagePiece(
+            original_value="System prompt A",
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=0,
+        )
+        user_piece = MessagePiece(
+            original_value="Attack prompt",
+            role="user",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=1,
+        )
+        sys2 = MessagePiece(
+            original_value="System prompt B",
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=2,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys1, user_piece, sys2])
+
+        duplicate = node.duplicate()
+
+        dup_messages = memory.get_conversation(conversation_id=duplicate.objective_target_conversation_id)
+        assert all(m.api_role == "system" for m in dup_messages)
+        dup_values = sorted(m.get_value() for m in dup_messages)
+        assert dup_values == ["System prompt A", "System prompt B"]
+
+    def test_single_turn_empty_conversation_yields_fresh_id(self):
+        """For single-turn targets with empty conversation, a fresh ID is produced."""
+        node = self._make_tap_node(supports_multi_turn=False)
+        memory = CentralMemory.get_memory_instance()
+
+        # Don't seed any messages
+        duplicate = node.duplicate()
+
+        assert duplicate.objective_target_conversation_id != node.objective_target_conversation_id
+        dup_messages = memory.get_conversation(conversation_id=duplicate.objective_target_conversation_id)
+        assert len(dup_messages) == 0
+
+    def test_duplicate_node_has_correct_parent_id(self):
+        """The duplicate node's parent_id should be the original node's node_id."""
+        node = self._make_tap_node(supports_multi_turn=False)
+
+        duplicate = node.duplicate()
+
+        assert duplicate.parent_id == node.node_id
+        assert duplicate.node_id != node.node_id
+
+    def test_duplicate_node_copies_conversation_context(self):
+        """The duplicate node should inherit the _conversation_context from the original."""
+        node = self._make_tap_node(supports_multi_turn=False)
+        node._conversation_context = "Some prior conversation context"
+
+        duplicate = node.duplicate()
+
+        assert duplicate._conversation_context == "Some prior conversation context"
+
+    def test_system_message_content_preserved_exactly(self):
+        """The duplicated system message text must match the original exactly."""
+        node = self._make_tap_node(supports_multi_turn=False)
+        memory = CentralMemory.get_memory_instance()
+
+        long_prompt = "You are a helpful assistant.\n\nRules:\n1. Be concise\n2. Be accurate\n\n  Special chars: àéîöü"
+        sys_piece = MessagePiece(
+            original_value=long_prompt,
+            role="system",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=0,
+        )
+        user_piece = MessagePiece(
+            original_value="Hello",
+            role="user",
+            conversation_id=node.objective_target_conversation_id,
+            sequence=1,
+        )
+        memory.add_message_pieces_to_memory(message_pieces=[sys_piece, user_piece])
+
+        duplicate = node.duplicate()
+
+        dup_messages = memory.get_conversation(conversation_id=duplicate.objective_target_conversation_id)
+        assert len(dup_messages) == 1
+        assert dup_messages[0].get_value() == long_prompt
 
 
 @pytest.mark.usefixtures("patch_central_database")
