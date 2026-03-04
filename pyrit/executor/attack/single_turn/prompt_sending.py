@@ -3,7 +3,7 @@
 
 import logging
 import uuid
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.utils import warn_if_set
@@ -58,7 +58,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         attack_scoring_config: Optional[AttackScoringConfig] = None,
         prompt_normalizer: Optional[PromptNormalizer] = None,
         max_attempts_on_failure: int = 0,
-        params_type: Type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
+        params_type: type[AttackParamsT] = AttackParameters,  # type: ignore[assignment]
         prepended_conversation_config: Optional[PrependedConversationConfig] = None,
     ) -> None:
         """
@@ -227,7 +227,7 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
         # Determine the outcome
         outcome, outcome_reason = self._determine_attack_outcome(response=response, score=score, context=context)
 
-        result = AttackResult(
+        return AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
             attack_identifier=self.get_identifier(),
@@ -238,8 +238,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
             outcome_reason=outcome_reason,
             executed_turns=1,
         )
-
-        return result
 
     def _determine_attack_outcome(
         self, *, response: Optional[Message], score: Optional[Score], context: SingleTurnAttackContext[Any]
@@ -276,7 +274,6 @@ class PromptSendingAttack(SingleTurnAttackStrategy):
     async def _teardown_async(self, *, context: SingleTurnAttackContext[Any]) -> None:
         """Clean up after attack execution."""
         # Nothing to be done here, no-op
-        pass
 
     def _get_message(self, context: SingleTurnAttackContext[Any]) -> Message:
         """

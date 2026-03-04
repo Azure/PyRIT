@@ -4,7 +4,7 @@
 import abc
 from typing import Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_converter.text_selection_strategy import (
@@ -47,15 +47,15 @@ class WordLevelConverter(PromptConverter):
         self._word_selection_strategy = word_selection_strategy or AllWordsSelectionStrategy()
         self._word_split_separator = word_split_separator
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with word-level converter parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "word_selection_strategy": self._word_selection_strategy.__class__.__name__,
                 "word_split_separator": self._word_split_separator,
             }
@@ -72,11 +72,9 @@ class WordLevelConverter(PromptConverter):
         Returns:
             str: The converted word.
         """
-        pass
 
     def validate_input(self, prompt: str) -> None:
         """Validate the input before processing (can be overridden by subclasses)."""
-        pass
 
     def join_words(self, words: list[str]) -> str:
         """
@@ -113,10 +111,7 @@ class WordLevelConverter(PromptConverter):
 
         self.validate_input(prompt=prompt)
 
-        if self._word_split_separator is None:
-            words = prompt.split()  # if no specified separator, split by all whitespace
-        else:
-            words = prompt.split(self._word_split_separator)
+        words = prompt.split() if self._word_split_separator is None else prompt.split(self._word_split_separator)
 
         selected_indices = self._word_selection_strategy.select_words(words=words)
 

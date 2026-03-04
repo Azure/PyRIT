@@ -13,7 +13,7 @@ from pyrit.exceptions import (
     handle_bad_request_exception,
     pyrit_target_retry,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.message_normalizer import ChatMessageNormalizer, MessageListNormalizer
 from pyrit.models import (
     Message,
@@ -104,17 +104,17 @@ class AzureMLChatTarget(PromptChatTarget):
         self._repetition_penalty = repetition_penalty
         self._extra_parameters = param_kwargs
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with Azure ML-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            temperature=self._temperature,
-            top_p=self._top_p,
-            target_specific_params={
+            params={
+                "temperature": self._temperature,
+                "top_p": self._top_p,
                 "max_new_tokens": self._max_new_tokens,
                 "repetition_penalty": self._repetition_penalty,
                 "message_normalizer": self.message_normalizer.__class__.__name__,
@@ -180,7 +180,7 @@ class AzureMLChatTarget(PromptChatTarget):
                 # Handle Bad Request
                 response_entry = handle_bad_request_exception(response_text=hse.response.text, request=request)
             elif hse.response.status_code == 429:
-                raise RateLimitException()
+                raise RateLimitException from hse
             else:
                 raise hse
 
@@ -218,11 +218,11 @@ class AzureMLChatTarget(PromptChatTarget):
             return str(response.json()["output"])
         except Exception as e:
             if response.json() == {}:
-                raise EmptyResponseException(message="The chat returned an empty response.")
-            raise e(
+                raise EmptyResponseException(message="The chat returned an empty response.") from e
+            raise type(e)(
                 f"Exception obtaining response from the target. Returned response: {response.json()}. "
-                + f"Exception: {str(e)}"  # type: ignore
-            )
+                f"Exception: {str(e)}"
+            ) from e
 
     async def _construct_http_body_async(
         self,
@@ -243,7 +243,7 @@ class AzureMLChatTarget(PromptChatTarget):
         # Parameters include additional ones passed in through **kwargs. Those not accepted by the model will
         # be ignored. We only include commonly supported parameters here - model-specific parameters like
         # stop sequences should be passed via **param_kwargs since different models use different EOS tokens.
-        data = {
+        return {
             "input_data": {
                 "input_string": messages_dict,
                 "parameters": {
@@ -255,8 +255,6 @@ class AzureMLChatTarget(PromptChatTarget):
                 | self._extra_parameters,
             }
         }
-
-        return data
 
     def _get_headers(self) -> dict[str, str]:
         """

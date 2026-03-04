@@ -12,7 +12,7 @@ from azure.storage.blob.aio import ContainerClient as AsyncContainerClient
 
 from pyrit.auth import AzureStorageAuth
 from pyrit.common import default_values
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
@@ -80,15 +80,15 @@ class AzureBlobStorageTarget(PromptTarget):
 
         super().__init__(endpoint=self._container_url, max_requests_per_minute=max_requests_per_minute)
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with Azure Blob Storage-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "container_url": self._container_url,
                 "blob_content_type": self._blob_content_type,
             },
@@ -144,14 +144,13 @@ class AzureBlobStorageTarget(PromptTarget):
             if isinstance(exc, ClientAuthenticationError):
                 logger.exception(
                     msg="Authentication failed. Please check that the container existence in the "
-                    + "Azure Storage Account and ensure the validity of the provided SAS token. If you "
-                    + "haven't set the SAS token as an environment variable use `az login` to "
-                    + "enable delegation-based SAS authentication to connect to the storage account"
+                    "Azure Storage Account and ensure the validity of the provided SAS token. If you "
+                    "haven't set the SAS token as an environment variable use `az login` to "
+                    "enable delegation-based SAS authentication to connect to the storage account"
                 )
                 raise
-            else:
-                logger.exception(msg=f"An unexpected error occurred: {exc}")
-                raise
+            logger.exception(msg=f"An unexpected error occurred: {exc}")
+            raise
 
     def _parse_url(self) -> tuple[str, str]:
         """

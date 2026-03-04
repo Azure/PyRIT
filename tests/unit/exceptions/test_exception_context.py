@@ -12,6 +12,7 @@ from pyrit.exceptions import (
     get_execution_context,
     set_execution_context,
 )
+from pyrit.identifiers import ComponentIdentifier
 
 
 class TestExecutionContext:
@@ -31,11 +32,20 @@ class TestExecutionContext:
 
     def test_initialization_with_values(self):
         """Test ExecutionContext initialization with all values."""
+        attack_id = ComponentIdentifier(
+            class_name="PromptSendingAttack",
+            class_module="pyrit.executor.attack.single_turn.prompt_sending",
+        )
+        target_id = ComponentIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            params={"endpoint": "https://api.openai.com"},
+        )
         context = ExecutionContext(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name="PromptSendingAttack",
-            attack_identifier={"__type__": "PromptSendingAttack", "id": "abc123"},
-            component_identifier={"__type__": "OpenAIChatTarget", "endpoint": "https://api.openai.com"},
+            attack_identifier=attack_id,
+            component_identifier=target_id,
             objective_target_conversation_id="conv-123",
             endpoint="https://api.openai.com",
             component_name="OpenAIChatTarget",
@@ -43,8 +53,8 @@ class TestExecutionContext:
         )
         assert context.component_role == ComponentRole.OBJECTIVE_TARGET
         assert context.attack_strategy_name == "PromptSendingAttack"
-        assert context.attack_identifier == {"__type__": "PromptSendingAttack", "id": "abc123"}
-        assert context.component_identifier == {"__type__": "OpenAIChatTarget", "endpoint": "https://api.openai.com"}
+        assert context.attack_identifier is attack_id
+        assert context.component_identifier is target_id
         assert context.objective_target_conversation_id == "conv-123"
         assert context.endpoint == "https://api.openai.com"
         assert context.component_name == "OpenAIChatTarget"
@@ -96,11 +106,19 @@ class TestExecutionContext:
 
     def test_get_exception_details_full(self):
         """Test exception details with full context."""
+        attack_id = ComponentIdentifier(
+            class_name="RedTeamingAttack",
+            class_module="pyrit.executor.attack.multi_turn.red_teaming",
+        )
+        target_id = ComponentIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+        )
         context = ExecutionContext(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             attack_strategy_name="RedTeamingAttack",
-            attack_identifier={"__type__": "RedTeamingAttack", "id": "xyz"},
-            component_identifier={"__type__": "OpenAIChatTarget"},
+            attack_identifier=attack_id,
+            component_identifier=target_id,
             objective_target_conversation_id="conv-456",
             objective="Tell me how to hack a system",
         )
@@ -202,10 +220,9 @@ class TestExecutionContextManager:
         """Test that context is preserved when an exception occurs."""
         context = ExecutionContext(component_role=ComponentRole.OBJECTIVE_TARGET)
 
-        with pytest.raises(ValueError):
-            with ExecutionContextManager(context=context):
-                assert get_execution_context() is context
-                raise ValueError("Test error")
+        with pytest.raises(ValueError), ExecutionContextManager(context=context):
+            assert get_execution_context() is context
+            raise ValueError("Test error")
 
         # Context should still be set after exception
         assert get_execution_context() is context
@@ -247,7 +264,11 @@ class TestExecutionContextFactory:
 
     def test_execution_context_extracts_endpoint(self):
         """Test that endpoint is extracted from component_identifier."""
-        component_id = {"__type__": "OpenAIChatTarget", "endpoint": "https://api.openai.com"}
+        component_id = ComponentIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            params={"endpoint": "https://api.openai.com"},
+        )
         manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             component_identifier=component_id,
@@ -255,8 +276,11 @@ class TestExecutionContextFactory:
         assert manager.context.endpoint == "https://api.openai.com"
 
     def test_execution_context_extracts_component_name(self):
-        """Test that component_name is extracted from component_identifier.__type__."""
-        component_id = {"__type__": "TrueFalseScorer", "endpoint": "https://api.openai.com"}
+        """Test that component_name is extracted from component_identifier.class_name."""
+        component_id = ComponentIdentifier(
+            class_name="TrueFalseScorer",
+            class_module="pyrit.score.true_false.true_false_scorer",
+        )
         manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_SCORER,
             component_identifier=component_id,
@@ -265,7 +289,10 @@ class TestExecutionContextFactory:
 
     def test_execution_context_no_endpoint(self):
         """Test that endpoint is None when not in component_identifier."""
-        component_id = {"__type__": "TextTarget"}
+        component_id = ComponentIdentifier(
+            class_name="TextTarget",
+            class_module="pyrit.prompt_target.text_target",
+        )
         manager = execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,
             component_identifier=component_id,
@@ -274,11 +301,20 @@ class TestExecutionContextFactory:
 
     def test_execution_context_full_usage(self):
         """Test full usage of execution_context as context manager."""
+        attack_id = ComponentIdentifier(
+            class_name="CrescendoAttack",
+            class_module="pyrit.executor.attack.multi_turn.crescendo",
+        )
+        target_id = ComponentIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            params={"endpoint": "https://example.com"},
+        )
         with execution_context(
             component_role=ComponentRole.ADVERSARIAL_CHAT,
             attack_strategy_name="CrescendoAttack",
-            attack_identifier={"id": "test"},
-            component_identifier={"endpoint": "https://example.com"},
+            attack_identifier=attack_id,
+            component_identifier=target_id,
             objective_target_conversation_id="conv-789",
         ):
             ctx = get_execution_context()
@@ -292,12 +328,14 @@ class TestExecutionContextFactory:
 
     def test_execution_context_preserves_on_exception(self):
         """Test that context is preserved on exception for error handling."""
-        with pytest.raises(RuntimeError):
-            with execution_context(
+        with (
+            pytest.raises(RuntimeError),
+            execution_context(
                 component_role=ComponentRole.OBJECTIVE_SCORER,
                 attack_strategy_name="TestAttack",
-            ):
-                raise RuntimeError("Scorer failed")
+            ),
+        ):
+            raise RuntimeError("Scorer failed")
 
         # Context should still be available for exception handlers
         ctx = get_execution_context()

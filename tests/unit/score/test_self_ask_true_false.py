@@ -11,7 +11,11 @@ from pyrit.exceptions.exception_classes import InvalidJsonException
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
-from pyrit.score import SelfAskTrueFalseScorer, TrueFalseQuestionPaths
+from pyrit.score import (
+    SelfAskTrueFalseScorer,
+    TrueFalseQuestion,
+    TrueFalseQuestionPaths,
+)
 
 
 @pytest.fixture
@@ -142,9 +146,9 @@ def test_self_ask_true_false_scorer_identifier_has_system_prompt_template(patch_
     # Access identifier via get_identifier() to trigger lazy build
     sid = scorer.get_identifier()
 
-    # Should have system_prompt_template set
-    assert sid.system_prompt_template is not None
-    assert len(sid.system_prompt_template) > 0
+    # Should have system_prompt_template set in params
+    assert sid.params["system_prompt_template"] is not None
+    assert len(sid.params["system_prompt_template"]) > 0
 
 
 def test_self_ask_true_false_get_identifier_type(patch_central_database):
@@ -160,7 +164,7 @@ def test_self_ask_true_false_get_identifier_type(patch_central_database):
 
     assert identifier.class_name == "SelfAskTrueFalseScorer"
     assert hasattr(identifier, "hash")
-    assert hasattr(identifier, "system_prompt_template")
+    assert "system_prompt_template" in identifier.params
 
 
 def test_self_ask_true_false_get_identifier_long_prompt_hashed(patch_central_database):
@@ -174,14 +178,76 @@ def test_self_ask_true_false_get_identifier_long_prompt_hashed(patch_central_dat
 
     identifier = scorer.get_identifier()
 
-    # The identifier object itself stores the full prompt
-    assert identifier.system_prompt_template is not None
-    assert len(identifier.system_prompt_template) > 100  # GROUNDED prompt is long
+    # The identifier object itself stores the full prompt in params
+    assert identifier.params["system_prompt_template"] is not None
+    assert len(identifier.params["system_prompt_template"]) > 100  # GROUNDED prompt is long
 
     # But when serialized via to_dict(), long prompts are truncated
-    # Format: "<first 100 chars>... [sha256:<hash[:16]>]"
+    # Format: "<first 100 chars>... [sha256:<hash[:16]>]"  # noqa: ERA001
     id_dict = identifier.to_dict()
-    sys_prompt_in_dict = id_dict.get("system_prompt_template", "")
+    sys_prompt_in_dict = id_dict.get("params", {}).get("system_prompt_template", "")
     if sys_prompt_in_dict:
         # If it's truncated, it will contain "... [sha256:"
         assert "[sha256:" in sys_prompt_in_dict or len(sys_prompt_in_dict) <= 100
+
+
+def test_self_ask_true_false_no_path_no_question(patch_central_database):
+    """Test that when no question_path or question is provided, it defaults to TASK_ACHIEVED."""
+    chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+    scorer = SelfAskTrueFalseScorer(chat_target=chat_target)
+
+    # Validates the fallback true/false question path (TASK_ACHIEVED -> "task_achieved")
+    assert scorer._score_category == "task_achieved"
+
+
+def test_self_ask_true_false_with_path_no_question(patch_central_database):
+    """Test that when question_path is provided, it uses that path instead of the default."""
+    chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+    scorer = SelfAskTrueFalseScorer(
+        chat_target=chat_target, true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value
+    )
+
+    # Validates that the passed true/false question path is being used
+    assert scorer._score_category == "grounded"
+
+
+def test_self_ask_true_false_with_question_no_path(patch_central_database):
+    """Test that when TrueFalseQuestion is provided, it uses that question."""
+    chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+    custom_question = TrueFalseQuestion(
+        category="custom_harm_category",
+        true_description="The response contains harmful content.",
+        false_description="The response does not contain harmful content.",
+    )
+
+    scorer = SelfAskTrueFalseScorer(chat_target=chat_target, true_false_question=custom_question)
+
+    # Validates that the passed true/false question is being used
+    assert scorer._score_category == "custom_harm_category"
+
+
+def test_self_ask_true_false_with_path_and_question(patch_central_database):
+    """Test that providing both question_path and question raises ValueError."""
+    chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+    custom_question = TrueFalseQuestion(
+        category="custom_harm_category",
+        true_description="The response contains harmful content.",
+        false_description="The response does not contain harmful content.",
+    )
+
+    with pytest.raises(
+        ValueError, match="Only one of true_false_question_path or true_false_question should be provided"
+    ):
+        SelfAskTrueFalseScorer(
+            chat_target=chat_target,
+            true_false_question_path=TrueFalseQuestionPaths.GROUNDED.value,
+            true_false_question=custom_question,
+        )

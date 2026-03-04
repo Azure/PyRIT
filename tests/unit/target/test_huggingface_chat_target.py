@@ -176,7 +176,7 @@ async def test_send_prompt_async():
     message = Message(message_pieces=[message_piece])
 
     # Use await to handle the asynchronous call
-    response = await hf_chat.send_prompt_async(message=message)  # type: ignore
+    response = await hf_chat.send_prompt_async(message=message)  # type: ignore[arg-type]
 
     # Access the response text via message_pieces
     assert len(response) == 1
@@ -339,5 +339,5 @@ async def test_hugging_face_chat_sets_endpoint_and_rate_limit(patch_central_data
     await target.load_model_and_tokenizer_task
     identifier = target.get_identifier()
     # HuggingFaceChatTarget doesn't set an endpoint (it's local), so it should be empty
-    assert not identifier.endpoint
+    assert not identifier.params.get("endpoint")
     assert target._max_requests_per_minute == 30

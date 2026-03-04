@@ -4,7 +4,7 @@
 import pathlib
 
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, SeedPrompt
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -35,15 +35,15 @@ class MorseConverter(PromptConverter):
             "then use the chainsaw to cut down the stop sign."
         )
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with morse converter parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "append_description": self.append_description,
             }
         )
@@ -165,9 +165,9 @@ class MorseConverter(PromptConverter):
             "Ź": "--..-.",
             "Ż": "--..-",
         }
-        EXTENDED_CHAR_SUPPORT = True
+        extended_char_support = True
         supported_charset = "".join(morse_mapping.keys())
-        if EXTENDED_CHAR_SUPPORT:
+        if extended_char_support:
             supported_charset += "".join(extended_mapping.keys())
             morse_mapping = {**morse_mapping, **extended_mapping}
         error_char = "........"

@@ -3,12 +3,13 @@
 
 import socket
 import time
+from collections.abc import Callable
 from threading import Event, Semaphore, Thread
-from typing import Callable, Optional
+from typing import Optional
 
 import rpyc
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.ui.rpc import RPCAppException
 
@@ -78,7 +79,7 @@ class RPCClient:
         self._prompt_received_sem.acquire()
         if self._is_running:
             return self._prompt_received
-        raise RPCClientStoppedException()
+        raise RPCClientStoppedException
 
     def send_message(self, response: bool) -> None:
         """
@@ -95,11 +96,9 @@ class RPCClient:
             score_rationale="The prompt was marked safe" if response else "The prompt was marked unsafe",
             score_metadata=None,
             message_piece_id=self._prompt_received.id,
-            scorer_class_identifier=ScorerIdentifier(
+            scorer_class_identifier=ComponentIdentifier(
                 class_name="RPCClient",
                 class_module="pyrit.prompt_target.rpc_client",
-                class_description="Human-in-the-loop scorer via RPC",
-                identifier_type="instance",
             ),
         )
         self._c.root.receive_score(score)

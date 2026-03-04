@@ -75,21 +75,18 @@ def sample_attack_results():
         AttackResult(
             conversation_id="conv-1",
             objective="objective1",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
         ),
         AttackResult(
             conversation_id="conv-2",
             objective="objective2",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "2"},
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
         ),
         AttackResult(
             conversation_id="conv-3",
             objective="objective3",
-            attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "3"},
             outcome=AttackOutcome.FAILURE,
             executed_turns=1,
         ),
@@ -241,16 +238,16 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(AttackExecutor, "__init__", return_value=None) as mock_init:
-            with patch.object(
-                AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-            ) as mock_exec:
-                mock_exec.return_value = wrap_results(sample_attack_results)
+        with (
+            patch.object(AttackExecutor, "__init__", return_value=None) as mock_init,
+            patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec,
+        ):
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
-                result = await atomic_attack.run_async(max_concurrency=5)
+            result = await atomic_attack.run_async(max_concurrency=5)
 
-                mock_init.assert_called_once_with(max_concurrency=5)
-                assert len(result.completed_results) == 3
+            mock_init.assert_called_once_with(max_concurrency=5)
+            assert len(result.completed_results) == 3
 
     @pytest.mark.asyncio
     async def test_run_async_with_default_concurrency(self, mock_attack, sample_seed_groups, sample_attack_results):
@@ -261,15 +258,15 @@ class TestAtomicAttackExecution:
             atomic_attack_name="Test Attack Run",
         )
 
-        with patch.object(AttackExecutor, "__init__", return_value=None) as mock_init:
-            with patch.object(
-                AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock
-            ) as mock_exec:
-                mock_exec.return_value = wrap_results(sample_attack_results)
+        with (
+            patch.object(AttackExecutor, "__init__", return_value=None) as mock_init,
+            patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec,
+        ):
+            mock_exec.return_value = wrap_results(sample_attack_results)
 
-                await atomic_attack.run_async()
+            await atomic_attack.run_async()
 
-                mock_init.assert_called_once_with(max_concurrency=1)
+            mock_init.assert_called_once_with(max_concurrency=1)
 
     @pytest.mark.asyncio
     async def test_run_async_passes_memory_labels(self, mock_attack, sample_seed_groups, sample_attack_results):
@@ -431,7 +428,6 @@ class TestAtomicAttackIntegration:
             AttackResult(
                 conversation_id=f"conv-{i}",
                 objective=f"objective{i + 1}",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
@@ -476,7 +472,6 @@ class TestAtomicAttackIntegration:
             AttackResult(
                 conversation_id="conv-1",
                 objective="single_objective",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": "1"},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
@@ -513,7 +508,6 @@ class TestAtomicAttackIntegration:
             AttackResult(
                 conversation_id=f"conv-{i}",
                 objective=f"objective_{i}",
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=1,
             )
@@ -682,7 +676,6 @@ class TestAtomicAttackWithMessages:
             AttackResult(
                 conversation_id=f"conv-{i}",
                 objective=seed_groups_with_messages[i].objective.value,
-                attack_identifier={"__type__": "TestAttack", "__module__": "test", "id": str(i)},
                 outcome=AttackOutcome.SUCCESS,
                 executed_turns=len(seed_groups_with_messages[i].user_messages),
             )

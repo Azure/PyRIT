@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any, Callable, Union, cast
+from typing import TYPE_CHECKING, Any, Union, cast
 from urllib.parse import urlparse
 
 import msal
@@ -23,6 +23,8 @@ from azure.identity.aio import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import azure.cognitiveservices.speech as speechsdk
 
 from pyrit.auth.auth_config import REFRESH_TOKEN_BEFORE_MSEC
@@ -135,7 +137,7 @@ def get_access_token_from_azure_cli(*, scope: str, tenant_id: str = "") -> str:
     try:
         credential = AzureCliCredential(tenant_id=tenant_id)
         token = credential.get_token(scope)
-        return cast(str, token.token)
+        return cast("str", token.token)
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}' with tenant ID '{tenant_id}': {e}")
         raise
@@ -157,7 +159,7 @@ def get_access_token_from_azure_msi(*, client_id: str, scope: str) -> str:
     try:
         credential = ManagedIdentityCredential(client_id=client_id)
         token = credential.get_token(scope)
-        return cast(str, token.token)
+        return cast("str", token.token)
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
         raise
@@ -178,7 +180,7 @@ def get_access_token_from_msa_public_client(*, client_id: str, scope: str) -> st
     try:
         app = msal.PublicClientApplication(client_id)
         result = app.acquire_token_interactive(scopes=[scope])
-        return cast(str, result["access_token"])
+        return cast("str", result["access_token"])
     except Exception as e:
         logger.error(f"Failed to obtain token for '{scope}' with client ID '{client_id}': {e}")
         raise
@@ -221,8 +223,7 @@ def get_azure_token_provider(scope: str) -> Callable[[], str]:
         >>> token = token_provider()  # Get current token
     """
     try:
-        token_provider = get_bearer_token_provider(DefaultAzureCredential(), scope)
-        return token_provider
+        return get_bearer_token_provider(DefaultAzureCredential(), scope)
     except Exception as e:
         logger.error(f"Failed to obtain token provider for '{scope}': {e}")
         raise
@@ -246,8 +247,7 @@ def get_azure_async_token_provider(scope: str):  # type: ignore[no-untyped-def]
         >>> token = await token_provider()  # Get current token (in async context)
     """
     try:
-        token_provider = get_async_bearer_token_provider(AsyncDefaultAzureCredential(), scope)
-        return token_provider
+        return get_async_bearer_token_provider(AsyncDefaultAzureCredential(), scope)
     except Exception as e:
         logger.error(f"Failed to obtain async token provider for '{scope}': {e}")
         raise
@@ -325,7 +325,7 @@ def get_speech_config(resource_id: Union[str, None], key: Union[str, None], regi
     except ModuleNotFoundError as e:
         logger.error(
             "Could not import azure.cognitiveservices.speech. "
-            + "You may need to install it via 'pip install pyrit[speech]'"
+            "You may need to install it via 'pip install pyrit[speech]'"
         )
         raise e
 
@@ -334,13 +334,12 @@ def get_speech_config(resource_id: Union[str, None], key: Union[str, None], regi
             subscription=key,
             region=region,
         )
-    elif resource_id and region:
+    if resource_id and region:
         return get_speech_config_from_default_azure_credential(
             resource_id=resource_id,
             region=region,
         )
-    else:
-        raise ValueError("Insufficient information provided for Azure Speech service.")
+    raise ValueError("Insufficient information provided for Azure Speech service.")
 
 
 def get_speech_config_from_default_azure_credential(resource_id: str, region: str) -> speechsdk.SpeechConfig:
@@ -362,7 +361,7 @@ def get_speech_config_from_default_azure_credential(resource_id: str, region: st
     except ModuleNotFoundError as e:
         logger.error(
             "Could not import azure.cognitiveservices.speech. "
-            + "You may need to install it via 'pip install pyrit[speech]'"
+            "You may need to install it via 'pip install pyrit[speech]'"
         )
         raise e
 
@@ -370,11 +369,10 @@ def get_speech_config_from_default_azure_credential(resource_id: str, region: st
         azure_auth = AzureAuth(token_scope=get_default_azure_scope(""))
         token = azure_auth.get_token()
         authorization_token = "aad#" + resource_id + "#" + token
-        speech_config = speechsdk.SpeechConfig(
+        return speechsdk.SpeechConfig(
             auth_token=authorization_token,
             region=region,
         )
-        return speech_config
     except Exception as e:
         logger.error(f"Failed to get speech config for resource ID '{resource_id}' and region '{region}': {e}")
         raise

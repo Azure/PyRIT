@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 mcr.microsoft.com/devcontainers/python:3.11
+FROM mcr.microsoft.com/devcontainers/python:3.11
 
 # Makes installation faster
 ENV UV_COMPILE_BYTECODE=1
@@ -6,6 +6,9 @@ ENV UV_COMPILE_BYTECODE=1
 SHELL ["/bin/bash", "-c"]
 
 USER root
+
+# Remove the Yarn repository (has expired GPG key and we don't use Yarn)
+RUN rm -f /etc/apt/sources.list.d/yarn.list 2>/dev/null || true
 
 # Install required system packages + ODBC prerequisites
 RUN apt-get update && apt-get install -y \
@@ -20,22 +23,21 @@ RUN apt-get update && apt-get install -y \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install the Azure CLI, Microsoft ODBC Driver 18 & SQL tools
+# Note: Debian Trixie's sqv rejects SHA1 signatures, so we use gpg directly to import the Microsoft key
 RUN apt-get update && apt-get install -y \
       apt-transport-https \
       ca-certificates \
       gnupg \
       lsb-release \
- && curl -sL https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
-      -o packages-microsoft-prod.deb \
- && dpkg -i packages-microsoft-prod.deb \
- && rm packages-microsoft-prod.deb \
+ && curl -sL https://packages.microsoft.com/keys/microsoft.asc \
+      | gpg --dearmor \
+      > /usr/share/keyrings/microsoft-archive-keyring.gpg \
+ && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" \
+      > /etc/apt/sources.list.d/microsoft.list \
  && apt-get update \
- && ACCEPT_EULA=Y apt-get install -y \
-      msodbcsql18 \
-      mssql-tools \
-      unixodbc-dev \
+ && ACCEPT_EULA=Y apt-get install -y msodbcsql18 mssql-tools18 \
  && apt-get install -y azure-cli \
- && echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> /etc/profile.d/sqltools.sh \
+ && echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> /etc/profile.d/sqltools.sh \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 

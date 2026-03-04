@@ -2,5 +2,83 @@
 # Licensed under the MIT license.
 
 """
+Backend models package.
+
 Pydantic models for API requests and responses.
 """
+
+from pyrit.backend.models.attacks import (
+    AddMessageRequest,
+    AddMessageResponse,
+    AttackListResponse,
+    AttackMessagesResponse,
+    AttackOptionsResponse,
+    AttackSummary,
+    ConverterOptionsResponse,
+    CreateAttackRequest,
+    CreateAttackResponse,
+    Message,
+    MessagePiece,
+    MessagePieceRequest,
+    PrependedMessageRequest,
+    Score,
+    UpdateAttackRequest,
+)
+from pyrit.backend.models.common import (
+    SENSITIVE_FIELD_PATTERNS,
+    FieldError,
+    PaginationInfo,
+    ProblemDetail,
+    filter_sensitive_fields,
+)
+from pyrit.backend.models.converters import (
+    ConverterInstance,
+    ConverterInstanceListResponse,
+    ConverterPreviewRequest,
+    ConverterPreviewResponse,
+    CreateConverterRequest,
+    CreateConverterResponse,
+    PreviewStep,
+)
+from pyrit.backend.models.targets import (
+    CreateTargetRequest,
+    TargetInstance,
+    TargetListResponse,
+)
+
+__all__ = [
+    # Attacks
+    "AddMessageRequest",
+    "AddMessageResponse",
+    "AttackListResponse",
+    "AttackMessagesResponse",
+    "AttackSummary",
+    "CreateAttackRequest",
+    "CreateAttackResponse",
+    "Message",
+    "MessagePiece",
+    "MessagePieceRequest",
+    "PrependedMessageRequest",
+    "Score",
+    "UpdateAttackRequest",
+    # Common
+    "SENSITIVE_FIELD_PATTERNS",
+    "FieldError",
+    "filter_sensitive_fields",
+    "PaginationInfo",
+    "ProblemDetail",
+    # Converters
+    "ConverterInstance",
+    "ConverterInstanceListResponse",
+    "ConverterPreviewRequest",
+    "ConverterPreviewResponse",
+    "CreateConverterRequest",
+    "CreateConverterResponse",
+    "PreviewStep",
+    # Targets
+    "CreateTargetRequest",
+    "TargetInstance",
+    "TargetListResponse",
+    "AttackOptionsResponse",
+    "ConverterOptionsResponse",
+]

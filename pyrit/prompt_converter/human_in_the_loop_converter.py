@@ -4,7 +4,8 @@
 import logging
 from typing import Optional
 
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.common.deprecation import print_deprecation_message
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -17,6 +18,10 @@ class HumanInTheLoopConverter(PromptConverter):
 
     Users can choose to send the prompt as is, modify the prompt,
     or run the prompt through one of the passed-in converters before sending it.
+
+    .. deprecated::
+        This converter is deprecated and will be removed in v0.13.0.
+        Use the React-based GUI (CoPyRIT) instead.
     """
 
     SUPPORTED_INPUT_TYPES = ("text",)
@@ -32,16 +37,26 @@ class HumanInTheLoopConverter(PromptConverter):
         Args:
             converters (List[PromptConverter], Optional): List of possible converters to run input through.
         """
+        print_deprecation_message(
+            old_item="HumanInTheLoopConverter",
+            new_item="the React-based GUI (CoPyRIT); see https://azure.github.io/PyRIT/code/gui/0_gui.html",
+            removed_in="0.13.0",
+        )
+
         self._converters = converters or []
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with sub-converters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
-        return self._create_identifier(sub_converters=self._converters)
+        return self._create_identifier(
+            children={
+                "sub_converters": [converter.get_identifier() for converter in self._converters],
+            },
+        )
 
     async def convert_async(self, *, prompt: str, input_type: PromptDataType = "text") -> ConverterResult:
         """
@@ -82,10 +97,10 @@ class HumanInTheLoopConverter(PromptConverter):
                 ).strip()
         if user_input == "1":
             return ConverterResult(output_text=prompt, output_type=input_type)
-        elif user_input == "2":
+        if user_input == "2":
             new_input = input("Enter new prompt to send: ")
             return await self.convert_async(prompt=new_input, input_type=input_type)
-        elif user_input == "3":
+        if user_input == "3":
             if self._converters:
                 converters_str = str([converter.__class__.__name__ for converter in self._converters])
                 converter_index = -1
@@ -100,6 +115,5 @@ class HumanInTheLoopConverter(PromptConverter):
                 converter = self._converters[converter_index]
                 new_result = await converter.convert_async(prompt=prompt, input_type=input_type)
                 return await self.convert_async(prompt=new_result.output_text, input_type=new_result.output_type)
-            else:
-                raise ValueError("No converters were passed into the HumanInTheLoopConverter")
+            raise ValueError("No converters were passed into the HumanInTheLoopConverter")
         return ConverterResult(output_text=prompt, output_type=input_type)

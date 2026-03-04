@@ -10,7 +10,7 @@ import pytest
 from unit.mocks import get_mock_target_identifier
 
 from pyrit.exceptions import InvalidJsonException, remove_markdown_json
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
 from pyrit.models import Message, MessagePiece, Score
 from pyrit.prompt_target import PromptChatTarget
@@ -62,7 +62,7 @@ class MockScorer(TrueFalseScorer):
     def __init__(self):
         super().__init__(validator=DummyValidator())
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
         return self._create_identifier()
 
@@ -118,7 +118,7 @@ class MockFloatScorer(Scorer):
         self.scored_piece_ids: list[str] = []
         super().__init__(validator=validator)
 
-    def _build_identifier(self) -> ScorerIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """Build the scorer evaluation identifier for this mock scorer."""
         return self._create_identifier()
 
@@ -206,7 +206,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     chat_target.set_system_prompt = MagicMock()
 
     expected_system_prompt = "system_prompt"
-    expected_attack_id = "attack_id"
+    expected_attack_identifier = ComponentIdentifier(class_name="TestAttack", class_module="test.module")
     expected_scored_prompt_id = "123"
 
     await scorer._score_value_with_llm(
@@ -217,7 +217,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
         scored_prompt_id=expected_scored_prompt_id,
         category="category",
         objective="task",
-        attack_identifier={"id": expected_attack_id},
+        attack_identifier=expected_attack_identifier,
     )
 
     chat_target.set_system_prompt.assert_called_once()
@@ -225,8 +225,7 @@ async def test_scorer_score_value_with_llm_use_provided_attack_identifier(good_j
     _, set_sys_prompt_args = chat_target.set_system_prompt.call_args
     assert set_sys_prompt_args["system_prompt"] == expected_system_prompt
     assert isinstance(set_sys_prompt_args["conversation_id"], str)
-    assert set_sys_prompt_args["attack_identifier"]["id"] == expected_attack_id
-    assert set_sys_prompt_args["attack_identifier"]["scored_prompt_id"] == expected_scored_prompt_id
+    assert set_sys_prompt_args["attack_identifier"] is expected_attack_identifier
 
 
 @pytest.mark.asyncio
@@ -283,7 +282,7 @@ async def test_scorer_send_chat_target_async_good_response(good_json):
         objective="task",
     )
 
-    assert chat_target.send_prompt_async.call_count == int(1)
+    assert chat_target.send_prompt_async.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -830,9 +829,9 @@ async def test_score_response_async_multiple_pieces():
 
     # The following commented-out lines should be uncommented when the permanent solution is implemented
     # # Should have all auxiliary scores
-    # assert len(result["auxiliary_scores"]) == 4
-    # for score in aux_scores:
-    #     assert score in result["auxiliary_scores"]
+    # assert len(result["auxiliary_scores"]) == 4  # noqa: ERA001
+    # for score in aux_scores:  # noqa: ERA001
+    #     assert score in result["auxiliary_scores"]  # noqa: ERA001
 
     # Should have only one objective score (first success)
     assert len(result["objective_scores"]) == 1
@@ -910,13 +909,13 @@ async def test_score_response_async_skip_on_error_false():
     assert len(result["auxiliary_scores"]) == 1
     # The following commented-out lines should be uncommented when the permanent solution is implemented
     # # Should score both pieces for auxiliary
-    # assert len(result["auxiliary_scores"]) == 2
+    # assert len(result["auxiliary_scores"]) == 2  # noqa: ERA001
 
     # But only one objective score (first success)
     assert len(result["objective_scores"]) == 1
 
     # # Verify both pieces were scored for auxiliary
-    # assert aux_scorer.score_async.call_count == 2
+    # assert aux_scorer.score_async.call_count == 2  # noqa: ERA001
 
 
 @pytest.mark.asyncio
@@ -1129,7 +1128,7 @@ async def test_true_false_scorer_uses_supported_pieces_only(patch_central_databa
             self.scored_piece_ids = []
             super().__init__(validator=validator)
 
-        def _build_identifier(self) -> ScorerIdentifier:
+        def _build_identifier(self) -> ComponentIdentifier:
             """Build the scorer evaluation identifier for this test scorer."""
             return self._create_identifier()
 
@@ -1220,7 +1219,7 @@ async def test_base_scorer_score_async_implementation(patch_central_database):
 
 
 def test_mock_scorer_get_identifier_returns_type():
-    """Test that get_identifier returns a ScorerIdentifier with the correct class_name."""
+    """Test that get_identifier returns a ComponentIdentifier with the correct class_name."""
     scorer = MockScorer()
     identifier = scorer.get_identifier()
 
@@ -1228,7 +1227,7 @@ def test_mock_scorer_get_identifier_returns_type():
 
 
 def test_mock_scorer_get_identifier_includes_hash():
-    """Test that get_identifier returns an identifier with a hash field."""
+    """Test that get_identifier returns a ComponentIdentifier with a hash field."""
     scorer = MockScorer()
     identifier = scorer.get_identifier()
 
@@ -1257,14 +1256,12 @@ def test_mock_scorer_get_identifier_hash_deterministic():
     assert hash1 == hash2
 
 
-def test_mock_scorer_get_identifier_is_scorer_identifier():
-    """Test that get_identifier returns a ScorerIdentifier."""
-    from pyrit.identifiers import ScorerIdentifier
-
+def test_mock_scorer_get_identifier_is_component_identifier():
+    """Test that get_identifier returns a ComponentIdentifier."""
     scorer = MockScorer()
     sid = scorer.get_identifier()
 
-    assert isinstance(sid, ScorerIdentifier)
+    assert isinstance(sid, ComponentIdentifier)
     assert sid.class_name == "MockScorer"
 
 
@@ -1316,7 +1313,7 @@ class TestTrueFalseScorerEmptyScoreListRationale:
             def __init__(self, validator):
                 super().__init__(validator=validator)
 
-            def _build_identifier(self) -> ScorerIdentifier:
+            def _build_identifier(self) -> ComponentIdentifier:
                 return self._create_identifier()
 
             async def _score_piece_async(
@@ -1422,3 +1419,42 @@ class TestTrueFalseScorerEmptyScoreListRationale:
         assert "blocked" in scores[0].score_rationale.lower()
         # The description should also mention blocked, not just "error"
         assert "blocked" in scores[0].score_value_description.lower()
+
+
+@pytest.mark.asyncio
+async def test_score_value_with_llm_skips_reasoning_piece(good_json):
+    """Test that _score_value_with_llm extracts JSON from the text piece, not a reasoning piece."""
+    chat_target = MagicMock(PromptChatTarget)
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+    # Simulate a reasoning model response: first piece is reasoning, second is the actual text with JSON
+    reasoning_piece = MessagePiece(
+        role="assistant",
+        original_value="Let me think about this...",
+        original_value_data_type="reasoning",
+        converted_value="Let me think about this...",
+        converted_value_data_type="reasoning",
+        conversation_id="test-convo",
+    )
+    text_piece = MessagePiece(
+        role="assistant",
+        original_value=good_json,
+        conversation_id="test-convo",
+    )
+    response_message = Message(message_pieces=[reasoning_piece, text_piece])
+    chat_target.send_prompt_async = AsyncMock(return_value=[response_message])
+
+    scorer = MockScorer()
+
+    result = await scorer._score_value_with_llm(
+        prompt_target=chat_target,
+        system_prompt="system_prompt",
+        message_value="message_value",
+        message_data_type="text",
+        scored_prompt_id="123",
+        category="category",
+        objective="task",
+    )
+
+    assert result.raw_score_value == "1"
+    assert result.score_rationale == "Valid response"

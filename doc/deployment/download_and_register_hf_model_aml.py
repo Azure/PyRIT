@@ -179,7 +179,7 @@ except Exception as ex:
 try:
     # Attempt to create MLClient using configuration file
     ml_client_ws = MLClient.from_config(credential=credential)
-except:
+except Exception:
     ml_client_ws = MLClient(
         credential,
         subscription_id=subscription_id,
@@ -262,8 +262,7 @@ def get_max_model_version(models: list) -> str:
 
     # Find the model with the maximum version number
     max_version = max(models, key=lambda x: int(x.version)).version
-    model_max_version = str(int(max_version))
-    return model_max_version
+    return str(int(max_version))
 
 
 # %%

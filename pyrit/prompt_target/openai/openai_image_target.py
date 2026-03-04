@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 import base64
 import logging
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
 
 import httpx
 
@@ -10,12 +10,13 @@ from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     construct_response_from_request,
     data_serializer_factory,
 )
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
@@ -27,6 +28,7 @@ class OpenAIImageTarget(OpenAITarget):
 
     # Maximum number of image inputs supported by the OpenAI image API
     _MAX_INPUT_IMAGES = 16
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
 
     def __init__(
         self,
@@ -54,7 +56,9 @@ class OpenAIImageTarget(OpenAITarget):
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
-            image_size (Literal["256x256", "512x512", "1024x1024", "1536x1024", "1024x1536", "1792x1024", "1024x1792"], Optional): The size of the generated image.
+            image_size (Literal, Optional): The size of the generated image.
+                Accepts "256x256", "512x512", "1024x1024", "1536x1024",
+                "1024x1536", "1792x1024", or "1024x1792".
                 Different models support different image sizes.
                 GPT image models support "1024x1024", "1536x1024" and "1024x1536".
                 DALL-E-3 supports "1024x1024", "1792x1024" and "1024x1792".
@@ -102,15 +106,15 @@ class OpenAIImageTarget(OpenAITarget):
             "api.openai.com": "https://api.openai.com/v1",
         }
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with image generation-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "image_size": self.image_size,
                 "quality": self.quality,
                 "style": self.style,
@@ -162,7 +166,7 @@ class OpenAIImageTarget(OpenAITarget):
         prompt = message.message_pieces[0].converted_value
 
         # Construct request parameters
-        image_generation_args: Dict[str, Any] = {
+        image_generation_args: dict[str, Any] = {
             "model": self._model_name,
             "prompt": prompt,
             "size": self.image_size,
@@ -176,11 +180,10 @@ class OpenAIImageTarget(OpenAITarget):
             image_generation_args["style"] = self.style
 
         # Use unified error handler for consistent error handling
-        response = await self._handle_openai_request(
+        return await self._handle_openai_request(
             api_call=lambda: self._async_client.images.generate(**image_generation_args),
             request=message,
         )
-        return response
 
     async def _send_edit_request_async(self, message: Message) -> Message:
         """
@@ -213,7 +216,7 @@ class OpenAIImageTarget(OpenAITarget):
             image_files.append((image_name, image_bytes, image_type))
 
         # Construct request parameters for image editing
-        image_edit_args: Dict[str, Any] = {
+        image_edit_args: dict[str, Any] = {
             "model": self._model_name,
             "image": image_files,
             "prompt": text_prompt,
@@ -227,12 +230,10 @@ class OpenAIImageTarget(OpenAITarget):
         if self.style:
             image_edit_args["style"] = self.style
 
-        response = await self._handle_openai_request(
+        return await self._handle_openai_request(
             api_call=lambda: self._async_client.images.edit(**image_edit_args),
             request=message,
         )
-
-        return response
 
     async def _construct_message_from_response(self, response: Any, request: Any) -> Message:
         """
@@ -316,6 +317,16 @@ class OpenAIImageTarget(OpenAITarget):
         if len(other_pieces) > 0:
             other_types = [p.converted_value_data_type for p in other_pieces]
             raise ValueError(f"The message contains unsupported piece types. Unsupported types: {other_types}.")
+
+        request = text_pieces[0]
+        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
+
+        n_messages = len(messages)
+        if n_messages > 0:
+            raise ValueError(
+                "This target only supports a single turn conversation. "
+                f"Received: {n_messages} messages which indicates a prior turn."
+            )
 
     def is_json_response_supported(self) -> bool:
         """

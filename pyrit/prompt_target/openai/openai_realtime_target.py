@@ -7,7 +7,7 @@ import logging
 import re
 import wave
 from dataclasses import dataclass, field
-from typing import Any, List, Literal, Optional, Tuple
+from typing import Any, Literal, Optional
 
 from openai import AsyncOpenAI
 
@@ -15,12 +15,14 @@ from pyrit.exceptions import (
     pyrit_target_retry,
 )
 from pyrit.exceptions.exception_classes import ServerErrorException
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     construct_response_from_request,
     data_serializer_factory,
 )
+from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
@@ -43,7 +45,7 @@ class RealtimeTargetResult:
     """
 
     audio_bytes: bytes = field(default_factory=lambda: b"")
-    transcripts: List[str] = field(default_factory=list)
+    transcripts: list[str] = field(default_factory=list)
 
     def flatten_transcripts(self) -> str:
         """
@@ -55,7 +57,7 @@ class RealtimeTargetResult:
         return "".join(self.transcripts)
 
 
-class RealtimeTarget(OpenAITarget):
+class RealtimeTarget(OpenAITarget, PromptChatTarget):
     """
     A prompt target for Azure OpenAI Realtime API.
 
@@ -65,6 +67,8 @@ class RealtimeTarget(OpenAITarget):
     Read more at https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-reference
     and https://platform.openai.com/docs/guides/realtime-websocket
     """
+
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=True)
 
     def __init__(
         self,
@@ -119,15 +123,15 @@ class RealtimeTarget(OpenAITarget):
             "api.openai.com": "wss://api.openai.com/v1",
         }
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with Realtime API-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "voice": self.voice,
             },
         )
@@ -461,7 +465,7 @@ class RealtimeTarget(OpenAITarget):
 
         result = RealtimeTargetResult()
         audio_done_received = False
-        GRACE_PERIOD_SEC = 1.0  # Wait 1 second after audio.done before soft-finishing
+        grace_period_sec = 1.0  # Wait 1 second after audio.done before soft-finishing
 
         try:
             # Create event iterator
@@ -470,7 +474,7 @@ class RealtimeTarget(OpenAITarget):
             while True:
                 # If we've seen audio.done, wait with a short timeout for response.done
                 # Otherwise, wait indefinitely for events
-                timeout = GRACE_PERIOD_SEC if audio_done_received else None
+                timeout = grace_period_sec if audio_done_received else None
 
                 try:
                     event = await asyncio.wait_for(event_iter.__anext__(), timeout=timeout)
@@ -478,7 +482,7 @@ class RealtimeTarget(OpenAITarget):
                     # Soft-finish: audio.done was received but no response.done after grace period
                     if audio_done_received:
                         logger.warning(
-                            f"Soft-finishing: No response.done {GRACE_PERIOD_SEC}s after audio.done. "
+                            f"Soft-finishing: No response.done {grace_period_sec}s after audio.done. "
                             f"Audio bytes: {len(result.audio_bytes)}"
                         )
                         break
@@ -507,19 +511,19 @@ class RealtimeTarget(OpenAITarget):
                     logger.debug("Received response.done - finishing normally")
                     break
 
-                elif event_type == "error":
+                if event_type == "error":
                     error_message = event.error.message if hasattr(event.error, "message") else str(event.error)
                     error_type = event.error.type if hasattr(event.error, "type") else "unknown"
                     logger.error(f"Received 'error' event: [{error_type}] {error_message}")
                     raise RuntimeError(f"Server error: [{error_type}] {error_message}")
 
-                elif event_type in ["response.audio.delta", "response.output_audio.delta"]:
+                if event_type in ["response.audio.delta", "response.output_audio.delta"]:
                     audio_data = base64.b64decode(event.delta)
                     result.audio_bytes += audio_data
                     logger.debug(f"Decoded {len(audio_data)} bytes of audio data")
 
                 elif event_type in ["response.audio.done", "response.output_audio.done"]:
-                    logger.debug(f"Received audio.done - will soft-finish in {GRACE_PERIOD_SEC}s if no response.done")
+                    logger.debug(f"Received audio.done - will soft-finish in {grace_period_sec}s if no response.done")
                     audio_done_received = True
 
                 elif event_type in ["response.audio_transcript.delta", "response.output_audio_transcript.delta"]:
@@ -639,7 +643,7 @@ class RealtimeTarget(OpenAITarget):
                 return f"[{error_type}] {error_message}"
         return "Unknown error occurred"
 
-    async def send_text_async(self, text: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
+    async def send_text_async(self, text: str, conversation_id: str) -> tuple[str, RealtimeTargetResult]:
         """
         Send text prompt using OpenAI Realtime API client.
 
@@ -693,7 +697,7 @@ class RealtimeTarget(OpenAITarget):
         output_audio_path = await self.save_audio(audio_bytes=result.audio_bytes, sample_rate=24000)
         return output_audio_path, result
 
-    async def send_audio_async(self, filename: str, conversation_id: str) -> Tuple[str, RealtimeTargetResult]:
+    async def send_audio_async(self, filename: str, conversation_id: str) -> tuple[str, RealtimeTargetResult]:
         """
         Send an audio message using OpenAI Realtime API client.
 
