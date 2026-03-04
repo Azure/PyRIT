@@ -81,7 +81,7 @@ class ScientificTranslationConverter(LLMGenericTextConverter):
         else:
             raise ValueError(
                 f"Custom mode '{mode}' requires a prompt_template. "
-                f"Either use a built-in mode {TRANSLATION_MODES} or provide a prompt_template."
+                f"Either use a built-in mode from {sorted(TRANSLATION_MODES)} or provide a prompt_template."
             )
 
         super().__init__(

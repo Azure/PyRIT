@@ -189,11 +189,8 @@ class Seed(YamlLoadable):
             # Check if all parameters in control structures are provided
             # Extract variable names from {% for var in collection %} patterns
             for_vars = re.findall(r"\{%[-\s]*for\s+\w+\s+in\s+(\w+)", self.value)
-            # Extract variable names from {% if var ... %} and {% elif var ... %} patterns
-            if_vars = re.findall(r"\{%[-\s]*(?:el)?if\s+(\w+)", self.value)
-            control_vars = set(for_vars + if_vars)
-            if any(var not in kwargs for var in control_vars):
-                # Don't render if we're missing control structure variables - preserve the template as-is
+            if any(var not in kwargs for var in for_vars):
+                # Don't render if we're missing loop collection variables - preserve the template as-is
                 return self.value
 
         # Create a Jinja template with PartialUndefined placeholders

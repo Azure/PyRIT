@@ -460,7 +460,7 @@ API Reference
     RegexSelectionStrategy
     RepeatTokenConverter
     ROT13Converter
-    ScientificObfuscationConverter
+    ScientificTranslationConverter
     SearchReplaceConverter
     SelectiveTextConverter
     SneakyBitsSmugglerConverter

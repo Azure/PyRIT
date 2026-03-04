@@ -44,7 +44,7 @@ def test_scientific_translation_converter_raises_on_bad_input_mode(sqlite_instan
         ScientificTranslationConverter(converter_target=prompt_target, mode="bad input")
 
 
-@pytest.mark.parametrize("mode", ["academic", "technical", "smiles", "research", "reaction", "combined"])
+@pytest.mark.parametrize("mode", ["academic", "technical", "smiles", "research", "reaction", "combined", "math"])
 def test_scientific_translation_converter_init_valid_modes(mode, sqlite_instance):
     prompt_target = MockPromptTarget()
     converter = ScientificTranslationConverter(converter_target=prompt_target, mode=mode)
