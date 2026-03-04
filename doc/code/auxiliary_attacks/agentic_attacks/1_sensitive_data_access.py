@@ -83,7 +83,7 @@ from pyrit.executor.attack import (
     ConsoleAttackResultPrinter,
     PromptSendingAttack,
 )
-from pyrit.models import SeedDataset
+from pyrit.models import AttackOutcome, SeedDataset
 from pyrit.prompt_target import HTTPTarget
 from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_json_response_callback_function,
@@ -188,40 +188,23 @@ attack = PromptSendingAttack(
 )
 
 printer = ConsoleAttackResultPrinter()
-output_file = pathlib.Path("attack_results.txt")
+attack_results = []
 
-# Capture printed output and write to file
-original_stdout = sys.stdout
+for objective in all_objectives:
+    result = await attack.execute_async(objective=objective)  # type: ignore
+    attack_results.append(result)
+    await printer.print_result_async(result)  # type: ignore
 
-with open(output_file, "w", encoding="utf-8") as f:
-    for objective in all_objectives:
-        result = await attack.execute_async(objective=objective)  # type: ignore
-
-        # Print to console
-        sys.stdout = original_stdout
-        await printer.print_result_async(result)  # type: ignore
-
-        # Capture and write to file (without colors)
-        buffer = StringIO()
-        sys.stdout = buffer
-        file_printer = ConsoleAttackResultPrinter(enable_colors=False)
-        await file_printer.print_result_async(result)  # type: ignore
-        sys.stdout = original_stdout
-
-        f.write(buffer.getvalue())
-        f.write("\n")
-
-print(f"\nResults written to {output_file.resolve()}")
+print(f"\nCompleted {len(attack_results)} attacks.")
 
 # %% [markdown]
 # ## 4) Takeaways and Recommendations
 #
-# After running the attack, we parse the results to produce **actionable hardening recommendations** tailored to the specific vulnerability categories that were exploited. Recommendations are printed to the console and saved to `attack_recommendations.txt`.
+# After running the attack, we parse the results to produce **actionable hardening recommendations** tailored to the specific vulnerability categories that were exploited. Recommendations are printed to the console.
 
 # %%
 import re
 from collections import defaultdict
-from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # 1. Build a lookup: objective text → harm categories (from the seed dataset)
@@ -257,46 +240,20 @@ def _lookup_categories(objective: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# 2. Parse attack_results.txt to extract per-attack outcome
+# 2. Classify attack results from in-memory variables
 # ---------------------------------------------------------------------------
-results_path = Path("attack_results.txt")
-results_text = results_path.read_text(encoding="utf-8")
+succeeded: list[dict] = [
+    {"objective": r.objective, "categories": _lookup_categories(r.objective)}
+    for r in attack_results
+    if r.outcome == AttackOutcome.SUCCESS
+]
+failed: list[dict] = [
+    {"objective": r.objective, "categories": _lookup_categories(r.objective)}
+    for r in attack_results
+    if r.outcome != AttackOutcome.SUCCESS
+]
 
-# Split on the heavy separator line (═══…) that frames each result.
-# Each result is framed by TWO separator lines, the header (SUCCESS/FAILURE)
-# sits between them and the body (Objective, conversation) follows the second.
-# Odd-indexed blocks are headers, even-indexed blocks are bodies, we pair them.
-raw_blocks = re.split(r"═{80,}", results_text)
-result_blocks: list[str] = []
-for i in range(1, len(raw_blocks) - 1, 2):
-    result_blocks.append(raw_blocks[i] + raw_blocks[i + 1])
-
-succeeded: list[dict] = []
-failed: list[dict] = []
-
-for block in result_blocks:
-    # Determine success / failure
-    if "ATTACK RESULT: SUCCESS" in block:
-        is_success = True
-    elif "ATTACK RESULT: FAILURE" in block:
-        is_success = False
-    else:
-        continue  # separator or header block
-
-    # Extract objective
-    obj_match = re.search(r"Objective:\s*(.+?)$", block, re.MULTILINE)
-    objective = obj_match.group(1).strip() if obj_match else "Unknown"
-
-    # Match harm categories from the seed dataset
-    categories = _lookup_categories(objective)
-
-    entry = {"objective": objective, "categories": categories}
-    if is_success:
-        succeeded.append(entry)
-    else:
-        failed.append(entry)
-
-total = len(succeeded) + len(failed)
+total = len(attack_results)
 
 # ---------------------------------------------------------------------------
 # 3. Aggregate which harm categories had successful attacks
@@ -400,8 +357,3 @@ output_lines.append(SEPARATOR)
 
 report = "\n".join(output_lines)
 print(report)
-
-# Save to file
-recommendations_path = Path("attack_recommendations.txt")
-recommendations_path.write_text(report, encoding="utf-8")
-print(f"\nRecommendations saved to {recommendations_path.resolve()}")
