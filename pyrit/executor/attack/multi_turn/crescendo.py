@@ -257,7 +257,17 @@ class CrescendoAttack(MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoA
 
         Args:
             context (CrescendoAttackContext): Attack context with configuration
+
+        Raises:
+            ValueError: If the objective target does not support multi-turn conversations.
         """
+        if not self._objective_target.supports_multi_turn:
+            raise ValueError(
+                "CrescendoAttack requires a multi-turn target. Crescendo fundamentally relies on "
+                "multi-turn conversation history to gradually escalate prompts. "
+                "Use RedTeamingAttack or TreeOfAttacksWithPruning instead."
+            )
+
         # Ensure the context has a session
         context.session = ConversationSession()
 
