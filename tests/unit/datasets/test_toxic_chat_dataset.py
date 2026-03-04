@@ -127,6 +127,28 @@ class TestToxicChatDataset:
             assert dataset.seeds[0].value == "Normal question"
             assert dataset.seeds[1].value == "Another normal question"
 
+    @pytest.mark.asyncio
+    async def test_fetch_dataset_preserves_for_loop_content(self):
+        """Test that entries with {% for %} control structures are preserved without raw wrapper."""
+        data_with_for = [
+            {
+                "conv_id": "for1",
+                "user_input": "Use {% for x in items %}{{ x }}{% endfor %} in your code",
+                "model_output": "Example output.",
+                "human_annotation": "False",
+                "toxicity": 0,
+                "jailbreaking": 0,
+                "openai_moderation": "[]",
+            },
+        ]
+        loader = _ToxicChatDataset()
+
+        with patch.object(loader, "_fetch_from_huggingface", new=AsyncMock(return_value=data_with_for)):
+            dataset = await loader.fetch_dataset()
+
+            assert len(dataset.seeds) == 1
+            assert dataset.seeds[0].value == "Use {% for x in items %}{{ x }}{% endfor %} in your code"
+
     def test_dataset_name(self):
         """Test dataset_name property."""
         loader = _ToxicChatDataset()
