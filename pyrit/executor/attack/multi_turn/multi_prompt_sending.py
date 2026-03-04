@@ -203,7 +203,16 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
 
         Args:
             context (MultiTurnAttackContext): The attack context containing attack parameters.
+
+        Raises:
+            ValueError: If the objective target does not support multi-turn conversations.
         """
+        if not self._objective_target.supports_multi_turn:
+            raise ValueError(
+                "MultiPromptSendingAttack requires a multi-turn target. "
+                "The objective target does not support multi-turn conversations."
+            )
+
         # Ensure the context has a session (like red_teaming.py does)
         context.session = ConversationSession()
 
