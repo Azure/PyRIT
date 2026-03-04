@@ -4,6 +4,7 @@
 import os
 import uuid
 from collections.abc import Generator, MutableSequence, Sequence
+from datetime import timezone
 from typing import TYPE_CHECKING
 
 import pytest
@@ -203,7 +204,9 @@ def test_get_memories_with_json_properties(memory_interface: AzureSQLMemory):
         assert retrieved_entry.api_role == "user"
         assert retrieved_entry.original_value == "Test content"
         # For timestamp, you might want to check if it's close to the current time instead of an exact match
-        assert abs((retrieved_entry.timestamp - entry.timestamp).total_seconds()) < 10  # Assuming the test runs quickly
+        assert (
+            abs((retrieved_entry.timestamp - entry.timestamp.replace(tzinfo=timezone.utc)).total_seconds()) < 10
+        )  # Assuming the test runs quickly
 
         converter_identifiers = retrieved_entry.converter_identifiers
         assert len(converter_identifiers) == 1

@@ -149,16 +149,16 @@ def visualize_knowledge_graph(kg_result: str):
     rel_df = df[df["Type"] == "relationship"]
 
     # 3) Create and visualize the graph
-    G = nx.Graph()
+    g = nx.Graph()
     for _, row in rel_df.iterrows():
         source = row["col1"]
         target = row["col2"]
-        G.add_edge(source, target)
+        g.add_edge(source, target)
 
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, with_labels=True)
-    edge_labels = nx.get_edge_attributes(G, "label")
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    pos = nx.spring_layout(g)
+    nx.draw(g, pos, with_labels=True)
+    edge_labels = nx.get_edge_attributes(g, "label")
+    nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels)
     plt.show()
 
 
