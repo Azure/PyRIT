@@ -254,11 +254,12 @@ TARGET_CONFIGS: list[TargetConfig] = [
     # Video Targets (OpenAIVideoTarget)
     # ============================================
     TargetConfig(
-        registry_name="openai_video",
+        registry_name="azure_openai_video",
         target_class=OpenAIVideoTarget,
-        endpoint_var="OPENAI_VIDEO_ENDPOINT",
-        key_var="OPENAI_VIDEO_KEY",
-        model_var="OPENAI_VIDEO_MODEL",
+        endpoint_var="AZURE_OPENAI_VIDEO_ENDPOINT",
+        key_var="AZURE_OPENAI_VIDEO_KEY",
+        model_var="AZURE_OPENAI_VIDEO_MODEL",
+        underlying_model_var="AZURE_OPENAI_VIDEO_UNDERLYING_MODEL",
     ),
     # ============================================
     # Completion Targets (OpenAICompletionTarget)

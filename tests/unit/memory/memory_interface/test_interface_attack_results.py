@@ -1279,7 +1279,7 @@ def test_get_attack_results_attack_class_and_converter_classes_combined(sqlite_i
 
 
 def test_get_attack_results_attack_class_with_no_converters(sqlite_instance: MemoryInterface):
-    """Test combining attack_type with converter_classes=[] (no converters)."""
+    """Test combining attack_type with converter_types=[] (no converters)."""
     ar1 = _make_attack_result_with_identifier("conv_1", "CrescendoAttack", ["Base64Converter"])
     ar2 = _make_attack_result_with_identifier("conv_2", "CrescendoAttack")  # No converters
     ar3 = _make_attack_result_with_identifier("conv_3", "ManualAttack")  # No converters

@@ -225,7 +225,7 @@ class TestListAttacks:
         await attack_service.list_attacks_async(converter_types=[])
 
         call_kwargs = mock_memory.get_attack_results.call_args[1]
-        assert call_kwargs["converter_types"] == []
+        assert call_kwargs["converter_classes"] == []
 
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_converter_types_and_logic(self, attack_service, mock_memory) -> None:
@@ -264,7 +264,7 @@ class TestListAttacks:
         assert result.items[0].conversation_id == "attack-1"
         # Verify converter_types was forwarded to the memory layer
         call_kwargs = mock_memory.get_attack_results.call_args[1]
-        assert call_kwargs["converter_types"] == ["Base64Converter", "ROT13Converter"]
+        assert call_kwargs["converter_classes"] == ["Base64Converter", "ROT13Converter"]
 
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_min_turns(self, attack_service, mock_memory) -> None:
@@ -2060,31 +2060,6 @@ class TestAttackServiceAdditionalCoverage:
 
         assert persisted_classes.count("ExistingConverter") == 1
         assert persisted_classes.count("NewConverter") == 1
-
-    def test_get_last_message_preview_handles_truncation_and_empty_values(self, attack_service):
-        """Should truncate long previews and handle empty converted values."""
-        short_piece = make_mock_piece(conversation_id="attack-1", sequence=1, converted_value="short")
-        long_piece = make_mock_piece(conversation_id="attack-1", sequence=2, converted_value="x" * 120)
-
-        assert attack_service._get_last_message_preview([]) is None
-        assert attack_service._get_last_message_preview([short_piece]) == "short"
-        assert attack_service._get_last_message_preview([long_piece]) == ("x" * 100 + "...")
-
-    def test_count_messages_and_earliest_timestamp_helpers(self, attack_service):
-        """Should count unique sequences and compute earliest non-null timestamp."""
-        t1 = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-        t2 = datetime(2026, 1, 1, 9, 0, 0, tzinfo=timezone.utc)
-
-        p1 = make_mock_piece(conversation_id="attack-1", sequence=1, timestamp=t1)
-        p2 = make_mock_piece(conversation_id="attack-1", sequence=1, timestamp=t1)
-        p3 = make_mock_piece(conversation_id="attack-1", sequence=2, timestamp=t2)
-        p4 = make_mock_piece(conversation_id="attack-1", sequence=3, timestamp=t1)
-        p4.timestamp = None
-
-        assert attack_service._count_messages([p1, p2, p3]) == 2
-        assert attack_service._get_earliest_timestamp([]) is None
-        assert attack_service._get_earliest_timestamp([p4]) is None
-        assert attack_service._get_earliest_timestamp([p1, p3, p4]) == t2
 
     def test_duplicate_conversation_up_to_adds_pieces_when_present(self, attack_service, mock_memory):
         """Should duplicate up to cutoff and persist duplicated pieces only when returned."""

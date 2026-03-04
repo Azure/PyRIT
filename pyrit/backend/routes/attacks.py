@@ -227,6 +227,7 @@ async def update_attack(
     "/{attack_result_id}/messages",
     response_model=ConversationMessagesResponse,
     responses={
+        400: {"model": ProblemDetail, "description": "Invalid conversation"},
         404: {"model": ProblemDetail, "description": "Attack or conversation not found"},
     },
 )
@@ -244,10 +245,17 @@ async def get_conversation_messages(
     """
     service = get_attack_service()
 
-    messages = await service.get_conversation_messages_async(
-        attack_result_id=attack_result_id,
-        conversation_id=conversation_id,
-    )
+    try:
+        messages = await service.get_conversation_messages_async(
+            attack_result_id=attack_result_id,
+            conversation_id=conversation_id,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
     if not messages:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
