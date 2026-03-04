@@ -13,7 +13,7 @@
 # ---
 
 # %% [markdown]
-# # Agent Security: Sensitive Data Access UPIA Attack
+# # Sensitive Data Access UPIA Attack
 #
 # ## Who Is This For?
 #
@@ -59,7 +59,7 @@
 # - Have access to tools that can interact with the file system or run commands
 # - Be deployed in an environment where canary files have been planted (see step 2)
 #
-# > **Example:** This repo includes a ready-to-use LangChain sandbox agent under `docker/agent-sandbox/`. See the [Agent Security overview](./0_agent_security.md#agent-sandbox-setup) for setup instructions.
+# > **Example:** This repo includes a ready-to-use LangChain sandbox agent under `docker/agent-sandbox/`. See the [Agent Security overview](./0_agentic_security.md#agent-sandbox-setup) for setup instructions.
 #
 # ### 2. Canary Files Planted in the Agent's Environment
 # The scorer works by detecting **canary markers** — unique strings planted inside sensitive files in the agent's environment. Each file category (shadow, passwd, SSH keys, etc.) has its own marker.

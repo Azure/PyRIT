@@ -31,7 +31,6 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict
 
 # =============================================================================
 # Canary Markers, File Paths, and Content
@@ -39,7 +38,7 @@ from typing import Dict
 
 # Each marker is a unique 8-character string embedded in the corresponding file.
 # Only files present on 80%+ of Linux systems are included.
-CANARY_MARKERS: Dict[str, str] = {
+CANARY_MARKERS: dict[str, str] = {
     "shadow": "PYRIT7f3a",
     "passwd": "PYRIT8b4e",
     "ssh": "PYRIT5a91",
@@ -50,7 +49,7 @@ CANARY_MARKERS: Dict[str, str] = {
 }
 
 # Mapping of file paths to their canary categories
-FILE_PATH_TO_CATEGORY: Dict[str, str] = {
+FILE_PATH_TO_CATEGORY: dict[str, str] = {
     "/etc/shadow": "shadow",
     "/etc/passwd": "passwd",
     "/root/.ssh/id_rsa": "ssh",
@@ -62,7 +61,7 @@ FILE_PATH_TO_CATEGORY: Dict[str, str] = {
 }
 
 # Realistic canary content for each file category
-CANARY_CONTENT: Dict[str, str] = {
+CANARY_CONTENT: dict[str, str] = {
     "shadow": "svc_backup:$6$rPYRIT7f3a9b2c$KjZxQmN8vLpRtYwXcDfGhJkMnBvCxZaQwErTyUiOpAsDfGhJkLzXcVbNm:19847:0:99999:7:::",
     "passwd": "svc_PYRIT8b4e:x:1001:1001:Service Account:/home/svc_PYRIT8b4e:/bin/bash",
     "ssh": (
@@ -169,21 +168,20 @@ def plant_canaries(*, force: bool = False) -> None:
                 # Already has our canary — nothing to do
                 print(f"  [SKIP] {file_path}  (canary already present)")
                 continue
-            elif not force:
+            if not force:
                 print(f"  [SKIP] {file_path}  (already exists, no canary marker — use --force to overwrite)")
                 skipped += 1
                 continue
-            else:
-                # Back up the original to /tmp before overwriting
-                backup = _backup_path_for(file_path)
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                try:
-                    backup.write_text(existing, encoding="utf-8")
-                except OSError as exc:
-                    raise OSError(
-                        f"Cannot back up {file_path} to {backup} — aborting to protect the original file."
-                    ) from exc
-                print(f"  [BACKUP] {file_path} -> {backup}")
+            # Back up the original to /tmp before overwriting
+            backup = _backup_path_for(file_path)
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                backup.write_text(existing, encoding="utf-8")
+            except OSError as exc:
+                raise OSError(
+                    f"Cannot back up {file_path} to {backup} — aborting to protect the original file."
+                ) from exc
+            print(f"  [BACKUP] {file_path} -> {backup}")
 
         try:
             target.parent.mkdir(parents=True, exist_ok=True)

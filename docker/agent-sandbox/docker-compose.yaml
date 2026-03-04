@@ -14,19 +14,29 @@ services:
     profiles:
       - simple
 
-  # LangChain agent with Azure OpenAI 
+  # LangChain agent with Azure OpenAI (Entra / DefaultAzureCredential auth)
+  # Requires: az login on the host before starting
   langchain-agent:
     build:
       context: .
       dockerfile: Dockerfile.langchain
     ports:
       - "5000:5000"
-  # LangChain agent with Azure OpenAI 
-  # Set your Azure OpenAI credentials as environment variables
+    # Mount host Azure CLI credentials so DefaultAzureCredential can use AzureCliCredential.
+    # Run 'az login' on the host before starting the container, then set AZURE_CONFIG_DIR:
+    #   Linux/macOS:  export AZURE_CONFIG_DIR=~/.azure
+    #   Windows:      $env:AZURE_CONFIG_DIR = "$env:USERPROFILE\.azure"
+    # rw is required: the Azure CLI writes azureProfile.json on startup even when only reading tokens.
+    volumes:
+      - ${AZURE_CONFIG_DIR}:/root/.azure:rw
     environment:
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      # Optional: pass a pre-fetched Entra token to bypass DefaultAzureCredential.
+      # On Windows, get this from the host before starting:
+      #   $env:AZURE_AD_TOKEN = (az account get-access-token --resource https://cognitiveservices.azure.com | ConvertFrom-Json).accessToken
+      # Note: tokens expire after ~1 hour; restart the container with a fresh token when needed.
+      - AZURE_AD_TOKEN=${AZURE_AD_TOKEN:-}
       - INTERNAL_API_TOKEN=PYRITe4c2xK9mVnW3qRtY # canary
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]

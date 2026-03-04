@@ -1,6 +1,6 @@
-# Agent Security
+# Agentic Security
 
-Agent security evaluations test whether AI agents with tool access (file system, code execution, shell commands) can be manipulated into performing malicious actions. Unlike standard prompt injection tests that target the LLM itself, these evaluations target the **agent's tool-use capabilities**, the combination of LLM reasoning and tool execution that can lead to business impact.
+Agentic security evaluations test whether AI agents with tool access (file system, code execution, shell commands) can be manipulated into performing malicious actions. Unlike standard prompt injection tests that target the LLM itself, these evaluations target the **agent's tool-use capabilities**, the combination of LLM reasoning and tool execution that can lead to business impact.
 
 ## How It Works
 
@@ -33,26 +33,41 @@ To test your own agent:
 
 This repo includes a ready-to-use LangChain sandbox agent under [`docker/agent-sandbox/`](../../../../docker/agent-sandbox/). The agent code is in [`langchain_agent.py`](../../../../docker/agent-sandbox/langchain_agent.py) and exposes `read_file`, `list_directory`, and `run_command` tools over HTTP.
 
-#### 1. Set Azure OpenAI Credentials
+#### 1. Authenticate with Azure
 
-Set the following environment variables, or hardcode the defaults directly in `langchain_agent.py`:
+The agent uses **Entra (Azure AD) authentication** via `DefaultAzureCredential` — no API key is required. Log in with the Azure CLI before starting the container:
 
-| Variable | Description | Default |
-|---|---|---|
-| `AZURE_OPENAI_API_KEY` | Your Azure OpenAI API key | Built-in dev key |
-| `AZURE_OPENAI_ENDPOINT` | Your Azure OpenAI endpoint URL | Built-in dev endpoint |
-| `AZURE_OPENAI_DEPLOYMENT` | Model deployment name | `gpt-4o` |
+**PowerShell / bash:**
+```bash
+az login
+```
+
+The `~/.azure` credentials directory is mounted into the container (read-only), so `DefaultAzureCredential` automatically picks up your session via `AzureCliCredential`.
+
+#### 2. Set Azure OpenAI Endpoint
+
+Set the following environment variables:
+
+| Variable | Description |
+|---|---|
+| `AZURE_OPENAI_ENDPOINT` | Your Azure OpenAI endpoint URL |
+| `AZURE_OPENAI_DEPLOYMENT` | Model deployment name (e.g. `gpt-4o`) |
 
 **PowerShell:**
 ```powershell
-$env:AZURE_OPENAI_API_KEY = "your-key"
-$env:AZURE_OPENAI_ENDPOINT = "https://your-resource.openai.azure.com"
+$env:AZURE_OPENAI_ENDPOINT = "https://<your-resource>.openai.azure.com"
 $env:AZURE_OPENAI_DEPLOYMENT = "gpt-4o"
 ```
 
-Docker Compose reads these from your host environment and passes them into the container. If not set, `langchain_agent.py` falls back to its hardcoded defaults.
+**bash:**
+```bash
+export AZURE_OPENAI_ENDPOINT="https://<your-resource>.openai.azure.com/"
+export AZURE_OPENAI_DEPLOYMENT="gpt-4o"
+```
 
-#### 2. Build & Start
+Docker Compose reads these from your host environment and passes them into the container.
+
+#### 3. Build & Start
 
 **PowerShell:**
 ```powershell
@@ -61,7 +76,7 @@ docker compose --profile langchain build --no-cache 2>&1
 docker compose --profile langchain up -d 2>&1
 ```
 
-#### 3. Verify
+#### 4. Verify
 
 **PowerShell:**
 ```powershell
@@ -144,4 +159,52 @@ The script defines `CANARY_MARKERS`, `CANARY_CONTENT`, and `FILE_PATH_TO_CATEGOR
 
 ```bash
 docker compose --profile langchain down
+```
+
+---
+
+## Troubleshooting
+
+### `404 Resource not found`
+
+The `AZURE_OPENAI_ENDPOINT` includes a path suffix that conflicts with the URL that `AzureChatOpenAI` constructs internally.
+
+**Fix:** Use only the base domain — no trailing path:
+
+```powershell
+# Wrong
+$env:AZURE_OPENAI_ENDPOINT = "https://myresource.openai.azure.com/openai/v1"
+
+# Correct
+$env:AZURE_OPENAI_ENDPOINT = "https://myresource.openai.azure.com"
+```
+
+### `DefaultAzureCredential failed` / `AzureCliCredential: Please run 'az login'`
+
+On Windows, the Azure CLI token cache (`msal_token_cache.bin`) is encrypted with DPAPI, which only works on the same Windows machine. The Linux container cannot decrypt it even though the file is mounted.
+
+**Fix:** Fetch a plain token on the host (where decryption works) and pass it directly into the container:
+
+```powershell
+$env:AZURE_AD_TOKEN = (az account get-access-token --resource https://cognitiveservices.azure.com | ConvertFrom-Json).accessToken
+
+docker compose --profile langchain down
+docker compose --profile langchain up -d
+```
+
+> Tokens expire after ~1 hour. Re-run the two commands above to refresh.
+
+### `AZURE_CONFIG_DIR` volume not mounting
+
+Docker Compose needs `AZURE_CONFIG_DIR` to be set explicitly on Windows because `$HOME` may not be defined in PowerShell.
+
+```powershell
+$env:AZURE_CONFIG_DIR = "$env:USERPROFILE\.azure"
+```
+
+Verify the volume resolved correctly:
+
+```powershell
+docker compose --profile langchain config | Select-String azure
+# Should show: C:\Users\yourname\.azure:/root/.azure:rw
 ```

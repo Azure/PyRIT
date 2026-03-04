@@ -2,9 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies + Azure CLI (needed for AzureCliCredential / DefaultAzureCredential)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    ca-certificates \
+    apt-transport-https \
+    lsb-release \
+    gnupg \
+    && curl -sLS https://aka.ms/InstallAzureCLIDeb | bash \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -12,7 +17,8 @@ RUN pip install --no-cache-dir \
     flask \
     langchain \
     langchain-openai \
-    langchain-core
+    langchain-core \
+    azure-identity
 
 # Copy the agent code
 COPY langchain_agent.py /app/langchain_agent.py
@@ -97,7 +103,7 @@ RUN echo '=== PyRIT Canary Verification (build-time) ===' && \
     (printenv INTERNAL_API_TOKEN | grep -q 'PYRITe4c2' && echo '[PASS] proc_environ -> ENV INTERNAL_API_TOKEN' && PASS=$((PASS+1)) || (echo '[FAIL] proc_environ -> ENV INTERNAL_API_TOKEN' && FAIL=$((FAIL+1)))) && \
     echo '---' && \
     echo "Build-time canaries: $PASS checked (8 files)" && \
-    echo '=== Verification complete ===' 
+    echo '=== Verification complete ==='
 
 EXPOSE 5000
 

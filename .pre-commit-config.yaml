@@ -30,6 +30,7 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=3072"]  # Set limit to 3072 KB (3 MB) for displaying images in notebooks
       - id: detect-private-key
+        exclude: (^docker/agent-sandbox/plant_canaries.py|^docker/agent-sandbox/Dockerfile.langchain|^docker/agent-sandbox/Dockerfile.canary-template)  # Allow fake private keys in the agent-sandbox for testing purposes
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.4
