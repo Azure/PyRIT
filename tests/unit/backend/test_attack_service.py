@@ -201,13 +201,13 @@ class TestListAttacks:
 
         assert len(result.items) == 1
         assert result.items[0].conversation_id == "attack-1"
-        # Verify attack_type was forwarded to the memory layer
+        # Verify attack_type was forwarded to the memory layer as attack_class
         call_kwargs = mock_memory.get_attack_results.call_args[1]
         assert call_kwargs["attack_class"] == "CrescendoAttack"
 
     @pytest.mark.asyncio
     async def test_list_attacks_attack_type_passed_to_memory(self, attack_service, mock_memory) -> None:
-        """Test that attack_type is forwarded to memory for DB-level filtering."""
+        """Test that attack_type is forwarded to memory as attack_class for DB-level filtering."""
         mock_memory.get_attack_results.return_value = []
         mock_memory.get_message_pieces.return_value = []
 
@@ -225,7 +225,7 @@ class TestListAttacks:
         await attack_service.list_attacks_async(converter_types=[])
 
         call_kwargs = mock_memory.get_attack_results.call_args[1]
-        assert call_kwargs["converter_types"] == []
+        assert call_kwargs["converter_classes"] == []
 
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_converter_types_and_logic(self, attack_service, mock_memory) -> None:
@@ -264,7 +264,7 @@ class TestListAttacks:
         assert result.items[0].conversation_id == "attack-1"
         # Verify converter_types was forwarded to the memory layer
         call_kwargs = mock_memory.get_attack_results.call_args[1]
-        assert call_kwargs["converter_types"] == ["Base64Converter", "ROT13Converter"]
+        assert call_kwargs["converter_classes"] == ["Base64Converter", "ROT13Converter"]
 
     @pytest.mark.asyncio
     async def test_list_attacks_filters_by_min_turns(self, attack_service, mock_memory) -> None:
@@ -1414,7 +1414,7 @@ class TestAttackServiceSingleton:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestPersistBase64Pieces:
-    """Tests for _persist_base64_pieces helper."""
+    """Tests for _persist_base64_pieces_async helper."""
 
     @pytest.mark.asyncio
     async def test_text_pieces_are_unchanged(self, attack_service) -> None:
@@ -1425,7 +1425,7 @@ class TestPersistBase64Pieces:
             send=False,
             target_conversation_id="test-id",
         )
-        await AttackService._persist_base64_pieces(request)
+        await AttackService._persist_base64_pieces_async(request)
         assert request.pieces[0].original_value == "hello"
 
     @pytest.mark.asyncio
@@ -1452,7 +1452,7 @@ class TestPersistBase64Pieces:
             "pyrit.backend.services.attack_service.data_serializer_factory",
             return_value=mock_serializer,
         ) as factory_mock:
-            await AttackService._persist_base64_pieces(request)
+            await AttackService._persist_base64_pieces_async(request)
 
         factory_mock.assert_called_once_with(
             category="prompt-memory-entries",
@@ -1487,7 +1487,7 @@ class TestPersistBase64Pieces:
             "pyrit.backend.services.attack_service.data_serializer_factory",
             return_value=mock_serializer,
         ):
-            await AttackService._persist_base64_pieces(request)
+            await AttackService._persist_base64_pieces_async(request)
 
         assert request.pieces[0].original_value == "describe this"
         assert request.pieces[1].original_value == "/saved/photo.jpg"
@@ -1515,13 +1515,80 @@ class TestPersistBase64Pieces:
             "pyrit.backend.services.attack_service.data_serializer_factory",
             return_value=mock_serializer,
         ) as factory_mock:
-            await AttackService._persist_base64_pieces(request)
+            await AttackService._persist_base64_pieces_async(request)
 
         factory_mock.assert_called_once_with(
             category="prompt-memory-entries",
             data_type="binary_path",
             extension=".bin",
         )
+
+    @pytest.mark.asyncio
+    async def test_data_uri_prefix_is_stripped_before_saving(self, attack_service) -> None:
+        """Data URIs (data:<mime>;base64,...) should be stripped to raw base64 before saving."""
+        request = AddMessageRequest(
+            role="user",
+            pieces=[
+                MessagePieceRequest(
+                    data_type="image_path",
+                    original_value="data:image/png;base64,aW1hZ2VkYXRh",
+                    mime_type="image/png",
+                ),
+            ],
+            send=False,
+            target_conversation_id="test-id",
+        )
+
+        mock_serializer = MagicMock()
+        mock_serializer.save_b64_image = AsyncMock()
+        mock_serializer.value = "/saved/image.png"
+
+        with patch(
+            "pyrit.backend.services.attack_service.data_serializer_factory",
+            return_value=mock_serializer,
+        ):
+            await AttackService._persist_base64_pieces_async(request)
+
+        # Should receive only the base64 payload, not the data URI prefix
+        mock_serializer.save_b64_image.assert_awaited_once_with(data="aW1hZ2VkYXRh")
+        assert request.pieces[0].original_value == "/saved/image.png"
+
+    @pytest.mark.asyncio
+    async def test_http_url_is_kept_as_is(self, attack_service) -> None:
+        """HTTPS blob URLs should not be re-persisted."""
+        request = AddMessageRequest(
+            role="user",
+            pieces=[
+                MessagePieceRequest(
+                    data_type="image_path",
+                    original_value="https://myblob.blob.core.windows.net/images/photo.png?sv=2024",
+                    mime_type="image/png",
+                ),
+            ],
+            send=False,
+            target_conversation_id="test-id",
+        )
+
+        await AttackService._persist_base64_pieces_async(request)
+
+        assert request.pieces[0].original_value == ("https://myblob.blob.core.windows.net/images/photo.png?sv=2024")
+        assert request.pieces[0].converted_value == request.pieces[0].original_value
+
+    @pytest.mark.asyncio
+    async def test_non_path_data_types_are_skipped(self, attack_service) -> None:
+        """Non *_path types like reasoning, url, function_call should not be decoded."""
+        request = AddMessageRequest(
+            role="user",
+            pieces=[
+                MessagePieceRequest(data_type="reasoning", original_value="thinking step"),
+            ],
+            send=False,
+            target_conversation_id="test-id",
+        )
+
+        await AttackService._persist_base64_pieces_async(request)
+
+        assert request.pieces[0].original_value == "thinking step"
 
 
 # ============================================================================
@@ -1653,6 +1720,22 @@ class TestCreateRelatedConversation:
         assert result.conversation_id in call_kwargs["update_fields"]["pruned_conversation_ids"]
         assert "updated_at" in call_kwargs["update_fields"]["attack_metadata"]
 
+    @pytest.mark.asyncio
+    async def test_rejects_source_conversation_from_different_attack(self, attack_service, mock_memory):
+        """Should raise ValueError when source_conversation_id doesn't belong to the attack."""
+        from pyrit.backend.models.attacks import CreateConversationRequest
+
+        ar = make_attack_result(conversation_id="attack-1")
+        mock_memory.get_attack_results.return_value = [ar]
+
+        request = CreateConversationRequest(source_conversation_id="unrelated-conv", cutoff_index=0)
+
+        with pytest.raises(ValueError, match="not part of attack"):
+            await attack_service.create_related_conversation_async(
+                attack_result_id="ar-attack-1",
+                request=request,
+            )
+
 
 # ============================================================================
 # Change Main Conversation Tests
@@ -1732,10 +1815,10 @@ class TestChangeMainConversation:
         assert call_kwargs["attack_result_id"] == "ar-attack-1"
         assert call_kwargs["update_fields"]["conversation_id"] == "branch-1"
 
-        # Old main should now be in adversarial_chat_conversation_ids
-        adversarial = call_kwargs["update_fields"]["adversarial_chat_conversation_ids"]
-        assert "attack-1" in adversarial
-        assert "branch-1" not in adversarial
+        # Old main should now be in pruned_conversation_ids (user-visible)
+        pruned = call_kwargs["update_fields"]["pruned_conversation_ids"]
+        assert "attack-1" in pruned
+        assert "branch-1" not in pruned
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -1746,8 +1829,12 @@ class TestAddMessageTargetConversation:
     async def test_stores_message_in_target_conversation(self, attack_service, mock_memory):
         """When target_conversation_id is set, messages should go to that conversation."""
         from pyrit.backend.models.attacks import AttackSummary, ConversationMessagesResponse
+        from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
         ar = make_attack_result(conversation_id="attack-1")
+        ar.related_conversations = {
+            ConversationReference(conversation_id="branch-1", conversation_type=ConversationType.PRUNED),
+        }
         mock_memory.get_attack_results.return_value = [ar]
         mock_memory.get_message_pieces.return_value = []
         mock_memory.get_conversation.return_value = []
@@ -1786,6 +1873,23 @@ class TestAddMessageTargetConversation:
             attack_result_id="attack-1",
             conversation_id="branch-1",
         )
+
+    @pytest.mark.asyncio
+    async def test_rejects_unrelated_conversation_id(self, attack_service, mock_memory):
+        """Writing to a conversation_id that doesn't belong to the attack should raise ValueError."""
+        ar = make_attack_result(conversation_id="attack-1")
+        mock_memory.get_attack_results.return_value = [ar]
+        mock_memory.get_message_pieces.return_value = []
+
+        request = AddMessageRequest(
+            role="user",
+            pieces=[MessagePieceRequest(data_type="text", original_value="Hello")],
+            send=False,
+            target_conversation_id="unrelated-conv",
+        )
+
+        with pytest.raises(ValueError, match="not part of attack"):
+            await attack_service.add_message_async(attack_result_id="ar-attack-1", request=request)
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -2060,31 +2164,6 @@ class TestAttackServiceAdditionalCoverage:
 
         assert persisted_classes.count("ExistingConverter") == 1
         assert persisted_classes.count("NewConverter") == 1
-
-    def test_get_last_message_preview_handles_truncation_and_empty_values(self, attack_service):
-        """Should truncate long previews and handle empty converted values."""
-        short_piece = make_mock_piece(conversation_id="attack-1", sequence=1, converted_value="short")
-        long_piece = make_mock_piece(conversation_id="attack-1", sequence=2, converted_value="x" * 120)
-
-        assert attack_service._get_last_message_preview([]) is None
-        assert attack_service._get_last_message_preview([short_piece]) == "short"
-        assert attack_service._get_last_message_preview([long_piece]) == ("x" * 100 + "...")
-
-    def test_count_messages_and_earliest_timestamp_helpers(self, attack_service):
-        """Should count unique sequences and compute earliest non-null timestamp."""
-        t1 = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
-        t2 = datetime(2026, 1, 1, 9, 0, 0, tzinfo=timezone.utc)
-
-        p1 = make_mock_piece(conversation_id="attack-1", sequence=1, timestamp=t1)
-        p2 = make_mock_piece(conversation_id="attack-1", sequence=1, timestamp=t1)
-        p3 = make_mock_piece(conversation_id="attack-1", sequence=2, timestamp=t2)
-        p4 = make_mock_piece(conversation_id="attack-1", sequence=3, timestamp=t1)
-        p4.timestamp = None
-
-        assert attack_service._count_messages([p1, p2, p3]) == 2
-        assert attack_service._get_earliest_timestamp([]) is None
-        assert attack_service._get_earliest_timestamp([p4]) is None
-        assert attack_service._get_earliest_timestamp([p1, p3, p4]) == t2
 
     def test_duplicate_conversation_up_to_adds_pieces_when_present(self, attack_service, mock_memory):
         """Should duplicate up to cutoff and persist duplicated pieces only when returned."""

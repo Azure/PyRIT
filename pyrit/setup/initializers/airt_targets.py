@@ -254,11 +254,12 @@ TARGET_CONFIGS: list[TargetConfig] = [
     # Video Targets (OpenAIVideoTarget)
     # ============================================
     TargetConfig(
-        registry_name="openai_video",
+        registry_name="azure_openai_video",
         target_class=OpenAIVideoTarget,
-        endpoint_var="OPENAI_VIDEO_ENDPOINT",
-        key_var="OPENAI_VIDEO_KEY",
-        model_var="OPENAI_VIDEO_MODEL",
+        endpoint_var="AZURE_OPENAI_VIDEO_ENDPOINT",
+        key_var="AZURE_OPENAI_VIDEO_KEY",
+        model_var="AZURE_OPENAI_VIDEO_MODEL",
+        underlying_model_var="AZURE_OPENAI_VIDEO_UNDERLYING_MODEL",
     ),
     # ============================================
     # Completion Targets (OpenAICompletionTarget)
@@ -436,7 +437,9 @@ class AIRTTargetInitializer(PyRITInitializer):
         if underlying_model is not None:
             kwargs["underlying_model"] = underlying_model
 
-        # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning)
+        # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning).
+        # NOTE: extra_kwargs are defined in TARGET_CONFIGS (code-controlled, not user input),
+        # so there is no risk of untrusted data overriding safety-critical parameters.
         if config.extra_kwargs:
             kwargs.update(config.extra_kwargs)
 

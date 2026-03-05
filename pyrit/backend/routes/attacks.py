@@ -8,7 +8,7 @@ All interactions are modeled as "attacks" - including manual conversations.
 This is the attack-centric API design.
 """
 
-import traceback
+import logging
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -32,6 +32,8 @@ from pyrit.backend.models.attacks import (
 )
 from pyrit.backend.models.common import ProblemDetail
 from pyrit.backend.services.attack_service import get_attack_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/attacks", tags=["attacks"])
 
@@ -61,14 +63,20 @@ async def list_attacks(
     attack_type: Optional[str] = Query(None, description="Filter by exact attack type name"),
     converter_types: Optional[list[str]] = Query(
         None,
-        description="Filter by converter type names (repeatable, AND logic). Pass empty to match no-converter attacks.",
+        description="Filter by converter type names (repeatable, AND logic). "
+        "Omit to return all attacks regardless of converters. "
+        "Pass with no values to match only no-converter attacks.",
     ),
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Query(None, description="Filter by outcome"),
     label: Optional[list[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
     min_turns: Optional[int] = Query(None, ge=0, description="Filter by minimum executed turns"),
     max_turns: Optional[int] = Query(None, ge=0, description="Filter by maximum executed turns"),
     limit: int = Query(20, ge=1, le=100, description="Maximum items per page"),
-    cursor: Optional[str] = Query(None, description="Pagination cursor (attack_result_id)"),
+    cursor: Optional[str] = Query(
+        None,
+        description="Pagination cursor: the attack_result_id of the last item from the previous page. "
+        "Omit to start from the beginning. The response includes next_cursor for the next page.",
+    ),
 ) -> AttackListResponse:
     """
     List attacks with optional filtering and pagination.
@@ -225,6 +233,7 @@ async def update_attack(
     "/{attack_result_id}/messages",
     response_model=ConversationMessagesResponse,
     responses={
+        400: {"model": ProblemDetail, "description": "Invalid conversation"},
         404: {"model": ProblemDetail, "description": "Attack or conversation not found"},
     },
 )
@@ -242,10 +251,17 @@ async def get_conversation_messages(
     """
     service = get_attack_service()
 
-    messages = await service.get_conversation_messages_async(
-        attack_result_id=attack_result_id,
-        conversation_id=conversation_id,
-    )
+    try:
+        messages = await service.get_conversation_messages_async(
+            attack_result_id=attack_result_id,
+            conversation_id=conversation_id,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
     if not messages:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -406,13 +422,8 @@ async def add_message(
             detail=error_msg,
         ) from e
     except Exception as e:
-        tb = traceback.format_exception(type(e), e, e.__traceback__)
-        # Include the root cause if chained
-        cause = e.__cause__
-        if cause:
-            tb += traceback.format_exception(type(cause), cause, cause.__traceback__)
-        detail = "".join(tb)
+        logger.exception("Failed to add message to attack '%s'", attack_result_id)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=detail,
+            detail="Internal server error. Check server logs for details.",
         ) from e

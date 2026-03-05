@@ -10,7 +10,6 @@ from pyrit.setup.initialization import (
     SQLITE,
     MemoryDatabaseType,
     initialize_pyrit_async,
-    run_initializers_async,
 )
 
 __all__ = [
@@ -19,7 +18,6 @@ __all__ = [
     "IN_MEMORY",
     "initialize_pyrit_async",
     "initialize_from_config_async",
-    "run_initializers_async",
     "MemoryDatabaseType",
     "ConfigurationLoader",
 ]

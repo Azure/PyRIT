@@ -17,7 +17,6 @@ ARCHITECTURE:
 
 import mimetypes
 import uuid
-from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Any, Literal, Optional, cast
@@ -49,7 +48,6 @@ from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import CentralMemory
-from pyrit.memory.memory_models import PromptMemoryEntry
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -57,9 +55,6 @@ from pyrit.models import (
     ConversationType,
     PromptDataType,
     data_serializer_factory,
-)
-from pyrit.models import (
-    Message as PyritMessage,
 )
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
 
@@ -139,18 +134,18 @@ class AttackService:
 
         # Phase 2: Lightweight DB aggregation for the page only.
         # Collect conversation IDs we care about (main + pruned, not adversarial).
-        all_conv_ids: list[str] = []
+        all_conv_ids: set[str] = set()
         for ar in page_results:
-            all_conv_ids.append(ar.conversation_id)
-            all_conv_ids.extend(
+            all_conv_ids.add(ar.conversation_id)
+            all_conv_ids.update(
                 ref.conversation_id
                 for ref in ar.related_conversations
                 if ref.conversation_type == ConversationType.PRUNED
             )
 
-        stats_map = self._memory.get_conversation_stats(conversation_ids=all_conv_ids) if all_conv_ids else {}
+        stats_map = self._memory.get_conversation_stats(conversation_ids=list(all_conv_ids)) if all_conv_ids else {}
 
-        # Phase 2: Fetch pieces only for the page we're returning
+        # Phase 2: Build summaries from aggregated stats for the page
         page: list[AttackSummary] = []
         for ar in page_results:
             # Merge stats for the main conversation and its pruned relatives.
@@ -402,7 +397,7 @@ class AttackService:
         conversations: list[ConversationSummary] = []
         for conv_id in all_conv_ids:
             stats = stats_map.get(conv_id)
-            created_at = stats.created_at.isoformat() if stats and stats.created_at else None
+            created_at = stats.created_at if stats and stats.created_at else None
             conversations.append(
                 ConversationSummary(
                     conversation_id=conv_id,
@@ -444,6 +439,12 @@ class AttackService:
 
         # --- Branch via duplication (preferred for tracking) ---------------
         if request.source_conversation_id is not None and request.cutoff_index is not None:
+            # Validate that the source conversation belongs to this attack
+            allowed_conv_ids = {ar.conversation_id} | {ref.conversation_id for ref in ar.related_conversations}
+            if request.source_conversation_id not in allowed_conv_ids:
+                raise ValueError(
+                    f"Conversation '{request.source_conversation_id}' is not part of attack '{attack_result_id}'"
+                )
             new_conversation_id = self._duplicate_conversation_up_to(
                 source_conversation_id=request.source_conversation_id,
                 cutoff_index=request.cutoff_index,
@@ -503,7 +504,7 @@ class AttackService:
             raise ValueError(f"Conversation '{target_conv_id}' is not part of this attack")
 
         # Build updated DB columns: remove target from its list, add old main
-        # to adversarial list (GUI conversations are always adversarial).
+        # to pruned list (user-visible GUI conversations are PRUNED, not ADVERSARIAL).
         updated_pruned = [
             ref.conversation_id
             for ref in ar.related_conversations
@@ -514,8 +515,12 @@ class AttackService:
             for ref in ar.related_conversations
             if ref.conversation_id != target_conv_id and ref.conversation_type == ConversationType.ADVERSARIAL
         ]
-        # The old main becomes an adversarial related conversation
-        updated_adversarial.append(ar.conversation_id)
+        # The old main becomes a pruned related conversation so it remains
+        # visible in the GUI and fetchable via get_conversation_messages.
+        updated_pruned.append(ar.conversation_id)
+
+        updated_metadata = dict(ar.metadata or {})
+        updated_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
 
         self._memory.update_attack_result_by_id(
             attack_result_id=attack_result_id,
@@ -523,6 +528,7 @@ class AttackService:
                 "conversation_id": target_conv_id,
                 "pruned_conversation_ids": updated_pruned if updated_pruned else None,
                 "adversarial_chat_conversation_ids": updated_adversarial if updated_adversarial else None,
+                "attack_metadata": updated_metadata,
             },
         )
 
@@ -599,6 +605,13 @@ class AttackService:
         # Use the explicitly-provided conversation_id for message storage
         msg_conversation_id = request.target_conversation_id
 
+        # --- Guard: prevent writing to an unrelated conversation -------------
+        allowed_conv_ids = {main_conversation_id} | {
+            ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
+        }
+        if msg_conversation_id not in allowed_conv_ids:
+            raise ValueError(f"Conversation '{msg_conversation_id}' is not part of attack '{attack_result_id}'")
+
         # The frontend must supply the target registry name so the backend
         # stays stateless — no reverse lookups, no in-memory mapping.
         target_registry_name = request.target_registry_name
@@ -625,7 +638,7 @@ class AttackService:
 
         if request.send:
             assert target_registry_name is not None  # validated above
-            await self._send_and_store_message(
+            await self._send_and_store_message_async(
                 conversation_id=msg_conversation_id,
                 target_registry_name=target_registry_name,
                 request=request,
@@ -633,7 +646,7 @@ class AttackService:
                 labels=attack_labels,
             )
         else:
-            await self._store_message_only(
+            await self._store_message_only_async(
                 conversation_id=msg_conversation_id,
                 request=request,
                 sequence=sequence,
@@ -715,38 +728,6 @@ class AttackService:
         return page, has_more
 
     # ========================================================================
-    # Private Helper Methods - Conversation Info
-    # ========================================================================
-
-    @staticmethod
-    def _get_last_message_preview(pieces: Sequence[PromptMemoryEntry]) -> Optional[str]:
-        """Return a truncated preview of the last message piece's text."""
-        if not pieces:
-            return None
-        last = max(pieces, key=lambda p: p.sequence)
-        text = last.converted_value or ""
-        return text[:100] + "..." if len(text) > 100 else text
-
-    @staticmethod
-    def _count_messages(pieces: Sequence[PromptMemoryEntry]) -> int:
-        """
-        Count distinct messages (by sequence number) in a list of pieces.
-
-        Returns:
-            The number of unique sequence values.
-        """
-        return len({p.sequence for p in pieces})
-
-    @staticmethod
-    def _get_earliest_timestamp(pieces: Sequence[PromptMemoryEntry]) -> Optional[datetime]:
-        """Return the earliest timestamp from a list of message pieces."""
-        if not pieces:
-            return None
-        timestamps: list[datetime] = [p.timestamp for p in pieces if p.timestamp is not None]
-        return min(timestamps) if timestamps else None
-
-    # ========================================================================
-    # Private Helper Methods - Duplicate / Branch
     # ========================================================================
 
     def _duplicate_conversation_up_to(
@@ -799,7 +780,7 @@ class AttackService:
     # ========================================================================
 
     @staticmethod
-    async def _persist_base64_pieces(request: AddMessageRequest) -> None:
+    async def _persist_base64_pieces_async(request: AddMessageRequest) -> None:
         """
         Persist base64-encoded non-text pieces to disk, updating values in-place.
 
@@ -814,7 +795,10 @@ class AttackService:
         exists in storage.
         """
         for piece in request.pieces:
-            if piece.data_type == "text" or piece.data_type == "error":
+            # Only persist *_path types (image_path, audio_path, video_path, binary_path).
+            # Other non-text types (url, reasoning, function_call, tool_call, etc.)
+            # are text-like and must not be base64-decoded.
+            if not piece.data_type.endswith("_path"):
                 continue
 
             # Already a remote URL (e.g. signed blob URL from a remix) — keep as-is
@@ -830,12 +814,21 @@ class AttackService:
             if not ext:
                 ext = ".bin"
 
+            # Strip data URI prefix if present (e.g. "data:image/png;base64,...")
+            # The backend itself returns data URIs from pyrit_messages_to_dto_async,
+            # so the client may echo them back.
+            value = piece.original_value
+            if value.startswith("data:"):
+                # Format: data:<mime>;base64,<payload>
+                _, _, payload = value.partition(",")
+                value = payload
+
             serializer = data_serializer_factory(
                 category="prompt-memory-entries",
                 data_type=cast("PromptDataType", piece.data_type),
                 extension=ext,
             )
-            await serializer.save_b64_image(data=piece.original_value)
+            await serializer.save_b64_image(data=value)
             file_path = serializer.value
             piece.original_value = file_path
             if piece.converted_value is None:
@@ -859,7 +852,7 @@ class AttackService:
                 )
                 self._memory.add_message_pieces_to_memory(message_pieces=[piece])
 
-    async def _send_and_store_message(
+    async def _send_and_store_message_async(
         self,
         *,
         conversation_id: str,
@@ -873,7 +866,7 @@ class AttackService:
         if not target_obj:
             raise ValueError(f"Target object for '{target_registry_name}' not found")
 
-        await self._persist_base64_pieces(request)
+        await self._persist_base64_pieces_async(request)
 
         pyrit_message = request_to_pyrit_message(
             request=request,
@@ -881,10 +874,6 @@ class AttackService:
             sequence=sequence,
             labels=labels,
         )
-
-        # Propagate video_id from the most recent video response so the target
-        # can perform a remix instead of generating from scratch.
-        self._inject_video_id_from_history(conversation_id=conversation_id, message=pyrit_message)
 
         converter_configs = self._get_converter_configs(request)
 
@@ -898,67 +887,7 @@ class AttackService:
         )
         # PromptNormalizer stores both request and response in memory automatically
 
-    def _inject_video_id_from_history(self, *, conversation_id: str, message: PyritMessage) -> None:
-        """
-        Find the most recent video_id and attach it to the text piece's
-        prompt_metadata so the video target can remix.
-
-        When a video_id is found and injected, any video_path pieces are
-        removed from the message since the target uses the video_id for
-        remix instead of re-uploading the video content.
-
-        Lookup order:
-        1. original_prompt_id on any piece in the message (traces back to
-           a copied/remixed piece whose metadata may contain the video_id).
-        2. Conversation history (newest first) for a piece with video_id.
-        """
-        text_piece = None
-        for p in message.message_pieces:
-            if p.original_value_data_type == "text":
-                text_piece = p
-                break
-
-        if not text_piece:
-            return
-
-        # Already has a video_id — don't override
-        if text_piece.prompt_metadata and text_piece.prompt_metadata.get("video_id"):
-            self._strip_video_pieces(message)
-            return
-
-        video_id = None
-
-        # 1. Check original_prompt_id on any piece (e.g. copied video attachment)
-        for p in message.message_pieces:
-            if p.original_prompt_id:
-                source_pieces = self._memory.get_message_pieces(prompt_ids=[str(p.original_prompt_id)])
-                for src in source_pieces:
-                    if src.prompt_metadata and src.prompt_metadata.get("video_id"):
-                        video_id = src.prompt_metadata["video_id"]
-                        break
-            if video_id:
-                break
-
-        # 2. Search conversation history (newest first) for a video_id
-        if not video_id:
-            existing = self._memory.get_message_pieces(conversation_id=conversation_id)
-            for piece in reversed(existing):
-                if piece.prompt_metadata and piece.prompt_metadata.get("video_id"):
-                    video_id = piece.prompt_metadata["video_id"]
-                    break
-
-        if video_id:
-            if text_piece.prompt_metadata is None:
-                text_piece.prompt_metadata = {}
-            text_piece.prompt_metadata["video_id"] = video_id
-            self._strip_video_pieces(message)
-
-    @staticmethod
-    def _strip_video_pieces(message: PyritMessage) -> None:
-        """Remove video_path pieces from a message (video_id on text piece replaces them)."""
-        message.message_pieces = [p for p in message.message_pieces if p.original_value_data_type != "video_path"]
-
-    async def _store_message_only(
+    async def _store_message_only_async(
         self,
         *,
         conversation_id: str,
@@ -967,7 +896,7 @@ class AttackService:
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """Store message without sending (send=False)."""
-        await self._persist_base64_pieces(request)
+        await self._persist_base64_pieces_async(request)
         for p in request.pieces:
             piece = request_piece_to_pyrit_message_piece(
                 piece=p,

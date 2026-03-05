@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from pyrit.registry import InitializerRegistry, ScenarioRegistry
 from pyrit.scenario import DatasetConfiguration
 from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
-from pyrit.setup import ConfigurationLoader, initialize_pyrit_async, run_initializers_async
+from pyrit.setup import ConfigurationLoader, initialize_pyrit_async
 from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
 
 try:
@@ -37,7 +37,7 @@ except ImportError:
     HAS_TERMCOLOR = False
 
     # Create a dummy termcolor module for fallback
-    class termcolor:  # type: ignore[no-redef]
+    class termcolor:  # type: ignore[no-redef]  # noqa: N801
         """Dummy termcolor fallback for colored printing if termcolor is not installed."""
 
         @staticmethod
@@ -173,27 +173,6 @@ class FrontendCore:
 
         self._initialized = True
 
-    async def run_initializers_async(self) -> None:
-        """
-        Resolve and run all configured initializers and initialization scripts.
-
-        Must be called after :meth:`initialize_async` so that registries are
-        available to resolve initializer names. This is the same pattern used
-        by :func:`run_scenario_async` before executing a scenario.
-
-        If no initializers are configured this is a no-op.
-        """
-        initializer_instances = None
-        if self._initializer_names:
-            print(f"Running {len(self._initializer_names)} initializer(s)...")
-            sys.stdout.flush()
-            initializer_instances = [self.initializer_registry.get_class(name)() for name in self._initializer_names]
-
-        await run_initializers_async(
-            initializers=initializer_instances,
-            initialization_scripts=self._initialization_scripts,
-        )
-
     @property
     def scenario_registry(self) -> ScenarioRegistry:
         """
@@ -306,8 +285,26 @@ async def run_scenario_async(
     if not context._initialized:
         await context.initialize_async()
 
-    # Resolve and run initializers + initialization scripts
-    await context.run_initializers_async()
+    # Run initializers before scenario
+    initializer_instances = None
+    if context._initializer_names:
+        print(f"Running {len(context._initializer_names)} initializer(s)...")
+        sys.stdout.flush()
+
+        initializer_instances = []
+
+        for name in context._initializer_names:
+            initializer_class = context.initializer_registry.get_class(name)
+            initializer_instances.append(initializer_class())
+
+    # Re-initialize PyRIT with the scenario-specific initializers
+    # This resets memory and applies initializer defaults
+    await initialize_pyrit_async(
+        memory_db_type=context._database,
+        initialization_scripts=context._initialization_scripts,
+        initializers=initializer_instances,
+        env_files=context._env_files,
+    )
 
     # Get scenario class
     scenario_class = context.scenario_registry.get_class(scenario_name)
@@ -714,8 +711,8 @@ def get_default_initializer_discovery_path() -> Path:
     Returns:
         Path to the scenarios initializers directory.
     """
-    PYRIT_PATH = Path(__file__).parent.parent.resolve()
-    return PYRIT_PATH / "setup" / "initializers" / "scenarios"
+    pyrit_path = Path(__file__).parent.parent.resolve()
+    return pyrit_path / "setup" / "initializers" / "scenarios"
 
 
 async def print_scenarios_list_async(*, context: FrontendCore) -> int:

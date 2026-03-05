@@ -3,7 +3,7 @@
 
 from collections.abc import Generator
 from contextlib import closing, contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import numpy as np
@@ -648,7 +648,7 @@ async def test_get_scenario_results_combined_filters(azuresql_instance: AzureSQL
     """
     # Use unique identifiers to avoid test pollution
     test_id = generate_test_id()
-    now = datetime.utcnow()
+    now = datetime.now(tz=timezone.utc)
     yesterday = now - timedelta(days=1)
 
     with cleanup_scenario_data(azuresql_instance, test_id):

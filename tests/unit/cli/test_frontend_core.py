@@ -24,7 +24,7 @@ class TestFrontendCore:
 
         assert context._database == frontend_core.SQLITE
         assert context._initialization_scripts is None
-        assert context._initializer_names == ["airt", "airt_targets"]
+        assert context._initializer_names is None
         assert context._log_level == logging.WARNING
         assert context._initialized is False
 
@@ -620,12 +620,12 @@ class TestParseRunArguments:
 class TestRunScenarioAsync:
     """Tests for run_scenario_async function."""
 
-    @patch("pyrit.cli.frontend_core.run_initializers_async", new_callable=AsyncMock)
+    @patch("pyrit.cli.frontend_core.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_basic(
         self,
         mock_printer_class: MagicMock,
-        mock_run_init: AsyncMock,
+        mock_init: AsyncMock,
     ):
         """Test running a basic scenario."""
         # Mock context
@@ -660,8 +660,8 @@ class TestRunScenarioAsync:
         mock_scenario_instance.run_async.assert_called_once()
         mock_printer.print_summary_async.assert_called_once_with(mock_result)
 
-    @patch("pyrit.cli.frontend_core.run_initializers_async", new_callable=AsyncMock)
-    async def test_run_scenario_async_not_found(self, mock_run_init: AsyncMock):
+    @patch("pyrit.cli.frontend_core.initialize_pyrit_async", new_callable=AsyncMock)
+    async def test_run_scenario_async_not_found(self, mock_init: AsyncMock):
         """Test running non-existent scenario raises ValueError."""
         context = frontend_core.FrontendCore()
         mock_scenario_registry = MagicMock()
@@ -678,12 +678,12 @@ class TestRunScenarioAsync:
                 context=context,
             )
 
-    @patch("pyrit.cli.frontend_core.run_initializers_async", new_callable=AsyncMock)
+    @patch("pyrit.cli.frontend_core.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_strategies(
         self,
         mock_printer_class: MagicMock,
-        mock_run_init: AsyncMock,
+        mock_init: AsyncMock,
     ):
         """Test running scenario with strategies."""
         context = frontend_core.FrontendCore()
@@ -724,12 +724,12 @@ class TestRunScenarioAsync:
         call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert "scenario_strategies" in call_kwargs
 
-    @patch("pyrit.cli.frontend_core.run_initializers_async", new_callable=AsyncMock)
+    @patch("pyrit.cli.frontend_core.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_initializers(
         self,
         mock_printer_class: MagicMock,
-        mock_run_init: AsyncMock,
+        mock_init: AsyncMock,
     ):
         """Test running scenario with initializers."""
         context = frontend_core.FrontendCore(initializer_names=["test_init"])
@@ -763,12 +763,12 @@ class TestRunScenarioAsync:
         # Verify initializer was retrieved
         mock_initializer_registry.get_class.assert_called_once_with("test_init")
 
-    @patch("pyrit.cli.frontend_core.run_initializers_async", new_callable=AsyncMock)
+    @patch("pyrit.cli.frontend_core.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_with_max_concurrency(
         self,
         mock_printer_class: MagicMock,
-        mock_run_init: AsyncMock,
+        mock_init: AsyncMock,
     ):
         """Test running scenario with max_concurrency."""
         context = frontend_core.FrontendCore()
@@ -802,12 +802,12 @@ class TestRunScenarioAsync:
         call_kwargs = mock_scenario_instance.initialize_async.call_args[1]
         assert call_kwargs["max_concurrency"] == 5
 
-    @patch("pyrit.cli.frontend_core.run_initializers_async", new_callable=AsyncMock)
+    @patch("pyrit.cli.frontend_core.initialize_pyrit_async", new_callable=AsyncMock)
     @patch("pyrit.cli.frontend_core.ConsoleScenarioResultPrinter")
     async def test_run_scenario_async_without_print_summary(
         self,
         mock_printer_class: MagicMock,
-        mock_run_init: AsyncMock,
+        mock_init: AsyncMock,
     ):
         """Test running scenario without printing summary."""
         context = frontend_core.FrontendCore()

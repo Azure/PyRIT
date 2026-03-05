@@ -209,7 +209,6 @@ class Encoding(Scenario):
         self._encoding_templates = encoding_templates or AskToDecodeConverter.garak_templates
 
         super().__init__(
-            name="Encoding",
             version=self.VERSION,
             strategy_class=EncodingStrategy,
             objective_scorer=objective_scorer,
@@ -241,11 +240,7 @@ class Encoding(Scenario):
 
         # Use deprecated seed_prompts if provided
         if self._deprecated_seed_prompts is not None:
-            seed_groups = []
-            for seed in self._deprecated_seed_prompts:
-                seed_groups.append(SeedAttackGroup(seeds=[SeedObjective(value=seed)]))
-
-            return seed_groups
+            return [SeedAttackGroup(seeds=[SeedObjective(value=seed)]) for seed in self._deprecated_seed_prompts]
 
         # Use dataset_config (guaranteed to be set by initialize_async)
         seed_groups = self._dataset_config.get_all_seed_attack_groups()
