@@ -439,6 +439,12 @@ class AttackService:
 
         # --- Branch via duplication (preferred for tracking) ---------------
         if request.source_conversation_id is not None and request.cutoff_index is not None:
+            # Validate that the source conversation belongs to this attack
+            allowed_conv_ids = {ar.conversation_id} | {ref.conversation_id for ref in ar.related_conversations}
+            if request.source_conversation_id not in allowed_conv_ids:
+                raise ValueError(
+                    f"Conversation '{request.source_conversation_id}' is not part of attack '{attack_result_id}'"
+                )
             new_conversation_id = self._duplicate_conversation_up_to(
                 source_conversation_id=request.source_conversation_id,
                 cutoff_index=request.cutoff_index,

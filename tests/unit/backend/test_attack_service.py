@@ -1653,6 +1653,22 @@ class TestCreateRelatedConversation:
         assert result.conversation_id in call_kwargs["update_fields"]["pruned_conversation_ids"]
         assert "updated_at" in call_kwargs["update_fields"]["attack_metadata"]
 
+    @pytest.mark.asyncio
+    async def test_rejects_source_conversation_from_different_attack(self, attack_service, mock_memory):
+        """Should raise ValueError when source_conversation_id doesn't belong to the attack."""
+        from pyrit.backend.models.attacks import CreateConversationRequest
+
+        ar = make_attack_result(conversation_id="attack-1")
+        mock_memory.get_attack_results.return_value = [ar]
+
+        request = CreateConversationRequest(source_conversation_id="unrelated-conv", cutoff_index=0)
+
+        with pytest.raises(ValueError, match="not part of attack"):
+            await attack_service.create_related_conversation_async(
+                attack_result_id="ar-attack-1",
+                request=request,
+            )
+
 
 # ============================================================================
 # Change Main Conversation Tests
