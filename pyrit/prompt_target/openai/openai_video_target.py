@@ -514,17 +514,15 @@ class OpenAIVideoTarget(OpenAITarget):
 
     def _inject_video_id_from_history(self, *, message: Message) -> None:
         """
-        Find the most recent video_id from conversation history and attach it
+        Find the most recent video_id from piece lineage and attach it
         to the text piece's prompt_metadata so remix mode activates automatically.
 
         When a video_id is found and injected, any video_path pieces are
         removed from the message since the target uses the video_id for
         remix instead of re-uploading the video content.
 
-        Lookup order:
-        1. original_prompt_id on any piece in the message (traces back to
-           a copied/remixed piece whose metadata may contain the video_id).
-        2. Conversation history (newest first) for a piece with video_id.
+        Lookup: original_prompt_id on any piece in the message (traces back to
+        a copied/remixed piece whose metadata may contain the video_id).
 
         Raises:
             ValueError: If a video_path piece is present but no video_id can be resolved.
@@ -556,14 +554,6 @@ class OpenAIVideoTarget(OpenAITarget):
                         break
             if video_id:
                 break
-
-        # 2. Search conversation history (newest first) for a video_id
-        if not video_id:
-            existing = self._memory.get_message_pieces(conversation_id=text_piece.conversation_id)
-            for piece in reversed(existing):
-                if piece.prompt_metadata and piece.prompt_metadata.get("video_id"):
-                    video_id = piece.prompt_metadata["video_id"]
-                    break
 
         if video_id:
             if text_piece.prompt_metadata is None:

@@ -1042,36 +1042,6 @@ class TestVideoTargetInjectVideoId:
         assert msg_text.prompt_metadata["video_id"] == "traced_video_123"
         assert all(p.converted_value_data_type != "video_path" for p in message.message_pieces)
 
-    def test_inject_finds_video_id_from_conversation_history(self, video_target: OpenAIVideoTarget) -> None:
-        """Test that video_id is resolved from conversation history."""
-        history_piece = MagicMock()
-        history_piece.prompt_metadata = {"video_id": "history_video_456"}
-
-        mock_memory = MagicMock()
-        mock_memory.get_message_pieces.return_value = [history_piece]
-        video_target._memory = mock_memory
-
-        conversation_id = "conv-1"
-        msg_text = MessagePiece(
-            role="user",
-            original_value="remix",
-            converted_value="remix",
-            conversation_id=conversation_id,
-        )
-        msg_video = MessagePiece(
-            role="user",
-            original_value="/path/video.mp4",
-            converted_value="/path/video.mp4",
-            converted_value_data_type="video_path",
-            conversation_id=conversation_id,
-        )
-        message = Message([msg_text, msg_video])
-
-        video_target._inject_video_id_from_history(message=message)
-
-        assert msg_text.prompt_metadata["video_id"] == "history_video_456"
-        assert all(p.converted_value_data_type != "video_path" for p in message.message_pieces)
-
     def test_inject_raises_when_video_path_but_no_video_id_found(self, video_target: OpenAIVideoTarget) -> None:
         """Test that ValueError is raised when video_path is present but no video_id can be resolved."""
         mock_memory = MagicMock()

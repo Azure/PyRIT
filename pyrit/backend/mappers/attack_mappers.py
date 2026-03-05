@@ -64,7 +64,7 @@ _STREAMING_PATH_TYPES = frozenset({"video_path"})
 # ---------------------------------------------------------------------------
 # Container URL -> (sas_token_query_string, expiry_epoch)
 _sas_token_cache: dict[str, tuple[str, float]] = {}
-_SAS_TTL_SECONDS = 3500  # cache for ~58 min; tokens are valid for 1 hour
+_SAS_CACHE_BUFFER_SECONDS = 300  # refresh 5 min before token expiry
 
 
 def _is_azure_blob_url(value: str) -> bool:
@@ -82,7 +82,8 @@ async def _get_sas_for_container_async(*, container_url: str) -> str:
     Return a read-only SAS query string for *container_url*, generating and
     caching one when necessary.
 
-    The SAS token is cached per container URL and reused for ~1 hour.
+    The SAS token is cached per container URL and refreshed 5 minutes
+    before expiry to avoid serving expired tokens.
 
     Args:
         container_url: The full URL of the Azure Blob Storage container
@@ -122,7 +123,7 @@ async def _get_sas_for_container_async(*, container_url: str) -> str:
     finally:
         await credential.close()
 
-    _sas_token_cache[container_url] = (sas_token, now + _SAS_TTL_SECONDS)
+    _sas_token_cache[container_url] = (sas_token, expiry_time.timestamp() - _SAS_CACHE_BUFFER_SECONDS)
     return sas_token
 
 
