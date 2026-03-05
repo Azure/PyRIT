@@ -8,7 +8,7 @@ from unit.mocks import MockPromptTarget, get_mock_target_identifier
 
 from pyrit.models import Message, MessagePiece, SeedPrompt
 from pyrit.prompt_converter import ScientificTranslationConverter
-from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target import PromptTarget
 
 
 @pytest.fixture
