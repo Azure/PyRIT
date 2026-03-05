@@ -223,6 +223,103 @@ def _build_bar_figure(
     return fig
 
 
+def _build_dropdown_bar_figure(
+    go: Any,
+    *,
+    result: "AnalysisResult",
+) -> Any:
+    """
+    Build a bar chart with a dropdown to switch between dimensions.
+
+    Returns:
+        plotly.graph_objects.Figure: The bar chart figure with dropdown.
+    """
+    single_dims = [d for d in result.dimensions if isinstance(d, str)]
+    if not single_dims:
+        return None
+
+    traces = []
+    max_labels = 0
+
+    for i, dim_name in enumerate(single_dims):
+        dim_data = result.dimensions[dim_name]
+        items = sorted(
+            dim_data.items(),
+            key=lambda kv: kv[1].success_rate if kv[1].success_rate is not None else -1,
+            reverse=True,
+        )
+        labels = [str(k) for k, _ in items]
+        max_labels = max(max_labels, len(labels))
+        rates = [s.success_rate if s.success_rate is not None else 0.0 for _, s in items]
+        colors = [_asr_bar_color(s.success_rate) for _, s in items]
+        hover = [
+            (
+                f"{k}<br>ASR: {s.success_rate:.1%}<br>✓ {s.successes} &nbsp; ✗ {s.failures} &nbsp; ? {s.undetermined}"
+                if s.success_rate is not None
+                else f"{k}<br>No decided outcomes &nbsp; ? {s.undetermined}"
+            )
+            for k, s in items
+        ]
+        text = [f"{r:.0%}" if s.success_rate is not None else "—" for (_, s), r in zip(items, rates, strict=True)]
+
+        traces.append(
+            go.Bar(
+                x=rates,
+                y=labels,
+                orientation="h",
+                marker_color=colors,
+                hovertemplate="%{customdata}<extra></extra>",
+                customdata=hover,
+                text=text,
+                textposition="outside",
+                visible=(i == 0),
+                name=dim_name,
+            )
+        )
+
+    # Create dropdown buttons
+    buttons = []
+    for i, dim_name in enumerate(single_dims):
+        visibility = [j == i for j in range(len(single_dims))]
+        label = dim_name.replace("_", " ").title()
+        buttons.append(
+            {
+                "label": label,
+                "method": "update",
+                "args": [
+                    {"visible": visibility},
+                    {"title": f"Success Rate by {label}"},
+                ],
+            }
+        )
+
+    first_label = single_dims[0].replace("_", " ").title()
+    fig = go.Figure(data=traces)
+    fig.update_layout(
+        title=f"Success Rate by {first_label}",
+        xaxis={"title": "Success Rate", "range": [0, 1.25], "tickformat": ".0%"},
+        yaxis={"autorange": "reversed"},
+        height=max(350, max_labels * 44 + 120),
+        margin={"l": 10, "r": 80, "t": 80, "b": 40},
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        updatemenus=[
+            {
+                "buttons": buttons,
+                "direction": "down",
+                "showactive": True,
+                "x": 0.0,
+                "xanchor": "left",
+                "y": 1.12,
+                "yanchor": "top",
+                "bgcolor": "white",
+                "bordercolor": "#ccc",
+            }
+        ],
+    )
+    return fig
+
+
 def _build_z_matrix(
     *,
     row_keys: list[str],
@@ -292,6 +389,108 @@ def _build_heatmap_figure(
         margin={"l": 10, "r": 10, "t": 54, "b": 60},
         plot_bgcolor="white",
         paper_bgcolor="white",
+    )
+    return fig
+
+
+def _build_dropdown_heatmap_figure(
+    go: Any,
+    *,
+    result: "AnalysisResult",
+    composite_dims: list[tuple[str, str]],
+    sparsity_threshold: float = 0.5,
+) -> Any:
+    """
+    Build a heatmap with a dropdown to switch between composite dimensions.
+
+    Returns:
+        plotly.graph_objects.Figure or None: The heatmap figure with dropdown,
+        or None if no valid composite dimensions.
+    """
+    # Filter to valid composite dimensions
+    valid_dims = []
+    for dims in composite_dims:
+        if dims in result.dimensions and not _is_sparse(
+            result.dimensions[dims], threshold=sparsity_threshold
+        ):
+            valid_dims.append(dims)
+
+    if not valid_dims:
+        return None
+
+    traces = []
+    max_rows = 0
+
+    for i, dim_name in enumerate(valid_dims):
+        dim_data = result.dimensions[dim_name]
+        row_dim, col_dim = dim_name
+        row_keys = sorted({str(k[0]) for k in dim_data})
+        col_keys = sorted({str(k[1]) for k in dim_data})
+        max_rows = max(max_rows, len(row_keys))
+        lookup = {(str(k[0]), str(k[1])): v for k, v in dim_data.items()}
+        z, text = _build_z_matrix(row_keys=row_keys, col_keys=col_keys, lookup=lookup)
+
+        traces.append(
+            go.Heatmap(
+                z=z,
+                x=col_keys,
+                y=row_keys,
+                text=text,
+                texttemplate="%{text}",
+                colorscale=_ASR_COLORSCALE,
+                zmin=0,
+                zmax=1,
+                colorbar={"title": "ASR", "tickformat": ".0%"},
+                hovertemplate=f"{row_dim}: %{{y}}<br>{col_dim}: %{{x}}<br>%{{text}}<extra></extra>",
+                visible=(i == 0),
+                name=f"{row_dim} × {col_dim}",
+            )
+        )
+
+    # Create dropdown buttons
+    buttons = []
+    for i, dim_name in enumerate(valid_dims):
+        row_dim, col_dim = dim_name
+        visibility = [j == i for j in range(len(valid_dims))]
+        label = f"{row_dim.replace('_', ' ').title()} × {col_dim.replace('_', ' ').title()}"
+        buttons.append(
+            {
+                "label": label,
+                "method": "update",
+                "args": [
+                    {"visible": visibility},
+                    {
+                        "title": f"Success Rate: {row_dim} × {col_dim}",
+                        "xaxis.title.text": col_dim,
+                        "yaxis.title.text": row_dim,
+                    },
+                ],
+            }
+        )
+
+    first_row_dim, first_col_dim = valid_dims[0]
+    fig = go.Figure(data=traces)
+    fig.update_layout(
+        title=f"Success Rate: {first_row_dim} × {first_col_dim}",
+        xaxis_title=first_col_dim,
+        yaxis_title=first_row_dim,
+        height=max(400, max_rows * 54 + 150),
+        margin={"l": 10, "r": 10, "t": 80, "b": 60},
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        updatemenus=[
+            {
+                "buttons": buttons,
+                "direction": "down",
+                "showactive": True,
+                "x": 0.0,
+                "xanchor": "left",
+                "y": 1.12,
+                "yanchor": "top",
+                "bgcolor": "white",
+                "bordercolor": "#ccc",
+            }
+        ],
     )
     return fig
 
@@ -488,20 +687,18 @@ def save_html(
 
     sections: list[str] = [_build_summary_html(result=result, title=title)]
 
-    # Single-dimension bar charts
-    single_dims = [d for d in result.dimensions if isinstance(d, str)]
-    if single_dims:
-        bar_html = "".join(_div(_build_bar_figure(go, dim_name=d, dim_data=result.dimensions[d])) for d in single_dims)
-        sections.append(f'<div class="card"><h2>By Dimension</h2>{bar_html}</div>')
+    # Single-dimension bar chart with dropdown selector
+    dropdown_fig = _build_dropdown_bar_figure(go, result=result)
+    if dropdown_fig is not None:
+        sections.append(f'<div class="card"><h2>By Dimension</h2>{_div(dropdown_fig)}</div>')
 
-    # 2D heatmaps
+    # 2D heatmaps with dropdown selector
     heatmap_parts: list[str] = []
-    for dims in composite_dims:
-        if dims not in result.dimensions:
-            continue
-        if _is_sparse(result.dimensions[dims], threshold=sparsity_threshold):
-            continue
-        heatmap_parts.append(_div(_build_heatmap_figure(go, dim_name=dims, dim_data=result.dimensions[dims])))
+    dropdown_heatmap_fig = _build_dropdown_heatmap_figure(
+        go, result=result, composite_dims=composite_dims, sparsity_threshold=sparsity_threshold
+    )
+    if dropdown_heatmap_fig is not None:
+        heatmap_parts.append(_div(dropdown_heatmap_fig))
 
     # 3-tuple faceted heatmaps
     three_d_dims = [d for d in result.dimensions if isinstance(d, tuple) and len(d) == 3]
