@@ -781,7 +781,7 @@ class AttackService:
     # ========================================================================
 
     @staticmethod
-    async def _persist_base64_pieces(request: AddMessageRequest) -> None:
+    async def _persist_base64_pieces_async(request: AddMessageRequest) -> None:
         """
         Persist base64-encoded non-text pieces to disk, updating values in-place.
 
@@ -858,7 +858,7 @@ class AttackService:
         if not target_obj:
             raise ValueError(f"Target object for '{target_registry_name}' not found")
 
-        await self._persist_base64_pieces(request)
+        await self._persist_base64_pieces_async(request)
 
         pyrit_message = request_to_pyrit_message(
             request=request,
@@ -888,7 +888,7 @@ class AttackService:
         labels: Optional[dict[str, str]] = None,
     ) -> None:
         """Store message without sending (send=False)."""
-        await self._persist_base64_pieces(request)
+        await self._persist_base64_pieces_async(request)
         for p in request.pieces:
             piece = request_piece_to_pyrit_message_piece(
                 piece=p,

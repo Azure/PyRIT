@@ -1414,7 +1414,7 @@ class TestAttackServiceSingleton:
 
 @pytest.mark.usefixtures("patch_central_database")
 class TestPersistBase64Pieces:
-    """Tests for _persist_base64_pieces helper."""
+    """Tests for _persist_base64_pieces_async helper."""
 
     @pytest.mark.asyncio
     async def test_text_pieces_are_unchanged(self, attack_service) -> None:
@@ -1425,7 +1425,7 @@ class TestPersistBase64Pieces:
             send=False,
             target_conversation_id="test-id",
         )
-        await AttackService._persist_base64_pieces(request)
+        await AttackService._persist_base64_pieces_async(request)
         assert request.pieces[0].original_value == "hello"
 
     @pytest.mark.asyncio
@@ -1452,7 +1452,7 @@ class TestPersistBase64Pieces:
             "pyrit.backend.services.attack_service.data_serializer_factory",
             return_value=mock_serializer,
         ) as factory_mock:
-            await AttackService._persist_base64_pieces(request)
+            await AttackService._persist_base64_pieces_async(request)
 
         factory_mock.assert_called_once_with(
             category="prompt-memory-entries",
@@ -1487,7 +1487,7 @@ class TestPersistBase64Pieces:
             "pyrit.backend.services.attack_service.data_serializer_factory",
             return_value=mock_serializer,
         ):
-            await AttackService._persist_base64_pieces(request)
+            await AttackService._persist_base64_pieces_async(request)
 
         assert request.pieces[0].original_value == "describe this"
         assert request.pieces[1].original_value == "/saved/photo.jpg"
@@ -1515,7 +1515,7 @@ class TestPersistBase64Pieces:
             "pyrit.backend.services.attack_service.data_serializer_factory",
             return_value=mock_serializer,
         ) as factory_mock:
-            await AttackService._persist_base64_pieces(request)
+            await AttackService._persist_base64_pieces_async(request)
 
         factory_mock.assert_called_once_with(
             category="prompt-memory-entries",
