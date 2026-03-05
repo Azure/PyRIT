@@ -15,6 +15,7 @@ from pyrit.analytics.text_matching import (
     ExactTextMatching,
     TextMatching,
 )
+from pyrit.analytics.visualization import save_html
 
 __all__ = [
     "analyze_results",
@@ -24,5 +25,6 @@ __all__ = [
     "ConversationAnalytics",
     "DimensionExtractor",
     "ExactTextMatching",
+    "save_html",
     "TextMatching",
 ]

@@ -682,7 +682,13 @@ class TestToDataframe:
         df = result.to_dataframe("attack_type")
 
         assert list(df.columns) == [
-            "dimension", "key", "successes", "failures", "undetermined", "total_decided", "success_rate"
+            "dimension",
+            "key",
+            "successes",
+            "failures",
+            "undetermined",
+            "total_decided",
+            "success_rate",
         ]
         assert len(df) == 1
         row = df.iloc[0]

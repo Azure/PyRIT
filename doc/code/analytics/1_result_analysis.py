@@ -249,7 +249,47 @@ print("--- Harm Category DataFrame ---")
 df_harm = result.to_dataframe(dimension="harm_category")
 display(df_harm)
 
+# Export a single dimension as a table
+print("--- Attack Type DataFrame ---")
+df_attack = result.to_dataframe(dimension="attack_type")
+display(df_attack)
+
 # Export all dimensions in long-form as a table
 print("\n--- All Dimensions DataFrame ---")
 df_all = result.to_dataframe()
 display(df_all)
+
+# %% [markdown]
+# ## Interactive HTML Report
+#
+# Use `save_html()` to generate a fully interactive HTML report with:
+# - KPI summary cards
+# - A dimension selector dropdown to switch between harm_category, attack_type, etc.
+# - Cross-dimensional heatmaps
+# - Data coverage table
+#
+# The report is self-contained and can be opened in any browser.
+
+# %%
+from pyrit.analytics import save_html
+from IPython.display import IFrame
+
+# Run analysis with multiple dimensions for rich visualization
+result = analyze_results(
+    results,
+    group_by=[
+        "harm_category",
+        "attack_type",
+        "converter_type",
+        "label",
+        ("harm_category", "attack_type"),
+        ("harm_category", "converter_type"),
+    ],
+)
+
+# Save the interactive HTML report
+report_path = save_html(result, "attack_analysis_report.html", title="Attack Analysis Report")
+print(f"Report saved to: {report_path}")
+
+# Display the report inline (works in Jupyter notebooks)
+IFrame(src=str(report_path), width="100%", height=800)

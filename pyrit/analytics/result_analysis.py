@@ -80,15 +80,12 @@ class AnalysisResult:
         """
         try:
             import pandas as pd
-        except ImportError:
-            raise ImportError(
-                "pandas is required for to_dataframe(). "
-                "Install it with:  pip install pandas"
-            )
+        except ImportError as err:
+            raise ImportError("pandas is required for to_dataframe(). Install it with:  pip install pandas") from err
 
         stats_columns = ["successes", "failures", "undetermined", "total_decided", "success_rate"]
 
-        def _stats_row(stats: AttackStats) -> dict:
+        def _stats_row(stats: AttackStats) -> dict[str, object]:
             return {
                 "successes": stats.successes,
                 "failures": stats.failures,
@@ -100,17 +97,15 @@ class AnalysisResult:
         def _dim_rows(
             dim_name: Union[str, tuple[str, ...]],
             dim_data: dict[Union[str, tuple[str, ...]], AttackStats],
-        ) -> list[dict]:
+        ) -> list[dict[str, object]]:
             rows = []
             for key, stats in dim_data.items():
-                row: dict = {}
+                row: dict[str, object]
                 if isinstance(dim_name, tuple):
                     # Explode composite key into individual columns
-                    for col, val in zip(dim_name, key):
-                        row[col] = val
+                    row = dict(zip(dim_name, key, strict=True))
                 else:
-                    row["dimension"] = dim_name
-                    row["key"] = key
+                    row = {"dimension": dim_name, "key": key}
                 row.update(_stats_row(stats))
                 rows.append(row)
             return rows
@@ -128,24 +123,20 @@ class AnalysisResult:
             return pd.DataFrame(rows, columns=cols)
 
         # All dimensions + overall
-        all_rows: list[dict] = []
-
-        # Overall row
-        overall_row: dict = {"dimension": "overall", "key": "all"}
+        overall_row: dict[str, object] = {"dimension": "overall", "key": "all"}
         overall_row.update(_stats_row(self.overall))
-        all_rows.append(overall_row)
+        all_rows: list[dict[str, object]] = [overall_row]
 
         for dim_name, dim_data in self.dimensions.items():
             if isinstance(dim_name, tuple):
                 # Composite dimensions: flatten as "dim1 × dim2" in the dimension column
                 label = " \u00d7 ".join(dim_name)
                 for key, stats in dim_data.items():
-                    row = {"dimension": label, "key": " \u00d7 ".join(str(k) for k in key)}
+                    row: dict[str, object] = {"dimension": label, "key": " \u00d7 ".join(str(k) for k in key)}
                     row.update(_stats_row(stats))
                     all_rows.append(row)
             else:
-                for row in _dim_rows(dim_name, dim_data):
-                    all_rows.append(row)
+                all_rows.extend(_dim_rows(dim_name, dim_data))
 
         return pd.DataFrame(all_rows, columns=["dimension", "key"] + stats_columns)
 
