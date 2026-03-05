@@ -145,7 +145,7 @@ class AttackService:
 
         stats_map = self._memory.get_conversation_stats(conversation_ids=all_conv_ids) if all_conv_ids else {}
 
-        # Phase 2: Fetch pieces only for the page we're returning
+        # Phase 2: Build summaries from aggregated stats for the page
         page: list[AttackSummary] = []
         for ar in page_results:
             # Merge stats for the main conversation and its pruned relatives.
