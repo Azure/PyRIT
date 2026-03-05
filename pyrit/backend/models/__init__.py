@@ -20,6 +20,7 @@ from pyrit.backend.models.attacks import (
     Message,
     MessagePiece,
     MessagePieceRequest,
+    PrependedMessageRequest,
     Score,
     UpdateAttackRequest,
 )
@@ -57,6 +58,7 @@ __all__ = [
     "Message",
     "MessagePiece",
     "MessagePieceRequest",
+    "PrependedMessageRequest",
     "Score",
     "UpdateAttackRequest",
     # Common
