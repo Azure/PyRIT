@@ -1732,10 +1732,10 @@ class TestChangeMainConversation:
         assert call_kwargs["attack_result_id"] == "ar-attack-1"
         assert call_kwargs["update_fields"]["conversation_id"] == "branch-1"
 
-        # Old main should now be in adversarial_chat_conversation_ids
-        adversarial = call_kwargs["update_fields"]["adversarial_chat_conversation_ids"]
-        assert "attack-1" in adversarial
-        assert "branch-1" not in adversarial
+        # Old main should now be in pruned_conversation_ids (user-visible)
+        pruned = call_kwargs["update_fields"]["pruned_conversation_ids"]
+        assert "attack-1" in pruned
+        assert "branch-1" not in pruned
 
 
 @pytest.mark.usefixtures("patch_central_database")

@@ -498,7 +498,7 @@ class AttackService:
             raise ValueError(f"Conversation '{target_conv_id}' is not part of this attack")
 
         # Build updated DB columns: remove target from its list, add old main
-        # to adversarial list (GUI conversations are always adversarial).
+        # to pruned list (user-visible GUI conversations are PRUNED, not ADVERSARIAL).
         updated_pruned = [
             ref.conversation_id
             for ref in ar.related_conversations
@@ -509,8 +509,9 @@ class AttackService:
             for ref in ar.related_conversations
             if ref.conversation_id != target_conv_id and ref.conversation_type == ConversationType.ADVERSARIAL
         ]
-        # The old main becomes an adversarial related conversation
-        updated_adversarial.append(ar.conversation_id)
+        # The old main becomes a pruned related conversation so it remains
+        # visible in the GUI and fetchable via get_conversation_messages.
+        updated_pruned.append(ar.conversation_id)
 
         self._memory.update_attack_result_by_id(
             attack_result_id=attack_result_id,
