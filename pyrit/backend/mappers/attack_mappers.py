@@ -5,14 +5,12 @@
 Attack mappers – domain ↔ DTO translation for attack-related models.
 
 Most functions are pure (no database or service calls).  The exceptions are
-``pyrit_messages_to_dto_async`` which fetches Azure Blob Storage content
-and converts it to data URIs, and ``attack_result_to_summary`` which
-receives pre-fetched pieces.
+``pyrit_messages_to_dto_async`` which signs Azure Blob Storage URLs and
+constructs local media endpoint URLs for media content.
 """
 
 from __future__ import annotations
 
-import base64
 import logging
 import mimetypes
 import os
@@ -21,9 +19,8 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Optional, cast
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
-import httpx
 from azure.identity.aio import DefaultAzureCredential
 from azure.storage.blob import ContainerSasPermissions, generate_container_sas
 from azure.storage.blob.aio import BlobServiceClient
@@ -53,11 +50,8 @@ if TYPE_CHECKING:
 # Domain → DTO  (for API responses)
 # ============================================================================
 
-# Media data types whose values are local file paths that need base64 encoding
+# Media data types whose values are file paths (local or Azure Blob URLs)
 _MEDIA_PATH_TYPES = frozenset({"image_path", "audio_path", "video_path", "binary_path"})
-
-# Media types that are too large for base64 data URIs and should use signed URLs instead.
-_STREAMING_PATH_TYPES = frozenset({"video_path"})
 
 # ---------------------------------------------------------------------------
 # Azure Blob SAS token cache
@@ -164,63 +158,29 @@ async def _sign_blob_url_async(*, blob_url: str) -> str:
         return blob_url
 
 
-async def _fetch_blob_as_data_uri_async(*, blob_url: str) -> str:
+def _resolve_media_url(*, value: Optional[str], data_type: str) -> Optional[str]:
     """
-    Fetch an Azure Blob Storage file and return it as a ``data:`` URI.
+    For media path types, convert a local file path to a ``/api/media`` URL.
 
-    The blob URL is first signed with a SAS token, then fetched server-side.
-    The content is base64-encoded into a data URI so the frontend receives the
-    same format regardless of whether storage is local or remote.
-
-    Falls back to the raw (unsigned) URL if signing or fetching fails.
+    Non-media types and Azure Blob URLs are returned as-is (blob URLs are
+    signed later in ``pyrit_messages_to_dto_async``).
 
     Args:
-        blob_url: The raw Azure Blob Storage URL.
+        value: The stored value (file path, blob URL, data URI, or text).
+        data_type: The prompt data type (e.g. ``image_path``, ``text``).
 
     Returns:
-        A ``data:<mime>;base64,...`` string, or the original URL on failure.
-    """
-    signed_url = await _sign_blob_url_async(blob_url=blob_url)
-
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(signed_url, follow_redirects=True, timeout=60.0)
-            resp.raise_for_status()
-    except Exception:
-        logger.warning("Failed to fetch blob %s; returning raw URL", blob_url, exc_info=True)
-        return blob_url
-
-    content_type = resp.headers.get("content-type", "application/octet-stream")
-    encoded = base64.b64encode(resp.content).decode("ascii")
-    return f"data:{content_type};base64,{encoded}"
-
-
-def _encode_media_value(*, value: Optional[str], data_type: str) -> Optional[str]:
-    """
-    Return the value as-is for text, or base64-encode the referenced file for media types.
-
-    If the file cannot be read (missing, permissions, etc.) the original value is
-    returned so the frontend can still display *something*.
-
-    Returns:
-        The original value for text types, a ``data:`` URI for readable media files,
-        or the raw value when the file is inaccessible.
+        The value unchanged for non-media types, a ``/api/media?path=...``
+        URL for local file paths, or the original value for blob URLs / data URIs.
     """
     if not value or data_type not in _MEDIA_PATH_TYPES:
         return value
-    # Already a data-URI — no need to re-encode
-    if value.startswith("data:"):
+    # Already a URL or data URI — pass through
+    if value.startswith(("http://", "https://", "data:")):
         return value
-    # Looks like a local file path — read & encode
+    # Local file path — construct a media endpoint URL
     if os.path.isfile(value):
-        try:
-            mime, _ = mimetypes.guess_type(value)
-            mime = mime or "application/octet-stream"
-            with open(value, "rb") as f:
-                encoded = base64.b64encode(f.read()).decode("ascii")
-            return f"data:{mime};base64,{encoded}"
-        except Exception:
-            logger.warning("Failed to read media file %s; returning raw path", value, exc_info=True)
+        return f"/api/media?path={quote(str(value))}"
     return value
 
 
@@ -381,9 +341,9 @@ async def pyrit_messages_to_dto_async(pyrit_messages: list[PyritMessage]) -> lis
     """
     Translate PyRIT messages to backend Message DTOs.
 
-    Local media files are base64-encoded into data URIs.  Azure Blob Storage
-    files are fetched server-side and converted to data URIs so the frontend
-    receives the same format regardless of storage backend.
+    Media file paths are converted to URLs the frontend can fetch directly:
+    - Local files → ``/api/media?path=...`` (served by the media endpoint)
+    - Azure Blob Storage files → signed URLs with SAS tokens
 
     Returns:
         List of Message DTOs for the API.
@@ -395,21 +355,14 @@ async def pyrit_messages_to_dto_async(pyrit_messages: list[PyritMessage]) -> lis
             orig_dtype = p.original_value_data_type or "text"
             conv_dtype = p.converted_value_data_type or "text"
 
-            orig_val = _encode_media_value(value=p.original_value, data_type=orig_dtype)
-            conv_val = _encode_media_value(value=p.converted_value or "", data_type=conv_dtype) or ""
+            orig_val = _resolve_media_url(value=p.original_value, data_type=orig_dtype)
+            conv_val = _resolve_media_url(value=p.converted_value or "", data_type=conv_dtype) or ""
 
-            # For streaming types (video), pass a signed URL directly instead of
-            # downloading and base64-encoding the entire file.
+            # Sign Azure Blob Storage URLs so the frontend can fetch them directly
             if orig_val and _is_azure_blob_url(orig_val):
-                if orig_dtype in _STREAMING_PATH_TYPES:
-                    orig_val = await _sign_blob_url_async(blob_url=orig_val)
-                else:
-                    orig_val = await _fetch_blob_as_data_uri_async(blob_url=orig_val)
+                orig_val = await _sign_blob_url_async(blob_url=orig_val)
             if conv_val and _is_azure_blob_url(conv_val):
-                if conv_dtype in _STREAMING_PATH_TYPES:
-                    conv_val = await _sign_blob_url_async(blob_url=conv_val)
-                else:
-                    conv_val = await _fetch_blob_as_data_uri_async(blob_url=conv_val)
+                conv_val = await _sign_blob_url_async(blob_url=conv_val)
 
             pieces.append(
                 MessagePiece(

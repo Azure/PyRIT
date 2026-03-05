@@ -19,9 +19,9 @@ import pytest
 
 from pyrit.backend.mappers.attack_mappers import (
     _build_filename,
-    _fetch_blob_as_data_uri_async,
     _infer_mime_type,
     _is_azure_blob_url,
+    _resolve_media_url,
     _sign_blob_url_async,
     attack_result_to_summary,
     pyrit_messages_to_dto_async,
@@ -418,8 +418,8 @@ class TestPyritMessagesToDto:
         assert result[0].pieces[0].converted_value_mime_type == "audio/mpeg"
 
     @pytest.mark.asyncio
-    async def test_encodes_existing_media_file_to_data_uri(self) -> None:
-        """Test that local media files are base64-encoded into data URIs."""
+    async def test_local_media_file_returns_media_url(self) -> None:
+        """Test that local media files are converted to /api/media URLs."""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp.write(b"PNGDATA")
             tmp_path = tmp.name
@@ -434,8 +434,8 @@ class TestPyritMessagesToDto:
             result = await pyrit_messages_to_dto_async([msg])
 
             assert result[0].pieces[0].original_value is not None
-            assert result[0].pieces[0].original_value.startswith("data:image/png;base64,")
-            assert result[0].pieces[0].converted_value.startswith("data:image/png;base64,")
+            assert result[0].pieces[0].original_value.startswith("/api/media?path=")
+            assert result[0].pieces[0].converted_value.startswith("/api/media?path=")
         finally:
             os.unlink(tmp_path)
 
@@ -474,9 +474,10 @@ class TestPyritMessagesToDto:
         assert result[0].pieces[0].converted_value == "http://example.com/image.png"
 
     @pytest.mark.asyncio
-    async def test_azure_blob_url_is_fetched_as_data_uri(self) -> None:
-        """Test that Azure Blob Storage URLs are fetched and returned as data URIs."""
+    async def test_azure_blob_url_is_signed(self) -> None:
+        """Test that Azure Blob Storage URLs are signed with SAS tokens."""
         blob_url = "https://myaccount.blob.core.windows.net/dbdata/prompt-memory-entries/images/test.png"
+        signed_url = blob_url + "?sig=abc123"
         piece = _make_mock_piece(
             original_value=blob_url,
             converted_value=blob_url,
@@ -487,18 +488,18 @@ class TestPyritMessagesToDto:
         msg.message_pieces = [piece]
 
         with patch(
-            "pyrit.backend.mappers.attack_mappers._fetch_blob_as_data_uri_async",
+            "pyrit.backend.mappers.attack_mappers._sign_blob_url_async",
             new_callable=AsyncMock,
-            return_value="data:image/png;base64,ABCD",
+            return_value=signed_url,
         ):
             result = await pyrit_messages_to_dto_async([msg])
 
-        assert result[0].pieces[0].original_value == "data:image/png;base64,ABCD"
-        assert result[0].pieces[0].converted_value == "data:image/png;base64,ABCD"
+        assert result[0].pieces[0].original_value == signed_url
+        assert result[0].pieces[0].converted_value == signed_url
 
     @pytest.mark.asyncio
-    async def test_azure_blob_url_fetch_failure_returns_raw_url(self) -> None:
-        """Test that blob fetch failure falls back to the raw blob URL."""
+    async def test_azure_blob_url_sign_failure_returns_raw_url(self) -> None:
+        """Test that blob sign failure falls back to the raw blob URL."""
         blob_url = "https://myaccount.blob.core.windows.net/dbdata/images/test.png"
         piece = _make_mock_piece(
             original_value=blob_url,
@@ -510,9 +511,9 @@ class TestPyritMessagesToDto:
         msg.message_pieces = [piece]
 
         with patch(
-            "pyrit.backend.mappers.attack_mappers._fetch_blob_as_data_uri_async",
+            "pyrit.backend.mappers.attack_mappers._sign_blob_url_async",
             new_callable=AsyncMock,
-            return_value=blob_url,  # falls back to raw URL
+            return_value=blob_url,  # falls back to raw URL on failure
         ):
             result = await pyrit_messages_to_dto_async([msg])
 
@@ -520,22 +521,18 @@ class TestPyritMessagesToDto:
         assert result[0].pieces[0].converted_value == blob_url
 
     @pytest.mark.asyncio
-    async def test_media_read_failure_returns_raw_path(self) -> None:
-        """Test that unreadable local media files fall back to raw path values."""
-        piece = _make_mock_piece(original_value="/tmp/file.png", converted_value="/tmp/file.png")
+    async def test_nonexistent_media_file_returns_raw_path(self) -> None:
+        """Test that non-existent local media files fall back to raw path values."""
+        piece = _make_mock_piece(original_value="/tmp/nonexistent.png", converted_value="/tmp/nonexistent.png")
         piece.original_value_data_type = "image_path"
         piece.converted_value_data_type = "image_path"
         msg = MagicMock()
         msg.message_pieces = [piece]
 
-        with (
-            patch("pyrit.backend.mappers.attack_mappers.os.path.isfile", return_value=True),
-            patch("pyrit.backend.mappers.attack_mappers.open", side_effect=OSError("cannot read")),
-        ):
-            result = await pyrit_messages_to_dto_async([msg])
+        result = await pyrit_messages_to_dto_async([msg])
 
-        assert result[0].pieces[0].original_value == "/tmp/file.png"
-        assert result[0].pieces[0].converted_value == "/tmp/file.png"
+        assert result[0].pieces[0].original_value == "/tmp/nonexistent.png"
+        assert result[0].pieces[0].converted_value == "/tmp/nonexistent.png"
 
 
 class TestIsAzureBlobUrl:
@@ -601,65 +598,57 @@ class TestSignBlobUrlAsync:
         assert result == url
 
 
-class TestFetchBlobAsDataUriAsync:
-    """Tests for _fetch_blob_as_data_uri_async helper."""
+class TestResolveMediaUrl:
+    """Tests for _resolve_media_url helper."""
 
-    @pytest.mark.asyncio
-    async def test_fetches_blob_and_returns_data_uri(self) -> None:
-        """Blob content is fetched, base64-encoded, and returned as a data URI."""
-        import httpx
+    def test_text_value_passes_through(self) -> None:
+        """Non-media types are returned as-is."""
+        assert _resolve_media_url(value="hello world", data_type="text") == "hello world"
 
-        blob_url = "https://acct.blob.core.windows.net/container/image.png"
-        fake_resp = httpx.Response(
-            status_code=200,
-            content=b"\x89PNG",
-            headers={"content-type": "image/png"},
-            request=httpx.Request("GET", blob_url),
-        )
+    def test_data_uri_passes_through(self) -> None:
+        """Pre-encoded data URIs are returned as-is."""
+        uri = "data:image/png;base64,AAAA"
+        assert _resolve_media_url(value=uri, data_type="image_path") == uri
 
-        with (
-            patch(
-                "pyrit.backend.mappers.attack_mappers._sign_blob_url_async",
-                new_callable=AsyncMock,
-                return_value=blob_url + "?sig=abc",
-            ),
-            patch("pyrit.backend.mappers.attack_mappers.httpx.AsyncClient") as mock_client_cls,
-        ):
-            mock_client = AsyncMock()
-            mock_client.get = AsyncMock(return_value=fake_resp)
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=False)
-            mock_client_cls.return_value = mock_client
+    def test_http_url_passes_through(self) -> None:
+        """HTTP/HTTPS URLs are returned as-is (signed later)."""
+        url = "https://acct.blob.core.windows.net/container/image.png"
+        assert _resolve_media_url(value=url, data_type="image_path") == url
 
-            result = await _fetch_blob_as_data_uri_async(blob_url=blob_url)
+    def test_local_file_returns_media_url(self) -> None:
+        """Local file paths are converted to /api/media URLs."""
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            tmp.write(b"PNG")
+            tmp_path = tmp.name
 
-        import base64
+        try:
+            result = _resolve_media_url(value=tmp_path, data_type="image_path")
+            assert result is not None
+            assert result.startswith("/api/media?path=")
+        finally:
+            os.unlink(tmp_path)
 
-        expected_b64 = base64.b64encode(b"\x89PNG").decode("ascii")
-        assert result == f"data:image/png;base64,{expected_b64}"
+    def test_nonexistent_file_returns_raw_value(self) -> None:
+        """Non-existent file paths are returned as-is."""
+        assert _resolve_media_url(value="/no/such/file.png", data_type="image_path") == "/no/such/file.png"
 
-    @pytest.mark.asyncio
-    async def test_fetch_failure_returns_raw_url(self) -> None:
-        """Fetch failure falls back to the unsigned blob URL."""
-        blob_url = "https://acct.blob.core.windows.net/container/file.wav"
+    def test_none_value_returns_none(self) -> None:
+        """None values are returned as None."""
+        assert _resolve_media_url(value=None, data_type="image_path") is None
 
-        with (
-            patch(
-                "pyrit.backend.mappers.attack_mappers._sign_blob_url_async",
-                new_callable=AsyncMock,
-                return_value=blob_url + "?sig=abc",
-            ),
-            patch("pyrit.backend.mappers.attack_mappers.httpx.AsyncClient") as mock_client_cls,
-        ):
-            mock_client = AsyncMock()
-            mock_client.get = AsyncMock(side_effect=Exception("network error"))
-            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client.__aexit__ = AsyncMock(return_value=False)
-            mock_client_cls.return_value = mock_client
+    def test_works_for_all_path_types(self) -> None:
+        """All *_path data types are handled."""
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+            tmp.write(b"VIDEO")
+            tmp_path = tmp.name
 
-            result = await _fetch_blob_as_data_uri_async(blob_url=blob_url)
-
-        assert result == blob_url
+        try:
+            for dtype in ("image_path", "audio_path", "video_path", "binary_path"):
+                result = _resolve_media_url(value=tmp_path, data_type=dtype)
+                assert result is not None
+                assert result.startswith("/api/media?path="), f"Failed for {dtype}"
+        finally:
+            os.unlink(tmp_path)
 
 
 class TestRequestToPyritMessage:
