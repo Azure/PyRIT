@@ -134,16 +134,16 @@ class AttackService:
 
         # Phase 2: Lightweight DB aggregation for the page only.
         # Collect conversation IDs we care about (main + pruned, not adversarial).
-        all_conv_ids: list[str] = []
+        all_conv_ids: set[str] = set()
         for ar in page_results:
-            all_conv_ids.append(ar.conversation_id)
-            all_conv_ids.extend(
+            all_conv_ids.add(ar.conversation_id)
+            all_conv_ids.update(
                 ref.conversation_id
                 for ref in ar.related_conversations
                 if ref.conversation_type == ConversationType.PRUNED
             )
 
-        stats_map = self._memory.get_conversation_stats(conversation_ids=all_conv_ids) if all_conv_ids else {}
+        stats_map = self._memory.get_conversation_stats(conversation_ids=list(all_conv_ids)) if all_conv_ids else {}
 
         # Phase 2: Build summaries from aggregated stats for the page
         page: list[AttackSummary] = []
