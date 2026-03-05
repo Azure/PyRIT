@@ -4,10 +4,12 @@
 import pytest
 
 from pyrit.identifiers import (
+    AttackEvaluationIdentity,
     ComponentIdentifier,
     build_atomic_attack_identifier,
     build_seed_identifier,
     compute_attack_eval_hash,
+    compute_eval_hash,
 )
 from pyrit.models.seeds.seed_prompt import SeedPrompt
 
@@ -268,3 +270,77 @@ class TestComputeAttackEvalHash:
             attack_identifier=attack_id, seed_group=_FakeSeedGroup(seeds=[seed2])
         )
         assert compute_attack_eval_hash(c1) != compute_attack_eval_hash(c2)
+
+
+class TestAttackEvaluationIdentity:
+    """Tests for AttackEvaluationIdentity."""
+
+    def _make_composite(self) -> ComponentIdentifier:
+        attack_id = ComponentIdentifier(
+            class_name="PromptSendingAttack",
+            class_module="pyrit.executor.attack.single_turn.prompt_sending",
+            children={
+                "objective_target": ComponentIdentifier(
+                    class_name="OpenAIChatTarget",
+                    class_module="pyrit.prompt_target.openai.openai_chat_target",
+                    params={"model_name": "gpt-4o", "endpoint": "https://api.openai.com"},
+                )
+            },
+        )
+        return build_atomic_attack_identifier(attack_identifier=attack_id)
+
+    def test_identifier_property_returns_original(self):
+        composite = self._make_composite()
+        identity = AttackEvaluationIdentity(composite)
+        assert identity.identifier is composite
+
+    def test_eval_hash_is_64_char_hex(self):
+        composite = self._make_composite()
+        identity = AttackEvaluationIdentity(composite)
+        assert isinstance(identity.eval_hash, str)
+        assert len(identity.eval_hash) == 64
+
+    def test_eval_hash_matches_free_function(self):
+        """AttackEvaluationIdentity.eval_hash must equal compute_attack_eval_hash."""
+        composite = self._make_composite()
+        identity = AttackEvaluationIdentity(composite)
+        assert identity.eval_hash == compute_attack_eval_hash(composite)
+
+    def test_eval_hash_matches_centralized_compute_eval_hash(self):
+        """AttackEvaluationIdentity.eval_hash must equal centralized compute_eval_hash with attack constants."""
+        composite = self._make_composite()
+        identity = AttackEvaluationIdentity(composite)
+        expected = compute_eval_hash(
+            composite,
+            target_child_keys=AttackEvaluationIdentity.TARGET_CHILD_KEYS,
+            behavioral_child_params=AttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+        )
+        assert identity.eval_hash == expected
+
+    def test_target_child_keys_include_objective_target(self):
+        """Attack identity must filter objective_target (not present in scorer identity)."""
+        assert "objective_target" in AttackEvaluationIdentity.TARGET_CHILD_KEYS
+        assert "prompt_target" in AttackEvaluationIdentity.TARGET_CHILD_KEYS
+        assert "converter_target" in AttackEvaluationIdentity.TARGET_CHILD_KEYS
+
+    def test_operational_params_ignored(self):
+        """Same model on different endpoints produces same eval hash."""
+        target1 = ComponentIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            params={"model_name": "gpt-4o", "endpoint": "https://api1.openai.com"},
+        )
+        target2 = ComponentIdentifier(
+            class_name="OpenAIChatTarget",
+            class_module="pyrit.prompt_target.openai.openai_chat_target",
+            params={"model_name": "gpt-4o", "endpoint": "https://api2.openai.com"},
+        )
+        attack1 = ComponentIdentifier(
+            class_name="Attack", class_module="m", children={"objective_target": target1}
+        )
+        attack2 = ComponentIdentifier(
+            class_name="Attack", class_module="m", children={"objective_target": target2}
+        )
+        c1 = build_atomic_attack_identifier(attack_identifier=attack1)
+        c2 = build_atomic_attack_identifier(attack_identifier=attack2)
+        assert AttackEvaluationIdentity(c1).eval_hash == AttackEvaluationIdentity(c2).eval_hash

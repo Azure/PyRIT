@@ -13,24 +13,24 @@ The composite identifier always has the same shape:
     children["attack"] = attack strategy's ComponentIdentifier
     children["general_technique_seeds"] = list of seed ComponentIdentifiers
         (may be empty when no general technique seeds are present)
+
+``AttackEvaluationIdentity`` is the attack-domain subclass of
+``EvaluationIdentity``, analogous to ``ScorerEvaluationIdentity`` for scorers.
+``compute_attack_eval_hash`` is a convenience wrapper around the centralized
+``compute_eval_hash`` with attack-specific constants.
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
-from pyrit.identifiers.component_identifier import ComponentIdentifier, config_hash
+from pyrit.identifiers.component_identifier import ComponentIdentifier
+from pyrit.identifiers.evaluation_identity import EvaluationIdentity, compute_eval_hash
 
 if TYPE_CHECKING:
     from pyrit.models.seeds.seed import Seed
     from pyrit.models.seeds.seed_group import SeedGroup
 
 logger = logging.getLogger(__name__)
-
-# Child component params that affect attack behavior.
-# Operational params (endpoint, max_requests_per_minute, etc.) are excluded
-# so that the same model on different deployments shares cached eval results.
-_BEHAVIORAL_CHILD_PARAMS = frozenset({"model_name", "temperature", "top_p"})
-_TARGET_CHILD_KEYS = frozenset({"objective_target", "prompt_target", "converter_target"})
 
 # Class metadata for the composite identifier
 _ATOMIC_ATTACK_CLASS_NAME = "AtomicAttack"
@@ -113,65 +113,29 @@ def build_atomic_attack_identifier(
     )
 
 
-def _build_attack_eval_dict(
-    identifier: ComponentIdentifier,
-    *,
-    param_allowlist: Optional[frozenset[str]] = None,
-) -> dict[str, Any]:
+class AttackEvaluationIdentity(EvaluationIdentity):
     """
-    Build a dictionary for attack eval hashing.
+    Evaluation identity for attacks.
 
-    Recursively projects an atomic attack identifier to its behavioral
-    parameters only, filtering out operational params from target children.
-
-    Args:
-        identifier (ComponentIdentifier): The component identity to process.
-        param_allowlist (Optional[frozenset[str]]): If provided, only include
-            params whose keys are in the allowlist. If None, include all params.
-
-    Returns:
-        dict[str, Any]: The filtered dictionary suitable for hashing.
+    Target children (``objective_target``, ``prompt_target``, ``converter_target``)
+    are filtered to behavioral params only (``model_name``, ``temperature``,
+    ``top_p``), so the same attack configuration on different deployments
+    produces the same eval hash.  Non-target children (e.g., seed identifiers)
+    receive full recursive eval treatment.
     """
-    eval_dict: dict[str, Any] = {
-        ComponentIdentifier.KEY_CLASS_NAME: identifier.class_name,
-        ComponentIdentifier.KEY_CLASS_MODULE: identifier.class_module,
-    }
 
-    eval_dict.update(
-        {
-            k: v
-            for k, v in sorted(identifier.params.items())
-            if v is not None and (param_allowlist is None or k in param_allowlist)
-        }
-    )
-
-    if identifier.children:
-        eval_children: dict[str, Any] = {}
-        for name in sorted(identifier.children):
-            child_list = identifier.get_child_list(name)
-            if name in _TARGET_CHILD_KEYS:
-                # Targets: filter to behavioral params only
-                hashes = [
-                    config_hash(_build_attack_eval_dict(c, param_allowlist=_BEHAVIORAL_CHILD_PARAMS))
-                    for c in child_list
-                ]
-            else:
-                # Non-targets (attack children, seed children): full eval treatment
-                hashes = [config_hash(_build_attack_eval_dict(c)) for c in child_list]
-            eval_children[name] = hashes[0] if len(hashes) == 1 else hashes
-        if eval_children:
-            eval_dict["children"] = eval_children
-
-    return eval_dict
+    TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"objective_target", "prompt_target", "converter_target"})
+    BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature", "top_p"})
 
 
 def compute_attack_eval_hash(identifier: ComponentIdentifier) -> str:
     """
     Compute a behavioral equivalence hash for attack evaluation grouping.
 
-    Projects the composite atomic attack identifier to behavioral params only.
-    For target children (objective_target, etc.), only model_name, temperature,
-    and top_p are included. For seed children, all params are included.
+    Convenience wrapper around ``compute_eval_hash`` with attack-specific
+    constants.  For target children (objective_target, prompt_target,
+    converter_target), only model_name, temperature, and top_p are included.
+    For seed children, all params are included.
 
     This enables grouping attack results by behavioral equivalence when
     running evaluations, similar to ``compute_eval_hash`` for scorers.
@@ -182,4 +146,8 @@ def compute_attack_eval_hash(identifier: ComponentIdentifier) -> str:
     Returns:
         str: A hash suitable for evaluation registry keying.
     """
-    return config_hash(_build_attack_eval_dict(identifier))
+    return compute_eval_hash(
+        identifier,
+        target_child_keys=AttackEvaluationIdentity.TARGET_CHILD_KEYS,
+        behavioral_child_params=AttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+    )
