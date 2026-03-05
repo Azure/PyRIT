@@ -815,12 +815,21 @@ class AttackService:
             if not ext:
                 ext = ".bin"
 
+            # Strip data URI prefix if present (e.g. "data:image/png;base64,...")
+            # The backend itself returns data URIs from pyrit_messages_to_dto_async,
+            # so the client may echo them back.
+            value = piece.original_value
+            if value.startswith("data:"):
+                # Format: data:<mime>;base64,<payload>
+                _, _, payload = value.partition(",")
+                value = payload
+
             serializer = data_serializer_factory(
                 category="prompt-memory-entries",
                 data_type=cast("PromptDataType", piece.data_type),
                 extension=ext,
             )
-            await serializer.save_b64_image(data=piece.original_value)
+            await serializer.save_b64_image(data=value)
             file_path = serializer.value
             piece.original_value = file_path
             if piece.converted_value is None:

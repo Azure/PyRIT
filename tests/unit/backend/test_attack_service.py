@@ -1523,6 +1523,73 @@ class TestPersistBase64Pieces:
             extension=".bin",
         )
 
+    @pytest.mark.asyncio
+    async def test_data_uri_prefix_is_stripped_before_saving(self, attack_service) -> None:
+        """Data URIs (data:<mime>;base64,...) should be stripped to raw base64 before saving."""
+        request = AddMessageRequest(
+            role="user",
+            pieces=[
+                MessagePieceRequest(
+                    data_type="image_path",
+                    original_value="data:image/png;base64,aW1hZ2VkYXRh",
+                    mime_type="image/png",
+                ),
+            ],
+            send=False,
+            target_conversation_id="test-id",
+        )
+
+        mock_serializer = MagicMock()
+        mock_serializer.save_b64_image = AsyncMock()
+        mock_serializer.value = "/saved/image.png"
+
+        with patch(
+            "pyrit.backend.services.attack_service.data_serializer_factory",
+            return_value=mock_serializer,
+        ):
+            await AttackService._persist_base64_pieces_async(request)
+
+        # Should receive only the base64 payload, not the data URI prefix
+        mock_serializer.save_b64_image.assert_awaited_once_with(data="aW1hZ2VkYXRh")
+        assert request.pieces[0].original_value == "/saved/image.png"
+
+    @pytest.mark.asyncio
+    async def test_http_url_is_kept_as_is(self, attack_service) -> None:
+        """HTTPS blob URLs should not be re-persisted."""
+        request = AddMessageRequest(
+            role="user",
+            pieces=[
+                MessagePieceRequest(
+                    data_type="image_path",
+                    original_value="https://myblob.blob.core.windows.net/images/photo.png?sv=2024",
+                    mime_type="image/png",
+                ),
+            ],
+            send=False,
+            target_conversation_id="test-id",
+        )
+
+        await AttackService._persist_base64_pieces_async(request)
+
+        assert request.pieces[0].original_value == ("https://myblob.blob.core.windows.net/images/photo.png?sv=2024")
+        assert request.pieces[0].converted_value == request.pieces[0].original_value
+
+    @pytest.mark.asyncio
+    async def test_non_path_data_types_are_skipped(self, attack_service) -> None:
+        """Non *_path types like reasoning, url, function_call should not be decoded."""
+        request = AddMessageRequest(
+            role="user",
+            pieces=[
+                MessagePieceRequest(data_type="reasoning", original_value="thinking step"),
+            ],
+            send=False,
+            target_conversation_id="test-id",
+        )
+
+        await AttackService._persist_base64_pieces_async(request)
+
+        assert request.pieces[0].original_value == "thinking step"
+
 
 # ============================================================================
 # Related Conversations Tests
