@@ -4,7 +4,6 @@
 """Tests for the Cyber class."""
 
 import pathlib
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,7 +11,7 @@ import pytest
 from pyrit.common.path import DATASETS_PATH
 from pyrit.executor.attack import PromptSendingAttack, RedTeamingAttack
 from pyrit.executor.attack.core.attack_config import AttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedAttackGroup, SeedDataset, SeedObjective
 from pyrit.prompt_target import OpenAIChatTarget, PromptChatTarget, PromptTarget
 from pyrit.scenario import DatasetConfiguration
@@ -20,23 +19,19 @@ from pyrit.scenario.airt import Cyber, CyberStrategy
 from pyrit.score import TrueFalseCompositeScorer
 
 
-def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockObjectiveScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -72,8 +67,7 @@ def slow_cyberstrategy():
 def malware_prompts():
     """The default malware prompts."""
     malware_path = pathlib.Path(DATASETS_PATH) / "seed_datasets" / "local" / "airt"
-    seed_prompts = list(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
-    return seed_prompts
+    return list(SeedDataset.from_yaml_file(malware_path / "malware.prompt").get_values())
 
 
 @pytest.fixture
@@ -117,7 +111,7 @@ def mock_adversarial_target():
 
 
 @pytest.fixture
-def sample_objectives() -> List[str]:
+def sample_objectives() -> list[str]:
     """Create sample objectives for testing."""
     return ["test prompt 1", "test prompt 2"]
 
@@ -140,7 +134,7 @@ class TestCyberInitialization:
         # objectives are stored as _deprecated_objectives; _seed_groups is resolved lazily
         assert scenario._deprecated_objectives == sample_objectives
         assert scenario.name == "Cyber"
-        assert scenario.version == 1
+        assert scenario.VERSION == 1
 
     def test_init_with_default_objectives(self, mock_objective_scorer, malware_prompts, mock_memory_seed_groups):
         """Test initialization with default objectives."""
@@ -151,7 +145,7 @@ class TestCyberInitialization:
             # seed_groups are resolved lazily; _deprecated_objectives should be None
             assert scenario._deprecated_objectives is None
             assert scenario.name == "Cyber"
-            assert scenario.version == 1
+            assert scenario.VERSION == 1
 
     def test_init_with_default_scorer(self, mock_memory_seed_groups):
         """Test initialization with default scorer."""
@@ -351,7 +345,7 @@ class TestCyberProperties:
                 objective_scorer=mock_objective_scorer,
             )
 
-            assert scenario.version == 1
+            assert scenario.VERSION == 1
 
     @pytest.mark.asyncio
     async def test_no_target_duplication(self, mock_objective_target, mock_memory_seed_groups, mock_dataset_config):
@@ -364,7 +358,7 @@ class TestCyberProperties:
 
             # this works because TrueFalseCompositeScorer subclasses TrueFalseScorer,
             # but TrueFalseScorer itself (the type for ScorerConfig) does not have ._scorers.
-            scorer_target = scenario._scorer_config.objective_scorer._scorers[0]  # type: ignore
+            scorer_target = scenario._scorer_config.objective_scorer._scorers[0]  # type: ignore[arg-type]
             adversarial_target = scenario._adversarial_chat
 
             assert objective_target != scorer_target

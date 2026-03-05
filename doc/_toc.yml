@@ -14,6 +14,7 @@ chapters:
     - file: setup/1c_install_conda
     - file: setup/jupyter_setup
     - file: setup/populating_secrets
+    - file: setup/pyrit_conf
     - file: setup/use_azure_sql_db
   - file: contributing/README
     sections:
@@ -138,6 +139,7 @@ chapters:
       sections:
       - file: code/registry/1_class_registry
       - file: code/registry/2_instance_registry
+    - file: code/gui/0_gui
     - file: code/front_end/0_front_end
       sections:
       - file: code/front_end/1_pyrit_scan

@@ -28,7 +28,7 @@
 # Every scorer has a unique **identity hash** computed from its complete configuration:
 # - Scorer type (e.g., `SelfAskRefusalScorer`)
 # - System and user prompt templates
-# - Target model information (endpoint, model name)
+# - Target model information (model name)
 # - Temperature and other generation parameters
 # - Any scorer-specific configuration
 #
@@ -50,10 +50,10 @@ refusal_scorer = SelfAskRefusalScorer(chat_target=OpenAIChatTarget(temperature=0
 scorer_identity = refusal_scorer.get_identifier()
 print("Scorer Identity:")
 print(f"  Type: {scorer_identity.class_name}")
-print(
-    f"  System Prompt: {scorer_identity.system_prompt_template[:50] if scorer_identity.system_prompt_template else 'None'}..."
-)
-print(f"  Target Info: {scorer_identity.target_info}")
+system_prompt = scorer_identity.params.get("system_prompt_template")
+print(f"  System Prompt: {system_prompt[:50] if system_prompt else 'None'}...")
+prompt_target = scorer_identity.get_child("prompt_target")
+print(f"  Target Info: {prompt_target}")
 print(f"  Identity Hash: {scorer_identity.hash}")
 
 # %% [markdown]
@@ -109,6 +109,7 @@ print(f"  Identity Hash: {scorer_identity.hash}")
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import (
     SelfAskRefusalScorer,
@@ -116,11 +117,12 @@ from pyrit.score import (
 )
 
 # This is a simple objective scorer that only detects whether the response was a refusal
+gpt4o_endpoint = os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT")
 objective_scorer = TrueFalseInverterScorer(
     scorer=SelfAskRefusalScorer(
         chat_target=OpenAIChatTarget(
-            endpoint=os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT"),
-            api_key=os.environ.get("AZURE_OPENAI_GPT4O_KEY"),
+            endpoint=gpt4o_endpoint,
+            api_key=get_azure_openai_auth(gpt4o_endpoint),
             model_name=os.environ.get("AZURE_OPENAI_GPT4O_MODEL"),
         )
     )
@@ -148,13 +150,15 @@ else:
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.prompt_target import OpenAIChatTarget
 from pyrit.score import LikertScalePaths, SelfAskLikertScorer
 
+gpt4o_endpoint = os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT")
 harm_scorer = SelfAskLikertScorer(
     chat_target=OpenAIChatTarget(
-        endpoint=os.environ.get("AZURE_OPENAI_GPT4O_ENDPOINT"),
-        api_key=os.environ.get("AZURE_OPENAI_GPT4O_KEY"),
+        endpoint=gpt4o_endpoint,
+        api_key=get_azure_openai_auth(gpt4o_endpoint),
         model_name=os.environ.get("AZURE_OPENAI_GPT4O_MODEL"),
     ),
     likert_scale=LikertScalePaths.EXPLOITS_SCALE,
@@ -195,7 +199,7 @@ sorted_by_f1 = sorted(all_scorers, key=lambda x: x.metrics.f1_score, reverse=Tru
 
 print("Top 5 configurations by F1 Score:")
 print("-" * 80)
-for i, entry in enumerate(sorted_by_f1[:5], 1):
+for _i, entry in enumerate(sorted_by_f1[:5], 1):
     printer = ConsoleScorerPrinter()
     printer.print_objective_scorer(scorer_identifier=entry.scorer_identifier)
 
@@ -227,7 +231,7 @@ sorted_by_mae = sorted(all_harm_scorers, key=lambda x: x.metrics.mean_absolute_e
 
 print("Top configurations by Mean Absolute Error:")
 print("-" * 80)
-for i, e in enumerate(sorted_by_mae[:5], 1):
+for _i, e in enumerate(sorted_by_mae[:5], 1):
     printer = ConsoleScorerPrinter()
     printer.print_harm_scorer(scorer_identifier=e.scorer_identifier, harm_category="violence")
 
@@ -286,7 +290,7 @@ metrics = await refusal_scorer.evaluate_async(  # type: ignore
 )
 
 if metrics:
-    objective_metrics = cast(ObjectiveScorerMetrics, metrics)
+    objective_metrics = cast("ObjectiveScorerMetrics", metrics)
     print(f" Accuracy: {objective_metrics.accuracy}")
 else:
     raise RuntimeError("Evaluation failed, no metrics returned")
@@ -318,7 +322,7 @@ metrics = await likert_scorer.evaluate_async(  # type: ignore
 )
 
 if metrics:
-    harm_metrics = cast(HarmScorerMetrics, metrics)
+    harm_metrics = cast("HarmScorerMetrics", metrics)
     print(f'Metrics for harm category "{harm_metrics.harm_category}" created')
 else:
     raise RuntimeError("Evaluation failed, no metrics returned")

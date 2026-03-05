@@ -19,7 +19,10 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional
+
+from pyrit.setup import ConfigurationLoader
+from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
 
 try:
     import termcolor
@@ -29,16 +32,18 @@ except ImportError:
     HAS_TERMCOLOR = False
 
     # Create a dummy termcolor module for fallback
-    class termcolor:  # type: ignore
+    class termcolor:  # type: ignore[no-redef]  # noqa: N801
         """Dummy termcolor fallback for colored printing if termcolor is not installed."""
 
         @staticmethod
-        def cprint(text: str, color: str = None, attrs: list = None) -> None:  # type: ignore
+        def cprint(text: str, color: str = None, attrs: list = None) -> None:  # type: ignore[type-arg]
             """Print text without color."""
             print(text)
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     from pyrit.models.scenario_result import ScenarioResult
     from pyrit.registry import (
         InitializerMetadata,
@@ -66,31 +71,66 @@ class FrontendCore:
     def __init__(
         self,
         *,
-        database: str = SQLITE,
+        config_file: Optional[Path] = None,
+        database: Optional[str] = None,
         initialization_scripts: Optional[list[Path]] = None,
         initializer_names: Optional[list[str]] = None,
         env_files: Optional[list[Path]] = None,
-        log_level: str = "WARNING",
+        log_level: Optional[int] = None,
     ):
         """
         Initialize PyRIT context.
 
+        Configuration is loaded in the following order (later values override earlier):
+        1. Default config file (~/.pyrit/.pyrit_conf) if it exists
+        2. Explicit config_file argument if provided
+        3. Individual CLI arguments (database, initializers, etc.)
+
         Args:
+            config_file: Optional path to a YAML-formatted configuration file.
+                The file uses .pyrit_conf extension but is YAML format.
             database: Database type (InMemory, SQLite, or AzureSQL).
             initialization_scripts: Optional list of initialization script paths.
             initializer_names: Optional list of built-in initializer names to run.
             env_files: Optional list of environment file paths to load in order.
-            log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Defaults to WARNING.
+            log_level: Logging level constant (e.g., logging.WARNING). Defaults to logging.WARNING.
 
         Raises:
-            ValueError: If database or log_level are invalid.
+            ValueError: If database is invalid, or if config file is invalid.
+            FileNotFoundError: If an explicitly specified config_file does not exist.
         """
-        # Validate inputs
-        self._database = validate_database(database=database)
-        self._initialization_scripts = initialization_scripts
-        self._initializer_names = initializer_names
-        self._env_files = env_files
-        self._log_level = validate_log_level(log_level=log_level)
+        # Use provided log level or default to WARNING
+        self._log_level = log_level if log_level is not None else logging.WARNING
+
+        # Load configuration using ConfigurationLoader.load_with_overrides
+        try:
+            config = ConfigurationLoader.load_with_overrides(
+                config_file=config_file,
+                memory_db_type=database,
+                initializers=initializer_names,
+                initialization_scripts=[str(p) for p in initialization_scripts] if initialization_scripts else None,
+                env_files=[str(p) for p in env_files] if env_files else None,
+            )
+        except ValueError as e:
+            # Re-raise with user-friendly message for CLI users
+            error_msg = str(e)
+            if "memory_db_type" in error_msg:
+                raise ValueError(
+                    f"Invalid database type '{database}'. Must be one of: InMemory, SQLite, AzureSQL"
+                ) from e
+            raise
+
+        # Store the merged configuration
+        self._config = config
+
+        # Extract values from config for internal use
+        # Use canonical mapping from configuration_loader
+        self._database = _MEMORY_DB_TYPE_MAP[config.memory_db_type]
+        self._initialization_scripts = config._resolve_initialization_scripts()
+        self._initializer_names = (
+            [ic.name for ic in config._initializer_configs] if config._initializer_configs else None
+        )
+        self._env_files = config._resolve_env_files()
 
         # Lazy-loaded registries
         self._scenario_registry: Optional[ScenarioRegistry] = None
@@ -98,7 +138,7 @@ class FrontendCore:
         self._initialized = False
 
         # Configure logging
-        logging.basicConfig(level=getattr(logging, self._log_level))
+        logging.basicConfig(level=self._log_level)
 
     async def initialize_async(self) -> None:
         """Initialize PyRIT and load registries (heavy operation)."""
@@ -128,7 +168,7 @@ class FrontendCore:
         self._initialized = True
 
     @property
-    def scenario_registry(self) -> "ScenarioRegistry":
+    def scenario_registry(self) -> ScenarioRegistry:
         """
         Get the scenario registry. Must call await initialize_async() first.
 
@@ -143,7 +183,7 @@ class FrontendCore:
         return self._scenario_registry
 
     @property
-    def initializer_registry(self) -> "InitializerRegistry":
+    def initializer_registry(self) -> InitializerRegistry:
         """
         Get the initializer registry. Must call await initialize_async() first.
 
@@ -175,7 +215,7 @@ async def list_scenarios_async(*, context: FrontendCore) -> list[ScenarioMetadat
 
 async def list_initializers_async(
     *, context: FrontendCore, discovery_path: Optional[Path] = None
-) -> "Sequence[InitializerMetadata]":
+) -> Sequence[InitializerMetadata]:
     """
     List metadata for all available initializers.
 
@@ -208,7 +248,7 @@ async def run_scenario_async(
     dataset_names: Optional[list[str]] = None,
     max_dataset_size: Optional[int] = None,
     print_summary: bool = True,
-) -> "ScenarioResult":
+) -> ScenarioResult:
     """
     Run a scenario by name.
 
@@ -419,7 +459,7 @@ def format_scenario_metadata(*, scenario_metadata: ScenarioMetadata) -> None:
             print("    Default Datasets: None")
 
 
-def format_initializer_metadata(*, initializer_metadata: "InitializerMetadata") -> None:
+def format_initializer_metadata(*, initializer_metadata: InitializerMetadata) -> None:
     """
     Print formatted information about an initializer class.
 
@@ -462,15 +502,15 @@ def validate_database(*, database: str) -> str:
     return database
 
 
-def validate_log_level(*, log_level: str) -> str:
+def validate_log_level(*, log_level: str) -> int:
     """
-    Validate log level.
+    Validate log level and convert to logging constant.
 
     Args:
         log_level: Log level string (case-insensitive).
 
     Returns:
-        Validated log level in uppercase.
+        Validated log level as logging constant (e.g., logging.WARNING).
 
     Raises:
         ValueError: If log level is invalid.
@@ -479,7 +519,8 @@ def validate_log_level(*, log_level: str) -> str:
     level_upper = log_level.upper()
     if level_upper not in valid_levels:
         raise ValueError(f"Invalid log level: {log_level}. Must be one of: {', '.join(valid_levels)}")
-    return level_upper
+    level_value: int = getattr(logging, level_upper)
+    return level_value
 
 
 def validate_integer(value: str, *, name: str = "value", min_value: Optional[int] = None) -> int:
@@ -677,8 +718,8 @@ def get_default_initializer_discovery_path() -> Path:
     Returns:
         Path to the scenarios initializers directory.
     """
-    PYRIT_PATH = Path(__file__).parent.parent.resolve()
-    return PYRIT_PATH / "setup" / "initializers" / "scenarios"
+    pyrit_path = Path(__file__).parent.parent.resolve()
+    return pyrit_path / "setup" / "initializers" / "scenarios"
 
 
 async def print_scenarios_list_async(*, context: FrontendCore) -> int:
@@ -734,6 +775,11 @@ async def print_initializers_list_async(*, context: FrontendCore, discovery_path
 
 # Shared argument help text
 ARG_HELP = {
+    "config_file": (
+        "Path to a YAML configuration file. Allows specifying database, initializers (with args), "
+        "initialization scripts, and env files. CLI arguments override config file values. "
+        "If not specified, ~/.pyrit/.pyrit_conf is loaded if it exists."
+    ),
     "initializers": "Built-in initializer names to run before the scenario (e.g., openai_objective_target)",
     "initialization_scripts": "Paths to custom Python initialization scripts to run before the scenario",
     "env_files": "Paths to environment files to load in order (e.g., .env.production .env.local). Later files "
@@ -768,7 +814,7 @@ def parse_run_arguments(*, args_string: str) -> dict[str, Any]:
             - max_retries: Optional[int]
             - memory_labels: Optional[dict[str, str]]
             - database: Optional[str]
-            - log_level: Optional[str]
+            - log_level: Optional[int]
             - dataset_names: Optional[list[str]]
             - max_dataset_size: Optional[int]
 

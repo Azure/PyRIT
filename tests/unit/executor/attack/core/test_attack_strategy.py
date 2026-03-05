@@ -13,7 +13,7 @@ from pyrit.executor.attack.core.attack_strategy import (
     _DefaultAttackStrategyEventHandler,
 )
 from pyrit.executor.core import StrategyEvent, StrategyEventData
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.central_memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -23,13 +23,11 @@ from pyrit.models import (
 from pyrit.prompt_target import PromptTarget
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -66,16 +64,14 @@ def sample_attack_context():
 @pytest.fixture
 def sample_attack_result():
     """Create a sample AttackResult for testing"""
-    result = AttackResult(
+    return AttackResult(
         conversation_id="test-conversation-id",
         objective="Test objective",
-        attack_identifier={"name": "test_attack"},
         outcome=AttackOutcome.SUCCESS,
         outcome_reason="Test successful",
         execution_time_ms=0,
         executed_turns=1,
     )
-    return result
 
 
 @pytest.fixture
@@ -109,16 +105,14 @@ def mock_attack_strategy():
             pass
 
         async def _perform_async(self, *, context):
-            result = AttackResult(
+            return AttackResult(
                 conversation_id="test-conversation-id",
                 objective="Test objective",
-                attack_identifier={"name": "test_attack"},
                 outcome=AttackOutcome.SUCCESS,
                 outcome_reason="Test successful",
                 execution_time_ms=0,
                 executed_turns=1,
             )
-            return result
 
         async def _teardown_async(self, *, context):
             pass
@@ -144,7 +138,6 @@ class TestAttackStrategyInitialization:
                 return AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     execution_time_ms=0,
@@ -176,7 +169,6 @@ class TestAttackStrategyInitialization:
                 return AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     execution_time_ms=0,
@@ -208,7 +200,6 @@ class TestAttackStrategyInitialization:
                     return AttackResult(
                         conversation_id="test-conversation-id",
                         objective="Test objective",
-                        attack_identifier={"name": "test_attack"},
                         outcome=AttackOutcome.SUCCESS,
                         outcome_reason="Test successful",
                         execution_time_ms=0,
@@ -494,15 +485,13 @@ class TestAttackStrategyIntegration:
                 pass
 
             async def _perform_async(self, *, context):
-                result = AttackResult(
+                return AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     executed_turns=1,
                 )
-                return result
 
             async def _teardown_async(self, *, context):
                 pass
@@ -539,16 +528,14 @@ class TestAttackStrategyIntegration:
                 pass
 
             async def _perform_async(self, *, context):
-                result = AttackResult(
+                return AttackResult(
                     conversation_id="test-conversation-id",
                     objective="Test objective",
-                    attack_identifier={"name": "test_attack"},
                     outcome=AttackOutcome.SUCCESS,
                     outcome_reason="Test successful",
                     execution_time_ms=0,
                     executed_turns=1,
                 )
-                return result
 
             async def _teardown_async(self, *, context):
                 pass

@@ -3,10 +3,11 @@
 
 import json
 import logging
-from typing import Any, Callable, Literal, Optional, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any, Literal, Optional
 
 from pyrit.common import default_values, net_utility
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
     MessagePiece,
@@ -47,6 +48,7 @@ class PromptShieldTarget(PromptTarget):
 
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_ENDPOINT"
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_KEY"
+
     _endpoint: str
     _api_key: str | Callable[[], str] | None
     _api_version: str
@@ -94,15 +96,15 @@ class PromptShieldTarget(PromptTarget):
 
         self._force_entry_field: PromptShieldEntryField = field
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with Prompt Shield-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "api_version": self._api_version,
                 "force_entry_field": self._force_entry_field if self._force_entry_field else None,
             },

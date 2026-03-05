@@ -4,21 +4,25 @@
 import asyncio
 import json
 import logging
+import pathlib
 import uuid
 from enum import IntEnum
 from typing import Any, Optional, Union
 
+import httpx
 import websockets
 from websockets.exceptions import InvalidStatus
 
 from pyrit.auth import CopilotAuthenticator, ManualCopilotAuthenticator
+from pyrit.common import convert_local_image_to_data_url
 from pyrit.exceptions import (
     EmptyResponseException,
     pyrit_target_retry,
 )
-from pyrit.identifiers import TargetIdentifier
-from pyrit.models import Message, construct_response_from_request
+from pyrit.identifiers import ComponentIdentifier
+from pyrit.models import DataTypeSerializer, Message, MessagePiece, construct_response_from_request
 from pyrit.prompt_target import PromptTarget, limit_requests_per_minute
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +71,10 @@ class WebSocketCopilotTarget(PromptTarget):
         The free version of Copilot is not compatible.
     """
 
-    SUPPORTED_DATA_TYPES = {"text"}
+    SUPPORTED_DATA_TYPES = {"text", "image_path"}
     RESPONSE_TIMEOUT_SECONDS: int = 60
     CONNECTION_TIMEOUT_SECONDS: int = 30
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=True)
 
     def __init__(
         self,
@@ -79,6 +84,7 @@ class WebSocketCopilotTarget(PromptTarget):
         model_name: str = "copilot",
         response_timeout_seconds: int = RESPONSE_TIMEOUT_SECONDS,
         authenticator: Optional[Union[CopilotAuthenticator, ManualCopilotAuthenticator]] = None,
+        capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the WebSocketCopilotTarget.
@@ -92,6 +98,8 @@ class WebSocketCopilotTarget(PromptTarget):
             authenticator (Optional[Union[CopilotAuthenticator, ManualCopilotAuthenticator]]): Authenticator
                 instance. Supports both ``CopilotAuthenticator`` and ``ManualCopilotAuthenticator``.
                 If None, a new ``CopilotAuthenticator`` instance will be created with default settings.
+            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+                this target instance. If None, uses the class-level defaults. Defaults to None.
 
         Raises:
             ValueError: If ``response_timeout_seconds`` is not a positive integer.
@@ -114,17 +122,18 @@ class WebSocketCopilotTarget(PromptTarget):
             max_requests_per_minute=max_requests_per_minute,
             endpoint=self._websocket_base_url,
             model_name=model_name,
+            capabilities=capabilities,
         )
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with WebSocketCopilot-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            target_specific_params={
+            params={
                 "response_timeout_seconds": self._response_timeout_seconds,
             },
         )
@@ -229,10 +238,12 @@ class WebSocketCopilotTarget(PromptTarget):
             f"X-SessionId={session_id}",
             f"ConversationId={copilot_conversation_id}",
             f"access_token={access_token}",
-            "X-variants=feature.includeExternal,feature.AssistantConnectorsContentSources,"
-            "3S.BizChatWprBoostAssistant,3S.EnableMEFromSkillDiscovery,feature.EnableAuthErrorMessage,"
-            "EnableRequestPlugins,feature.EnableSensitivityLabels,feature.IsEntityAnnotationsEnabled,"
-            "EnableUnsupportedUrlDetector",
+            (
+                "X-variants=feature.includeExternal,feature.AssistantConnectorsContentSources,"
+                "3S.BizChatWprBoostAssistant,3S.EnableMEFromSkillDiscovery,feature.EnableAuthErrorMessage,"
+                "EnableRequestPlugins,feature.EnableSensitivityLabels,feature.IsEntityAnnotationsEnabled,"
+                "EnableUnsupportedUrlDetector"
+            ),
             "source=%22officeweb%22",
             "scenario=OfficeWebIncludedCopilot",
         ]
@@ -241,19 +252,156 @@ class WebSocketCopilotTarget(PromptTarget):
         logger.debug(f"WebSocket URL: {websocket_url}")
         return websocket_url
 
-    def _build_prompt_message(
-        self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
+    async def _upload_image_async(self, *, image_path: str, data_url: str, conversation_id: str) -> str:
+        """
+        Upload an image to Copilot's file upload endpoint (/m365Copilot/UploadFile).
+
+        This method replicates the image upload process performed by the Copilot web interface.
+        Images are uploaded to Copilot's API endpoint and returned with a docId, which is then
+        used in the WebSocket message annotations to reference the uploaded file.
+
+        Args:
+            image_path (str): Path to a local image file.
+            data_url (str): Base64-encoded data URL of the image.
+            conversation_id (str): The Copilot conversation ID.
+
+        Returns:
+            str: The uploaded file ID (docId) returned by the Copilot API.
+
+        Raises:
+            RuntimeError: If the upload fails or returns an unexpected response.
+        """
+        upload_url = "https://substrate.office.com/m365Copilot/UploadFile"
+        access_token = await self._authenticator.get_token_async()
+
+        payload = {
+            "scenario": "UploadImage",
+            "conversationId": conversation_id,
+            "FileBase64": data_url,
+            "optionsSets": ["cwcgptvsan", "flux_v3_gptv_enable_upload_multi_image_in_turn_wo_ch"],
+        }
+
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "X-Scenario": "OfficeWebIncludedCopilot",
+                "X-Variants": "feature.EnableImageSupportInUploadFile",
+                "Origin": "https://m365.cloud.microsoft",
+                "Referer": "https://m365.cloud.microsoft/",
+            }
+
+            logger.debug(f"Uploading image to Copilot: {image_path}")
+            response = await client.post(upload_url, headers=headers, data=payload, timeout=16.0)
+
+            if response.status_code != 200:
+                raise RuntimeError(f"Failed to upload image. Status: {response.status_code}, Response: {response.text}")
+
+            response_data = response.json()
+            logger.debug(f"Upload response: {response_data}")
+
+            doc_id = response_data.get("docId")  # this is what we use as the annotation ID
+            if not doc_id:
+                raise RuntimeError(f"No docId in upload response. Expected 'docId' field. Response: {response_data}")
+
+            logger.info(f"Successfully uploaded image: {image_path} -> docId={doc_id}")
+            return str(doc_id)
+
+    async def _process_image_piece_async(self, *, image_path: str, copilot_conversation_id: str) -> dict[str, Any]:
+        """
+        Process an image piece by uploading it and creating a message annotation.
+
+        Args:
+            image_path (str): Path to the local image file.
+            copilot_conversation_id (str): The Copilot conversation identifier.
+
+        Returns:
+            dict: Message annotation structure for the uploaded image.
+        """
+        data_url = await convert_local_image_to_data_url(image_path)
+
+        normalized_image_path = image_path.replace("\\", "/")
+        file_name = pathlib.Path(normalized_image_path).name
+        file_type = pathlib.Path(file_name).suffix.lstrip(".").lower() or "png"
+
+        doc_id = await self._upload_image_async(
+            image_path=image_path,
+            conversation_id=copilot_conversation_id,
+            data_url=data_url,
+        )
+
+        # Create message annotation with uploaded docId (no URL field)
+        # Structure matches what browser sends when a user uploads an image manually
+        annotation = {
+            "id": doc_id,  # from response to /m365Copilot/UploadFile
+            "messageAnnotationMetadata": {
+                "@type": "File",
+                "annotationType": "File",
+                "fileType": file_type,
+                "fileName": file_name,
+            },
+            "messageAnnotationType": "ImageFile",
+        }
+        logger.info(f"Created annotation for image with docId: {annotation}")
+        return annotation
+
+    async def _build_prompt_message(
+        self,
+        *,
+        message_pieces: list[MessagePiece],
+        session_id: str,
+        copilot_conversation_id: str,
+        is_start_of_session: bool,
     ) -> dict[str, Any]:
         """
         Construct the prompt message payload for Copilot WebSocket API.
 
         Builds a comprehensive message structure following Copilot's expected format,
-        including session metadata, feature flags, and the user's prompt text.
+        including session metadata, feature flags, and the user's prompt content (text and/or images).
+
+        Args:
+            message_pieces (list[MessagePiece]): List of message pieces containing text and/or images.
+            session_id (str): Copilot session identifier.
+            copilot_conversation_id (str): Copilot conversation identifier.
+            is_start_of_session (bool): Whether this is the first message in the conversation.
 
         Returns:
             dict: The complete message payload ready to be sent via WebSocket.
         """
         request_id = trace_id = uuid.uuid4().hex
+
+        text_parts: list[str] = []
+        message_annotations: list[dict[str, Any]] = []
+
+        for _idx, piece in enumerate(message_pieces):
+            if piece.converted_value_data_type == "text":
+                text_parts.append(piece.converted_value)
+
+            elif piece.converted_value_data_type == "image_path":
+                annotation = await self._process_image_piece_async(
+                    image_path=piece.converted_value,
+                    copilot_conversation_id=copilot_conversation_id,
+                )
+                message_annotations.append(annotation)
+
+        prompt_text = "\n".join(text_parts) if text_parts else ""  # combine text parts with newlines
+
+        message_content: dict[str, Any] = {
+            "author": "user",
+            "inputMethod": "Keyboard",
+            "text": prompt_text,
+            "entityAnnotationTypes": ["People", "File", "Event", "Email", "TeamsMessage"],
+            "requestId": request_id,
+            "locationInfo": {"timeZoneOffset": 0, "timeZone": "UTC"},
+            "locale": "en-us",
+            "messageType": "Chat",
+            "experienceType": "Default",
+            "adapativeCards": [],
+            "clientPreferences": {},
+        }
+
+        if message_annotations:  # add images only if previously uploaded
+            message_content["messageAnnotations"] = message_annotations
+
         result = {
             "arguments": [
                 {
@@ -300,17 +448,7 @@ class WebSocketCopilotTarget(PromptTarget):
                     "isStartOfSession": is_start_of_session,
                     "productThreadType": "Office",
                     "clientInfo": {"clientPlatform": "web"},
-                    "message": {
-                        "author": "user",
-                        "inputMethod": "Keyboard",
-                        "text": prompt,
-                        "entityAnnotationTypes": ["People", "File", "Event", "Email", "TeamsMessage"],
-                        "requestId": request_id,
-                        "locationInfo": {"timeZoneOffset": 0, "timeZone": "UTC"},
-                        "locale": "en-US",
-                        "messageType": "Chat",
-                        "experienceType": "Default",
-                    },
+                    "message": message_content,
                     "plugins": [],
                 }
             ],
@@ -323,7 +461,12 @@ class WebSocketCopilotTarget(PromptTarget):
         return result
 
     async def _connect_and_send(
-        self, *, prompt: str, session_id: str, copilot_conversation_id: str, is_start_of_session: bool
+        self,
+        *,
+        message_pieces: list[MessagePiece],
+        session_id: str,
+        copilot_conversation_id: str,
+        is_start_of_session: bool,
     ) -> str:
         """
         Establish WebSocket connection, send prompt, and await response.
@@ -332,7 +475,7 @@ class WebSocketCopilotTarget(PromptTarget):
         until it receives either FINAL_CONTENT (success), STREAM_END, or UNKNOWN (error).
 
         Args:
-            prompt (str): The user prompt text to send.
+            message_pieces (list[MessagePiece]): List of message pieces containing text and/or images.
             session_id (str): Copilot session identifier.
             copilot_conversation_id (str): Copilot conversation identifier.
             is_start_of_session (bool): Whether this is the first message in the conversation.
@@ -351,8 +494,8 @@ class WebSocketCopilotTarget(PromptTarget):
 
         inputs = [
             {"protocol": "json", "version": 1},  # the handshake message, we expect PING in response
-            self._build_prompt_message(  # the actual user prompt, we expect FINAL_CONTENT in response
-                prompt=prompt,
+            await self._build_prompt_message(  # the actual user prompt, we expect FINAL_CONTENT in response
+                message_pieces=message_pieces,
                 session_id=session_id,
                 copilot_conversation_id=copilot_conversation_id,
                 is_start_of_session=is_start_of_session,
@@ -371,16 +514,16 @@ class WebSocketCopilotTarget(PromptTarget):
 
                 is_user_input = input_msg.get("type") == CopilotMessageType.USER_PROMPT
 
-                MAX_MESSAGE_ITERATIONS = 1000
+                max_message_iterations = 1000
                 iteration_count = 0
                 stop_polling = False
 
                 while not stop_polling:
                     # Prevent infinite loops (e.g. if Copilot somehow never sends a terminating message)
                     iteration_count += 1
-                    if iteration_count > MAX_MESSAGE_ITERATIONS:
+                    if iteration_count > max_message_iterations:
                         raise RuntimeError(
-                            f"Exceeded maximum message iterations ({MAX_MESSAGE_ITERATIONS}) "
+                            f"Exceeded maximum message iterations ({max_message_iterations}) "
                             "while waiting for Copilot response."
                         )
 
@@ -392,7 +535,7 @@ class WebSocketCopilotTarget(PromptTarget):
                     except asyncio.TimeoutError:
                         raise TimeoutError(
                             f"Timed out waiting for Copilot response after {self._response_timeout_seconds} seconds."
-                        )
+                        ) from None
 
                     if raw_message is None:
                         raise RuntimeError(
@@ -434,15 +577,23 @@ class WebSocketCopilotTarget(PromptTarget):
             message (Message): The message to validate.
 
         Raises:
-            ValueError: If message contains more than one piece or non-text content.
+            ValueError: If message contains unsupported data types or invalid image formats.
         """
-        n_pieces = len(message.message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
+        for piece in message.message_pieces:
+            piece_type = piece.converted_value_data_type
+            if piece_type not in self.SUPPORTED_DATA_TYPES:
+                supported_types = ", ".join(sorted(self.SUPPORTED_DATA_TYPES))
+                raise ValueError(
+                    f"This target supports only the following data types: {supported_types}. Received: {piece_type}."
+                )
 
-        piece_type = message.message_pieces[0].converted_value_data_type
-        if piece_type != "text":
-            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
+            if piece_type == "image_path":
+                mime_type = DataTypeSerializer.get_mime_type(piece.converted_value)
+                if not mime_type.startswith("image/"):
+                    raise ValueError(
+                        f"Invalid image format for image_path: {piece.converted_value}. "
+                        f"Detected MIME type: {mime_type}."
+                    )
 
     def _is_start_of_session(self, *, conversation_id: str) -> bool:
         """
@@ -502,9 +653,8 @@ class WebSocketCopilotTarget(PromptTarget):
             RuntimeError: If any other error occurs during WebSocket communication.
         """
         self._validate_request(message=message)
-        request_piece = message.message_pieces[0]
 
-        pyrit_conversation_id = request_piece.conversation_id
+        pyrit_conversation_id = message.message_pieces[0].conversation_id
         is_start_of_session = self._is_start_of_session(conversation_id=pyrit_conversation_id)
 
         session_id, copilot_conversation_id = self._generate_consistent_copilot_ids(
@@ -512,14 +662,14 @@ class WebSocketCopilotTarget(PromptTarget):
         )
 
         logger.info(
-            f"Sending prompt to WebSocketCopilotTarget: {request_piece.converted_value} "
-            f"(conversation_id={pyrit_conversation_id}, is_start={is_start_of_session})"
+            f"Sending prompt to WebSocketCopilotTarget "
+            f"(conversation_id={pyrit_conversation_id}, is_start={is_start_of_session}, "
+            f"pieces={len(message.message_pieces)})"
         )
 
         try:
-            prompt_text = request_piece.converted_value
             response_text = await self._connect_and_send(
-                prompt=prompt_text,
+                message_pieces=list(message.message_pieces),
                 session_id=session_id,
                 copilot_conversation_id=copilot_conversation_id,
                 is_start_of_session=is_start_of_session,
@@ -531,7 +681,7 @@ class WebSocketCopilotTarget(PromptTarget):
             logger.info(f"Received response from WebSocketCopilotTarget (length: {len(response_text)} chars)")
 
             response_entry = construct_response_from_request(
-                request=request_piece, response_text_pieces=[response_text]
+                request=message.message_pieces[0], response_text_pieces=[response_text]
             )
 
             return [response_entry]

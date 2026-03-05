@@ -59,9 +59,11 @@ class ManualCopilotAuthenticator(Authenticator):
         self._access_token = resolved_token
 
         try:
-            self._claims = jwt.decode(resolved_token, algorithms=["RS256"], options={"verify_signature": False})
+            self._claims: dict[str, Any] = jwt.decode(
+                resolved_token, algorithms=["RS256"], options={"verify_signature": False}
+            )
         except jwt.exceptions.DecodeError as e:
-            raise ValueError(f"Failed to decode access_token as JWT: {e}")
+            raise ValueError(f"Failed to decode access_token as JWT: {e}") from e
 
         required_claims = ["tid", "oid"]
         missing_claims = [claim for claim in required_claims if claim not in self._claims]
@@ -97,7 +99,7 @@ class ManualCopilotAuthenticator(Authenticator):
         Returns:
             dict[str, Any]: The JWT claims decoded from the access token.
         """
-        return self._claims  # type: ignore
+        return self._claims
 
     async def refresh_token_async(self) -> str:
         """

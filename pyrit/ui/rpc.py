@@ -3,10 +3,11 @@
 
 import logging
 import time
+from collections.abc import Callable
 from threading import Semaphore, Thread
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers.component_identifier import ComponentIdentifier
 from pyrit.models import MessagePiece, Score
 from pyrit.ui.app import is_app_running, launch_app
 
@@ -91,13 +92,11 @@ class AppRPCServer:
             self._client_ready_semaphore.release()
 
         def is_client_ready(self) -> bool:
-            if self._callback_score_prompt is None:
-                return False
-            return True
+            return self._callback_score_prompt is not None
 
         def send_score_prompt(self, prompt: MessagePiece, task: Optional[str] = None) -> None:
             if not self.is_client_ready():
-                raise RPCClientNotReadyException()
+                raise RPCClientNotReadyException
             self._callback_score_prompt(prompt, task)
 
         def is_ping_missed(self) -> bool:
@@ -130,7 +129,7 @@ class AppRPCServer:
         # Check if the server is already running by checking if the port is already in use.
         # If the port is already in use, throw an exception.
         if self._is_instance_running():
-            raise RPCAlreadyRunningException()
+            raise RPCAlreadyRunningException
 
         self._score_received_semaphore = Semaphore(0)
         self._client_ready_semaphore = Semaphore(0)
@@ -212,14 +211,14 @@ class AppRPCServer:
 
         self._score_received_semaphore.acquire()
         if not self._server_is_running:
-            raise RPCServerStoppedException()
+            raise RPCServerStoppedException
 
         score_ref = self._rpc_service.pop_score_received()
         self._client_ready_semaphore.release()
         if score_ref is None:
             return None
         # Pass instance variables of reflected RPyC Score object as args to PyRIT Score object
-        score = Score(
+        return Score(
             score_value=score_ref.score_value,
             score_type=score_ref.score_type,
             score_category=score_ref.score_category,
@@ -227,15 +226,11 @@ class AppRPCServer:
             score_rationale=score_ref.score_rationale,
             score_metadata=score_ref.score_metadata,
             message_piece_id=score_ref.message_piece_id,
-            scorer_class_identifier=ScorerIdentifier(
+            scorer_class_identifier=ComponentIdentifier(
                 class_name="RPCScorer",
                 class_module="pyrit.ui.rpc",
-                class_description="Score received from RPC client",
-                identifier_type="instance",
             ),
         )
-
-        return score
 
     def wait_for_client(self) -> None:
         """
@@ -248,7 +243,7 @@ class AppRPCServer:
         self._client_ready_semaphore.acquire()
 
         if not self._server_is_running:
-            raise RPCServerStoppedException()
+            raise RPCServerStoppedException
 
         logger.info("Client is ready")
 

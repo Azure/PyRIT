@@ -21,12 +21,11 @@ from pyrit.prompt_target import OpenAIResponseTarget
 @pytest.fixture
 def response_target(patch_central_database):
     """Create a test OpenAIResponseTarget."""
-    target = OpenAIResponseTarget(
+    return OpenAIResponseTarget(
         model_name="gpt-4",
         endpoint="https://mock.azure.com",
         api_key="mock-key",
     )
-    return target
 
 
 def create_mock_function_call_response(call_id: str, function_name: str, arguments: dict) -> MagicMock:
@@ -311,12 +310,10 @@ async def test_call_id_consistency_across_chain(response_target, patch_central_d
 
         # Verify each output follows its corresponding function_call
         for i, item in enumerate(third_call):
-            if item.get("type") == "function_call":
-                # Next item should be the output for this call
-                if i + 1 < len(third_call):
-                    next_item = third_call[i + 1]
-                    if next_item.get("type") == "function_call_output":
-                        assert item["call_id"] == next_item["call_id"]
+            if item.get("type") == "function_call" and i + 1 < len(third_call):
+                next_item = third_call[i + 1]
+                if next_item.get("type") == "function_call_output":
+                    assert item["call_id"] == next_item["call_id"]
 
 
 @pytest.mark.asyncio

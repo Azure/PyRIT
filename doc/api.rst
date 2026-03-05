@@ -272,14 +272,12 @@ API Reference
     :toctree: _autosummary/
 
     class_name_to_snake_case
-    ConverterIdentifier
+    ComponentIdentifier
+    compute_eval_hash
+    config_hash
+    EvaluationIdentity
     Identifiable
-    Identifier
-    IdentifierT
-    IdentifierType
-    ScorerIdentifier
     snake_case_to_class_name
-    TargetIdentifier
 
 :py:mod:`pyrit.memory`
 ======================
@@ -342,6 +340,7 @@ API Reference
     ChatMessageListDictContent
     construct_response_from_request
     ConversationReference
+    ConversationStats
     ConversationType
     DataTypeSerializer
     data_serializer_factory
@@ -374,6 +373,7 @@ API Reference
     ScoreType
     Seed
     SeedAttackGroup
+    SeedAttackTechniqueGroup
     SeedDataset
     SeedGroup
     SeedObjective
@@ -408,7 +408,11 @@ API Reference
     AsciiSmugglerConverter
     AskToDecodeConverter
     AtbashConverter
+    AudioEchoConverter
     AudioFrequencyConverter
+    AudioSpeedConverter
+    AudioVolumeConverter
+    AudioWhiteNoiseConverter
     AzureSpeechAudioToTextConverter
     AzureSpeechTextToAudioConverter
     Base2048Converter
@@ -433,6 +437,7 @@ API Reference
     ImageCompressionConverter
     IndexSelectionStrategy
     InsertPunctuationConverter
+    JsonStringConverter
     KeywordSelectionStrategy
     LeetspeakConverter
     LLMGenericTextConverter
@@ -476,6 +481,7 @@ API Reference
     UrlConverter
     VariationConverter
     VariationSelectorSmugglerConverter
+    WordDocConverter
     WordIndexSelectionStrategy
     WordKeywordSelectionStrategy
     WordPositionSelectionStrategy
@@ -538,6 +544,7 @@ API Reference
     PromptShieldTarget
     PromptTarget
     RealtimeTarget
+    TargetCapabilities
     TextTarget
     WebSocketCopilotTarget
 
@@ -552,6 +559,8 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    AudioFloatScaleScorer
+    AudioTrueFalseScorer
     AzureContentFilterScorer
     BatchScorer
     ConsoleScorerPrinter
@@ -583,6 +592,7 @@ API Reference
     PlagiarismScorer
     PromptShieldScorer
     QuestionAnswerScorer
+    RefusalScorerPaths
     RegistryUpdateBehavior
     Scorer
     ScorerEvalDatasetFiles
@@ -703,6 +713,7 @@ API Reference
 
     PyRITInitializer
     AIRTInitializer
+    AIRTTargetInitializer
     SimpleInitializer
     LoadDefaultDatasets
     ScenarioObjectiveListInitializer

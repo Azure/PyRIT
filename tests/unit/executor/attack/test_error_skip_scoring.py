@@ -7,6 +7,7 @@ This ensures consistent error handling across all attack strategies.
 """
 
 import uuid
+from contextlib import suppress
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -20,30 +21,26 @@ from pyrit.executor.attack import (
 )
 from pyrit.executor.attack.core import AttackAdversarialConfig, AttackScoringConfig
 from pyrit.executor.attack.multi_turn.tree_of_attacks import TAPAttackScoringConfig
-from pyrit.identifiers import ScorerIdentifier, TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece, SeedGroup, SeedPrompt
 from pyrit.prompt_target import PromptTarget
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
 from pyrit.score import FloatScaleThresholdScorer, TrueFalseScorer
 
 
-def _mock_target_id(name: str = "MockTarget") -> TargetIdentifier:
-    """Helper to create TargetIdentifier for tests."""
-    return TargetIdentifier(
+def _mock_target_id(name: str = "MockTarget") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test_module",
-        class_description="",
-        identifier_type="instance",
     )
 
 
-def _mock_scorer_id(name: str = "MockScorer") -> ScorerIdentifier:
-    """Helper to create ScorerIdentifier for tests."""
-    return ScorerIdentifier(
+def _mock_scorer_id(name: str = "MockScorer") -> ComponentIdentifier:
+    """Helper to create ComponentIdentifier for tests."""
+    return ComponentIdentifier(
         class_name=name,
         class_module="test_module",
-        class_description="",
-        identifier_type="instance",
     )
 
 
@@ -237,11 +234,8 @@ async def test_attack_executor_skips_scoring_on_error(
             mock_score.return_value = {"objective_scores": [], "auxiliary_scores": []}
 
             # Execute attack
-            try:
+            with suppress(Exception):
                 await attack.execute_async(**execute_kwargs_func())
-            except Exception:
-                # May fail due to mocking complexity, we just care about scoring behavior
-                pass
 
             # Verify scoring was called with skip_on_error_result=True if it was called
             if mock_score.called:

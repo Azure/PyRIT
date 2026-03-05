@@ -97,7 +97,21 @@ After pushing the branch to remote, check the release branch to make sure it loo
 ## 5. Build Package
 
 You'll need the build package to build the project. If it’s not already installed, install it `pip install build`.
+### Build the Frontend
 
+The PyRIT package includes a web-based frontend that must be built before packaging. This requires Node.js and npm to be installed.
+
+Run the prepare script to build the frontend and copy it into the package structure:
+
+```bash
+python build_scripts/prepare_package.py
+```
+
+This will:
+1. Run `npm install` and `npm run build` in the `frontend/` directory
+2. Copy the built assets from `frontend/dist/` to `pyrit/backend/frontend/`. Double check to make sure the files exist after running the `prepare_package.py` script. This should at least include index.html, an `assets` folder with `js` and `css` files.
+
+### Build the Python Package
 To build the package wheel and archive for PyPI run
 
 ```bash

@@ -1,14 +1,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import uuid
-from typing import MutableSequence
+from collections.abc import MutableSequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from unit.mocks import get_sample_conversations, openai_chat_response_json_dict
 
 from pyrit.executor.attack.core.attack_strategy import AttackStrategy
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIChatTarget
 
@@ -39,11 +39,10 @@ def mock_attack_strategy():
     strategy = MagicMock(spec=AttackStrategy)
     strategy.execute_async = AsyncMock()
     strategy.execute_with_context_async = AsyncMock()
-    strategy.get_identifier.return_value = {
-        "__type__": "TestAttack",
-        "__module__": "pyrit.executor.attack.test_attack",
-        "id": str(uuid.uuid4()),
-    }
+    strategy.get_identifier.return_value = ComponentIdentifier(
+        class_name="TestAttack",
+        class_module="pyrit.executor.attack.test_attack",
+    )
     return strategy
 
 
@@ -136,16 +135,18 @@ async def test_send_prompt_async_with_delay(
     mock_choice.message = mock_message
     mock_response.choices = [mock_choice]
 
-    with patch.object(
-        azure_openai_target._async_client.chat.completions, "create", new_callable=AsyncMock
-    ) as mock_create:
-        with patch("asyncio.sleep") as mock_sleep:
-            mock_create.return_value = mock_response
+    with (
+        patch.object(
+            azure_openai_target._async_client.chat.completions, "create", new_callable=AsyncMock
+        ) as mock_create,
+        patch("asyncio.sleep") as mock_sleep,
+    ):
+        mock_create.return_value = mock_response
 
-            request = sample_entries[0]
-            request.converted_value = "hi, I am a victim chatbot, how can I help?"
+        request = sample_entries[0]
+        request.converted_value = "hi, I am a victim chatbot, how can I help?"
 
-            await azure_openai_target.send_prompt_async(message=Message(message_pieces=[request]))
+        await azure_openai_target.send_prompt_async(message=Message(message_pieces=[request]))
 
-            mock_create.assert_called_once()
-            mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute
+        mock_create.assert_called_once()
+        mock_sleep.assert_called_once_with(6)  # 60/max_requests_per_minute

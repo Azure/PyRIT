@@ -3,8 +3,9 @@
 
 import json
 import os
+from collections.abc import MutableSequence
 from tempfile import NamedTemporaryFile
-from typing import Any, MutableSequence
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,6 +22,7 @@ from pyrit.exceptions.exception_classes import (
     PyritException,
     RateLimitException,
 )
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory.memory_interface import MemoryInterface
 from pyrit.models import Message, MessagePiece
 from pyrit.models.json_response_config import _JsonResponseConfig
@@ -116,25 +118,22 @@ def openai_response_json() -> dict:
 
 
 def test_init_with_no_deployment_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIResponseTarget()
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIResponseTarget()
 
 
 def test_init_with_no_endpoint_uri_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIResponseTarget(
-                model_name="gpt-4",
-                endpoint="",
-                api_key="xxxxx",
-            )
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIResponseTarget(
+            model_name="gpt-4",
+            endpoint="",
+            api_key="xxxxx",
+        )
 
 
 def test_init_with_no_additional_request_headers_var_raises():
-    with patch.dict(os.environ, {}, clear=True):
-        with pytest.raises(ValueError):
-            OpenAIResponseTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
+    with patch.dict(os.environ, {}, clear=True), pytest.raises(ValueError):
+        OpenAIResponseTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
 @pytest.mark.asyncio()
@@ -183,13 +182,13 @@ async def test_build_input_for_multi_modal(target: OpenAIResponseTarget):
 
     assert len(messages) == 3
     assert messages[0]["role"] == "user"
-    assert messages[0]["content"][0]["type"] == "input_text"  # type: ignore
-    assert messages[0]["content"][1]["type"] == "input_image"  # type: ignore
+    assert messages[0]["content"][0]["type"] == "input_text"  # type: ignore[method-assign]
+    assert messages[0]["content"][1]["type"] == "input_image"  # type: ignore[method-assign]
     assert messages[1]["role"] == "assistant"
-    assert messages[1]["content"][0]["type"] == "output_text"  # type: ignore
+    assert messages[1]["content"][0]["type"] == "output_text"  # type: ignore[method-assign]
     assert messages[2]["role"] == "user"
-    assert messages[2]["content"][0]["type"] == "input_text"  # type: ignore
-    assert messages[2]["content"][1]["type"] == "input_image"  # type: ignore
+    assert messages[2]["content"][0]["type"] == "input_text"  # type: ignore[method-assign]
+    assert messages[2]["content"][1]["type"] == "input_image"  # type: ignore[method-assign]
 
     os.remove(image_request.original_value)
 
@@ -317,8 +316,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -328,8 +327,8 @@ async def test_send_prompt_async_empty_response_adds_to_memory(
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -412,8 +411,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -423,8 +422,8 @@ async def test_send_prompt_async(openai_response_json: dict, target: OpenAIRespo
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -459,8 +458,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value="hello",
                 original_value_data_type="text",
                 converted_value_data_type="text",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
             MessagePiece(
@@ -470,8 +469,8 @@ async def test_send_prompt_async_empty_response_retries(openai_response_json: di
                 converted_value=tmp_file_name,
                 original_value_data_type="image_path",
                 converted_value_data_type="image_path",
-                prompt_target_identifier={"target": "target-identifier"},
-                attack_identifier={"test": "test"},
+                prompt_target_identifier=ComponentIdentifier(class_name="target-identifier", class_module="test"),
+                attack_identifier=ComponentIdentifier(class_name="test", class_module="test"),
                 labels={"test": "test"},
             ),
         ]
@@ -571,7 +570,7 @@ async def test_send_prompt_async_content_filter(target: OpenAIResponseTarget):
 
 def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
     image_piece = get_image_message_piece()
-    image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore
+    image_piece.converted_value_data_type = "new_unknown_type"  # type: ignore[method-assign]
     message = Message(
         message_pieces=[
             MessagePiece(
@@ -1177,3 +1176,120 @@ async def test_construct_message_from_response(target: OpenAIResponseTarget, dum
         assert isinstance(result, Message)
         assert len(result.message_pieces) == 1
         mock_parse.assert_called_once()
+
+
+# ── Reasoning effort / summary tests ───────────────────────────────────────
+
+
+def test_init_with_reasoning_effort(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="high",
+    )
+    assert target._reasoning_effort == "high"
+
+
+def test_init_with_reasoning_summary(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_summary="auto",
+    )
+    assert target._reasoning_summary == "auto"
+
+
+def test_init_with_reasoning_effort_and_summary(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="low",
+        reasoning_summary="detailed",
+    )
+    assert target._reasoning_effort == "low"
+    assert target._reasoning_summary == "detailed"
+
+
+def test_init_without_reasoning_params(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+    )
+    assert target._reasoning_effort is None
+    assert target._reasoning_summary is None
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_includes_reasoning_effort(
+    patch_central_database, dummy_text_message_piece: MessagePiece
+):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="medium",
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["reasoning"] == {"effort": "medium"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_includes_reasoning_summary(
+    patch_central_database, dummy_text_message_piece: MessagePiece
+):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_summary="detailed",
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["reasoning"] == {"summary": "detailed"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_includes_reasoning_effort_and_summary(
+    patch_central_database, dummy_text_message_piece: MessagePiece
+):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="high",
+        reasoning_summary="auto",
+    )
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert body["reasoning"] == {"effort": "high", "summary": "auto"}
+
+
+@pytest.mark.asyncio
+async def test_construct_request_body_omits_reasoning_when_not_set(
+    target: OpenAIResponseTarget, dummy_text_message_piece: MessagePiece
+):
+    request = Message(message_pieces=[dummy_text_message_piece])
+    jrc = _JsonResponseConfig.from_metadata(metadata=None)
+    body = await target._construct_request_body(conversation=[request], json_config=jrc)
+    assert "reasoning" not in body
+
+
+def test_build_identifier_includes_reasoning_params(patch_central_database):
+    target = OpenAIResponseTarget(
+        model_name="gpt-5",
+        endpoint="https://mock.azure.com/",
+        api_key="mock-api-key",
+        reasoning_effort="low",
+        reasoning_summary="concise",
+    )
+    identifier = target._build_identifier()
+    assert identifier.params["reasoning_effort"] == "low"
+    assert identifier.params["reasoning_summary"] == "concise"

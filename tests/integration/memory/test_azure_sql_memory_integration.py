@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from collections.abc import Generator
 from contextlib import closing, contextmanager
-from datetime import datetime, timedelta
-from typing import Generator, List
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import numpy as np
@@ -58,7 +58,7 @@ def get_test_scorer_identifier(**kwargs) -> ScorerIdentifier:
 
 
 @contextmanager
-def cleanup_conversation_data(memory: AzureSQLMemory, conversation_ids: List[str]) -> Generator[None, None, None]:
+def cleanup_conversation_data(memory: AzureSQLMemory, conversation_ids: list[str]) -> Generator[None, None, None]:
     """
     Context manager to ensure cleanup of test data from attack results and message pieces.
 
@@ -648,7 +648,7 @@ async def test_get_scenario_results_combined_filters(azuresql_instance: AzureSQL
     """
     # Use unique identifiers to avoid test pollution
     test_id = generate_test_id()
-    now = datetime.utcnow()
+    now = datetime.now(tz=timezone.utc)
     yesterday = now - timedelta(days=1)
 
     with cleanup_scenario_data(azuresql_instance, test_id):

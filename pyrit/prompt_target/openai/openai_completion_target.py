@@ -7,8 +7,9 @@ from typing import Any, Optional
 from pyrit.exceptions.exception_classes import (
     pyrit_target_retry,
 )
-from pyrit.identifiers import TargetIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, construct_response_from_request
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
 
@@ -17,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 class OpenAICompletionTarget(OpenAITarget):
     """A prompt target for OpenAI completion endpoints."""
+
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
 
     def __init__(
         self,
@@ -73,17 +76,17 @@ class OpenAICompletionTarget(OpenAITarget):
         self._presence_penalty = presence_penalty
         self._n = n
 
-    def _build_identifier(self) -> TargetIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build the identifier with OpenAI completion-specific parameters.
 
         Returns:
-            TargetIdentifier: The identifier for this target instance.
+            ComponentIdentifier: The identifier for this target instance.
         """
         return self._create_identifier(
-            temperature=self._temperature,
-            top_p=self._top_p,
-            target_specific_params={
+            params={
+                "temperature": self._temperature,
+                "top_p": self._top_p,
                 "max_tokens": self._max_tokens,
                 "frequency_penalty": self._frequency_penalty,
                 "presence_penalty": self._presence_penalty,

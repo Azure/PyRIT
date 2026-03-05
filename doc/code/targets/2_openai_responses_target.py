@@ -25,26 +25,60 @@
 # - model_name: The model to use (`OPENAI_RESPONSES_MODEL` environment variable). For OpenAI, these are any available model name and are listed here: "https://platform.openai.com/docs/models".
 
 # %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
 from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
-target = OpenAIResponseTarget()
-# For Azure OpenAI with Entra ID authentication enabled, use the following command instead. Make sure to run `az login` first.
-# from pyrit.auth import get_azure_openai_auth
-# endpoint = "https://your-endpoint.openai.azure.com"
-# target = OpenAIResponseTarget(
-#     endpoint=endpoint,
-#     api_key=get_azure_openai_auth(endpoint),
-#     model_name="your-deployment-name"
-# )
+# For Azure OpenAI with Entra ID authentication (no API key needed, run `az login` first):
+endpoint = os.environ["OPENAI_RESPONSES_ENDPOINT"]
+target = OpenAIResponseTarget(
+    endpoint=endpoint,
+    api_key=get_azure_openai_auth(endpoint),
+)
+# To use an API key instead:
+# target = OpenAIResponseTarget()  # Uses OPENAI_RESPONSES_ENDPOINT, OPENAI_RESPONSES_MODEL, OPENAI_RESPONSES_KEY env vars
 
 attack = PromptSendingAttack(objective_target=target)
 
 result = await attack.execute_async(objective="Tell me a joke")  # type: ignore
 await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # type: ignore
+
+# %% [markdown]
+# ## Reasoning Configuration
+#
+# Reasoning models (e.g., o1, o3, o4-mini, GPT-5) support a `reasoning` parameter that controls how much internal reasoning the model performs before responding. You can configure this with two parameters:
+#
+# - **`reasoning_effort`**: Controls the depth of reasoning. Accepts `"minimal"`, `"low"`, `"medium"`, or `"high"`. Lower effort favors speed and lower cost; higher effort favors thoroughness. The default (when not set) is typically `"medium"`.
+# - **`reasoning_summary`**: Controls whether a summary of the model's internal reasoning is included in the response. Accepts `"auto"`, `"concise"`, or `"detailed"`. By default, no summary is included.
+#
+# For more information, see the [OpenAI reasoning guide](https://developers.openai.com/api/docs/guides/reasoning).
+
+# %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
+from pyrit.executor.attack import ConsoleAttackResultPrinter, PromptSendingAttack
+from pyrit.prompt_target import OpenAIResponseTarget
+from pyrit.setup import IN_MEMORY, initialize_pyrit_async
+
+await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
+
+endpoint = os.environ["OPENAI_RESPONSES_ENDPOINT"]
+target = OpenAIResponseTarget(
+    endpoint=endpoint,
+    api_key=get_azure_openai_auth(endpoint),
+    reasoning_effort="high",
+    reasoning_summary="detailed",
+)
+
+attack = PromptSendingAttack(objective_target=target)
+result = await attack.execute_async(objective="What are the most dangerous items in a household?")  # type: ignore
+await ConsoleAttackResultPrinter().print_conversation_async(result=result, include_reasoning_trace=True)  # type: ignore
 
 # %% [markdown]
 # ## JSON Generation
@@ -55,9 +89,11 @@ await ConsoleAttackResultPrinter().print_conversation_async(result=result)  # ty
 
 # %%
 import json
+import os
 
 import jsonschema
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
@@ -89,7 +125,11 @@ message_piece = MessagePiece(
 message = Message(message_pieces=[message_piece])
 
 # Create the OpenAI Responses target
-target = OpenAIResponseTarget()
+endpoint = os.environ["OPENAI_RESPONSES_ENDPOINT"]
+target = OpenAIResponseTarget(
+    endpoint=endpoint,
+    api_key=get_azure_openai_auth(endpoint),
+)
 
 # Send the prompt, requesting JSON output
 response = await target.send_prompt_async(message=message)  # type: ignore
@@ -116,7 +156,11 @@ jsonschema.validate(instance=response_json, schema=person_schema)
 # This showcases how agentic function execution works with PyRIT + OpenAI Responses API.
 
 # %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
 from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
@@ -148,8 +192,11 @@ function_tool = {
     "strict": True,
 }
 
+endpoint = os.environ["OPENAI_RESPONSES_ENDPOINT"]
 # Let the model auto-select tools
 target = OpenAIResponseTarget(
+    endpoint=endpoint,
+    api_key=get_azure_openai_auth(endpoint),
     custom_functions={"get_current_weather": get_current_weather},
     extra_body_parameters={
         "tools": [function_tool],
@@ -170,7 +217,7 @@ response = await target.send_prompt_async(message=message)  # type: ignore
 
 for response_msg in response:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")
 
 # %% [markdown]
 # ## Using the Built-in Web Search Tool
@@ -188,6 +235,7 @@ for response_msg in response:
 # %%
 import os
 
+from pyrit.auth import get_azure_openai_auth
 from pyrit.common.tool_configs import web_search_tool
 from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget
@@ -196,9 +244,10 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 
 # Note: web search is only supported on a limited set of models.
+responses_endpoint = os.getenv("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT")
 target = OpenAIResponseTarget(
-    endpoint=os.getenv("AZURE_OPENAI_GPT41_RESPONSES_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_GPT41_RESPONSES_KEY"),
+    endpoint=responses_endpoint,
+    api_key=get_azure_openai_auth(responses_endpoint),
     model_name=os.getenv("AZURE_OPENAI_GPT41_RESPONSES_MODEL"),
     extra_body_parameters={
         "tools": [web_search_tool()],
@@ -216,7 +265,7 @@ response = await target.send_prompt_async(message=message)  # type: ignore
 
 for response_msg in response:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")
 
 # %% [markdown]
 # ## Grammar-Constrained Generation
@@ -228,6 +277,11 @@ for response_msg in response:
 # Note that as of October 2025, this is only supported by OpenAI (not Azure) on "gpt-5"
 
 # %%
+import os
+
+from pyrit.auth import get_azure_openai_auth
+from pyrit.models import Message, MessagePiece
+from pyrit.prompt_target import OpenAIResponseTarget
 from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 
 await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
@@ -256,17 +310,18 @@ grammar_tool = {
     },
 }
 
+gpt5_endpoint = os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT")
 target = OpenAIResponseTarget(
-    endpoint=os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_GPT5_KEY"),
+    endpoint=gpt5_endpoint,
+    api_key=get_azure_openai_auth(gpt5_endpoint),
     model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
     extra_body_parameters={"tools": [grammar_tool], "tool_choice": "required"},
     temperature=1.0,
 )
 
 unconstrained_target = OpenAIResponseTarget(
-    endpoint=os.getenv("AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_GPT5_KEY"),
+    endpoint=gpt5_endpoint,
+    api_key=get_azure_openai_auth(gpt5_endpoint),
     model_name=os.getenv("AZURE_OPENAI_GPT5_MODEL"),
     temperature=1.0,
 )
@@ -278,11 +333,11 @@ result = await target.send_prompt_async(message=message)  # type: ignore
 print("Unconstrained Response:")
 for response_msg in unconstrained_result:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")
 
 print()
 
 print("Constrained Response:")
 for response_msg in result:
     for idx, piece in enumerate(response_msg.message_pieces):
-        print(f"{idx} | {piece.role}: {piece.original_value}")
+        print(f"{idx} | {piece.api_role}: {piece.original_value}")

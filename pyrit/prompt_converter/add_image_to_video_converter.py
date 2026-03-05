@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 
 from pyrit.common.path import DB_DATA_PATH
-from pyrit.identifiers import ConverterIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import PromptDataType, data_serializer_factory
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 
@@ -62,15 +62,15 @@ class AddImageVideoConverter(PromptConverter):
         self._img_resize_size = img_resize_size
         self._video_path = video_path
 
-    def _build_identifier(self) -> ConverterIdentifier:
+    def _build_identifier(self) -> ComponentIdentifier:
         """
         Build identifier with video converter parameters.
 
         Returns:
-            ConverterIdentifier: The identifier for this converter.
+            ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            converter_specific_params={
+            params={
                 "video_path": str(self._video_path),
                 "img_position": self._img_position,
                 "img_resize_size": self._img_resize_size,
@@ -162,7 +162,7 @@ class AddImageVideoConverter(PromptConverter):
                 # Blend overlay with frame
                 if overlay.shape[2] == 4:  # Check number of channels on image
                     alpha_overlay = overlay[:, :, 3] / 255.0
-                    for c in range(0, 3):
+                    for c in range(3):
                         frame[y : y + image_height, x : x + image_width, c] = (
                             alpha_overlay * overlay[:, :, c]
                             + (1 - alpha_overlay) * frame[y : y + image_height, x : x + image_width, c]

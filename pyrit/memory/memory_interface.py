@@ -7,14 +7,16 @@ import logging
 import uuid
 import warnings
 import weakref
-from datetime import datetime
+from collections.abc import MutableSequence, Sequence
+from contextlib import closing
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, MutableSequence, Optional, Sequence, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from sqlalchemy import MetaData, and_, or_
 from sqlalchemy.engine.base import Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from sqlalchemy.sql.elements import ColumnElement
 
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.memory.memory_embedding import (
@@ -33,6 +35,7 @@ from pyrit.memory.memory_models import (
 )
 from pyrit.models import (
     AttackResult,
+    ConversationStats,
     DataTypeSerializer,
     Message,
     MessagePiece,
@@ -47,6 +50,9 @@ from pyrit.models import (
     group_conversation_message_pieces_by_sequence,
     sort_message_pieces,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
 
 logger = logging.getLogger(__name__)
 
@@ -238,10 +244,6 @@ class MemoryInterface(abc.ABC):
         Raises:
             SQLAlchemyError: If there's an error during the database operation.
         """
-        from contextlib import closing
-
-        from sqlalchemy.exc import SQLAlchemyError
-
         with closing(self.get_session()) as session:
             try:
                 session.merge(entry)
@@ -285,6 +287,82 @@ class MemoryInterface(abc.ABC):
 
         Returns:
             Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_attack_class_condition(self, *, attack_class: str) -> Any:
+        """
+        Return a database-specific condition for filtering AttackResults by attack class
+        (class_name in the attack_identifier JSON column).
+
+        Args:
+            attack_class: Exact attack class name to match.
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def _get_attack_result_converter_classes_condition(self, *, converter_classes: Sequence[str]) -> Any:
+        """
+        Return a database-specific condition for filtering AttackResults by converter classes
+        in the request_converter_identifiers array within attack_identifier JSON column.
+
+        This method is only called when converter filtering is requested (converter_classes
+        is not None). The caller handles the None-vs-list distinction:
+
+        - ``len(converter_classes) == 0``: return a condition matching attacks with NO converters.
+        - ``len(converter_classes) > 0``: return a condition requiring ALL specified converter
+          class names to be present (AND logic, case-insensitive).
+
+        Args:
+            converter_classes: Converter class names to require. An empty sequence means
+                "match only attacks that have no converters".
+
+        Returns:
+            Database-specific SQLAlchemy condition.
+        """
+
+    @abc.abstractmethod
+    def get_unique_attack_class_names(self) -> list[str]:
+        """
+        Return sorted unique attack class names from all stored attack results.
+
+        Extracts class_name from the attack_identifier JSON column via a
+        database-level DISTINCT query.
+
+        Returns:
+            Sorted list of unique attack class name strings.
+        """
+
+    @abc.abstractmethod
+    def get_unique_converter_class_names(self) -> list[str]:
+        """
+        Return sorted unique converter class names used across all attack results.
+
+        Extracts class_name values from the request_converter_identifiers array
+        within the attack_identifier JSON column via a database-level query.
+
+        Returns:
+            Sorted list of unique converter class name strings.
+        """
+
+    @abc.abstractmethod
+    def get_conversation_stats(self, *, conversation_ids: Sequence[str]) -> dict[str, "ConversationStats"]:
+        """
+        Return lightweight aggregate statistics for one or more conversations.
+
+        Computes per-conversation message count (distinct sequence numbers),
+        a truncated last-message preview, the first non-empty labels dict,
+        and the earliest message timestamp using efficient SQL aggregation
+        instead of loading full pieces.
+
+        Args:
+            conversation_ids: The conversation IDs to query.
+
+        Returns:
+            Mapping from conversation_id to ConversationStats.
+            Conversations with no pieces are omitted from the result.
         """
 
     @abc.abstractmethod
@@ -332,7 +410,7 @@ class MemoryInterface(abc.ABC):
                 message_piece_id = score.message_piece_id
                 pieces = self.get_message_pieces(prompt_ids=[str(message_piece_id)])
                 if not pieces:
-                    logging.error(f"MessagePiece with ID {message_piece_id} not found in memory.")
+                    logger.error(f"MessagePiece with ID {message_piece_id} not found in memory.")
                     continue
                 # auto-link score to the original prompt id if the prompt is a duplicate
                 if pieces[0].original_prompt_id != pieces[0].id:
@@ -571,15 +649,18 @@ class MemoryInterface(abc.ABC):
             logger.exception(f"Failed to retrieve prompts with error {e}")
             raise
 
-    def _duplicate_conversation(self, *, messages: Sequence[Message]) -> tuple[str, Sequence[MessagePiece]]:
+    def duplicate_messages(self, *, messages: Sequence[Message]) -> tuple[str, Sequence[MessagePiece]]:
         """
-        Duplicate messages with new conversation ID.
+        Duplicate messages with a new conversation ID.
+
+        Each duplicated piece gets a fresh ``id`` and ``timestamp`` while
+        preserving ``original_prompt_id`` for tracking lineage.
 
         Args:
-            messages (Sequence[Message]): The messages to duplicate.
+            messages: The messages to duplicate.
 
         Returns:
-            tuple[str, Sequence[MessagePiece]]: The new conversation ID and the duplicated message pieces.
+            Tuple of (new_conversation_id, duplicated_message_pieces).
         """
         new_conversation_id = str(uuid.uuid4())
 
@@ -609,7 +690,7 @@ class MemoryInterface(abc.ABC):
             The uuid for the new conversation.
         """
         messages = self.get_conversation(conversation_id=conversation_id)
-        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages)
+        new_conversation_id, all_pieces = self.duplicate_messages(messages=messages)
         self.add_message_pieces_to_memory(message_pieces=all_pieces)
         return new_conversation_id
 
@@ -636,16 +717,13 @@ class MemoryInterface(abc.ABC):
 
         length_of_sequence_to_remove = 0
 
-        if last_message.api_role == "system" or last_message.api_role == "user":
-            length_of_sequence_to_remove = 1
-        else:
-            length_of_sequence_to_remove = 2
+        length_of_sequence_to_remove = 1 if last_message.api_role == "system" or last_message.api_role == "user" else 2
 
         messages_to_duplicate = [
             message for message in messages if message.sequence <= last_message.sequence - length_of_sequence_to_remove
         ]
 
-        new_conversation_id, all_pieces = self._duplicate_conversation(messages=messages_to_duplicate)
+        new_conversation_id, all_pieces = self.duplicate_messages(messages=messages_to_duplicate)
         self.add_message_pieces_to_memory(message_pieces=all_pieces)
 
         return new_conversation_id
@@ -897,8 +975,7 @@ class MemoryInterface(abc.ABC):
         self, field: InstrumentedAttribute[Any], conditions: list[Any], values: Optional[Sequence[str]] = None
     ) -> None:
         if values:
-            for value in values:
-                conditions.append(field.contains(value))
+            conditions.extend(field.contains(value) for value in values)
 
     async def _serialize_seed_value(self, prompt: Seed) -> str:
         """
@@ -944,7 +1021,7 @@ class MemoryInterface(abc.ABC):
             ValueError: If the 'added_by' attribute is not set for each prompt.
         """
         entries: MutableSequence[SeedEntry] = []
-        current_time = datetime.now()
+        current_time = datetime.now(tz=timezone.utc)
         for prompt in seeds:
             if added_by:
                 prompt.added_by = added_by
@@ -993,7 +1070,7 @@ class MemoryInterface(abc.ABC):
         try:
             entries: Sequence[SeedEntry] = self._query_entries(
                 SeedEntry,
-                conditions=and_(SeedEntry.dataset_name is not None, SeedEntry.dataset_name != ""),  # type: ignore
+                conditions=and_(SeedEntry.dataset_name.isnot(None), SeedEntry.dataset_name != ""),
                 distinct=True,
             )
             # Extract unique dataset names from the entries
@@ -1031,7 +1108,7 @@ class MemoryInterface(abc.ABC):
             # Determine the prompt group ID.
             # It should either be set uniformly or generated if not set.
             # Inconsistent prompt group IDs will raise an error.
-            group_id_set = set(seed.prompt_group_id for seed in prompt_group.seeds)
+            group_id_set = {seed.prompt_group_id for seed in prompt_group.seeds}
             if len(group_id_set) > 1:
                 raise ValueError(
                     f"""Inconsistent 'prompt_group_id' attribute between members of the
@@ -1188,7 +1265,7 @@ class MemoryInterface(abc.ABC):
 
         # If file_path is not provided, construct a default using the exporter's results_path
         if not file_path:
-            file_name = f"exported_conversations_on_{datetime.now().strftime('%Y_%m_%d')}.{export_type}"
+            file_name = f"exported_conversations_on_{datetime.now(tz=timezone.utc).strftime('%Y_%m_%d')}.{export_type}"
             file_path = DB_DATA_PATH / file_name
 
         self.exporter.export_data(list(data), file_path=file_path, export_type=export_type)
@@ -1199,8 +1276,86 @@ class MemoryInterface(abc.ABC):
         """
         Insert a list of attack results into the memory storage.
         The database model automatically calculates objective_sha256 for consistency.
+
+        Raises:
+            SQLAlchemyError: If the database transaction fails.
         """
-        self._insert_entries(entries=[AttackResultEntry(entry=attack_result) for attack_result in attack_results])
+        entries = [AttackResultEntry(entry=attack_result) for attack_result in attack_results]
+        with closing(self.get_session()) as session:
+            try:
+                session.add_all(entries)
+                session.commit()
+                # Populate the attack_result_id back onto the domain objects so callers
+                # can reference the DB-assigned ID immediately after insert.
+                for ar, entry in zip(attack_results, entries, strict=False):
+                    ar.attack_result_id = str(entry.id)
+            except SQLAlchemyError:
+                session.rollback()
+                raise
+
+    def update_attack_result(self, *, conversation_id: str, update_fields: dict[str, Any]) -> bool:
+        """
+        Update specific fields of an existing AttackResultEntry identified by conversation_id.
+
+        This method queries for the raw database entry by conversation_id and updates
+        the specified fields in place, avoiding the creation of duplicate rows.
+
+        Args:
+            conversation_id (str): The conversation ID of the attack result to update.
+            update_fields (dict[str, Any]): A dictionary of column names to new values.
+                Valid fields include 'adversarial_chat_conversation_ids',
+                'pruned_conversation_ids', 'outcome', 'attack_metadata', etc.
+
+        Returns:
+            bool: True if the update was successful, False if the entry was not found.
+
+        Raises:
+            ValueError: If update_fields is empty.
+        """
+        if not update_fields:
+            raise ValueError("update_fields must not be empty")
+
+        entries: MutableSequence[AttackResultEntry] = self._query_entries(
+            AttackResultEntry,
+            conditions=AttackResultEntry.conversation_id == conversation_id,
+        )
+        if not entries:
+            return False
+
+        # When duplicate rows exist for the same conversation_id (legacy bug),
+        # pick the newest entry — it has the most up-to-date data.
+        target_entry = max(entries, key=lambda e: e.timestamp)
+        self._update_entries(entries=[target_entry], update_fields=update_fields)
+        return True
+
+    def update_attack_result_by_id(self, *, attack_result_id: str, update_fields: dict[str, Any]) -> bool:
+        """
+        Update specific fields of an existing AttackResultEntry identified by its primary key.
+
+        Args:
+            attack_result_id: The UUID primary key of the AttackResultEntry.
+            update_fields: Column names to new values.
+
+        Returns:
+            True if the update was successful, False if the entry was not found.
+        """
+        try:
+            attack_result_uuid = uuid.UUID(attack_result_id)
+        except (ValueError, TypeError):
+            logger.warning(
+                "Invalid attack_result_id '%s' passed to update_attack_result_by_id",
+                attack_result_id,
+            )
+            return False
+
+        entries: MutableSequence[AttackResultEntry] = self._query_entries(
+            AttackResultEntry,
+            conditions=AttackResultEntry.id == attack_result_uuid,
+        )
+        if not entries:
+            return False
+        self._update_entries(entries=[entries[0]], update_fields=update_fields)
+        return True
 
     def get_attack_results(
         self,
@@ -1210,6 +1365,8 @@ class MemoryInterface(abc.ABC):
         objective: Optional[str] = None,
         objective_sha256: Optional[Sequence[str]] = None,
         outcome: Optional[str] = None,
+        attack_class: Optional[str] = None,
+        converter_classes: Optional[Sequence[str]] = None,
         targeted_harm_categories: Optional[Sequence[str]] = None,
         labels: Optional[dict[str, str]] = None,
     ) -> Sequence[AttackResult]:
@@ -1223,6 +1380,11 @@ class MemoryInterface(abc.ABC):
             objective_sha256 (Optional[Sequence[str]], optional): A list of objective SHA256 hashes to filter by.
                 Defaults to None.
             outcome (Optional[str], optional): The outcome to filter by (success, failure, undetermined).
+                Defaults to None.
+            attack_class (Optional[str], optional): Filter by exact attack class_name in attack_identifier.
+                Defaults to None.
+            converter_classes (Optional[Sequence[str]], optional): Filter by converter class names.
+                Returns only attacks that used ALL specified converters (AND logic, case-insensitive).
                 Defaults to None.
             targeted_harm_categories (Optional[Sequence[str]], optional):
                 A list of targeted harm categories to filter results by.
@@ -1255,6 +1417,15 @@ class MemoryInterface(abc.ABC):
         if outcome:
             conditions.append(AttackResultEntry.outcome == outcome)
 
+        if attack_class:
+            # Use database-specific JSON query method
+            conditions.append(self._get_attack_result_attack_class_condition(attack_class=attack_class))
+
+        if converter_classes is not None:
+            # converter_classes=[] means "only attacks with no converters"
+            # converter_classes=["A","B"] means "must have all listed converters"
+            conditions.append(self._get_attack_result_converter_classes_condition(converter_classes=converter_classes))
+
         if targeted_harm_categories:
             # Use database-specific JSON query method
             conditions.append(
@@ -1269,10 +1440,56 @@ class MemoryInterface(abc.ABC):
             entries: Sequence[AttackResultEntry] = self._query_entries(
                 AttackResultEntry, conditions=and_(*conditions) if conditions else None
             )
-            return [entry.get_attack_result() for entry in entries]
+            # Deduplicate by conversation_id — when duplicate rows exist
+            # (legacy bug), keep only the newest entry per conversation_id.
+            seen: dict[str, AttackResultEntry] = {}
+            for entry in entries:
+                prev = seen.get(entry.conversation_id)
+                if prev is None or entry.timestamp > prev.timestamp:
+                    seen[entry.conversation_id] = entry
+            return [entry.get_attack_result() for entry in seen.values()]
         except Exception as e:
             logger.exception(f"Failed to retrieve attack results with error {e}")
             raise
+
+    def get_unique_attack_labels(self) -> dict[str, list[str]]:
+        """
+        Return all unique label key-value pairs across attack results.
+
+        Labels live on ``PromptMemoryEntry.labels`` (the established SDK
+        path).  This method JOINs with ``AttackResultEntry`` to scope the
+        query to conversations that belong to an attack, applies DISTINCT
+        to reduce duplicate label dicts, then aggregates unique key-value
+        pairs in Python.
+
+        Returns:
+            dict[str, list[str]]: Mapping of label keys to sorted lists of
+            unique values.
+        """
+        label_values: dict[str, set[str]] = {}
+
+        with closing(self.get_session()) as session:
+            rows = (
+                session.query(PromptMemoryEntry.labels)
+                .join(
+                    AttackResultEntry,
+                    PromptMemoryEntry.conversation_id == AttackResultEntry.conversation_id,
+                )
+                .filter(PromptMemoryEntry.labels.isnot(None))
+                .distinct()
+                .all()
+            )
+
+        for (labels,) in rows:
+            if not isinstance(labels, dict):
+                continue
+            for key, value in labels.items():
+                if isinstance(value, str):
+                    if key not in label_values:
+                        label_values[key] = set()
+                    label_values[key].add(value)
+
+        return {key: sorted(values) for key, values in sorted(label_values.items())}
 
     def add_scenario_results_to_memory(self, *, scenario_results: Sequence[ScenarioResult]) -> None:
         """
@@ -1372,7 +1589,7 @@ class MemoryInterface(abc.ABC):
             scenario_result = scenario_results[0]
 
             # Update the scenario run state
-            scenario_result.scenario_run_state = scenario_run_state  # type: ignore
+            scenario_result.scenario_run_state = scenario_run_state  # type: ignore[assignment]
 
             # Save updated result back to memory using update
             entry = ScenarioResultEntry(entry=scenario_result)
