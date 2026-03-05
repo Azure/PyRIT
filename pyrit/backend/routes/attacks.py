@@ -63,7 +63,9 @@ async def list_attacks(
     attack_type: Optional[str] = Query(None, description="Filter by exact attack type name"),
     converter_types: Optional[list[str]] = Query(
         None,
-        description="Filter by converter type names (repeatable, AND logic). Pass empty to match no-converter attacks.",
+        description="Filter by converter type names (repeatable, AND logic). "
+        "Omit to return all attacks regardless of converters. "
+        "Pass with no values to match only no-converter attacks.",
     ),
     outcome: Optional[Literal["undetermined", "success", "failure"]] = Query(None, description="Filter by outcome"),
     label: Optional[list[str]] = Query(None, description="Filter by labels (format: key:value, repeatable)"),
