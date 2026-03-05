@@ -51,6 +51,7 @@ results = [
             original_value="response 1",
             converter_identifiers=[make_converter("Base64Converter")],
             labels={"operation_name": "op_safety_bypass", "operator": "alice"},
+            targeted_harm_categories=["violence", "hate_speech"],
         ),
     ),
     AttackResult(
@@ -63,6 +64,7 @@ results = [
             original_value="response 2",
             converter_identifiers=[make_converter("Base64Converter")],
             labels={"operation_name": "op_safety_bypass", "operator": "alice"},
+            targeted_harm_categories=["violence"],
         ),
     ),
     # Red teaming attacks with ROT13Converter
@@ -76,6 +78,7 @@ results = [
             original_value="response 3",
             converter_identifiers=[make_converter("ROT13Converter")],
             labels={"operation_name": "op_secret_extract", "operator": "bob"},
+            targeted_harm_categories=["misinformation"],
         ),
     ),
     AttackResult(
@@ -88,6 +91,7 @@ results = [
             original_value="response 4",
             converter_identifiers=[make_converter("ROT13Converter")],
             labels={"operation_name": "op_secret_extract", "operator": "bob"},
+            targeted_harm_categories=["hate_speech", "misinformation"],
         ),
     ),
     # An undetermined result (no converter, no labels)
@@ -155,6 +159,17 @@ for label_key, stats in result.dimensions["label"].items():
     print(f"  {label_key}: success_rate={stats.success_rate}, successes={stats.successes}, failures={stats.failures}")
 
 # %% [markdown]
+# ## Group by Harm Category
+#
+# Break down success rates by the targeted harm categories associated with each prompt.
+
+# %%
+result = analyze_results(results, group_by=["harm_category"])
+
+for harm_cat, stats in result.dimensions["harm_category"].items():
+    print(f"  {harm_cat}: success_rate={stats.success_rate}, successes={stats.successes}, failures={stats.failures}")
+
+# %% [markdown]
 # ## Multiple Dimensions at Once
 #
 # Pass several dimension names to `group_by` for independent breakdowns in a single call.
@@ -216,3 +231,25 @@ result = analyze_results(results)
 
 print(f"Dimensions returned: {list(result.dimensions.keys())}")
 print(f"Overall success rate: {result.overall.success_rate}")
+
+# %% [markdown]
+# ## Export to DataFrame
+#
+# Use the `to_dataframe()` method to export analysis results as a pandas DataFrame for further
+# analysis or visualization. Pass a dimension name to export a specific breakdown, or `None`
+# to export all dimensions in long-form.
+
+# %%
+from IPython.display import display
+
+result = analyze_results(results, group_by=["harm_category", "attack_type"])
+
+# Export a single dimension as a table
+print("--- Harm Category DataFrame ---")
+df_harm = result.to_dataframe(dimension="harm_category")
+display(df_harm)
+
+# Export all dimensions in long-form as a table
+print("\n--- All Dimensions DataFrame ---")
+df_all = result.to_dataframe()
+display(df_all)

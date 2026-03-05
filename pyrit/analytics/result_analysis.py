@@ -49,6 +49,106 @@ class AnalysisResult:
         default_factory=dict
     )
 
+    def to_dataframe(
+        self,
+        dimension: Optional[Union[str, tuple[str, ...]]] = None,
+    ) -> "pandas.DataFrame":  # type: ignore[name-defined]  # noqa: F821
+        """
+        Export analysis results as a pandas DataFrame.
+
+        When *dimension* is provided, only that dimension's breakdown is
+        returned. For composite dimensions the tuple keys are exploded into
+        individual columns. When *dimension* is ``None``, all dimensions and
+        the overall stats are returned in a single long-form DataFrame with a
+        ``dimension`` column.
+
+        Args:
+            dimension (str | tuple[str, ...] | None): The dimension to export.
+                Pass a string for a single dimension (e.g. ``"harm_category"``),
+                a tuple for a composite dimension (e.g.
+                ``("harm_category", "attack_type")``), or ``None`` to export
+                everything. Defaults to ``None``.
+
+        Returns:
+            pandas.DataFrame: A DataFrame with columns for dimension key(s)
+            and stats (``successes``, ``failures``, ``undetermined``,
+            ``total_decided``, ``success_rate``).
+
+        Raises:
+            ImportError: If pandas is not installed.
+            KeyError: If the requested dimension is not in the results.
+        """
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                "pandas is required for to_dataframe(). "
+                "Install it with:  pip install pandas"
+            )
+
+        stats_columns = ["successes", "failures", "undetermined", "total_decided", "success_rate"]
+
+        def _stats_row(stats: AttackStats) -> dict:
+            return {
+                "successes": stats.successes,
+                "failures": stats.failures,
+                "undetermined": stats.undetermined,
+                "total_decided": stats.total_decided,
+                "success_rate": stats.success_rate,
+            }
+
+        def _dim_rows(
+            dim_name: Union[str, tuple[str, ...]],
+            dim_data: dict[Union[str, tuple[str, ...]], AttackStats],
+        ) -> list[dict]:
+            rows = []
+            for key, stats in dim_data.items():
+                row: dict = {}
+                if isinstance(dim_name, tuple):
+                    # Explode composite key into individual columns
+                    for col, val in zip(dim_name, key):
+                        row[col] = val
+                else:
+                    row["dimension"] = dim_name
+                    row["key"] = key
+                row.update(_stats_row(stats))
+                rows.append(row)
+            return rows
+
+        # Single dimension requested
+        if dimension is not None:
+            if dimension not in self.dimensions:
+                raise KeyError(f"Dimension {dimension!r} not found. Available: {list(self.dimensions.keys())}")
+            rows = _dim_rows(dimension, self.dimensions[dimension])
+            cols: list[str]
+            if isinstance(dimension, tuple):
+                cols = list(dimension) + stats_columns
+            else:
+                cols = ["dimension", "key"] + stats_columns
+            return pd.DataFrame(rows, columns=cols)
+
+        # All dimensions + overall
+        all_rows: list[dict] = []
+
+        # Overall row
+        overall_row: dict = {"dimension": "overall", "key": "all"}
+        overall_row.update(_stats_row(self.overall))
+        all_rows.append(overall_row)
+
+        for dim_name, dim_data in self.dimensions.items():
+            if isinstance(dim_name, tuple):
+                # Composite dimensions: flatten as "dim1 × dim2" in the dimension column
+                label = " \u00d7 ".join(dim_name)
+                for key, stats in dim_data.items():
+                    row = {"dimension": label, "key": " \u00d7 ".join(str(k) for k in key)}
+                    row.update(_stats_row(stats))
+                    all_rows.append(row)
+            else:
+                for row in _dim_rows(dim_name, dim_data):
+                    all_rows.append(row)
+
+        return pd.DataFrame(all_rows, columns=["dimension", "key"] + stats_columns)
+
 
 # ---------------------------------------------------------------------------
 # Built-in dimension extractors
@@ -89,9 +189,22 @@ def _extract_labels(result: AttackResult) -> list[str]:
     return ["no_labels"]
 
 
+def _extract_harm_categories(result: AttackResult) -> list[str]:
+    """
+    Extract targeted harm categories from the last response.
+
+    Returns:
+        list[str]: Harm category strings, or ``["no_harm_category"]`` if none.
+    """
+    if result.last_response is not None and result.last_response.targeted_harm_categories:
+        return result.last_response.targeted_harm_categories
+    return ["no_harm_category"]
+
+
 DEFAULT_DIMENSIONS: dict[str, DimensionExtractor] = {
     "attack_type": _extract_attack_type,
     "converter_type": _extract_converter_types,
+    "harm_category": _extract_harm_categories,
     "label": _extract_labels,
 }
 

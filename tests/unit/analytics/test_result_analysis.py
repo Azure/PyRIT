@@ -549,3 +549,212 @@ class TestDeprecatedAttackIdentifierAlias:
         assert ("converter_type", "attack_type") in result.dimensions
         dim = result.dimensions[("converter_type", "attack_type")]
         assert ("Base64Converter", "CrescendoAttack") in dim
+
+
+# ---------------------------------------------------------------------------
+# Single dimension: harm_category
+# ---------------------------------------------------------------------------
+class TestGroupByHarmCategory:
+    """Group-by a single dimension: harm_category."""
+
+    def test_no_harm_category_tracked(self):
+        attacks = [make_attack(AttackOutcome.SUCCESS)]
+        result = analyze_results(attacks, group_by=["harm_category"])
+
+        stats = result.dimensions["harm_category"]["no_harm_category"]
+        assert stats.successes == 1
+        assert stats.total_decided == 1
+
+    def test_single_harm_category(self):
+        message = MessagePiece(
+            role="user",
+            original_value="test",
+            targeted_harm_categories=["hate_speech"],
+        )
+        attacks = [
+            AttackResult(
+                conversation_id="c1",
+                objective="test",
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
+                outcome=AttackOutcome.SUCCESS,
+                last_response=message,
+            ),
+        ]
+        result = analyze_results(attacks, group_by=["harm_category"])
+
+        stats = result.dimensions["harm_category"]["hate_speech"]
+        assert stats.successes == 1
+        assert stats.total_decided == 1
+
+    def test_multiple_harm_categories_per_attack(self):
+        message = MessagePiece(
+            role="user",
+            original_value="test",
+            targeted_harm_categories=["violence", "hate_speech"],
+        )
+        attacks = [
+            AttackResult(
+                conversation_id="c1",
+                objective="test",
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
+                outcome=AttackOutcome.SUCCESS,
+                last_response=message,
+            ),
+        ]
+        result = analyze_results(attacks, group_by=["harm_category"])
+
+        # Attack counted under both categories
+        assert result.dimensions["harm_category"]["violence"].successes == 1
+        assert result.dimensions["harm_category"]["hate_speech"].successes == 1
+
+    def test_multiple_attacks_different_harm_categories(self):
+        def _make(category: str, outcome: AttackOutcome) -> AttackResult:
+            message = MessagePiece(
+                role="user",
+                original_value="test",
+                targeted_harm_categories=[category],
+            )
+            return AttackResult(
+                conversation_id="c1",
+                objective="test",
+                attack_identifier=ComponentIdentifier(
+                    class_name="PromptSendingAttack", class_module="pyrit.executor.attack"
+                ),
+                outcome=outcome,
+                last_response=message,
+            )
+
+        attacks = [
+            _make("violence", AttackOutcome.SUCCESS),
+            _make("violence", AttackOutcome.FAILURE),
+            _make("self_harm", AttackOutcome.SUCCESS),
+        ]
+        result = analyze_results(attacks, group_by=["harm_category"])
+
+        violence = result.dimensions["harm_category"]["violence"]
+        assert violence.successes == 1
+        assert violence.failures == 1
+
+        self_harm = result.dimensions["harm_category"]["self_harm"]
+        assert self_harm.successes == 1
+        assert self_harm.failures == 0
+
+    def test_harm_category_composite_with_attack_type(self):
+        message = MessagePiece(
+            role="user",
+            original_value="test",
+            targeted_harm_categories=["violence"],
+        )
+        attacks = [
+            AttackResult(
+                conversation_id="c1",
+                objective="test",
+                attack_identifier=ComponentIdentifier(
+                    class_name="CrescendoAttack", class_module="pyrit.executor.attack"
+                ),
+                outcome=AttackOutcome.SUCCESS,
+                last_response=message,
+            ),
+        ]
+        result = analyze_results(attacks, group_by=[("harm_category", "attack_type")])
+
+        dim = result.dimensions[("harm_category", "attack_type")]
+        assert ("violence", "CrescendoAttack") in dim
+        assert dim[("violence", "CrescendoAttack")].successes == 1
+
+
+# ---------------------------------------------------------------------------
+# to_dataframe
+# ---------------------------------------------------------------------------
+class TestToDataframe:
+    """Tests for AnalysisResult.to_dataframe()."""
+
+    def test_single_dimension_columns(self):
+        attacks = [
+            make_attack(AttackOutcome.SUCCESS, attack_type="CrescendoAttack"),
+            make_attack(AttackOutcome.FAILURE, attack_type="CrescendoAttack"),
+        ]
+        result = analyze_results(attacks, group_by=["attack_type"])
+        df = result.to_dataframe("attack_type")
+
+        assert list(df.columns) == [
+            "dimension", "key", "successes", "failures", "undetermined", "total_decided", "success_rate"
+        ]
+        assert len(df) == 1
+        row = df.iloc[0]
+        assert row["dimension"] == "attack_type"
+        assert row["key"] == "CrescendoAttack"
+        assert row["successes"] == 1
+        assert row["failures"] == 1
+        assert row["success_rate"] == 0.5
+
+    def test_single_dimension_multiple_keys(self):
+        attacks = [
+            make_attack(AttackOutcome.SUCCESS, attack_type="CrescendoAttack"),
+            make_attack(AttackOutcome.SUCCESS, attack_type="RedTeamingAttack"),
+            make_attack(AttackOutcome.FAILURE, attack_type="RedTeamingAttack"),
+        ]
+        result = analyze_results(attacks, group_by=["attack_type"])
+        df = result.to_dataframe("attack_type")
+
+        assert len(df) == 2
+        keys = set(df["key"])
+        assert keys == {"CrescendoAttack", "RedTeamingAttack"}
+
+    def test_composite_dimension_explodes_columns(self):
+        attacks = [make_attack_with_converters(AttackOutcome.SUCCESS, ["Base64Converter"], attack_type="Crescendo")]
+        result = analyze_results(attacks, group_by=[("converter_type", "attack_type")])
+        df = result.to_dataframe(("converter_type", "attack_type"))
+
+        assert "converter_type" in df.columns
+        assert "attack_type" in df.columns
+        assert "dimension" not in df.columns
+        assert "key" not in df.columns
+        assert df.iloc[0]["converter_type"] == "Base64Converter"
+        assert df.iloc[0]["attack_type"] == "Crescendo"
+        assert df.iloc[0]["successes"] == 1
+
+    def test_no_arg_includes_overall_and_all_dimensions(self):
+        attacks = [
+            make_attack(AttackOutcome.SUCCESS, attack_type="CrescendoAttack"),
+            make_attack(AttackOutcome.FAILURE, attack_type="CrescendoAttack"),
+        ]
+        result = analyze_results(attacks, group_by=["attack_type"])
+        df = result.to_dataframe()
+
+        assert "overall" in df["dimension"].values
+        assert "attack_type" in df["dimension"].values
+
+        overall_row = df[df["dimension"] == "overall"].iloc[0]
+        assert overall_row["key"] == "all"
+        assert overall_row["successes"] == 1
+        assert overall_row["failures"] == 1
+
+    def test_no_arg_composite_dimension_flattened(self):
+        attacks = [make_attack_with_converters(AttackOutcome.SUCCESS, ["Base64Converter"], attack_type="Crescendo")]
+        result = analyze_results(attacks, group_by=[("converter_type", "attack_type")])
+        df = result.to_dataframe()
+
+        dims = df["dimension"].unique()
+        assert any("×" in d for d in dims)
+
+    def test_unknown_dimension_raises(self):
+        attacks = [make_attack(AttackOutcome.SUCCESS)]
+        result = analyze_results(attacks, group_by=["attack_type"])
+
+        with pytest.raises(KeyError):
+            result.to_dataframe("nonexistent_dimension")
+
+    def test_undetermined_included(self):
+        attacks = [make_attack(AttackOutcome.UNDETERMINED, attack_type="CrescendoAttack")]
+        result = analyze_results(attacks, group_by=["attack_type"])
+        df = result.to_dataframe("attack_type")
+
+        row = df.iloc[0]
+        assert row["undetermined"] == 1
+        assert row["total_decided"] == 0
+        assert row["success_rate"] is None
