@@ -778,7 +778,10 @@ class AttackService:
         exists in storage.
         """
         for piece in request.pieces:
-            if piece.data_type == "text" or piece.data_type == "error":
+            # Only persist *_path types (image_path, audio_path, video_path, binary_path).
+            # Other non-text types (url, reasoning, function_call, tool_call, etc.)
+            # are text-like and must not be base64-decoded.
+            if not piece.data_type.endswith("_path"):
                 continue
 
             # Already a remote URL (e.g. signed blob URL from a remix) — keep as-is

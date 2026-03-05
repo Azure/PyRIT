@@ -100,7 +100,7 @@ async def _get_sas_for_container_async(*, container_url: str) -> str:
     container_name = parsed.path.strip("/")
     storage_account_name = parsed.netloc.split(".")[0]
 
-    start_time = datetime.now() - timedelta(minutes=5)
+    start_time = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
     expiry_time = start_time + timedelta(hours=1)
 
     credential = DefaultAzureCredential()
@@ -354,13 +354,13 @@ def _build_filename(
         Optional[str]: A filename like ``image_a1b2c3d4.png``, or ``None`` for text-like types.
     """
     # Map data types to friendly prefixes
-    _PREFIX_MAP = {
+    prefix_map = {
         "image_path": "image",
         "audio_path": "audio",
         "video_path": "video",
         "binary_path": "file",
     }
-    prefix = _PREFIX_MAP.get(data_type)
+    prefix = prefix_map.get(data_type)
     if not prefix:
         return None
 
@@ -376,8 +376,8 @@ def _build_filename(
 
     if not ext:
         # Fallback: guess from mime type based on data type prefix
-        _DEFAULT_EXT = {"image": ".png", "audio": ".wav", "video": ".mp4", "file": ".bin"}
-        ext = _DEFAULT_EXT.get(prefix, ".bin")
+        default_ext = {"image": ".png", "audio": ".wav", "video": ".mp4", "file": ".bin"}
+        ext = default_ext.get(prefix, ".bin")
 
     return f"{prefix}_{short_hash}{ext}"
 

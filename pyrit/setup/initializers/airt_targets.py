@@ -437,7 +437,9 @@ class AIRTTargetInitializer(PyRITInitializer):
         if underlying_model is not None:
             kwargs["underlying_model"] = underlying_model
 
-        # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning)
+        # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning).
+        # NOTE: extra_kwargs are defined in TARGET_CONFIGS (code-controlled, not user input),
+        # so there is no risk of untrusted data overriding safety-critical parameters.
         if config.extra_kwargs:
             kwargs.update(config.extra_kwargs)
 
