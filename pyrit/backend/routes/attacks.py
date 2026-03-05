@@ -72,7 +72,11 @@ async def list_attacks(
     min_turns: Optional[int] = Query(None, ge=0, description="Filter by minimum executed turns"),
     max_turns: Optional[int] = Query(None, ge=0, description="Filter by maximum executed turns"),
     limit: int = Query(20, ge=1, le=100, description="Maximum items per page"),
-    cursor: Optional[str] = Query(None, description="Pagination cursor (attack_result_id)"),
+    cursor: Optional[str] = Query(
+        None,
+        description="Pagination cursor: the attack_result_id of the last item from the previous page. "
+        "Omit to start from the beginning. The response includes next_cursor for the next page.",
+    ),
 ) -> AttackListResponse:
     """
     List attacks with optional filtering and pagination.
