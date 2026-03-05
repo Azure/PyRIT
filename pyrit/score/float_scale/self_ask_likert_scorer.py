@@ -228,17 +228,34 @@ class SelfAskLikertScorer(FloatScaleScorer):
         """
         likert_scale = yaml.safe_load(likert_scale_path.read_text(encoding="utf-8"))
 
-        if likert_scale["category"]:
-            self._score_category = likert_scale["category"]
-        else:
-            raise ValueError(f"Improperly formatted likert scale yaml file. Missing category in {likert_scale_path}.")
+        # Validate top-level structure
+        if not isinstance(likert_scale, dict):
+            raise ValueError(
+                f"Likert scale YAML file '{likert_scale_path}' must contain a YAML mapping/dictionary, "
+                f"but got {type(likert_scale).__name__}."
+            )
 
-        scale_descriptions = likert_scale["scale_descriptions"]
-        likert_scale_str = self._likert_scale_description_to_string(scale_descriptions)
+        # Validate required 'category' field
+        category = likert_scale.get("category")
+        if not category:
+            raise ValueError(f"Likert scale YAML file '{likert_scale_path}' is missing required field 'category'.")
+        self._score_category = category
 
+        # Validate required 'scale_descriptions' field
+        scale_descriptions = likert_scale.get("scale_descriptions")
+        if not scale_descriptions or not isinstance(scale_descriptions, list):
+            raise ValueError(
+                f"Likert scale YAML file '{likert_scale_path}' is missing or has invalid 'scale_descriptions'. "
+                f"Expected a non-empty list of dicts with 'score_value' and 'description' keys."
+            )
+
+        likert_scale_str = self._likert_scale_description_to_string(scale_descriptions, likert_scale_path)
+
+        # All score values have been validated as non-negative integers in _likert_scale_description_to_string,
+        # so we can safely convert to int here.
+        scale_values = [int(d["score_value"]) for d in scale_descriptions]
         # Derive the min/max score values from the scale descriptions so that
         # custom ranges (e.g. 0-7) are handled automatically.
-        scale_values = [int(d["score_value"]) for d in scale_descriptions]
         self._min_scale_value: int = min(scale_values)
         self._max_scale_value: int = max(scale_values)
 
@@ -253,12 +270,13 @@ class SelfAskLikertScorer(FloatScaleScorer):
             max_scale_value=str(self._max_scale_value),
         )
 
-    def _likert_scale_description_to_string(self, descriptions: list[dict[str, str]]) -> str:
+    def _likert_scale_description_to_string(self, descriptions: list[dict[str, str]], likert_scale_path: Path) -> str:
         """
         Convert the Likert scales to a string representation to be put in a system prompt.
 
         Args:
-            descriptions: list[Dict[str, str]]: The Likert scale to use.
+            descriptions (list[dict[str, str]]): The Likert scale entries to convert.
+            likert_scale_path (Path): Path to the source YAML file (used in error messages).
 
         Returns:
             str: The string representation of the Likert scale.
@@ -267,17 +285,43 @@ class SelfAskLikertScorer(FloatScaleScorer):
             ValueError: If the Likert scale YAML file is improperly formatted.
         """
         if not descriptions:
-            raise ValueError("Improperly formatted Likert scale yaml file. No likert scale_descriptions provided")
+            raise ValueError(f"Likert scale YAML file '{likert_scale_path}' has no scale_descriptions entries.")
 
         likert_scale_description = ""
 
-        for description in descriptions:
-            name = description["score_value"]
-            desc = description["description"]
-
-            if int(name) < 0:
+        for i, description in enumerate(descriptions):
+            if not isinstance(description, dict):
                 raise ValueError(
-                    "Improperly formatted Likert scale yaml file. Likert scale values must be non-negative integers."
+                    f"Likert scale YAML file '{likert_scale_path}': scale_descriptions entry {i} "
+                    f"must be a dict with 'score_value' and 'description' keys, but got {type(description).__name__}."
+                )
+
+            name = description.get("score_value")
+            desc = description.get("description")
+
+            if name is None:
+                raise ValueError(
+                    f"Likert scale YAML file '{likert_scale_path}': scale_descriptions entry {i} "
+                    f"is missing required key 'score_value'."
+                )
+            if desc is None:
+                raise ValueError(
+                    f"Likert scale YAML file '{likert_scale_path}': scale_descriptions entry {i} "
+                    f"is missing required key 'description'."
+                )
+
+            try:
+                score_int = int(name)
+            except (ValueError, TypeError) as err:
+                raise ValueError(
+                    f"Likert scale YAML file '{likert_scale_path}': score_value must be a non-negative integer, "
+                    f"but got '{name}' in entry {i}."
+                ) from err
+
+            if score_int < 0:
+                raise ValueError(
+                    f"Likert scale YAML file '{likert_scale_path}': score_value must be a non-negative integer, "
+                    f"but got '{name}' in entry {i}."
                 )
 
             likert_scale_description += f"'{name}': {desc}\n"
