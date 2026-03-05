@@ -22,7 +22,11 @@ class Score(BaseModel):
 
     score_id: str = Field(..., description="Unique score identifier")
     scorer_type: str = Field(..., description="Type of scorer (e.g., 'bias', 'toxicity')")
-    score_value: float = Field(..., description="Numeric score value")
+    score_type: str = Field(..., description="Score type: 'true_false', 'float_scale', or 'unknown'")
+    score_value: str = Field(
+        ..., description="Score value ('true'/'false' for true_false, '0.0'-'1.0' for float_scale)"
+    )
+    score_category: Optional[list[str]] = Field(None, description="Harm categories (e.g., ['hate', 'violence'])")
     score_rationale: Optional[str] = Field(None, description="Explanation for the score")
     scored_at: datetime = Field(..., description="When the score was generated")
 

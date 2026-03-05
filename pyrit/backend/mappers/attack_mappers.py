@@ -287,25 +287,18 @@ def pyrit_scores_to_dto(scores: list[PyritScore]) -> list[Score]:
     Returns:
         List of Score DTOs for the API.
     """
-    mapped_scores: list[Score] = []
-    for score in scores:
-        try:
-            score_value = float(score.score_value)
-        except (TypeError, ValueError):
-            logger.warning("Skipping score %s with non-numeric score_value=%r", score.id, score.score_value)
-            continue
-
-        mapped_scores.append(
-            Score(
-                score_id=str(score.id),
-                scorer_type=score.scorer_class_identifier.class_name,
-                score_value=score_value,
-                score_rationale=score.score_rationale,
-                scored_at=score.timestamp,
-            )
+    return [
+        Score(
+            score_id=str(score.id),
+            scorer_type=score.scorer_class_identifier.class_name,
+            score_type=score.score_type,
+            score_value=score.score_value,
+            score_category=score.score_category,
+            score_rationale=score.score_rationale,
+            scored_at=score.timestamp,
         )
-
-    return mapped_scores
+        for score in scores
+    ]
 
 
 def _infer_mime_type(*, value: Optional[str], data_type: PromptDataType) -> Optional[str]:

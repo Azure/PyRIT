@@ -114,7 +114,9 @@ def _make_mock_score():
         class_module="pyrit.score",
         params={"scorer_type": "true_false"},
     )
-    s.score_value = 1.0
+    s.score_value = "1.0"
+    s.score_type = "float_scale"
+    s.score_category = None
     s.score_rationale = "Looks correct"
     s.timestamp = datetime.now(timezone.utc)
     return s
@@ -309,7 +311,8 @@ class TestAttackResultToSummary:
         assert len(result) == 1
         assert result[0].score_id == "score-1"
         assert result[0].scorer_type == "TrueFalseScorer"
-        assert result[0].score_value == 1.0
+        assert result[0].score_value == "1.0"
+        assert result[0].score_type == "float_scale"
         assert result[0].score_rationale == "Looks correct"
 
     def test_empty_scores(self) -> None:
@@ -317,17 +320,22 @@ class TestAttackResultToSummary:
         result = pyrit_scores_to_dto([])
         assert result == []
 
-    def test_invalid_score_values_are_skipped(self) -> None:
-        """Test that non-numeric score values are ignored instead of raising."""
-        valid_score = _make_mock_score()
-        invalid_score = _make_mock_score()
-        invalid_score.id = "score-invalid"
-        invalid_score.score_value = "false"
+    def test_true_false_scores_are_included(self) -> None:
+        """Test that true_false score values are mapped correctly."""
+        float_score = _make_mock_score()
+        bool_score = _make_mock_score()
+        bool_score.id = "score-bool"
+        bool_score.score_value = "false"
+        bool_score.score_type = "true_false"
+        bool_score.score_category = ["hate"]
 
-        result = pyrit_scores_to_dto([valid_score, invalid_score])
+        result = pyrit_scores_to_dto([float_score, bool_score])
 
-        assert len(result) == 1
-        assert result[0].score_id == "score-1"
+        assert len(result) == 2
+        assert result[0].score_value == "1.0"
+        assert result[1].score_value == "false"
+        assert result[1].score_type == "true_false"
+        assert result[1].score_category == ["hate"]
 
 
 class TestPyritMessagesToDto:
