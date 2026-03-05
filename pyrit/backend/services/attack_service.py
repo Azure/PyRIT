@@ -638,7 +638,7 @@ class AttackService:
 
         if request.send:
             assert target_registry_name is not None  # validated above
-            await self._send_and_store_message(
+            await self._send_and_store_message_async(
                 conversation_id=msg_conversation_id,
                 target_registry_name=target_registry_name,
                 request=request,
@@ -646,7 +646,7 @@ class AttackService:
                 labels=attack_labels,
             )
         else:
-            await self._store_message_only(
+            await self._store_message_only_async(
                 conversation_id=msg_conversation_id,
                 request=request,
                 sequence=sequence,
@@ -844,7 +844,7 @@ class AttackService:
                 )
                 self._memory.add_message_pieces_to_memory(message_pieces=[piece])
 
-    async def _send_and_store_message(
+    async def _send_and_store_message_async(
         self,
         *,
         conversation_id: str,
@@ -879,7 +879,7 @@ class AttackService:
         )
         # PromptNormalizer stores both request and response in memory automatically
 
-    async def _store_message_only(
+    async def _store_message_only_async(
         self,
         *,
         conversation_id: str,
