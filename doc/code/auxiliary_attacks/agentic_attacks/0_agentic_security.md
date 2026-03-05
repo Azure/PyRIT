@@ -13,7 +13,7 @@ Each evaluation follows a common pattern:
 
 ## Available Evaluations
 
-- [Sensitive Data Access Attack](./sensitive_data_access_attack.ipynb) — Tests whether an agent can be tricked into reading sensitive files (`/etc/shadow`, SSH keys, `.env`, etc.) from the host machine through direct, obfuscated, and social engineering prompt injection attacks.
+- [Sensitive Data Access Attack](./1_sensitive_data_access.ipynb) — Tests whether an agent can be tricked into reading sensitive files (`/etc/shadow`, SSH keys, `.env`, etc.) from the host machine through direct, obfuscated, and social engineering prompt injection attacks.
 
 ## Agent Sandbox Setup
 
