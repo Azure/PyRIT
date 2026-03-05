@@ -228,7 +228,7 @@ class ScorerEvaluator(abc.ABC):
                 return existing_metrics
 
         # Run evaluation
-        metrics = await self._run_evaluation_async(
+        metrics = await self.evaluate_dataset_async(
             labeled_dataset=combined_dataset,
             num_scorer_trials=num_scorer_trials,
             max_concurrency=max_concurrency,
@@ -338,7 +338,7 @@ class ScorerEvaluator(abc.ABC):
             logger.warning(f"Error checking for existing metrics: {e}")
             return (False, None)
 
-    async def _run_evaluation_async(
+    async def evaluate_dataset_async(
         self,
         labeled_dataset: HumanLabeledDataset,
         num_scorer_trials: int = 1,
@@ -348,6 +348,8 @@ class ScorerEvaluator(abc.ABC):
         Run the evaluation for the scorer/policy combination on the passed in HumanLabeledDataset.
 
         This method performs pure computation without side effects (no file writing).
+        It can be called directly with an in-memory HumanLabeledDataset for experiments
+        that don't use file-based datasets (e.g., iterative rubric tuning with custom splits).
 
         Args:
             labeled_dataset (HumanLabeledDataset): The HumanLabeledDataset to evaluate the scorer against.
@@ -548,10 +550,10 @@ class HarmScorerEvaluator(ScorerEvaluator):
         harm_definition_version: Optional[str] = None,
     ) -> HarmScorerMetrics:
         reliability_data = np.concatenate((all_human_scores, all_model_scores))
-        # Calculate the mean of human scores for each response, which is considered the gold label
-        gold_scores = np.mean(all_human_scores, axis=0)
-        mean_model_scores = np.mean(all_model_scores, axis=0)
-        diff = mean_model_scores - gold_scores
+        # Calculate the median of human scores for each response, which is considered the gold label
+        gold_scores = np.median(all_human_scores, axis=0)
+        median_model_scores = np.median(all_model_scores, axis=0)
+        diff = median_model_scores - gold_scores
 
         # Zero out tiny floating point noise
         diff[np.abs(diff) < 1e-10] = 0.0
@@ -651,8 +653,8 @@ class ObjectiveScorerEvaluator(ScorerEvaluator):
     ) -> ObjectiveScorerMetrics:
         # Calculate the majority vote of human scores for each response, which is considered the gold label.
         # If the vote is split, the resulting gold score will be 0 (i.e. False). Same logic is applied to model trials.
-        gold_scores = np.round(np.mean(all_human_scores, axis=0))
-        majority_model_scores = np.round(np.mean(all_model_scores, axis=0))
+        gold_scores = np.round(np.median(all_human_scores, axis=0))
+        majority_model_scores = np.round(np.median(all_model_scores, axis=0))
 
         true_positive = np.sum((gold_scores == 1) & (majority_model_scores == 1))
         false_positive = np.sum((gold_scores == 0) & (majority_model_scores == 1))

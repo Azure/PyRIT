@@ -66,7 +66,7 @@ def test_from_scorer_objective(mock_objective_scorer):
 
 
 @pytest.mark.asyncio
-async def test__run_evaluation_async_harm(mock_harm_scorer):
+async def test_evaluate_dataset_async_harm(mock_harm_scorer):
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
@@ -84,7 +84,7 @@ async def test__run_evaluation_async_harm(mock_harm_scorer):
     entry_values = [MagicMock(get_value=lambda: 0.2), MagicMock(get_value=lambda: 0.4)]
     mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
-    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=2)
+    metrics = await evaluator.evaluate_dataset_async(labeled_dataset=mock_dataset, num_scorer_trials=2)
     assert mock_harm_scorer._memory.add_message_to_memory.call_count == 2
     assert isinstance(metrics, HarmScorerMetrics)
     assert metrics.mean_absolute_error == 0.0
@@ -92,7 +92,7 @@ async def test__run_evaluation_async_harm(mock_harm_scorer):
 
 
 @pytest.mark.asyncio
-async def test__run_evaluation_async_objective(mock_objective_scorer):
+async def test_evaluate_dataset_async_objective(mock_objective_scorer):
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
@@ -103,7 +103,7 @@ async def test__run_evaluation_async_objective(mock_objective_scorer):
     # Patch scorer to return fixed scores
     mock_objective_scorer.score_prompts_batch_async = AsyncMock(return_value=[MagicMock(get_value=lambda: False)])
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
-    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=2)
+    metrics = await evaluator.evaluate_dataset_async(labeled_dataset=mock_dataset, num_scorer_trials=2)
     assert mock_objective_scorer._memory.add_message_to_memory.call_count == 1
     assert isinstance(metrics, ObjectiveScorerMetrics)
     assert metrics.accuracy == 0.0
@@ -111,8 +111,8 @@ async def test__run_evaluation_async_objective(mock_objective_scorer):
 
 
 @pytest.mark.asyncio
-async def test__run_evaluation_async_objective_returns_metrics(mock_objective_scorer):
-    """Test that _run_evaluation_async returns metrics without side effects."""
+async def test_evaluate_dataset_async_objective_returns_metrics(mock_objective_scorer):
+    """Test that evaluate_dataset_async returns metrics without registry or file side effects."""
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
     ]
@@ -124,7 +124,7 @@ async def test__run_evaluation_async_objective_returns_metrics(mock_objective_sc
     mock_objective_scorer.get_identifier = MagicMock(return_value=MagicMock(hash="test_hash"))
     evaluator = ObjectiveScorerEvaluator(mock_objective_scorer)
 
-    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=1)
+    metrics = await evaluator.evaluate_dataset_async(labeled_dataset=mock_dataset, num_scorer_trials=1)
 
     # Verify metrics returned without registry writing
     assert metrics is not None
@@ -550,7 +550,7 @@ def test_should_skip_evaluation_harm_definition_version_none_in_existing_runs_ev
 
 
 @pytest.mark.asyncio
-async def test__run_evaluation_async_harm_passes_harm_definition_version(mock_harm_scorer):
+async def test_evaluate_dataset_async_harm_passes_harm_definition_version(mock_harm_scorer):
     """Test that harm_definition_version from dataset is passed through to metrics."""
     responses = [
         Message(message_pieces=[MessagePiece(role="assistant", original_value="test", original_value_data_type="text")])
@@ -568,7 +568,7 @@ async def test__run_evaluation_async_harm_passes_harm_definition_version(mock_ha
     mock_harm_scorer.score_prompts_batch_async = AsyncMock(return_value=entry_values)
     evaluator = HarmScorerEvaluator(mock_harm_scorer)
 
-    metrics = await evaluator._run_evaluation_async(labeled_dataset=mock_dataset, num_scorer_trials=1)
+    metrics = await evaluator.evaluate_dataset_async(labeled_dataset=mock_dataset, num_scorer_trials=1)
 
     assert isinstance(metrics, HarmScorerMetrics)
     assert metrics.harm_definition == "hate_speech.yaml"
