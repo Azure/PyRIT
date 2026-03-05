@@ -70,6 +70,7 @@ _SAS_TTL_SECONDS = 3500  # cache for ~58 min; tokens are valid for 1 hour
 def _is_azure_blob_url(value: str) -> bool:
     """Return True if *value* looks like an Azure Blob Storage URL."""
     parsed = urlparse(value)
+    # Azure Blob Storage enforces HTTPS; rejecting HTTP also limits SSRF surface.
     if parsed.scheme != "https":
         return False
     host = parsed.netloc.split(":")[0]  # strip port
