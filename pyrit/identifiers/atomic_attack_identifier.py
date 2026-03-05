@@ -47,12 +47,12 @@ def build_seed_identifier(seed: "Seed") -> ComponentIdentifier:
     """
     params: dict[str, Any] = {}
 
+    if seed.value:
+        params["value"] = seed.value
     if seed.value_sha256:
         params["value_sha256"] = seed.value_sha256
     if seed.dataset_name:
         params["dataset_name"] = seed.dataset_name
-    if seed.name:
-        params["name"] = seed.name
 
     return ComponentIdentifier(
         class_name=seed.__class__.__name__,

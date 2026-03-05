@@ -49,20 +49,18 @@ class TestBuildSeedIdentifier:
         result = build_seed_identifier(seed)
         assert result.params["dataset_name"] == "my_dataset"
 
-    def test_includes_name(self):
-        seed = SeedPrompt(value="hello", value_sha256="abc", name="prompt_name")
+    def test_includes_value(self):
+        seed = SeedPrompt(value="hello world", value_sha256="abc")
         result = build_seed_identifier(seed)
-        assert result.params["name"] == "prompt_name"
+        assert result.params["value"] == "hello world"
 
     def test_excludes_none_values(self):
         seed = SeedPrompt(value="hello")
         seed.value_sha256 = None
         seed.dataset_name = None
-        seed.name = None
         result = build_seed_identifier(seed)
         assert "value_sha256" not in result.params
         assert "dataset_name" not in result.params
-        assert "name" not in result.params
 
     def test_deterministic_hash(self):
         seed1 = SeedPrompt(value="hello", value_sha256="abc123", dataset_name="ds")
