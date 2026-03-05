@@ -1067,3 +1067,25 @@ class TestVideoTargetRemixValidation:
         OpenAIVideoTarget._validate_video_remix_pieces(message=message)
 
         assert "video_id" not in (msg_text.prompt_metadata or {})
+
+    def test_remix_raises_when_video_path_missing_video_id(self, video_target: OpenAIVideoTarget) -> None:
+        """Test that video_path piece without video_id raises ValueError."""
+        conversation_id = str(uuid.uuid4())
+        msg_text = MessagePiece(
+            role="user",
+            original_value="remix",
+            converted_value="remix",
+            prompt_metadata={"video_id": "vid_123"},
+            conversation_id=conversation_id,
+        )
+        msg_video = MessagePiece(
+            role="user",
+            original_value="/path/video.mp4",
+            converted_value="/path/video.mp4",
+            converted_value_data_type="video_path",
+            conversation_id=conversation_id,
+        )
+        message = Message([msg_text, msg_video])
+
+        with pytest.raises(ValueError, match="video_path piece is missing.*video_id"):
+            OpenAIVideoTarget._validate_video_remix_pieces(message=message)

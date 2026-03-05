@@ -550,7 +550,12 @@ class OpenAIVideoTarget(OpenAITarget):
 
         for vp in video_pieces:
             vp_video_id = (vp.prompt_metadata or {}).get("video_id")
-            if vp_video_id and vp_video_id != text_video_id:
+            if not vp_video_id:
+                raise ValueError(
+                    "video_path piece is missing 'video_id' in prompt_metadata. "
+                    "Both text and video_path pieces must carry a video_id for remix."
+                )
+            if vp_video_id != text_video_id:
                 raise ValueError(
                     f"video_id mismatch: text piece has '{text_video_id}' but video_path piece has '{vp_video_id}'."
                 )
