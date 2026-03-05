@@ -318,10 +318,10 @@ class TestAttackEvaluationIdentity:
         assert identity.eval_hash == expected
 
     def test_target_child_keys_include_objective_target(self):
-        """Attack identity must filter objective_target (not present in scorer identity)."""
+        """Attack identity filters objective_target only (not prompt_target which is scorer-only)."""
         assert "objective_target" in AttackEvaluationIdentity.TARGET_CHILD_KEYS
-        assert "prompt_target" in AttackEvaluationIdentity.TARGET_CHILD_KEYS
-        assert "converter_target" in AttackEvaluationIdentity.TARGET_CHILD_KEYS
+        assert "prompt_target" not in AttackEvaluationIdentity.TARGET_CHILD_KEYS
+        assert "converter_target" not in AttackEvaluationIdentity.TARGET_CHILD_KEYS
 
     def test_operational_params_ignored(self):
         """Same model on different endpoints produces same eval hash."""

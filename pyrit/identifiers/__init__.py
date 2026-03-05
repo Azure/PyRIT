@@ -8,13 +8,17 @@ from pyrit.identifiers.class_name_utils import (
     snake_case_to_class_name,
 )
 from pyrit.identifiers.atomic_attack_identifier import (
-    AttackEvaluationIdentity,
     build_atomic_attack_identifier,
     build_seed_identifier,
-    compute_attack_eval_hash,
 )
 from pyrit.identifiers.component_identifier import ComponentIdentifier, Identifiable, config_hash
-from pyrit.identifiers.evaluation_identity import EvaluationIdentity, compute_eval_hash
+from pyrit.identifiers.evaluation_identity import (
+    AttackEvaluationIdentity,
+    EvaluationIdentity,
+    ScorerEvaluationIdentity,
+    compute_attack_eval_hash,
+    compute_eval_hash,
+)
 
 __all__ = [
     "AttackEvaluationIdentity",
@@ -26,6 +30,7 @@ __all__ = [
     "compute_eval_hash",
     "EvaluationIdentity",
     "Identifiable",
+    "ScorerEvaluationIdentity",
     "snake_case_to_class_name",
     "config_hash",
 ]

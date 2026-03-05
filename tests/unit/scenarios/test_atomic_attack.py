@@ -95,7 +95,11 @@ def sample_attack_results():
 
 def wrap_results(results):
     """Helper to wrap attack results in AttackExecutorResult."""
-    return AttackExecutorResult(completed_results=results, incomplete_objectives=[])
+    return AttackExecutorResult(
+        completed_results=results,
+        incomplete_objectives=[],
+        input_indices=list(range(len(results))),
+    )
 
 
 @pytest.mark.usefixtures("patch_central_database")
@@ -713,3 +717,169 @@ class TestAtomicAttackWithMessages:
 
         # Second has user_messages
         assert len(atomic_attack.seed_groups[1].user_messages) == 2
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestEnrichAtomicAttackIdentifiers:
+    """Tests for _enrich_atomic_attack_identifiers in AtomicAttack."""
+
+    @pytest.mark.asyncio
+    async def test_enrichment_populates_atomic_attack_identifier(self, mock_attack):
+        """Test that run_async enriches results with atomic_attack_identifier."""
+        seed_groups = [
+            SeedAttackGroup(
+                seeds=[
+                    SeedObjective(value="obj1"),
+                    SeedPrompt(value="technique1", is_general_technique=True),
+                ]
+            ),
+        ]
+        attack_id = MagicMock()
+        attack_id.class_name = "MockAttack"
+        attack_result = AttackResult(
+            conversation_id="conv-1",
+            objective="obj1",
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+            attack_identifier=attack_id,
+        )
+
+        atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
+
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results([attack_result])
+            result = await atomic.run_async()
+
+        enriched = result.completed_results[0]
+        assert enriched.atomic_attack_identifier is not None
+        assert enriched.atomic_attack_identifier.class_name == "AtomicAttack"
+        assert "attack" in enriched.atomic_attack_identifier.children
+        assert "general_technique_seeds" in enriched.atomic_attack_identifier.children
+
+    @pytest.mark.asyncio
+    async def test_enrichment_skips_results_without_attack_identifier(self, mock_attack):
+        """Test that enrichment is skipped when result has no attack_identifier."""
+        seed_groups = [
+            SeedAttackGroup(seeds=[SeedObjective(value="obj1"), SeedPrompt(value="p1")]),
+        ]
+        attack_result = AttackResult(
+            conversation_id="conv-1",
+            objective="obj1",
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+            attack_identifier=None,
+        )
+
+        atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
+
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results([attack_result])
+            result = await atomic.run_async()
+
+        # Should not be enriched (no attack_identifier to build from)
+        assert result.completed_results[0].atomic_attack_identifier is None
+
+    @pytest.mark.asyncio
+    async def test_enrichment_skips_out_of_range_index(self, mock_attack):
+        """Test that enrichment is skipped when input_indices has an out-of-range value."""
+        seed_groups = [
+            SeedAttackGroup(seeds=[SeedObjective(value="obj1"), SeedPrompt(value="p1")]),
+        ]
+        attack_result = AttackResult(
+            conversation_id="conv-1",
+            objective="obj1",
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+            attack_identifier=MagicMock(),
+        )
+
+        atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
+
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
+            # Index 99 is out of range for seed_groups (only 1 element)
+            mock_exec.return_value = AttackExecutorResult(
+                completed_results=[attack_result],
+                incomplete_objectives=[],
+                input_indices=[99],
+            )
+            result = await atomic.run_async()
+
+        # Should not be enriched (index out of range)
+        enriched = result.completed_results[0]
+        assert enriched.atomic_attack_identifier is None or enriched.atomic_attack_identifier.class_name != "AtomicAttack"
+
+    @pytest.mark.asyncio
+    async def test_enrichment_only_includes_general_technique_seeds(self, mock_attack):
+        """Test that only seeds with is_general_technique=True appear in the enriched identifier."""
+        seed_groups = [
+            SeedAttackGroup(
+                seeds=[
+                    SeedObjective(value="obj1"),
+                    SeedPrompt(value="technique", is_general_technique=True, value_sha256="tech_hash"),
+                    SeedPrompt(value="non_technique", is_general_technique=False, value_sha256="other_hash"),
+                ]
+            ),
+        ]
+        attack_id = MagicMock()
+        attack_result = AttackResult(
+            conversation_id="conv-1",
+            objective="obj1",
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+            attack_identifier=attack_id,
+        )
+
+        atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
+
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results([attack_result])
+            result = await atomic.run_async()
+
+        enriched = result.completed_results[0].atomic_attack_identifier
+        assert enriched is not None
+        seed_ids = enriched.children["general_technique_seeds"]
+        assert len(seed_ids) == 1
+        assert seed_ids[0].params["value_sha256"] == "tech_hash"
+
+    @pytest.mark.asyncio
+    async def test_enrichment_maps_multiple_results_to_correct_seed_groups(self, mock_attack):
+        """Test that multiple results are correctly mapped to their corresponding seed groups."""
+        seed_groups = [
+            SeedAttackGroup(
+                seeds=[
+                    SeedObjective(value="obj1"),
+                    SeedPrompt(value="tech_a", is_general_technique=True, value_sha256="hash_a"),
+                ]
+            ),
+            SeedAttackGroup(
+                seeds=[
+                    SeedObjective(value="obj2"),
+                    SeedPrompt(value="tech_b", is_general_technique=True, value_sha256="hash_b"),
+                ]
+            ),
+        ]
+        attack_id = MagicMock()
+        results = [
+            AttackResult(
+                conversation_id="c1", objective="obj1", outcome=AttackOutcome.SUCCESS,
+                executed_turns=1, attack_identifier=attack_id,
+            ),
+            AttackResult(
+                conversation_id="c2", objective="obj2", outcome=AttackOutcome.SUCCESS,
+                executed_turns=1, attack_identifier=attack_id,
+            ),
+        ]
+
+        atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
+
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results(results)
+            result = await atomic.run_async()
+
+        # First result should have hash_a seed
+        enriched_0 = result.completed_results[0].atomic_attack_identifier
+        assert enriched_0.children["general_technique_seeds"][0].params["value_sha256"] == "hash_a"
+
+        # Second result should have hash_b seed
+        enriched_1 = result.completed_results[1].atomic_attack_identifier
+        assert enriched_1.children["general_technique_seeds"][0].params["value_sha256"] == "hash_b"

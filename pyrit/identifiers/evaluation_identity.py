@@ -13,6 +13,9 @@ This module provides:
   with domain-specific eval-hash configuration.  Concrete subclasses declare
   *which* children are targets and *which* params are behavioral via two
   ``ClassVar`` frozensets.
+* ``ScorerEvaluationIdentity`` — scorer-domain concrete subclass.
+* ``AttackEvaluationIdentity`` — attack-domain concrete subclass.
+* ``compute_attack_eval_hash`` — convenience wrapper for attacks.
 """
 
 from __future__ import annotations
@@ -176,3 +179,53 @@ class EvaluationIdentity(ABC):
     def eval_hash(self) -> str:
         """Behavioral equivalence hash for evaluation grouping."""
         return self._eval_hash
+
+
+class ScorerEvaluationIdentity(EvaluationIdentity):
+    """
+    Evaluation identity for scorers.
+
+    Target children (``prompt_target``, ``converter_target``) are filtered to
+    behavioral params only (``model_name``, ``temperature``, ``top_p``), so the
+    same scorer configuration on different deployments produces the same eval hash.
+    """
+
+    TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"prompt_target", "converter_target"})
+    BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature", "top_p"})
+
+
+class AttackEvaluationIdentity(EvaluationIdentity):
+    """
+    Evaluation identity for attacks.
+
+    Target children (``objective_target``) are filtered to behavioral params
+    only (``model_name``, ``temperature``, ``top_p``), so the same attack
+    configuration on different deployments produces the same eval hash.
+    Non-target children (e.g., seed identifiers) receive full recursive eval
+    treatment.
+    """
+
+    TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"objective_target"})
+    BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature", "top_p"})
+
+
+def compute_attack_eval_hash(identifier: ComponentIdentifier) -> str:
+    """
+    Compute a behavioral equivalence hash for attack evaluation grouping.
+
+    Convenience wrapper around ``compute_eval_hash`` with attack-specific
+    constants.  For the ``objective_target`` child, only model_name,
+    temperature, and top_p are included. For seed children, all params are
+    included.
+
+    Args:
+        identifier (ComponentIdentifier): The atomic attack's composite identity.
+
+    Returns:
+        str: A hash suitable for evaluation registry keying.
+    """
+    return compute_eval_hash(
+        identifier,
+        target_child_keys=AttackEvaluationIdentity.TARGET_CHILD_KEYS,
+        behavioral_child_params=AttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+    )

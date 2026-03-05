@@ -232,19 +232,16 @@ class AtomicAttack:
         """
         Enrich each AttackResult's atomic_attack_identifier with seed group information.
 
-        Maps completed results back to their corresponding seed groups by objective,
-        then rebuilds the atomic_attack_identifier to include the general technique
-        seed identifiers from the seed group.
+        Uses ``results.input_indices`` to map each completed result back to its
+        originating seed group by index, then rebuilds the atomic_attack_identifier
+        to include the general technique seed identifiers from the seed group.
 
         Args:
             results (AttackExecutorResult[AttackResult]): The execution results to enrich.
         """
-        objective_to_seed_group = {sg.objective.value: sg for sg in self._seed_groups}
-
-        for result in results.completed_results:
-            seed_group = objective_to_seed_group.get(result.objective)
-            if seed_group and result.attack_identifier:
+        for result, idx in zip(results.completed_results, results.input_indices):
+            if result.attack_identifier and idx < len(self._seed_groups):
                 result.atomic_attack_identifier = build_atomic_attack_identifier(
                     attack_identifier=result.attack_identifier,
-                    seed_group=seed_group,
+                    seed_group=self._seed_groups[idx],
                 )

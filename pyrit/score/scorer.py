@@ -81,8 +81,8 @@ class Scorer(Identifiable, abc.ABC):
         Returns:
             str: A hex-encoded SHA256 hash suitable for eval registry keying.
         """
-        # Deferred import to avoid circular dependency (scorer_evaluation_identity → identifiers → …)
-        from pyrit.score.scorer_evaluation.scorer_evaluation_identity import ScorerEvaluationIdentity
+        # Deferred import to avoid circular dependency (evaluation_identity → identifiers → …)
+        from pyrit.identifiers.evaluation_identity import ScorerEvaluationIdentity
 
         return ScorerEvaluationIdentity(self.get_identifier()).eval_hash
 

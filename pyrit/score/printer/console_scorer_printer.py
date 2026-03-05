@@ -100,7 +100,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
         Args:
             scorer_identifier (ComponentIdentifier): The scorer identifier to print information for.
         """
-        from pyrit.score.scorer_evaluation.scorer_evaluation_identity import ScorerEvaluationIdentity
+        from pyrit.identifiers.evaluation_identity import ScorerEvaluationIdentity
         from pyrit.score.scorer_evaluation.scorer_metrics_io import (
             find_objective_metrics_by_eval_hash,
         )
@@ -128,7 +128,7 @@ class ConsoleScorerPrinter(ScorerPrinter):
             scorer_identifier (ComponentIdentifier): The scorer identifier to print information for.
             harm_category (str): The harm category for looking up metrics (e.g., "hate_speech", "violence").
         """
-        from pyrit.score.scorer_evaluation.scorer_evaluation_identity import ScorerEvaluationIdentity
+        from pyrit.identifiers.evaluation_identity import ScorerEvaluationIdentity
         from pyrit.score.scorer_evaluation.scorer_metrics_io import (
             find_harm_metrics_by_eval_hash,
         )
