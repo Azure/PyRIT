@@ -1,10 +1,12 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import yaml
 from unit.mocks import get_mock_target_identifier
 
 from pyrit.exceptions.exception_classes import InvalidJsonException
@@ -134,3 +136,176 @@ async def test_self_ask_likert_scorer_json_missing_key_exception_retries():
         await scorer.score_text_async("this has no bullying")
         # RETRY_MAX_NUM_ATTEMPTS is set to 2 in conftest.py
         assert chat_target.send_prompt_async.call_count == 2
+
+
+# ---------------------------------------------------------------------------
+# Custom (non-1-to-5) scale tests
+# ---------------------------------------------------------------------------
+
+
+def _make_custom_scale_yaml(
+    tmp_path: Path,
+    *,
+    category: str = "test_harm",
+    min_val: int = 0,
+    max_val: int = 7,
+) -> Path:
+    """
+    Create a YAML file with a custom Likert scale range inside a pytest tmp_path.
+
+    The file is automatically cleaned up by pytest after the test session.
+
+    Args:
+        tmp_path (Path): Pytest-provided temporary directory.
+        category (str): The category name for the scale.
+        min_val (int): Minimum score value.
+        max_val (int): Maximum score value.
+
+    Returns:
+        Path: Path to the created YAML file.
+    """
+    scale = {
+        "version": "1.0",
+        "category": category,
+        "scale_descriptions": [
+            {"score_value": str(i), "description": f"Level {i} description"} for i in range(min_val, max_val + 1)
+        ],
+    }
+    yaml_file = tmp_path / f"{category}_scale.yaml"
+    yaml_file.write_text(yaml.safe_dump(scale), encoding="utf-8")
+    return yaml_file
+
+
+def test_custom_scale_sets_min_max(tmp_path: Path):
+    """Verify that a YAML with a 0-7 scale sets _min/_max correctly."""
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+        custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
+        # Temporarily patch the LikertScalePaths enum path property
+        with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
+            with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
+                scorer = SelfAskLikertScorer(
+                    chat_target=chat_target,
+                    likert_scale=LikertScalePaths.CYBER_SCALE,
+                )
+
+        assert scorer._min_scale_value == 0
+        assert scorer._max_scale_value == 7
+
+
+def test_default_1_to_5_scale_sets_min_max():
+    """Verify that existing 1-5 harm definition YAMLs still set min=1, max=5."""
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+        scorer = SelfAskLikertScorer(
+            chat_target=chat_target,
+            likert_scale=LikertScalePaths.VIOLENCE_SCALE,
+        )
+
+        assert scorer._min_scale_value == 1
+        assert scorer._max_scale_value == 5
+
+
+def test_custom_scale_system_prompt_contains_dynamic_range(tmp_path: Path):
+    """Verify the system prompt references the custom min/max, not hardcoded 1/5."""
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+        custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
+        with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
+            with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
+                scorer = SelfAskLikertScorer(
+                    chat_target=chat_target,
+                    likert_scale=LikertScalePaths.CYBER_SCALE,
+                )
+
+        # The system prompt should mention the custom range boundaries
+        assert "0 is the least severe" in scorer._system_prompt
+        assert "7 is the most severe" in scorer._system_prompt
+
+
+@pytest.mark.asyncio
+async def test_custom_scale_score_normalisation(patch_central_database, tmp_path: Path):
+    """
+    Verify that scoring normalises against the custom range, not 1-5.
+
+    For a 0-7 scale, a raw score of 7 should normalise to 1.0 and
+    a raw score of 0 should normalise to 0.0.
+    """
+    # Simulate LLM returning score_value "7" on a 0-7 scale
+    json_response = (
+        '{"score_value": "7", "description": "Maximum severity", "rationale": "The response is extremely harmful."}'
+    )
+    llm_response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+
+    chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+    chat_target.send_prompt_async = AsyncMock(return_value=[llm_response])
+
+    custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
+    with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
+        with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
+            scorer = SelfAskLikertScorer(
+                chat_target=chat_target,
+                likert_scale=LikertScalePaths.CYBER_SCALE,
+            )
+
+    score = await scorer.score_text_async("extremely harmful content")
+
+    assert len(score) == 1
+    # 7/7 on a 0-7 scale = 1.0
+    assert score[0].score_value == "1.0"
+    assert score[0].get_value() == 1.0
+    assert score[0].score_metadata == {"likert_value": 7}
+
+
+@pytest.mark.asyncio
+async def test_custom_scale_score_min_value(patch_central_database, tmp_path: Path):
+    """
+    Verify min-range normalisation on a 0-7 scale.
+
+    Raw score 0 on a 0-7 scale should normalise to 0.0.
+    """
+    json_response = '{"score_value": "0", "description": "No harm", "rationale": "The response is benign."}'
+    llm_response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
+
+    chat_target = MagicMock()
+    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+    chat_target.send_prompt_async = AsyncMock(return_value=[llm_response])
+
+    custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
+    with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
+        with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
+            scorer = SelfAskLikertScorer(
+                chat_target=chat_target,
+                likert_scale=LikertScalePaths.CYBER_SCALE,
+            )
+
+    score = await scorer.score_text_async("benign content")
+    assert score[0].score_value == "0.0"
+    assert score[0].get_value() == 0.0
+
+
+def test_likert_scale_negative_value_rejected(tmp_path: Path):
+    """Verify that negative score values in a YAML are rejected."""
+    memory = MagicMock(MemoryInterface)
+    with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
+        chat_target = MagicMock()
+        chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
+
+        custom_path = _make_custom_scale_yaml(tmp_path, min_val=-1, max_val=5)
+        with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
+            with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
+                with pytest.raises(ValueError, match="non-negative"):
+                    SelfAskLikertScorer(
+                        chat_target=chat_target,
+                        likert_scale=LikertScalePaths.CYBER_SCALE,
+                    )
