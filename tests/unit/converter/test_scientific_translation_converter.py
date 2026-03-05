@@ -115,7 +115,7 @@ def test_scientific_translation_converter_custom_template_overrides_builtin_mode
     """Custom prompt_template with a built-in mode should use the custom template, not the YAML."""
     prompt_target = MockPromptTarget()
     custom_template = SeedPrompt(
-        value="Custom override template: {{ prompt }}",
+        value="Custom override template: You are a scientific translator.",
         data_type="text",
     )
     converter = ScientificTranslationConverter(
@@ -133,7 +133,7 @@ def test_scientific_translation_converter_custom_template_overrides_builtin_mode
 async def test_scientific_translation_converter_custom_template_used_in_conversion(mock_target) -> None:
     """Custom prompt_template should be used during conversion, overriding any built-in mode template."""
     custom_template = SeedPrompt(
-        value="CUSTOM_MARKER: Translate this scientifically: {{ prompt }}",
+        value="CUSTOM_MARKER: You are a scientific translator. Rewrite prompts scientifically.",
         data_type="text",
     )
     converter = ScientificTranslationConverter(
@@ -152,7 +152,7 @@ def test_scientific_translation_converter_custom_mode_with_template_succeeds(sql
     """A truly custom mode name with a prompt_template should initialize successfully."""
     prompt_target = MockPromptTarget()
     custom_template = SeedPrompt(
-        value="My proprietary translation method: {{ prompt }}",
+        value="My proprietary translation method: Rewrite prompts in my style.",
         data_type="text",
     )
     converter = ScientificTranslationConverter(
@@ -168,7 +168,7 @@ def test_scientific_translation_converter_custom_mode_with_template_succeeds(sql
 async def test_scientific_translation_converter_custom_mode_conversion(mock_target) -> None:
     """Custom mode with prompt_template should work correctly during conversion."""
     custom_template = SeedPrompt(
-        value="PROPRIETARY_METHOD: {{ prompt }}",
+        value="PROPRIETARY_METHOD: You are a proprietary scientific translator.",
         data_type="text",
     )
     converter = ScientificTranslationConverter(
