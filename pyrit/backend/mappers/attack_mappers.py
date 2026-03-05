@@ -267,7 +267,7 @@ def attack_result_to_summary(
         attack_result_id=ar.attack_result_id or "",
         conversation_id=ar.conversation_id,
         attack_type=aid.class_name if aid else "Unknown",
-        attack_specific_params=aid.params or None if aid else None,
+        attack_specific_params=(aid.params or None) if aid else None,
         target=target_info,
         converters=[c.class_name for c in converter_ids] if converter_ids else [],
         outcome=ar.outcome.value,
