@@ -595,6 +595,13 @@ class AttackService:
         # Use the explicitly-provided conversation_id for message storage
         msg_conversation_id = request.target_conversation_id
 
+        # --- Guard: prevent writing to an unrelated conversation -------------
+        allowed_conv_ids = {main_conversation_id} | {
+            ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
+        }
+        if msg_conversation_id not in allowed_conv_ids:
+            raise ValueError(f"Conversation '{msg_conversation_id}' is not part of attack '{attack_result_id}'")
+
         # The frontend must supply the target registry name so the backend
         # stays stateless — no reverse lookups, no in-memory mapping.
         target_registry_name = request.target_registry_name

@@ -1746,8 +1746,12 @@ class TestAddMessageTargetConversation:
     async def test_stores_message_in_target_conversation(self, attack_service, mock_memory):
         """When target_conversation_id is set, messages should go to that conversation."""
         from pyrit.backend.models.attacks import AttackSummary, ConversationMessagesResponse
+        from pyrit.models.conversation_reference import ConversationReference, ConversationType
 
         ar = make_attack_result(conversation_id="attack-1")
+        ar.related_conversations = {
+            ConversationReference(conversation_id="branch-1", conversation_type=ConversationType.PRUNED),
+        }
         mock_memory.get_attack_results.return_value = [ar]
         mock_memory.get_message_pieces.return_value = []
         mock_memory.get_conversation.return_value = []
@@ -1786,6 +1790,23 @@ class TestAddMessageTargetConversation:
             attack_result_id="attack-1",
             conversation_id="branch-1",
         )
+
+    @pytest.mark.asyncio
+    async def test_rejects_unrelated_conversation_id(self, attack_service, mock_memory):
+        """Writing to a conversation_id that doesn't belong to the attack should raise ValueError."""
+        ar = make_attack_result(conversation_id="attack-1")
+        mock_memory.get_attack_results.return_value = [ar]
+        mock_memory.get_message_pieces.return_value = []
+
+        request = AddMessageRequest(
+            role="user",
+            pieces=[MessagePieceRequest(data_type="text", original_value="Hello")],
+            send=False,
+            target_conversation_id="unrelated-conv",
+        )
+
+        with pytest.raises(ValueError, match="not part of attack"):
+            await attack_service.add_message_async(attack_result_id="ar-attack-1", request=request)
 
 
 @pytest.mark.usefixtures("patch_central_database")
