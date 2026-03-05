@@ -513,12 +513,16 @@ class AttackService:
         # visible in the GUI and fetchable via get_conversation_messages.
         updated_pruned.append(ar.conversation_id)
 
+        updated_metadata = dict(ar.metadata or {})
+        updated_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
+
         self._memory.update_attack_result_by_id(
             attack_result_id=attack_result_id,
             update_fields={
                 "conversation_id": target_conv_id,
                 "pruned_conversation_ids": updated_pruned if updated_pruned else None,
                 "adversarial_chat_conversation_ids": updated_adversarial if updated_adversarial else None,
+                "attack_metadata": updated_metadata,
             },
         )
 
