@@ -339,7 +339,7 @@ describe("InputBox", () => {
           activeTarget={{
             target_registry_name: "test",
             target_type: "TextTarget",
-            supports_multiturn_chat: false,
+            supports_multi_turn: false,
           }}
         />
       </TestWrapper>
@@ -360,7 +360,7 @@ describe("InputBox", () => {
           activeTarget={{
             target_registry_name: "test",
             target_type: "OpenAIChatTarget",
-            supports_multiturn_chat: true,
+            supports_multi_turn: true,
           }}
         />
       </TestWrapper>

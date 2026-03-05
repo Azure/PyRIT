@@ -1276,7 +1276,7 @@ describe("ChatWindow Integration", () => {
     const singleTurnTarget: TargetInstance = {
       target_registry_name: "openai_image_1",
       target_type: "OpenAIImageTarget",
-      supports_multiturn_chat: false,
+      supports_multi_turn: false,
     };
 
     const messagesWithUser: Message[] = [
@@ -1305,7 +1305,7 @@ describe("ChatWindow Integration", () => {
     const singleTurnTarget: TargetInstance = {
       target_registry_name: "openai_image_1",
       target_type: "OpenAIImageTarget",
-      supports_multiturn_chat: false,
+      supports_multi_turn: false,
     };
 
     render(
@@ -1349,7 +1349,7 @@ describe("ChatWindow Integration", () => {
     const singleTurnTarget: TargetInstance = {
       target_registry_name: "openai_tts_1",
       target_type: "OpenAITTSTarget",
-      supports_multiturn_chat: false,
+      supports_multi_turn: false,
     };
 
     const messagesWithUser: Message[] = [

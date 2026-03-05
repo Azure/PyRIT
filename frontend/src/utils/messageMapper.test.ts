@@ -131,7 +131,7 @@ describe("messageMapper", () => {
             original_value_data_type: "text",
             converted_value_data_type: "image_path",
             original_value: "generate an image",
-            converted_value: "iVBORw0KGgo=",
+            converted_value: "/api/media?path=output%2Fimage.png",
             converted_value_mime_type: "image/png",
             scores: [],
             response_error: "none",
@@ -145,7 +145,7 @@ describe("messageMapper", () => {
       expect(result.attachments).toHaveLength(1);
       expect(result.attachments![0].type).toBe("image");
       expect(result.attachments![0].url).toBe(
-        "data:image/png;base64,iVBORw0KGgo="
+        "/api/media?path=output%2Fimage.png"
       );
     });
 
@@ -159,7 +159,7 @@ describe("messageMapper", () => {
             original_value_data_type: "text",
             converted_value_data_type: "audio_path",
             original_value: "speak this",
-            converted_value: "UklGRg==",
+            converted_value: "/api/media?path=output%2Fspeech.wav",
             converted_value_mime_type: "audio/wav",
             scores: [],
             response_error: "none",
@@ -172,7 +172,7 @@ describe("messageMapper", () => {
 
       expect(result.attachments).toHaveLength(1);
       expect(result.attachments![0].type).toBe("audio");
-      expect(result.attachments![0].url).toContain("data:audio/wav;base64,");
+      expect(result.attachments![0].url).toBe("/api/media?path=output%2Fspeech.wav");
     });
 
     it("should convert a video response", () => {
@@ -185,7 +185,7 @@ describe("messageMapper", () => {
             original_value_data_type: "text",
             converted_value_data_type: "video_path",
             original_value: "generate video",
-            converted_value: "dmlkZW8=",
+            converted_value: "/api/media?path=output%2Fclip.mp4",
             converted_value_mime_type: "video/mp4",
             scores: [],
             response_error: "none",
@@ -198,7 +198,7 @@ describe("messageMapper", () => {
 
       expect(result.attachments).toHaveLength(1);
       expect(result.attachments![0].type).toBe("video");
-      expect(result.attachments![0].url).toContain("data:video/mp4;base64,");
+      expect(result.attachments![0].url).toBe("/api/media?path=output%2Fclip.mp4");
     });
 
     it("should handle error response", () => {
@@ -328,7 +328,7 @@ describe("messageMapper", () => {
             piece_id: "p1",
             original_value_data_type: "text",
             converted_value_data_type: "image_path",
-            converted_value: "aW1hZ2U=",
+            converted_value: "/api/media?path=output%2Fimg.png",
             // No converted_value_mime_type
             scores: [],
             response_error: "none",
@@ -338,7 +338,8 @@ describe("messageMapper", () => {
       };
 
       const result = backendMessageToFrontend(msg);
-      expect(result.attachments![0].url).toContain("data:image/png;base64,");
+      expect(result.attachments![0].url).toBe("/api/media?path=output%2Fimg.png");
+      expect(result.attachments![0].mimeType).toBe("image/png");
     });
   });
 

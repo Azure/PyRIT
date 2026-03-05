@@ -59,7 +59,7 @@ export interface TargetInstance {
   temperature?: number | null
   top_p?: number | null
   max_requests_per_minute?: number | null
-  supports_multiturn_chat?: boolean
+  supports_multi_turn?: boolean
   target_specific_params?: Record<string, unknown> | null
 }
 
@@ -116,7 +116,9 @@ export interface CreateAttackResponse {
 export interface BackendScore {
   score_id: string
   scorer_type: string
-  score_value: number
+  score_type: string
+  score_value: string
+  score_category?: string | null
   score_rationale?: string | null
   scored_at: string
 }
@@ -154,6 +156,7 @@ export interface MessagePieceRequest {
   converted_value?: string
   mime_type?: string
   original_prompt_id?: string
+  prompt_metadata?: Record<string, string>
 }
 
 export interface AddMessageRequest {

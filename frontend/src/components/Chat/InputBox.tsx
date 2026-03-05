@@ -384,7 +384,7 @@ const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(function InputBox({ o
             rows={1}
           />
           <div className={styles.iconButtonsRight}>
-            {activeTarget && activeTarget.supports_multiturn_chat === false && (
+            {activeTarget && activeTarget.supports_multi_turn === false && (
               <Tooltip
                 content="This target does not track conversation history — each turn is sent independently."
                 relationship="description"

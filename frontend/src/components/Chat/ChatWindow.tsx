@@ -429,7 +429,7 @@ export default function ChatWindow({
     }
   }, [attackResultId])
 
-  const singleTurnLimitReached = activeTarget?.supports_multiturn_chat === false && messages.some(m => m.role === 'user')
+  const singleTurnLimitReached = activeTarget?.supports_multi_turn === false && messages.some(m => m.role === 'user')
 
   // Operator locking: if the loaded attack's operator differs from the current
   // user's operator label, the conversation should be read-only.
@@ -533,7 +533,7 @@ export default function ChatWindow({
           onBranchConversation={attackResultId && activeConversationId ? handleBranchConversation : undefined}
           onBranchAttack={activeTarget && activeConversationId ? handleBranchAttack : undefined}
           isLoading={isLoadingAttack || isLoadingMessages || awaitingConversationLoad}
-          isSingleTurn={activeTarget?.supports_multiturn_chat === false}
+          isSingleTurn={activeTarget?.supports_multi_turn === false}
           isOperatorLocked={isOperatorLocked}
           isCrossTarget={isCrossTargetLocked}
           noTargetSelected={!activeTarget}
