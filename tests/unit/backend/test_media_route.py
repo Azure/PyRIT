@@ -94,3 +94,16 @@ class TestServeMedia:
 
         assert response.status_code == 200
         assert response.headers["content-type"] == "application/octet-stream"
+
+
+class TestServeMediaErrors:
+    """Tests for /api/media error cases without mock memory."""
+
+    def test_returns_500_when_memory_not_initialized(self, client: TestClient) -> None:
+        """Returns 500 when CentralMemory is not initialized."""
+        with patch("pyrit.backend.routes.media.CentralMemory") as mock_cm:
+            mock_cm.get_memory_instance.side_effect = ValueError("not initialized")
+
+            response = client.get("/api/media", params={"path": "/some/file.png"})
+
+            assert response.status_code == 500

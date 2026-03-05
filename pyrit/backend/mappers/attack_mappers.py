@@ -16,7 +16,6 @@ import mimetypes
 import os
 import time
 import uuid
-from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Optional, cast
 from urllib.parse import quote, urlparse
@@ -42,8 +41,6 @@ from pyrit.models import Score as PyritScore
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from pyrit.models.conversation_stats import ConversationStats
 
 # ============================================================================
@@ -144,10 +141,9 @@ async def _sign_blob_url_async(*, blob_url: str) -> str:
 
     # Extract container name from path: /container/path/to/blob
     parts = parsed.path.strip("/").split("/", 1)
-    if not parts:
-        return blob_url
-
     container_name = parts[0]
+    if not container_name:
+        return blob_url
     container_url = f"{parsed.scheme}://{parsed.netloc}/{container_name}"
 
     try:
@@ -482,34 +478,3 @@ def request_to_pyrit_message(
 # ============================================================================
 # Private Helpers
 # ============================================================================
-
-
-def _get_preview_from_pieces(pieces: Sequence[PyritMessagePiece]) -> Optional[str]:
-    """
-    Get a preview of the last message from a list of pieces.
-
-    Returns:
-        Truncated last message text, or None if no pieces.
-    """
-    if not pieces:
-        return None
-    last_piece = max(pieces, key=lambda p: p.sequence)
-    text = last_piece.converted_value or ""
-    return text[:100] + "..." if len(text) > 100 else text
-
-
-def _collect_labels_from_pieces(pieces: Sequence[PyritMessagePiece]) -> dict[str, str]:
-    """
-    Collect labels from message pieces.
-
-    Returns the labels from the first piece that has non-empty labels.
-    All pieces in an attack share the same labels, so the first match
-    is representative.
-
-    Returns:
-        Label dict, or empty dict if no pieces have labels.
-    """
-    for p in pieces:
-        if p.labels:
-            return dict(p.labels)
-    return {}

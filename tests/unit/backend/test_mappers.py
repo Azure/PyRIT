@@ -597,6 +597,14 @@ class TestSignBlobUrlAsync:
 
         assert result == url
 
+    @pytest.mark.asyncio
+    async def test_empty_path_returns_original(self) -> None:
+        """Blob URL with empty path is returned unsigned."""
+        url = "https://acct.blob.core.windows.net"
+        with patch("pyrit.backend.mappers.attack_mappers._is_azure_blob_url", return_value=True):
+            result = await _sign_blob_url_async(blob_url=url)
+        assert result == url
+
 
 class TestResolveMediaUrl:
     """Tests for _resolve_media_url helper."""

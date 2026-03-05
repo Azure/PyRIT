@@ -376,6 +376,19 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_get_conversation_messages_invalid_conversation_returns_400(self, client: TestClient) -> None:
+        """Test getting messages for invalid conversation_id returns 400."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.get_conversation_messages_async = AsyncMock(
+                side_effect=ValueError("conversation does not belong to this attack")
+            )
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks/attack-1/messages", params={"conversation_id": "wrong-conv"})
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+
     def test_list_attacks_with_labels(self, client: TestClient) -> None:
         """Test listing attacks with label filters."""
         now = datetime.now(timezone.utc)
