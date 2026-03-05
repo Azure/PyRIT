@@ -22,6 +22,8 @@ from pyrit.executor.attack.multi_turn import (
     ChunkedRequestAttack,
     ChunkedRequestAttackContext,
     ConversationSession,
+    CoTHijackingAttack,
+    CoTHijackingAttackContext,
     CrescendoAttack,
     CrescendoAttackContext,
     CrescendoAttackResult,
