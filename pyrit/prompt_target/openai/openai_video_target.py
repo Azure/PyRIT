@@ -545,9 +545,10 @@ class OpenAIVideoTarget(OpenAITarget):
 
         video_id = None
 
-        # 1. Check original_prompt_id on any piece (e.g. copied video attachment)
+        # 1. Check original_prompt_id on any piece that is a duplicate
+        #    (original_prompt_id defaults to id, so only query when they differ)
         for p in message.message_pieces:
-            if p.original_prompt_id:
+            if p.original_prompt_id and p.original_prompt_id != p.id:
                 source_pieces = self._memory.get_message_pieces(prompt_ids=[str(p.original_prompt_id)])
                 for src in source_pieces:
                     if src.prompt_metadata and src.prompt_metadata.get("video_id"):
