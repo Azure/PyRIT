@@ -697,6 +697,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.data_type = "text"
         piece.original_value = "original"
         piece.converted_value = "converted"
+        piece.prompt_metadata = None
         piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
@@ -717,6 +718,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.data_type = "text"
         piece.original_value = "fallback"
         piece.converted_value = None
+        piece.prompt_metadata = None
         piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
@@ -735,6 +737,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.original_value = "base64data"
         piece.converted_value = None
         piece.mime_type = "image/png"
+        piece.prompt_metadata = None
         piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
@@ -746,6 +749,25 @@ class TestRequestPieceToPyritMessagePiece:
 
         assert result.prompt_metadata == {"mime_type": "image/png"}
 
+    def test_prompt_metadata_takes_precedence_over_mime_type(self) -> None:
+        """Test that prompt_metadata is used when provided, ignoring mime_type."""
+        piece = MagicMock()
+        piece.data_type = "video_path"
+        piece.original_value = "base64data"
+        piece.converted_value = None
+        piece.prompt_metadata = {"video_id": "abc-123"}
+        piece.mime_type = "video/mp4"
+        piece.original_prompt_id = None
+
+        result = request_piece_to_pyrit_message_piece(
+            piece=piece,
+            role="user",
+            conversation_id="conv-1",
+            sequence=0,
+        )
+
+        assert result.prompt_metadata == {"video_id": "abc-123"}
+
     def test_no_metadata_when_mime_type_absent(self) -> None:
         """Test that prompt_metadata is empty when mime_type is None."""
         piece = MagicMock()
@@ -753,6 +775,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.original_value = "hello"
         piece.converted_value = None
         piece.mime_type = None
+        piece.prompt_metadata = None
         piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
@@ -771,6 +794,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.original_value = "hello"
         piece.converted_value = None
         piece.mime_type = None
+        piece.prompt_metadata = None
         piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(
@@ -790,6 +814,7 @@ class TestRequestPieceToPyritMessagePiece:
         piece.original_value = "hello"
         piece.converted_value = None
         piece.mime_type = None
+        piece.prompt_metadata = None
         piece.original_prompt_id = None
 
         result = request_piece_to_pyrit_message_piece(

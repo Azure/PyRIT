@@ -163,6 +163,10 @@ class MessagePieceRequest(BaseModel):
     original_value: str = Field(..., description="Original value (text or base64 for media)")
     converted_value: Optional[str] = Field(None, description="Converted value. If provided, bypasses converters.")
     mime_type: Optional[str] = Field(None, description="MIME type for media content")
+    prompt_metadata: Optional[dict[str, Any]] = Field(
+        None,
+        description="Metadata to attach to the piece (e.g., {'video_id': '...'} for remix mode).",
+    )
     original_prompt_id: Optional[str] = Field(
         None,
         description="ID of the source piece when prepending from an existing conversation. "

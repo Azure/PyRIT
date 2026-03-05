@@ -474,7 +474,11 @@ def request_piece_to_pyrit_message_piece(
     Returns:
         PyritMessagePiece domain object.
     """
-    metadata: Optional[dict[str, str | int]] = {"mime_type": piece.mime_type} if piece.mime_type else None
+    metadata: Optional[dict[str, str | int]] = None
+    if piece.prompt_metadata:
+        metadata = dict(piece.prompt_metadata)
+    elif piece.mime_type:
+        metadata = {"mime_type": piece.mime_type}
     original_prompt_id = uuid.UUID(piece.original_prompt_id) if piece.original_prompt_id else None
     return PyritMessagePiece(
         role=role,

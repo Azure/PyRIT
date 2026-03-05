@@ -195,8 +195,8 @@ class OpenAIVideoTarget(OpenAITarget):
 
         text_piece = message.get_piece_by_type(data_type="text")
 
-        # Auto-inject video_id from history for seamless remix chaining
-        self._inject_video_id_from_history(message=message)
+        # Validate and strip video_path pieces for remix mode
+        self._validate_video_remix_pieces(message=message)
 
         image_piece = message.get_piece_by_type(data_type="image_path")
         prompt = text_piece.converted_value
@@ -512,20 +512,21 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         return False
 
-    def _inject_video_id_from_history(self, *, message: Message) -> None:
+    @staticmethod
+    def _validate_video_remix_pieces(*, message: Message) -> None:
         """
-        Find the most recent video_id from piece lineage and attach it
-        to the text piece's prompt_metadata so remix mode activates automatically.
+        Validate and reconcile video remix pieces.
 
-        When a video_id is found and injected, any video_path pieces are
-        removed from the message since the target uses the video_id for
-        remix instead of re-uploading the video content.
-
-        Lookup: original_prompt_id on any piece in the message (traces back to
-        a copied/remixed piece whose metadata may contain the video_id).
+        When the frontend sends a video_path piece alongside a text piece for
+        remix mode, both must carry matching ``video_id`` in their
+        ``prompt_metadata``.  After validation the video_path pieces are
+        stripped because the target only needs the ``video_id`` on the text
+        piece to perform the remix.
 
         Raises:
-            ValueError: If a video_path piece is present but no video_id can be resolved.
+            ValueError: If video_path pieces are present without ``video_id``,
+                or if the ``video_id`` values on text and video_path pieces
+                do not match.
         """
         text_piece = None
         for p in message.message_pieces:
@@ -536,37 +537,23 @@ class OpenAIVideoTarget(OpenAITarget):
         if not text_piece:
             return
 
-        # Already has a video_id — don't override
-        if text_piece.prompt_metadata and text_piece.prompt_metadata.get("video_id"):
-            self._strip_video_pieces(message)
+        video_pieces = [p for p in message.message_pieces if p.converted_value_data_type == "video_path"]
+        if not video_pieces:
             return
 
-        video_id = None
-
-        # 1. Check original_prompt_id on any piece that is a duplicate
-        #    (original_prompt_id defaults to id, so only query when they differ)
-        for p in message.message_pieces:
-            if p.original_prompt_id and p.original_prompt_id != p.id:
-                source_pieces = self._memory.get_message_pieces(prompt_ids=[str(p.original_prompt_id)])
-                for src in source_pieces:
-                    if src.prompt_metadata and src.prompt_metadata.get("video_id"):
-                        video_id = src.prompt_metadata["video_id"]
-                        break
-            if video_id:
-                break
-
-        if video_id:
-            if text_piece.prompt_metadata is None:
-                text_piece.prompt_metadata = {}
-            text_piece.prompt_metadata["video_id"] = video_id
-            self._strip_video_pieces(message)
-        elif any(p.converted_value_data_type == "video_path" for p in message.message_pieces):
+        text_video_id = (text_piece.prompt_metadata or {}).get("video_id")
+        if not text_video_id:
             raise ValueError(
-                "Message contains video_path piece(s) for remix, but no video_id could be "
-                "resolved from prompt_metadata, original_prompt_id lineage, or conversation history."
+                "video_path piece(s) present but the text piece is missing "
+                "'video_id' in prompt_metadata. Set video_id on the text piece for remix."
             )
 
-    @staticmethod
-    def _strip_video_pieces(message: Message) -> None:
-        """Remove video_path pieces from a message (video_id on text piece replaces them)."""
+        for vp in video_pieces:
+            vp_video_id = (vp.prompt_metadata or {}).get("video_id")
+            if vp_video_id and vp_video_id != text_video_id:
+                raise ValueError(
+                    f"video_id mismatch: text piece has '{text_video_id}' but video_path piece has '{vp_video_id}'."
+                )
+
+        # Strip video_path pieces — the target uses video_id from text metadata
         message.message_pieces = [p for p in message.message_pieces if p.converted_value_data_type != "video_path"]
