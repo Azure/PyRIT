@@ -468,7 +468,7 @@ def request_piece_to_pyrit_message_piece(
         role: The message role.
         conversation_id: The conversation/attack ID.
         sequence: The message sequence number.
-        labels: Optional labels to stamp on the piece.
+        labels: Optional labels to attach to the piece.
 
     Returns:
         PyritMessagePiece domain object.
@@ -503,7 +503,7 @@ def request_to_pyrit_message(
         request: The inbound API request.
         conversation_id: The conversation/attack ID.
         sequence: The message sequence number.
-        labels: Optional labels to stamp on each piece.
+        labels: Optional labels to attach to each piece.
 
     Returns:
         PyritMessage ready to send to the target.

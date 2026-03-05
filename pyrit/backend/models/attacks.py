@@ -319,7 +319,7 @@ class AddMessageRequest(BaseModel):
     )
     labels: Optional[dict[str, str]] = Field(
         None,
-        description="Labels to stamp on every message piece. "
+        description="Labels to attach to every message piece. "
         "Falls back to labels from existing pieces in the conversation.",
     )
 
