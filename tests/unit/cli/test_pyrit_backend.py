@@ -24,7 +24,7 @@ class TestParseArgs:
         """Should parse --config-file argument."""
         args = pyrit_backend.parse_args(args=["--config-file", "./custom_conf.yaml"])
 
-        assert args.config_file == "./custom_conf.yaml"
+        assert args.config_file == Path("./custom_conf.yaml")
 
 
 class TestInitializeAndRun:
@@ -37,11 +37,12 @@ class TestInitializeAndRun:
 
         with (
             patch("pyrit.cli.pyrit_backend.frontend_core.FrontendCore") as mock_core_class,
-            patch("pyrit.cli.pyrit_backend.uvicorn.Config") as mock_uvicorn_config,
-            patch("pyrit.cli.pyrit_backend.uvicorn.Server") as mock_uvicorn_server,
+            patch("uvicorn.Config") as mock_uvicorn_config,
+            patch("uvicorn.Server") as mock_uvicorn_server,
         ):
             mock_core = MagicMock()
             mock_core.initialize_async = AsyncMock()
+            mock_core._initializer_names = None
             mock_core_class.return_value = mock_core
 
             mock_server = MagicMock()
@@ -53,6 +54,7 @@ class TestInitializeAndRun:
             assert result == 0
             mock_core_class.assert_called_once()
             assert mock_core_class.call_args.kwargs["config_file"] == Path("./custom_conf.yaml")
+            mock_core.initialize_async.assert_awaited_once()
             mock_uvicorn_config.assert_called_once()
             mock_uvicorn_server.assert_called_once()
             mock_server.serve.assert_awaited_once()
