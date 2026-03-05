@@ -49,7 +49,7 @@ class LikertScalePaths(enum.Enum):
     EXPLOITS_SCALE = (
         Path(HARM_DEFINITION_PATH, "exploits.yaml").resolve(),
         LikertScaleEvalFiles(
-            human_labeled_datasets_files=["harm/exploit.csv"],
+            human_labeled_datasets_files=["harm/exploits.csv"],
             result_file="harm/exploits_metrics.jsonl",
             harm_category="exploits",
         ),
@@ -118,7 +118,11 @@ class LikertScalePaths(enum.Enum):
     )
     FAIRNESS_BIAS_SCALE = (
         Path(HARM_DEFINITION_PATH, "fairness_bias.yaml").resolve(),
-        None,
+        LikertScaleEvalFiles(
+            human_labeled_datasets_files=["harm/bias.csv"],
+            result_file="harm/bias_metrics.jsonl",
+            harm_category="bias",
+        ),
     )
     HARM_SCALE = (
         Path(HARM_DEFINITION_PATH, "harm.yaml").resolve(),
