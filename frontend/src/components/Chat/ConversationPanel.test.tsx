@@ -322,10 +322,11 @@ describe("ConversationPanel", () => {
       </TestWrapper>
     );
 
-    // Should show empty state on error, not crash
+    // Should show error state on error, not crash
     await waitFor(() => {
-      expect(screen.getByText("No related conversations")).toBeInTheDocument();
+      expect(screen.getByTestId("conversation-error")).toBeInTheDocument();
     });
+    expect(screen.getByText("Network error")).toBeInTheDocument();
   });
 
   // -----------------------------------------------------------------------
@@ -369,5 +370,61 @@ describe("ConversationPanel", () => {
 
     await user.click(screen.getByTestId("star-btn-conv-2"));
     expect(onChangeMainConversation).toHaveBeenCalledWith("conv-2");
+  });
+
+  it("should show error state on fetch failure", async () => {
+    const axiosError = {
+      isAxiosError: true,
+      response: { status: 500, data: { detail: "Server exploded" } },
+    };
+    mockedAttacksApi.getConversations.mockRejectedValue(axiosError);
+
+    render(
+      <TestWrapper>
+        <ConversationPanel {...defaultProps} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-error")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Server exploded")).toBeInTheDocument();
+    expect(screen.getByTestId("conversation-retry-btn")).toBeInTheDocument();
+  });
+
+  it("should retry on clicking retry button", async () => {
+    const axiosError = {
+      isAxiosError: true,
+      response: { status: 500, data: { detail: "Server error" } },
+    };
+    mockedAttacksApi.getConversations.mockRejectedValueOnce(axiosError);
+
+    render(
+      <TestWrapper>
+        <ConversationPanel {...defaultProps} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-error")).toBeInTheDocument();
+    });
+
+    // Now succeed on retry
+    mockedAttacksApi.getConversations.mockResolvedValue({
+      conversations: [
+        { conversation_id: "conv-1", message_count: 3, last_message_preview: "hello" },
+      ],
+      main_conversation_id: "conv-1",
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("conversation-retry-btn"));
+
+    await waitFor(() => {
+      expect(
+        screen.getByTestId("conversation-item-conv-1")
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("conversation-error")).not.toBeInTheDocument();
   });
 });

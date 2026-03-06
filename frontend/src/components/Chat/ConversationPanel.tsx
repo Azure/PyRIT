@@ -7,9 +7,12 @@ import {
   Tooltip,
   Badge,
   Spinner,
+  MessageBar,
+  MessageBarBody,
 } from '@fluentui/react-components'
 import {
   AddRegular,
+  ArrowSyncRegular,
   ChatRegular,
   ChatMultipleRegular,
   DismissRegular,
@@ -17,6 +20,7 @@ import {
   StarFilled,
 } from '@fluentui/react-icons'
 import { attacksApi } from '../../services/api'
+import { toApiError } from '../../services/errors'
 import type { ConversationSummary } from '../../types'
 
 const useStyles = makeStyles({
@@ -129,6 +133,7 @@ export default function ConversationPanel({
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [mainConversationId, setMainConversationId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchConversations = useCallback(async () => {
     if (!attackResultId) {
@@ -138,13 +143,15 @@ export default function ConversationPanel({
     }
 
     setIsLoading(true)
+    setError(null)
     try {
       const response = await attacksApi.getConversations(attackResultId)
       setConversations(response.conversations)
       setMainConversationId(response.main_conversation_id)
-    } catch {
+    } catch (err) {
       setConversations([])
       setMainConversationId(null)
+      setError(toApiError(err).detail)
     } finally {
       setIsLoading(false)
     }
@@ -212,7 +219,24 @@ export default function ConversationPanel({
           </div>
         )}
 
-        {!isLoading && conversations.length === 0 && (
+        {!isLoading && error && (
+          <div className={styles.emptyState} data-testid="conversation-error">
+            <MessageBar intent="error">
+              <MessageBarBody>{error}</MessageBarBody>
+            </MessageBar>
+            <Button
+              appearance="primary"
+              size="small"
+              icon={<ArrowSyncRegular />}
+              onClick={fetchConversations}
+              data-testid="conversation-retry-btn"
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {!isLoading && !error && conversations.length === 0 && (
           <div className={styles.emptyState}>
             <ChatRegular fontSize={24} />
             <Text size={200}>
@@ -223,7 +247,7 @@ export default function ConversationPanel({
           </div>
         )}
 
-        {!isLoading && conversations.map((conv) => {
+        {!isLoading && !error && conversations.map((conv) => {
           const isActive = conv.conversation_id === activeConversationId
           return (
             <div
