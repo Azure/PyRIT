@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { toApiError } from './errors'
 import type {
   TargetInstance,
   TargetListResponse,
@@ -25,6 +26,49 @@ const apiClient = axios.create({
   },
   timeout: 5 * 60 * 1000, // 5 minutes – video generation can take a while
 })
+
+// ---------------------------------------------------------------------------
+// Request interceptor: attach X-Request-ID for log correlation
+// ---------------------------------------------------------------------------
+
+/** Generate a UUID v4, falling back to Math.random for HTTP dev environments. */
+function generateRequestId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  // Fallback for environments without crypto.randomUUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+apiClient.interceptors.request.use((config) => {
+  config.headers['X-Request-ID'] = generateRequestId()
+  return config
+})
+
+// ---------------------------------------------------------------------------
+// Response interceptor: log errors with request context
+// ---------------------------------------------------------------------------
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const apiError = toApiError(error)
+    const method = error?.config?.method?.toUpperCase() ?? '?'
+    const url = error?.config?.url ?? '?'
+    const requestId = error?.config?.headers?.['X-Request-ID'] ?? ''
+
+    console.error(
+      `[API] ${method} ${url} failed | status=${apiError.status ?? 'N/A'} | ` +
+        `requestId=${requestId} | ${apiError.detail}`
+    )
+
+    return Promise.reject(error)
+  }
+)
 
 export { apiClient }
 

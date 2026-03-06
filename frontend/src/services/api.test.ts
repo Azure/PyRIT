@@ -21,6 +21,12 @@ import {
 } from "./api";
 
 describe("api service", () => {
+  // Interceptor functions are registered at module-load time.
+  // Capture them before beforeEach's clearAllMocks wipes the call records.
+  const requestInterceptor = (apiClient.interceptors.request.use as jest.Mock).mock.calls[0]?.[0];
+  const [responseOnSuccess, responseOnError] =
+    (apiClient.interceptors.response.use as jest.Mock).mock.calls[0] ?? [];
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -33,6 +39,62 @@ describe("api service", () => {
     it("should have correct methods", () => {
       expect(apiClient.get).toBeDefined();
       expect(apiClient.post).toBeDefined();
+    });
+  });
+
+  describe("interceptors", () => {
+    it("should register a request interceptor", () => {
+      expect(requestInterceptor).toBeDefined();
+      expect(typeof requestInterceptor).toBe("function");
+    });
+
+    it("request interceptor adds X-Request-ID header", () => {
+      const config = { headers: {} as Record<string, string> };
+      const result = requestInterceptor(config);
+      expect(result.headers["X-Request-ID"]).toBeDefined();
+      expect(typeof result.headers["X-Request-ID"]).toBe("string");
+      expect(result.headers["X-Request-ID"].length).toBeGreaterThan(0);
+    });
+
+    it("request interceptor generates UUID-like format", () => {
+      const config = { headers: {} as Record<string, string> };
+      const result = requestInterceptor(config);
+      // UUID v4 pattern: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+      expect(result.headers["X-Request-ID"]).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      );
+    });
+
+    it("should register a response interceptor", () => {
+      expect(responseOnSuccess).toBeDefined();
+      expect(responseOnError).toBeDefined();
+      expect(typeof responseOnSuccess).toBe("function");
+      expect(typeof responseOnError).toBe("function");
+    });
+
+    it("response interceptor passes through successful responses", () => {
+      const response = { status: 200, data: { ok: true } };
+      expect(responseOnSuccess(response)).toBe(response);
+    });
+
+    it("response interceptor logs and re-rejects on error", async () => {
+      const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+      const error = {
+        isAxiosError: true,
+        config: { method: "post", url: "/attacks", headers: { "X-Request-ID": "test-id" } },
+        response: { status: 500, data: { detail: "Internal error" } },
+      };
+
+      await expect(responseOnError(error)).rejects.toBe(error);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("POST /attacks failed")
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining("requestId=test-id")
+      );
+
+      consoleSpy.mockRestore();
     });
   });
 
