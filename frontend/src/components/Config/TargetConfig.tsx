@@ -7,6 +7,7 @@ import {
 } from '@fluentui/react-components'
 import { AddRegular, ArrowSyncRegular } from '@fluentui/react-icons'
 import { targetsApi } from '../../services/api'
+import { toApiError } from '../../services/errors'
 import type { TargetInstance } from '../../types'
 import CreateTargetDialog from './CreateTargetDialog'
 import TargetTable from './TargetTable'
@@ -42,7 +43,7 @@ export default function TargetConfig({ activeTarget, onSetActiveTarget }: Target
           // Wait before retrying (1s, 2s, 3s)
           await new Promise(r => setTimeout(r, (attempt + 1) * 1000))
         } else {
-          setError(err instanceof Error ? err.message : 'Failed to load targets')
+          setError(toApiError(err).detail)
         }
       }
     }
