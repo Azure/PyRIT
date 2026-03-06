@@ -23,6 +23,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+# Only serve files from known media subdirectories under results_path.
+_ALLOWED_SUBDIRECTORIES = {"prompt-memory-entries", "seed-prompt-entries"}
+
+# Block database and other sensitive file extensions even if they are
+# inside an allowed subdirectory.
+_BLOCKED_EXTENSIONS = {".db", ".sqlite", ".sqlite3", ".sql", ".json", ".yaml", ".yml", ".env", ".cfg", ".ini", ".toml"}
+
 
 @router.get("/media")
 async def serve_media_async(
@@ -31,8 +38,9 @@ async def serve_media_async(
     """
     Serve a locally stored media file.
 
-    The file path must reside under the configured results directory
-    (e.g. ``dbdata/``) to prevent path traversal attacks.
+    The file path must reside under a known media subdirectory within the
+    configured results directory (e.g. ``dbdata/prompt-memory-entries/``)
+    to prevent path traversal attacks and exfiltration of sensitive files.
 
     Args:
         path: Absolute path to the file.
@@ -41,7 +49,7 @@ async def serve_media_async(
         FileResponse with the file content and inferred MIME type.
 
     Raises:
-        HTTPException 403: If the path is outside the allowed directory.
+        HTTPException 403: If the path is outside the allowed directory or has a blocked extension.
         HTTPException 404: If the file does not exist.
         HTTPException 500: If memory is not initialized.
     """
@@ -57,6 +65,15 @@ async def serve_media_async(
     # Path traversal guard
     if not requested.is_relative_to(allowed_root):
         raise HTTPException(status_code=403, detail="Access denied: path is outside the allowed results directory.")
+
+    # Restrict to known media subdirectories (e.g. prompt-memory-entries/)
+    relative = requested.relative_to(allowed_root)
+    if not relative.parts or relative.parts[0] not in _ALLOWED_SUBDIRECTORIES:
+        raise HTTPException(status_code=403, detail="Access denied: path is not in a media subdirectory.")
+
+    # Block sensitive file extensions
+    if requested.suffix.lower() in _BLOCKED_EXTENSIONS:
+        raise HTTPException(status_code=403, detail="Access denied: file type is not allowed.")
 
     if not requested.is_file():
         raise HTTPException(status_code=404, detail="File not found.")
