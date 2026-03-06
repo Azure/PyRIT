@@ -107,7 +107,7 @@ async def _get_sas_for_container_async(*, container_url: str) -> str:
                 account_name=storage_account_name,
                 container_name=container_name,
                 user_delegation_key=delegation_key,
-                permission=ContainerSasPermissions(read=True),
+                permission=ContainerSasPermissions(read=True),  # type: ignore[no-untyped-call,unused-ignore]
                 expiry=expiry_time,
                 start=start_time,
             )
@@ -220,8 +220,11 @@ def attack_result_to_summary(
         else None
     )
 
+    if not ar.attack_result_id:
+        raise RuntimeError(f"AttackResult for conversation '{ar.conversation_id}' has no attack_result_id")
+
     return AttackSummary(
-        attack_result_id=ar.attack_result_id or "",
+        attack_result_id=ar.attack_result_id,
         conversation_id=ar.conversation_id,
         attack_type=aid.class_name if aid else "Unknown",
         attack_specific_params=(aid.params or None) if aid else None,
@@ -288,8 +291,8 @@ def _build_filename(
     """
     Build a human-readable download filename from the data type and hash.
 
-    Produces names like ``image_a1b2c3d4.png`` or ``audio_e5f6g7h8.wav``.
-    The hash is truncated to 8 characters for readability.
+    Produces names like ``image_a1b2c3d4e5f6.png`` or ``audio_e5f6g7h8i9j0.wav``.
+    The hash is truncated to 12 characters for readability.
 
     Falls back to the file extension from *value* (path or URL) when the
     MIME type cannot be determined from the data type alone.
@@ -302,7 +305,7 @@ def _build_filename(
         value: The original value (path or URL) used to infer file extension.
 
     Returns:
-        Optional[str]: A filename like ``image_a1b2c3d4.png``, or ``None`` for text-like types.
+        Optional[str]: A filename like ``image_a1b2c3d4e5f6.png``, or ``None`` for text-like types.
     """
     # Map data types to friendly prefixes
     prefix_map = {
@@ -315,7 +318,7 @@ def _build_filename(
     if not prefix:
         return None
 
-    short_hash = sha256[:8] if sha256 else uuid.uuid4().hex[:8]
+    short_hash = sha256[:12] if sha256 else uuid.uuid4().hex[:12]
 
     # Derive extension from the value (file path or URL)
     ext = ""

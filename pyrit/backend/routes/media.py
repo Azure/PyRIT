@@ -43,6 +43,7 @@ async def serve_media_async(
     Raises:
         HTTPException 403: If the path is outside the allowed directory.
         HTTPException 404: If the file does not exist.
+        HTTPException 500: If memory is not initialized.
     """
     requested = Path(path).resolve()
 

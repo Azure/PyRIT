@@ -306,6 +306,7 @@ async def get_conversations(attack_result_id: str) -> AttackConversationsRespons
     status_code=status.HTTP_201_CREATED,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
+        400: {"model": ProblemDetail, "description": "Invalid request"},
     },
 )
 async def create_related_conversation(
@@ -323,10 +324,17 @@ async def create_related_conversation(
     """
     service = get_attack_service()
 
-    result = await service.create_related_conversation_async(
-        attack_result_id=attack_result_id,
-        request=request,
-    )
+    try:
+        result = await service.create_related_conversation_async(
+            attack_result_id=attack_result_id,
+            request=request,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
