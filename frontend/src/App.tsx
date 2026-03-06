@@ -4,6 +4,9 @@ import MainLayout from './components/Layout/MainLayout'
 import ChatWindow from './components/Chat/ChatWindow'
 import TargetConfig from './components/Config/TargetConfig'
 import AttackHistory from './components/History/AttackHistory'
+import { ConnectionBanner } from './components/ConnectionBanner'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { ConnectionHealthProvider } from './hooks/useConnectionHealth'
 import { DEFAULT_GLOBAL_LABELS } from './components/Labels/LabelsBar'
 import type { ViewName } from './components/Sidebar/Navigation'
 import type { Message, TargetInstance, TargetInfo } from './types'
@@ -117,46 +120,51 @@ function App() {
   }
 
   return (
-    <FluentProvider theme={isDarkMode ? webDarkTheme : webLightTheme}>
-      <MainLayout
-        currentView={currentView}
-        onNavigate={setCurrentView}
-        onToggleTheme={toggleTheme}
-        isDarkMode={isDarkMode}
-      >
-        {currentView === 'chat' && (
-          <ChatWindow
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            onReceiveMessage={handleReceiveMessage}
-            onNewAttack={handleNewAttack}
-            activeTarget={activeTarget}
-            attackResultId={attackResultId}
-            conversationId={conversationId}
-            activeConversationId={activeConversationId}
-            onConversationCreated={handleConversationCreated}
-            onSelectConversation={handleSelectConversation}
-            onSetMessages={setMessages}
-            labels={globalLabels}
-            onLabelsChange={setGlobalLabels}
+    <ErrorBoundary>
+      <ConnectionHealthProvider>
+        <FluentProvider theme={isDarkMode ? webDarkTheme : webLightTheme}>
+          <ConnectionBanner />
+          <MainLayout
+            currentView={currentView}
             onNavigate={setCurrentView}
-            attackLabels={attackLabels}
-            attackTarget={attackTarget}
-            isLoadingAttack={isLoadingAttack}
-            relatedConversationCount={relatedConversationCount}
-          />
-        )}
-        {currentView === 'config' && (
-          <TargetConfig
-            activeTarget={activeTarget}
-            onSetActiveTarget={handleSetActiveTarget}
-          />
-        )}
-        {currentView === 'history' && (
-          <AttackHistory onOpenAttack={handleOpenAttack} />
-        )}
-      </MainLayout>
-    </FluentProvider>
+            onToggleTheme={toggleTheme}
+            isDarkMode={isDarkMode}
+          >
+            {currentView === 'chat' && (
+              <ChatWindow
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                onReceiveMessage={handleReceiveMessage}
+                onNewAttack={handleNewAttack}
+                activeTarget={activeTarget}
+                attackResultId={attackResultId}
+                conversationId={conversationId}
+                activeConversationId={activeConversationId}
+                onConversationCreated={handleConversationCreated}
+                onSelectConversation={handleSelectConversation}
+                onSetMessages={setMessages}
+                labels={globalLabels}
+                onLabelsChange={setGlobalLabels}
+                onNavigate={setCurrentView}
+                attackLabels={attackLabels}
+                attackTarget={attackTarget}
+                isLoadingAttack={isLoadingAttack}
+                relatedConversationCount={relatedConversationCount}
+              />
+            )}
+            {currentView === 'config' && (
+              <TargetConfig
+                activeTarget={activeTarget}
+                onSetActiveTarget={handleSetActiveTarget}
+              />
+            )}
+            {currentView === 'history' && (
+              <AttackHistory onOpenAttack={handleOpenAttack} />
+            )}
+          </MainLayout>
+        </FluentProvider>
+      </ConnectionHealthProvider>
+    </ErrorBoundary>
   )
 }
 
