@@ -16,6 +16,8 @@ import {
   TableHeader,
   TableHeaderCell,
   TableRow,
+  MessageBar,
+  MessageBarBody,
 } from '@fluentui/react-components'
 import {
   ArrowSyncRegular,
@@ -28,6 +30,7 @@ import {
   FilterRegular,
 } from '@fluentui/react-icons'
 import { attacksApi, labelsApi } from '../../services/api'
+import { toApiError } from '../../services/errors'
 import type { AttackSummary } from '../../types'
 
 
@@ -140,6 +143,7 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
   const styles = useStyles()
   const [attacks, setAttacks] = useState<AttackSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Filter state
   const [attackClassFilter, setAttackClassFilter] = useState<string>('')
@@ -166,6 +170,7 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
 
   const fetchAttacks = useCallback(async (pageCursor?: string) => {
     setLoading(true)
+    setError(null)
     try {
       const params: Record<string, unknown> = { limit: PAGE_SIZE }
       if (pageCursor) params.cursor = pageCursor
@@ -182,8 +187,9 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
       setAttacks(response.items.map(attack => ({ ...attack, labels: attack.labels ?? {} })))
       setHasMore(response.pagination.has_more)
       setCursor(response.pagination.next_cursor ?? undefined)
-    } catch {
+    } catch (err) {
       setAttacks([])
+      setError(toApiError(err).detail)
     } finally {
       setLoading(false)
     }
@@ -363,6 +369,21 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
         {loading ? (
           <div className={styles.emptyState}>
             <Spinner size="medium" label="Loading attacks..." />
+          </div>
+        ) : error ? (
+          <div className={styles.emptyState} data-testid="error-state">
+            <MessageBar intent="error">
+              <MessageBarBody>{error}</MessageBarBody>
+            </MessageBar>
+            <Button
+              appearance="primary"
+              icon={<ArrowSyncRegular />}
+              onClick={() => fetchAttacks()}
+              disabled={loading}
+              data-testid="retry-btn"
+            >
+              Retry
+            </Button>
           </div>
         ) : attacks.length === 0 ? (
           <div className={styles.emptyState} data-testid="empty-state">

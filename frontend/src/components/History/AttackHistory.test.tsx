@@ -405,4 +405,91 @@ describe('AttackHistory', () => {
     expect(screen.getByText('Created')).toBeInTheDocument()
     expect(screen.getByText('Updated')).toBeInTheDocument()
   })
+
+  it('should show error state on API failure', async () => {
+    const axiosError = {
+      isAxiosError: true,
+      response: { status: 500, data: { detail: 'Internal server error' } },
+    }
+    mockedAttacksApi.listAttacks.mockRejectedValue(axiosError)
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-state')).toBeInTheDocument()
+    })
+    expect(screen.getByText('Internal server error')).toBeInTheDocument()
+    expect(screen.getByTestId('retry-btn')).toBeInTheDocument()
+  })
+
+  it('should retry on clicking retry button', async () => {
+    const axiosError = {
+      isAxiosError: true,
+      response: { status: 500, data: { detail: 'Internal server error' } },
+    }
+    mockedAttacksApi.listAttacks.mockRejectedValueOnce(axiosError)
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-state')).toBeInTheDocument()
+    })
+
+    // Now make it succeed on retry
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: sampleAttacks,
+      pagination: { limit: 25, has_more: false },
+    })
+
+    fireEvent.click(screen.getByTestId('retry-btn'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('attacks-table')).toBeInTheDocument()
+    })
+  })
+
+  it('should show network error message for network failures', async () => {
+    const networkError = {
+      isAxiosError: true,
+      message: 'Network Error',
+    }
+    mockedAttacksApi.listAttacks.mockRejectedValue(networkError)
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-state')).toBeInTheDocument()
+    })
+    expect(screen.getByText(/network error/i)).toBeInTheDocument()
+  })
+
+  it('should distinguish empty results from error state', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('error-state')).toBeNull()
+  })
 })
