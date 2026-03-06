@@ -1,8 +1,11 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+from ast import If
 import logging
 import os
+import shutil
+import subprocess
 import tempfile
 import uuid
 from abc import ABC
@@ -15,6 +18,24 @@ from pyrit.score.scorer import Scorer
 
 logger = logging.getLogger(__name__)
 
+
+def _check_ffmpeg_installed() -> bool:
+    """
+    Check if ffmpeg is installed and available on PATH.
+    FFmpeg is required for scoring audio content in videos
+
+    Returns:
+        bool: True if ffmpeg is installed, False otherwise.
+    """
+    
+    if shutil.which("ffmpeg") is None:
+        # raise RuntimeError(
+        #     "ffmpeg is required for audio processing but was not found on PATH. "
+        #     "Install it via: apt install ffmpeg / brew install ffmpeg / "
+        #     "https://ffmpeg.org/download.html"
+        # )
+        return False
+    return True
 
 class AudioTranscriptHelper(ABC):  # noqa: B024
     """
@@ -29,7 +50,6 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
     _DEFAULT_SAMPLE_RATE = 16000  # 16kHz - Azure Speech optimal rate
     _DEFAULT_CHANNELS = 1  # Mono - Azure Speech prefers mono
     _DEFAULT_SAMPLE_WIDTH = 2  # 16-bit audio (2 bytes per sample)
-    _DEFAULT_EXPORT_PARAMS = ["-acodec", "pcm_s16le"]  # 16-bit PCM for best compatibility
 
     def __init__(
         self,
@@ -173,23 +193,30 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
             str: Path to WAV file (original if already WAV, or converted temporary file).
 
         Raises:
-            ModuleNotFoundError: If pydub is not installed.
+            RuntimeError: If ffmpeg is not installed.
         """
-        try:
-            from pydub import AudioSegment
-        except ModuleNotFoundError as e:
-            logger.error("Could not import pydub. Install it via 'pip install pydub'")
-            raise e
 
-        audio = AudioSegment.from_file(audio_path)
-        audio = (
-            audio.set_frame_rate(self._DEFAULT_SAMPLE_RATE)
-            .set_channels(self._DEFAULT_CHANNELS)
-            .set_sample_width(self._DEFAULT_SAMPLE_WIDTH)
-        )
+        if not _check_ffmpeg_installed():
+            raise RuntimeError(
+                "ffmpeg is required for audio processing but was not found on PATH. "
+                "Install it via: apt install ffmpeg / brew install ffmpeg / "
+                "https://ffmpeg.org/download.html"
+            )
+        
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
-            audio.export(temp_wav.name, format="wav")
-            return temp_wav.name
+            output_path = temp_wav.name
+        subprocess.run(
+            [
+                "ffmpeg", "-i", audio_path,
+                "-ar", str(self._DEFAULT_SAMPLE_RATE),
+                "-ac", str(self._DEFAULT_CHANNELS),
+                "-acodec", "pcm_s16le",  # 16-bit PCM
+                output_path, "-y",
+            ],
+            check=True,
+            capture_output=True,
+        )
+        return output_path
 
     def _extract_audio_from_video(self, video_path: str) -> Optional[str]:
         """
@@ -203,7 +230,7 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
                 or returns None if extraction fails.
 
         Raises:
-            ModuleNotFoundError: If pydub/ffmpeg is not installed.
+            RuntimeError: If ffmpeg is not installed.
         """
         return AudioTranscriptHelper.extract_audio_from_video(video_path)
 
@@ -220,55 +247,35 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
                 or returns None if extraction fails.
 
         Raises:
-            ModuleNotFoundError: If pydub/ffmpeg is not installed.
+            RuntimeError: If ffmpeg is not installed.
         """
-        try:
-            from pydub import AudioSegment
-        except ModuleNotFoundError as e:
-            logger.error("Could not import pydub. Install it via 'pip install pydub'")
-            raise e
-
-        try:
-            # Extract audio from video using pydub (requires ffmpeg)
-            logger.info(f"Extracting audio from video: {video_path}")
-            audio = AudioSegment.from_file(video_path)
-            logger.info(
-                f"Audio extracted: duration={len(audio)}ms, channels={audio.channels}, "
-                f"sample_width={audio.sample_width}, frame_rate={audio.frame_rate}"
+        if not _check_ffmpeg_installed():
+            raise RuntimeError(
+                "ffmpeg is required for audio processing but was not found on PATH. "
+                "Install it via: apt install ffmpeg / brew install ffmpeg / "
+                "https://ffmpeg.org/download.html"
             )
 
-            # Optimize for Azure Speech recognition:
-            # Azure Speech works best with 16kHz mono audio (same as Azure TTS output)
-            if audio.frame_rate != AudioTranscriptHelper._DEFAULT_SAMPLE_RATE:
-                logger.info(
-                    f"Resampling audio from {audio.frame_rate}Hz to {AudioTranscriptHelper._DEFAULT_SAMPLE_RATE}Hz"
-                )
-                audio = audio.set_frame_rate(AudioTranscriptHelper._DEFAULT_SAMPLE_RATE)
-
-            # Ensure 16-bit audio
-            if audio.sample_width != AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH:
-                logger.info(
-                    f"Converting sample width from {audio.sample_width * 8}-bit"
-                    f" to {AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH * 8}-bit"
-                )
-                audio = audio.set_sample_width(AudioTranscriptHelper._DEFAULT_SAMPLE_WIDTH)
-
-            # Convert to mono (Azure Speech prefers mono)
-            if audio.channels > AudioTranscriptHelper._DEFAULT_CHANNELS:
-                logger.info(f"Converting from {audio.channels} channels to mono")
-                audio = audio.set_channels(AudioTranscriptHelper._DEFAULT_CHANNELS)
-
-            # Create temporary WAV file with PCM encoding for best compatibility
+        try:
+            logger.info(f"Extracting audio from video: {video_path}")
             with tempfile.NamedTemporaryFile(suffix="_video_audio.wav", delete=False) as temp_audio:
-                audio.export(
-                    temp_audio.name,
-                    format="wav",
-                    parameters=AudioTranscriptHelper._DEFAULT_EXPORT_PARAMS,
-                )
-                logger.info(
-                    f"Audio exported to: {temp_audio.name} (duration={len(audio)}ms, rate={audio.frame_rate}Hz, mono)"
-                )
-                return temp_audio.name
+                output_path = temp_audio.name
+            subprocess.run(
+                [
+                    "ffmpeg", "-i", video_path,
+                    "-ar", str(AudioTranscriptHelper._DEFAULT_SAMPLE_RATE),
+                    "-ac", str(AudioTranscriptHelper._DEFAULT_CHANNELS),
+                    "-acodec", "pcm_s16le",  # 16-bit PCM
+                    output_path, "-y",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            logger.info(
+                f"Audio exported to: {output_path} "
+                f"(rate={AudioTranscriptHelper._DEFAULT_SAMPLE_RATE}Hz, mono)"
+            )
+            return output_path
         except Exception as e:
             logger.warning(f"Failed to extract audio from video {video_path}: {e}")
             return None
