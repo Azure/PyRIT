@@ -252,6 +252,20 @@ function ImageWithSpinner({ src, alt, className, hiddenClassName, containerClass
   )
 }
 
+function MediaWithFallback({ type, src, className }: { type: 'video' | 'audio'; src: string; className?: string }) {
+  const [error, setError] = useState(false)
+  const handleError = useCallback(() => setError(true), [])
+
+  if (error) {
+    return <Text size={200} italic data-testid={`${type}-error`}>{type === 'video' ? 'Video' : 'Audio'} failed to load</Text>
+  }
+
+  if (type === 'video') {
+    return <video src={src} controls className={className} onError={handleError} data-testid="video-player" />
+  }
+  return <audio src={src} controls onError={handleError} data-testid="audio-player" />
+}
+
 export default function MessageList({ messages, onCopyToInput, onCopyToNewConversation, onBranchConversation, onBranchAttack, isLoading, isSingleTurn, isOperatorLocked, isCrossTarget, noTargetSelected }: MessageListProps) {
   const styles = useStyles()
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -355,8 +369,8 @@ export default function MessageList({ messages, onCopyToInput, onCopyToNewConver
                       {message.originalAttachments.map((att, i) => (
                         <div key={i}>
                           {att.type === 'image' && <ImageWithSpinner src={att.url} alt={att.name} className={styles.attachmentPreview} hiddenClassName={styles.attachmentPreviewHidden} containerClassName={styles.imageContainer} spinnerClassName={styles.imageSpinner} />}
-                          {att.type === 'video' && <video src={att.url} controls className={styles.videoPreview} />}
-                          {att.type === 'audio' && <audio src={att.url} controls />}
+                          {att.type === 'video' && <MediaWithFallback type="video" src={att.url} className={styles.videoPreview} />}
+                          {att.type === 'audio' && <MediaWithFallback type="audio" src={att.url} />}
                           {att.type === 'file' && <div className={styles.attachmentFile}><Text size={200}>📄 {att.name}</Text></div>}
                         </div>
                       ))}
@@ -398,14 +412,10 @@ export default function MessageList({ messages, onCopyToInput, onCopyToNewConver
                         />
                       )}
                       {att.type === 'video' && (
-                        <video
-                          src={att.url}
-                          controls
-                          className={styles.videoPreview}
-                        />
+                        <MediaWithFallback type="video" src={att.url} className={styles.videoPreview} />
                       )}
                       {att.type === 'audio' && (
-                        <audio src={att.url} controls />
+                        <MediaWithFallback type="audio" src={att.url} />
                       )}
                       {att.type === 'file' && (
                         <div className={styles.attachmentFile}>
