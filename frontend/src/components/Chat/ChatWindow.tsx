@@ -14,6 +14,7 @@ import ConversationPanel from './ConversationPanel'
 import LabelsBar from '../Labels/LabelsBar'
 import type { InputBoxHandle } from './InputBox'
 import { attacksApi } from '../../services/api'
+import { toApiError } from '../../services/errors'
 import { buildMessagePieces, backendMessagesToFrontend } from '../../utils/messageMapper'
 import type { Message, MessageAttachment, TargetInstance, TargetInfo } from '../../types'
 import type { ViewName } from '../Sidebar/Navigation'
@@ -295,24 +296,31 @@ export default function ChatWindow({
     } catch (err) {
       // Only show error in UI if user is still on this conversation
       if (viewedConvRef.current === sendConvId || viewedConvRef.current === (activeConversationId ?? conversationId)) {
-        // Extract the most useful error detail:
-        // 1. Axios errors carry the FastAPI `detail` in response body
-        // 2. Fall back to the generic Error message
-        // 3. Last resort: static string
-        const axiosData = (err as any)?.response?.data
-        const detail = typeof axiosData === 'string' ? axiosData : axiosData?.detail
-        const description = detail || (err instanceof Error ? err.message : 'Failed to send message')
+        const apiError = toApiError(err)
+        let description: string
+        if (apiError.isNetworkError) {
+          description = 'Network error — check that the backend is running and reachable.'
+        } else if (apiError.isTimeout) {
+          description = 'Request timed out. The server may be busy — please try again.'
+        } else {
+          description = apiError.detail
+        }
 
         const errorMessage: Message = {
           role: 'assistant',
           content: '',
           timestamp: new Date().toISOString(),
           error: {
-            type: 'unknown',
+            type: apiError.isNetworkError ? 'network' : apiError.isTimeout ? 'timeout' : 'unknown',
             description,
           },
         }
         onReceiveMessage(errorMessage)
+
+        // Preserve the failed message text in the input box for easy re-send
+        if (originalValue && inputBoxRef.current) {
+          inputBoxRef.current.setText(originalValue)
+        }
       }
     } finally {
       sendingConvIdsRef.current.delete(sendConvId)

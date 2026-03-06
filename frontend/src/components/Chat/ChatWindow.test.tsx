@@ -542,6 +542,7 @@ describe("ChatWindow Integration", () => {
 
     // Simulate an axios error with response.data.detail (what FastAPI returns)
     const axiosError = new Error("Request failed with status code 500") as any;
+    axiosError.isAxiosError = true;
     axiosError.response = {
       status: 500,
       data: { detail: "Failed to add message: Image URLs are only allowed for messages with role 'user'" },
@@ -583,6 +584,7 @@ describe("ChatWindow Integration", () => {
 
     // Simulate a response where data is a plain string (not JSON)
     const axiosError = new Error("Request failed with status code 500") as any;
+    axiosError.isAxiosError = true;
     axiosError.response = {
       status: 500,
       data: "Internal Server Error",
@@ -641,7 +643,7 @@ describe("ChatWindow Integration", () => {
       expect(onReceiveMessage).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.objectContaining({
-            description: "Failed to send message",
+            description: "string error",
           }),
         })
       );
