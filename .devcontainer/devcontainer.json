@@ -90,6 +90,9 @@
       ]
     }
   },
+  "features": {
+    "ghcr.io/devcontainers/features/copilot-cli:1": {}
+  },
   "postCreateCommand": "/bin/bash -i .devcontainer/devcontainer_setup.sh",
   "forwardPorts": [3000, 4213, 5000, 8000, 8888]
 }
