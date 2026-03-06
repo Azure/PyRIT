@@ -119,7 +119,7 @@ Examples:
     return parser.parse_args(args)
 
 
-async def initialize_and_run(*, parsed_args: Namespace) -> int:
+async def initialize_and_run_async(*, parsed_args: Namespace) -> int:
     """
     Initialize PyRIT and start the backend server.
 
@@ -223,7 +223,7 @@ def main(*, args: Optional[list[str]] = None) -> int:
 
     # Run the server
     try:
-        return asyncio.run(initialize_and_run(parsed_args=parsed_args))
+        return asyncio.run(initialize_and_run_async(parsed_args=parsed_args))
     except KeyboardInterrupt:
         print("\n🛑 Backend stopped")
         return 0

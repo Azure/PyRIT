@@ -19,7 +19,9 @@ import mimetypes
 import uuid
 from datetime import datetime, timezone
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Literal, Optional, cast
+from urllib.parse import parse_qs, urlparse
 
 from pyrit.backend.mappers.attack_mappers import (
     attack_result_to_summary,
@@ -327,8 +329,11 @@ class AttackService:
                 labels=labels,
             )
 
+        if not attack_result.attack_result_id:
+            raise RuntimeError("attack_result_id was not assigned after persistence — this is a bug")
+
         return CreateAttackResponse(
-            attack_result_id=attack_result.attack_result_id or "",
+            attack_result_id=attack_result.attack_result_id,
             conversation_id=conversation_id,
             created_at=now,
         )
@@ -436,6 +441,18 @@ class AttackService:
 
         ar = results[0]
         now = datetime.now(timezone.utc)
+
+        # Validate that both or neither branching fields are provided
+        if (request.source_conversation_id is None) != (request.cutoff_index is None):
+            raise ValueError("Both source_conversation_id and cutoff_index must be provided together")
+
+        # Validate source_conversation_id belongs to this attack
+        if request.source_conversation_id is not None:
+            all_conv_ids = {ar.conversation_id} | {ref.conversation_id for ref in ar.related_conversations}
+            if request.source_conversation_id not in all_conv_ids:
+                raise ValueError(
+                    f"Conversation '{request.source_conversation_id}' is not part of attack '{attack_result_id}'"
+                )
 
         # --- Branch via duplication (preferred for tracking) ---------------
         if request.source_conversation_id is not None and request.cutoff_index is not None:
@@ -804,6 +821,22 @@ class AttackService:
 
             # Already a remote URL (e.g. signed blob URL from a remix) — keep as-is
             if piece.original_value.startswith(("http://", "https://")):
+                if piece.converted_value is None:
+                    piece.converted_value = piece.original_value
+                continue
+
+            # Already a local media URL (e.g. /api/media?path=...) — extract the file path
+            if piece.original_value.startswith("/api/media"):
+                parsed = urlparse(piece.original_value)
+                file_path = parse_qs(parsed.query).get("path", [None])[0]
+                if file_path:
+                    piece.original_value = file_path
+                    if piece.converted_value is None:
+                        piece.converted_value = file_path
+                continue
+
+            # Already an existing file on disk — keep as-is
+            if Path(piece.original_value).is_file():
                 if piece.converted_value is None:
                     piece.converted_value = piece.original_value
                 continue

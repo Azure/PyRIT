@@ -67,6 +67,7 @@ def _make_attack_result(
     return AttackResult(
         conversation_id=conversation_id,
         objective="test",
+        attack_result_id=str(uuid.uuid4()),
         attack_identifier=ComponentIdentifier(
             class_name=name,
             class_module="pyrit.backend",
@@ -221,6 +222,7 @@ class TestAttackResultToSummary:
         ar = AttackResult(
             conversation_id="attack-conv",
             objective="test",
+            attack_result_id=str(uuid.uuid4()),
             attack_identifier=ComponentIdentifier(
                 class_name="TestAttack",
                 class_module="pyrit.backend",
@@ -906,19 +908,19 @@ class TestBuildFilename:
 
     def test_image_path_with_hash(self) -> None:
         result = _build_filename(data_type="image_path", sha256="abcdef1234567890", value="/tmp/photo.png")
-        assert result == "image_abcdef12.png"
+        assert result == "image_abcdef123456.png"
 
     def test_audio_path_with_hash(self) -> None:
         result = _build_filename(data_type="audio_path", sha256="1234abcd5678efgh", value="/tmp/speech.wav")
-        assert result == "audio_1234abcd.wav"
+        assert result == "audio_1234abcd5678.wav"
 
     def test_video_path_with_hash(self) -> None:
         result = _build_filename(data_type="video_path", sha256="deadbeef00000000", value="/tmp/clip.mp4")
-        assert result == "video_deadbeef.mp4"
+        assert result == "video_deadbeef0000.mp4"
 
     def test_binary_path_with_hash(self) -> None:
         result = _build_filename(data_type="binary_path", sha256="cafe0123babe4567", value="/tmp/doc.pdf")
-        assert result == "file_cafe0123.pdf"
+        assert result == "file_cafe0123babe.pdf"
 
     def test_returns_none_for_text(self) -> None:
         assert _build_filename(data_type="text", sha256="abc123", value="hello") is None
@@ -928,23 +930,23 @@ class TestBuildFilename:
 
     def test_fallback_ext_when_no_value(self) -> None:
         result = _build_filename(data_type="image_path", sha256="abcdef1234567890", value=None)
-        assert result == "image_abcdef12.png"
+        assert result == "image_abcdef123456.png"
 
     def test_fallback_ext_for_data_uri(self) -> None:
         result = _build_filename(data_type="audio_path", sha256="abcdef1234567890", value="data:audio/wav;base64,AAA=")
-        assert result == "audio_abcdef12.wav"
+        assert result == "audio_abcdef123456.wav"
 
     def test_random_hash_when_no_sha256(self) -> None:
         result = _build_filename(data_type="image_path", sha256=None, value="/tmp/photo.png")
         assert result is not None
         assert result.startswith("image_")
         assert result.endswith(".png")
-        assert len(result) == len("image_12345678.png")
+        assert len(result) == len("image_123456789012.png")
 
     def test_blob_url_extension(self) -> None:
         url = "https://account.blob.core.windows.net/container/images/photo.jpg"
         result = _build_filename(data_type="image_path", sha256="abcdef1234567890", value=url)
-        assert result == "image_abcdef12.jpg"
+        assert result == "image_abcdef123456.jpg"
 
 
 # ============================================================================

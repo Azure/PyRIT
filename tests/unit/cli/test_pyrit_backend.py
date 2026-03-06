@@ -28,7 +28,7 @@ class TestParseArgs:
 
 
 class TestInitializeAndRun:
-    """Tests for pyrit_backend.initialize_and_run."""
+    """Tests for pyrit_backend.initialize_and_run_async."""
 
     @pytest.mark.asyncio
     async def test_initialize_and_run_passes_config_file_to_frontend_core(self) -> None:
@@ -49,7 +49,7 @@ class TestInitializeAndRun:
             mock_server.serve = AsyncMock()
             mock_uvicorn_server.return_value = mock_server
 
-            result = await pyrit_backend.initialize_and_run(parsed_args=parsed_args)
+            result = await pyrit_backend.initialize_and_run_async(parsed_args=parsed_args)
 
             assert result == 0
             mock_core_class.assert_called_once()
