@@ -13,6 +13,7 @@ from pyrit.setup import IN_MEMORY, initialize_pyrit_async
 from pyrit.setup.initialization import (
     _load_environment_files,
     _load_initializers_from_scripts,
+    run_initializers_async,
 )
 
 
@@ -52,6 +53,31 @@ class TestInitializer(PyRITInitializer):
         """Test that FileNotFoundError is raised for non-existent script."""
         with pytest.raises(FileNotFoundError):
             _load_initializers_from_scripts(script_paths=["nonexistent_script.py"])
+
+
+class TestRunInitializersAsync:
+    """Tests for run_initializers_async function."""
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.setup.initialization._execute_initializers_async")
+    async def test_calls_execute_when_initializers_provided(self, mock_execute):
+        """Test that it calls _execute_initializers_async when initializers are provided."""
+        mock_initializer = mock.MagicMock()
+        await run_initializers_async(initializers=[mock_initializer])
+        mock_execute.assert_called_once()
+        assert mock_initializer in mock_execute.call_args.kwargs["initializers"]
+
+    @pytest.mark.asyncio
+    @mock.patch("pyrit.setup.initialization._execute_initializers_async")
+    @mock.patch("pyrit.setup.initialization._load_initializers_from_scripts")
+    async def test_loads_scripts_when_scripts_provided(self, mock_load_scripts, mock_execute):
+        """Test that it loads scripts via _load_initializers_from_scripts when scripts are provided."""
+        mock_script_init = mock.MagicMock()
+        mock_load_scripts.return_value = [mock_script_init]
+        await run_initializers_async(initialization_scripts=["test_script.py"])
+        mock_load_scripts.assert_called_once_with(script_paths=["test_script.py"])
+        mock_execute.assert_called_once()
+        assert mock_script_init in mock_execute.call_args.kwargs["initializers"]
 
 
 class TestInitializePyrit:
