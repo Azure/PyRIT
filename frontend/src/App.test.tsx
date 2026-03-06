@@ -340,4 +340,31 @@ describe("App", () => {
     await waitFor(() => expect(mockGetAttack).toHaveBeenCalledWith("ar-attack-1"));
     await waitFor(() => expect(screen.getByTestId("conversation-id")).toHaveTextContent("attack-conv-1"));
   });
+
+  it("handles failed attack open gracefully", async () => {
+    mockGetAttack.mockRejectedValue(new Error("Not found"));
+    render(<App />);
+
+    fireEvent.click(screen.getByTestId("nav-history"));
+    fireEvent.click(screen.getByTestId("open-attack"));
+
+    // Should switch to chat view even on error
+    expect(screen.getByTestId("main-layout")).toHaveAttribute("data-current-view", "chat");
+    await waitFor(() => expect(mockGetAttack).toHaveBeenCalledWith("ar-attack-1"));
+    // Conversation should be cleared on error
+    await waitFor(() => expect(screen.getByTestId("conversation-id")).toHaveTextContent("none"));
+  });
+
+  it("replaces loading indicator with received message", () => {
+    render(<App />);
+
+    // Send a message, then a loading indicator, then a real response
+    fireEvent.click(screen.getByTestId("send-message"));
+    expect(screen.getByTestId("message-count")).toHaveTextContent("1");
+
+    // Receive replaces loading messages — we can't simulate isLoading from mock,
+    // but we verify the receive handler adds to messages
+    fireEvent.click(screen.getByTestId("receive-message"));
+    expect(screen.getByTestId("message-count")).toHaveTextContent("2");
+  });
 });

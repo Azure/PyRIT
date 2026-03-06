@@ -492,4 +492,122 @@ describe('AttackHistory', () => {
     })
     expect(screen.queryByTestId('error-state')).toBeNull()
   })
+
+  it('should navigate to next page when Next is clicked', async () => {
+    mockedAttacksApi.listAttacks
+      .mockResolvedValueOnce({
+        items: sampleAttacks,
+        pagination: { limit: 25, has_more: true, next_cursor: 'cursor-page2' },
+      })
+      .mockResolvedValueOnce({
+        items: [sampleAttacks[1]],
+        pagination: { limit: 25, has_more: false },
+      })
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('next-page-btn')).toBeEnabled()
+    })
+
+    fireEvent.click(screen.getByTestId('next-page-btn'))
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.listAttacks).toHaveBeenCalledTimes(2)
+    })
+    // Second call should include cursor
+    expect(mockedAttacksApi.listAttacks).toHaveBeenLastCalledWith(
+      expect.objectContaining({ cursor: 'cursor-page2' })
+    )
+  })
+
+  it('should return to first page when First is clicked', async () => {
+    mockedAttacksApi.listAttacks
+      .mockResolvedValueOnce({
+        items: sampleAttacks,
+        pagination: { limit: 25, has_more: true, next_cursor: 'cursor-page2' },
+      })
+      .mockResolvedValueOnce({
+        items: [sampleAttacks[1]],
+        pagination: { limit: 25, has_more: false },
+      })
+      .mockResolvedValueOnce({
+        items: sampleAttacks,
+        pagination: { limit: 25, has_more: true, next_cursor: 'cursor-page2' },
+      })
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    // Go to page 2
+    await waitFor(() => expect(screen.getByTestId('next-page-btn')).toBeEnabled())
+    fireEvent.click(screen.getByTestId('next-page-btn'))
+
+    // Wait for page 2 to load, then click "First"
+    await waitFor(() => expect(screen.getByTestId('prev-page-btn')).toBeEnabled())
+    fireEvent.click(screen.getByTestId('prev-page-btn'))
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.listAttacks).toHaveBeenCalledTimes(3)
+    })
+  })
+
+  it('should load and display filter options from API', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({
+      attack_types: ['CrescendoAttack', 'ManualAttack'],
+    })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({
+      converter_types: ['Base64Converter'],
+    })
+    mockedLabelsApi.getLabels.mockResolvedValue({
+      source: 'attacks',
+      labels: {
+        operator: ['alice', 'bob'],
+        operation: ['op_one'],
+        custom_tag: ['val1', 'val2'],
+      },
+    })
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.getAttackOptions).toHaveBeenCalled()
+    })
+    expect(mockedAttacksApi.getConverterOptions).toHaveBeenCalled()
+    expect(mockedLabelsApi.getLabels).toHaveBeenCalled()
+  })
+
+  it('should show empty text with filter hint when filters active and no results', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('empty-state')).toBeInTheDocument()
+    })
+    // Default empty text (no filters active)
+    expect(screen.getByText('Run an attack to see it here.')).toBeInTheDocument()
+  })
 })

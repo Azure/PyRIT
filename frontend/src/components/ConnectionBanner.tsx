@@ -35,12 +35,10 @@ export function ConnectionBanner() {
     return null
   }
 
-  const displayStatus = status === 'connected' && showReconnected ? 'connected' : status
-
   return (
     <div data-testid="connection-banner" style={{ position: 'sticky', top: 0, zIndex: 1000 }}>
-      <MessageBar intent={intentMap[displayStatus]}>
-        <MessageBarBody>{messageMap[displayStatus]}</MessageBarBody>
+      <MessageBar intent={intentMap[status]}>
+        <MessageBarBody>{messageMap[status]}</MessageBarBody>
       </MessageBar>
     </div>
   )

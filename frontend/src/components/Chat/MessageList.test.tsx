@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 import MessageList from "./MessageList";
@@ -841,6 +841,163 @@ describe("MessageList", () => {
       expect(screen.queryByTestId("original-section")).not.toBeInTheDocument();
       expect(screen.queryByTestId("converted-label")).not.toBeInTheDocument();
       expect(screen.getByText("Hello")).toBeInTheDocument();
+    });
+  });
+
+  describe("MediaWithFallback", () => {
+    it("should show video error state on load failure", () => {
+      const messages: Message[] = [
+        {
+          role: "assistant",
+          content: "",
+          timestamp: new Date().toISOString(),
+          attachments: [
+            {
+              type: "video",
+              name: "broken.mp4",
+              url: "http://example.com/broken.mp4",
+              mimeType: "video/mp4",
+              size: 1024,
+            },
+          ],
+        },
+      ];
+
+      render(
+        <TestWrapper>
+          <MessageList messages={messages} />
+        </TestWrapper>
+      );
+
+      const video = screen.getByTestId("video-player");
+      fireEvent.error(video);
+
+      expect(screen.getByTestId("video-error")).toBeInTheDocument();
+      expect(screen.getByText("Video failed to load")).toBeInTheDocument();
+    });
+
+    it("should show audio error state on load failure", () => {
+      const messages: Message[] = [
+        {
+          role: "assistant",
+          content: "",
+          timestamp: new Date().toISOString(),
+          attachments: [
+            {
+              type: "audio",
+              name: "broken.wav",
+              url: "http://example.com/broken.wav",
+              mimeType: "audio/wav",
+              size: 512,
+            },
+          ],
+        },
+      ];
+
+      render(
+        <TestWrapper>
+          <MessageList messages={messages} />
+        </TestWrapper>
+      );
+
+      const audio = screen.getByTestId("audio-player");
+      fireEvent.error(audio);
+
+      expect(screen.getByTestId("audio-error")).toBeInTheDocument();
+      expect(screen.getByText("Audio failed to load")).toBeInTheDocument();
+    });
+  });
+
+  describe("original attachments with media", () => {
+    it("should render original video and audio attachments", () => {
+      const messages: Message[] = [
+        {
+          role: "user",
+          content: "converted text",
+          originalContent: "original text",
+          originalAttachments: [
+            {
+              type: "video",
+              name: "orig.mp4",
+              url: "http://example.com/orig.mp4",
+              mimeType: "video/mp4",
+              size: 1024,
+            },
+            {
+              type: "audio",
+              name: "orig.wav",
+              url: "http://example.com/orig.wav",
+              mimeType: "audio/wav",
+              size: 512,
+            },
+          ],
+          timestamp: new Date().toISOString(),
+        },
+      ];
+
+      render(
+        <TestWrapper>
+          <MessageList messages={messages} />
+        </TestWrapper>
+      );
+
+      expect(screen.getByTestId("original-section")).toBeInTheDocument();
+      expect(screen.getByTestId("video-player")).toBeInTheDocument();
+      expect(screen.getByTestId("audio-player")).toBeInTheDocument();
+    });
+  });
+
+  describe("download handler", () => {
+    it("should trigger download on click", async () => {
+      const user = userEvent.setup();
+
+      // Mock fetch + blob
+      const mockBlob = new Blob(["test"], { type: "image/png" });
+      const mockObjectUrl = "blob:http://localhost/mock-uuid";
+      global.fetch = jest.fn().mockResolvedValue({ blob: () => Promise.resolve(mockBlob) });
+      global.URL.createObjectURL = jest.fn().mockReturnValue(mockObjectUrl);
+      global.URL.revokeObjectURL = jest.fn();
+
+      const clickSpy = jest.fn();
+      const origCreateElement = document.createElement.bind(document);
+      jest.spyOn(document, "createElement").mockImplementation((tag: string) => {
+        const el = origCreateElement(tag);
+        if (tag === "a") {
+          jest.spyOn(el, "click").mockImplementation(clickSpy);
+        }
+        return el;
+      });
+
+      const messages: Message[] = [
+        {
+          role: "assistant",
+          content: "Here is the image",
+          timestamp: new Date().toISOString(),
+          attachments: [
+            {
+              type: "image",
+              name: "download.png",
+              url: "data:image/png;base64,abc=",
+              mimeType: "image/png",
+              size: 1024,
+            },
+          ],
+        },
+      ];
+
+      render(
+        <TestWrapper>
+          <MessageList messages={messages} onCopyToInput={jest.fn()} />
+        </TestWrapper>
+      );
+
+      await user.click(screen.getByTestId("download-btn-0-0"));
+
+      expect(global.fetch).toHaveBeenCalledWith("data:image/png;base64,abc=");
+      expect(clickSpy).toHaveBeenCalled();
+      expect(global.URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl);
+
+      jest.restoreAllMocks();
     });
   });
 });

@@ -108,4 +108,31 @@ describe('ErrorBoundary', () => {
       expect.any(String)
     )
   })
+
+  it('"Reload page" calls window.location.reload', () => {
+    const reloadMock = jest.fn()
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, reload: reloadMock },
+      writable: true,
+    })
+
+    let crashCount = 0
+    function AlwaysCrash() {
+      crashCount++
+      throw new Error(`Crash #${crashCount}`)
+    }
+
+    render(
+      <ErrorBoundary>
+        <AlwaysCrash />
+      </ErrorBoundary>
+    )
+
+    // First crash — click "Try again" to trigger second crash
+    fireEvent.click(screen.getByText('Try again'))
+
+    // Now "Reload page" should be visible
+    fireEvent.click(screen.getByText('Reload page'))
+    expect(reloadMock).toHaveBeenCalled()
+  })
 })
