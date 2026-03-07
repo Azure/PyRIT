@@ -331,10 +331,6 @@ class AttackService:
                 labels=labels,
             )
 
-        # TODO: Remove once add_attack_results_to_memory guarantees attack_result_id is always populated
-        if not attack_result.attack_result_id:
-            raise RuntimeError("attack_result_id was not assigned after persistence — this is a bug")
-
         return CreateAttackResponse(
             attack_result_id=attack_result.attack_result_id,
             conversation_id=conversation_id,

@@ -7,7 +7,6 @@ Tests for attack service.
 The attack service uses PyRIT memory with AttackResult as the source of truth.
 """
 
-import uuid
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -39,12 +38,6 @@ def mock_memory():
     memory.get_message_pieces.return_value = []
     memory.get_conversation_stats.return_value = {}
 
-    def _backfill_ids(attack_results: list) -> None:
-        for ar in attack_results:
-            if not ar.attack_result_id:
-                ar.attack_result_id = str(uuid.uuid4())
-
-    memory.add_attack_results_to_memory.side_effect = _backfill_ids
     return memory
 
 

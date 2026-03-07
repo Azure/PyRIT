@@ -220,9 +220,6 @@ def attack_result_to_summary(
         else None
     )
 
-    if not ar.attack_result_id:
-        raise RuntimeError(f"AttackResult for conversation '{ar.conversation_id}' has no attack_result_id")
-
     return AttackSummary(
         attack_result_id=ar.attack_result_id,
         conversation_id=ar.conversation_id,

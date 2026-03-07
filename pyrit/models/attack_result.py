@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
@@ -48,8 +49,8 @@ class AttackResult(StrategyResult):
     objective: str
 
     # Database-assigned unique ID for this AttackResult row.
-    # ``None`` for newly-constructed results that haven't been persisted yet.
-    attack_result_id: Optional[str] = None
+    # Auto-generated if not provided (e.g. when loading from DB, the persisted ID is passed in).
+    attack_result_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # Identifier of the attack strategy that produced this result
     attack_identifier: Optional[ComponentIdentifier] = None
