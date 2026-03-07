@@ -2264,7 +2264,7 @@ class TestAddMessageGuards:
         mock_memory.get_attack_results.return_value = [ar]
 
         existing_piece = make_mock_piece(conversation_id="test-id")
-        existing_piece.labels = {"operator_name": "alice"}
+        existing_piece.labels = {"operator": "alice"}
         mock_memory.get_message_pieces.return_value = [existing_piece]
 
         request = AddMessageRequest(
@@ -2272,7 +2272,7 @@ class TestAddMessageGuards:
             pieces=[MessagePieceRequest(original_value="Hello")],
             target_conversation_id="test-id",
             send=False,
-            labels={"operator_name": "bob"},
+            labels={"operator": "bob"},
         )
 
         with pytest.raises(ValueError, match="Operator mismatch"):
@@ -2285,7 +2285,7 @@ class TestAddMessageGuards:
         mock_memory.get_attack_results.return_value = [ar]
 
         existing_piece = make_mock_piece(conversation_id="test-id")
-        existing_piece.labels = {"operator_name": "alice"}
+        existing_piece.labels = {"operator": "alice"}
         mock_memory.get_message_pieces.return_value = [existing_piece]
         mock_memory.get_conversation.return_value = []
 
@@ -2294,7 +2294,7 @@ class TestAddMessageGuards:
             pieces=[MessagePieceRequest(original_value="Hello")],
             target_conversation_id="test-id",
             send=False,
-            labels={"operator_name": "alice"},
+            labels={"operator": "alice"},
         )
 
         result = await attack_service.add_message_async(attack_result_id="test-id", request=request)

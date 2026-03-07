@@ -678,13 +678,13 @@ class AttackService:
 
         existing_pieces = self._memory.get_message_pieces(conversation_id=conversation_id)
         existing_operator = next(
-            (p.labels.get("operator_name") for p in existing_pieces if p.labels and p.labels.get("operator_name")),
+            (p.labels.get("operator") for p in existing_pieces if p.labels and p.labels.get("operator")),
             None,
         )
         if not existing_operator:
             return
 
-        request_operator = request.labels.get("operator_name")
+        request_operator = request.labels.get("operator")
         if request_operator and request_operator != existing_operator:
             raise ValueError(
                 f"Operator mismatch: attack belongs to operator '{existing_operator}' "
