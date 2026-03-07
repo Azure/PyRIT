@@ -271,7 +271,7 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AttackEvaluationIdentity
+    AtomicAttackEvaluationIdentity
     build_atomic_attack_identifier
     build_seed_identifier
     class_name_to_snake_case

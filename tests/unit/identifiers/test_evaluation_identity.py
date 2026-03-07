@@ -23,16 +23,19 @@ from pyrit.identifiers.evaluation_identity import EvaluationIdentity, _build_eva
 class _StubEvaluationIdentity(EvaluationIdentity):
     """Minimal concrete subclass for testing the abstract base class."""
 
-    TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"my_target"})
-    BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name"})
+    BEHAVIORAL_CHILD_PARAMS: ClassVar[dict[str, frozenset[str]]] = {
+        "my_target": frozenset({"model_name"}),
+    }
 
 
 # ---------------------------------------------------------------------------
 # Test constants
 # ---------------------------------------------------------------------------
 
-_TARGET_CHILD_KEYS = frozenset({"prompt_target", "converter_target"})
-_BEHAVIORAL_CHILD_PARAMS = frozenset({"model_name", "temperature", "top_p"})
+_BEHAVIORAL_CHILD_PARAMS: dict[str, frozenset[str]] = {
+    "prompt_target": frozenset({"model_name", "temperature", "top_p"}),
+    "converter_target": frozenset({"model_name", "temperature", "top_p"}),
+}
 
 
 class TestBuildEvalDict:
@@ -53,7 +56,6 @@ class TestBuildEvalDict:
 
         result = _build_eval_dict(
             identifier,
-            target_child_keys=_TARGET_CHILD_KEYS,
             behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
 
@@ -76,7 +78,6 @@ class TestBuildEvalDict:
 
         result = _build_eval_dict(
             identifier,
-            target_child_keys=_TARGET_CHILD_KEYS,
             behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
 
@@ -92,7 +93,6 @@ class TestBuildEvalDict:
 
         result = _build_eval_dict(
             identifier,
-            target_child_keys=_TARGET_CHILD_KEYS,
             behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
         )
 
@@ -107,15 +107,15 @@ class TestComputeEvalHash:
         """Test that the same identifier + config produces the same hash."""
         identifier = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score")
         h1 = compute_eval_hash(
-            identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+            identifier, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
         h2 = compute_eval_hash(
-            identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+            identifier, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
         assert h1 == h2
 
     def test_empty_target_child_keys_returns_component_hash(self):
-        """Test that empty target_child_keys bypasses filtering and returns component hash."""
+        """Test that empty behavioral_child_params bypasses filtering and returns component hash."""
         child = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
@@ -129,8 +129,7 @@ class TestComputeEvalHash:
 
         result = compute_eval_hash(
             identifier,
-            target_child_keys=frozenset(),
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            behavioral_child_params={},
         )
         assert result == identifier.hash
 
@@ -138,7 +137,7 @@ class TestComputeEvalHash:
         """Test that the hash is a 64-char lowercase hex string (SHA-256)."""
         identifier = ComponentIdentifier(class_name="S", class_module="m")
         result = compute_eval_hash(
-            identifier, target_child_keys=_TARGET_CHILD_KEYS, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+            identifier, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
         assert len(result) == 64
         assert all(c in "0123456789abcdef" for c in result)
@@ -171,7 +170,6 @@ class TestEvaluationIdentity:
 
         expected = compute_eval_hash(
             cid,
-            target_child_keys=_StubEvaluationIdentity.TARGET_CHILD_KEYS,
             behavioral_child_params=_StubEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
         )
         assert identity.eval_hash == expected
@@ -202,8 +200,9 @@ class TestEvaluationIdentity:
         """Test that a concrete subclass with custom ClassVars produces the correct eval hash."""
 
         class CustomIdentity(EvaluationIdentity):
-            TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"special_target"})
-            BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature"})
+            BEHAVIORAL_CHILD_PARAMS: ClassVar[dict[str, frozenset[str]]] = {
+                "special_target": frozenset({"model_name", "temperature"}),
+            }
 
         child = ComponentIdentifier(
             class_name="Target",
@@ -219,7 +218,6 @@ class TestEvaluationIdentity:
 
         expected = compute_eval_hash(
             cid,
-            target_child_keys=frozenset({"special_target"}),
-            behavioral_child_params=frozenset({"model_name", "temperature"}),
+            behavioral_child_params={"special_target": frozenset({"model_name", "temperature"})},
         )
         assert identity.eval_hash == expected

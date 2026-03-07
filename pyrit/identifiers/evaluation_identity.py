@@ -14,7 +14,7 @@ This module provides:
   *which* children are targets and *which* params are behavioral via two
   ``ClassVar`` frozensets.
 * ``ScorerEvaluationIdentity`` — scorer-domain concrete subclass.
-* ``AttackEvaluationIdentity`` — attack-domain concrete subclass.
+* ``AtomicAttackEvaluationIdentity`` — attack-domain concrete subclass.
 * ``compute_attack_eval_hash`` — convenience wrapper for attacks.
 """
 
@@ -29,24 +29,26 @@ from pyrit.identifiers.component_identifier import ComponentIdentifier, config_h
 def _build_eval_dict(
     identifier: ComponentIdentifier,
     *,
-    target_child_keys: frozenset[str],
-    behavioral_child_params: frozenset[str],
+    behavioral_child_params: dict[str, frozenset[str]],
+    ignored_child_keys: frozenset[str] = frozenset(),
     param_allowlist: Optional[frozenset[str]] = None,
 ) -> dict[str, Any]:
     """
     Build a filtered dictionary for eval-hash computation.
 
     Includes only behavioral parameters. For child components whose names appear
-    in ``target_child_keys``, only params in ``behavioral_child_params`` are kept
-    (stripping operational params like endpoint, max_requests_per_minute).
-    Non-target children receive full eval treatment recursively.
+    as keys in ``behavioral_child_params``, only the mapped param frozenset is
+    kept (stripping operational params like endpoint, max_requests_per_minute).
+    Children in ``ignored_child_keys`` are completely excluded from the hash.
+    All other children receive full eval treatment recursively.
 
     Args:
         identifier (ComponentIdentifier): The component identity to process.
-        target_child_keys (frozenset[str]): Child names that are targets
-            (e.g., ``{"prompt_target", "converter_target"}``).
-        behavioral_child_params (frozenset[str]): Param allowlist applied to
-            target children (e.g., ``{"model_name", "temperature", "top_p"}``).
+        behavioral_child_params (dict[str, frozenset[str]]): Mapping of target
+            child names to param allowlists. Children whose names appear as keys
+            are filtered; all other children receive full recursive treatment.
+        ignored_child_keys (frozenset[str]): Child names to completely exclude
+            from the eval hash.
         param_allowlist (Optional[frozenset[str]]): If provided, only include
             params whose keys are in the allowlist. If None, include all params.
 
@@ -69,28 +71,31 @@ def _build_eval_dict(
     if identifier.children:
         eval_children: dict[str, Any] = {}
         for name in sorted(identifier.children):
+            if name in ignored_child_keys:
+                continue
             child_list = identifier.get_child_list(name)
-            if name in target_child_keys:
-                # Targets: filter to behavioral params only
+            if name in behavioral_child_params:
+                # Targets: filter to child-specific behavioral params only
+                child_allowlist = behavioral_child_params[name]
                 hashes = [
                     config_hash(
                         _build_eval_dict(
                             c,
-                            target_child_keys=target_child_keys,
                             behavioral_child_params=behavioral_child_params,
-                            param_allowlist=behavioral_child_params,
+                            ignored_child_keys=ignored_child_keys,
+                            param_allowlist=child_allowlist,
                         )
                     )
                     for c in child_list
                 ]
             else:
-                # Non-targets (e.g., sub-scorers): full eval treatment, recurse without param filtering
+                # Non-targets (e.g., converters, scorers): full eval treatment, recurse without param filtering
                 hashes = [
                     config_hash(
                         _build_eval_dict(
                             c,
-                            target_child_keys=target_child_keys,
                             behavioral_child_params=behavioral_child_params,
+                            ignored_child_keys=ignored_child_keys,
                         )
                     )
                     for c in child_list
@@ -105,8 +110,8 @@ def _build_eval_dict(
 def compute_eval_hash(
     identifier: ComponentIdentifier,
     *,
-    target_child_keys: frozenset[str],
-    behavioral_child_params: frozenset[str],
+    behavioral_child_params: dict[str, frozenset[str]],
+    ignored_child_keys: frozenset[str] = frozenset(),
 ) -> str:
     """
     Compute a behavioral equivalence hash for evaluation grouping.
@@ -114,31 +119,35 @@ def compute_eval_hash(
     Unlike ``ComponentIdentifier.hash`` (which includes all params of self and
     children), the eval hash filters child components that are "targets" to only
     their behavioral params (e.g., model_name, temperature, top_p), stripping
-    operational params like endpoint or max_requests_per_minute. This ensures the
-    same logical configuration on different deployments produces the same eval hash.
+    operational params like endpoint or max_requests_per_minute. Children in
+    ``ignored_child_keys`` are completely excluded. This ensures the same logical
+    configuration on different deployments produces the same eval hash.
 
-    Non-target children (e.g., sub-scorers) receive full recursive eval treatment.
+    Non-target children (e.g., sub-scorers, converters) receive full recursive eval
+    treatment.
 
-    When ``target_child_keys`` is empty, no child filtering occurs and the result
-    equals ``identifier.hash``.
+    When ``behavioral_child_params`` is empty and ``ignored_child_keys`` is empty,
+    no filtering occurs and the result equals ``identifier.hash``.
 
     Args:
         identifier (ComponentIdentifier): The component identity to compute the hash for.
-        target_child_keys (frozenset[str]): Child names that are targets
-            (e.g., ``{"prompt_target", "converter_target"}``).
-        behavioral_child_params (frozenset[str]): Param allowlist for target children
-            (e.g., ``{"model_name", "temperature", "top_p"}``).
+        behavioral_child_params (dict[str, frozenset[str]]): Mapping of target child
+            names to their param allowlists. Children whose names appear as keys are
+            filtered to only the specified params; all other children are included
+            fully.
+        ignored_child_keys (frozenset[str]): Child names to completely exclude
+            from the eval hash.
 
     Returns:
         str: A hex-encoded SHA256 hash suitable for eval registry keying.
     """
-    if not target_child_keys:
+    if not behavioral_child_params and not ignored_child_keys:
         return identifier.hash
 
     eval_dict = _build_eval_dict(
         identifier,
-        target_child_keys=target_child_keys,
         behavioral_child_params=behavioral_child_params,
+        ignored_child_keys=ignored_child_keys,
     )
     return config_hash(eval_dict)
 
@@ -147,27 +156,28 @@ class EvaluationIdentity(ABC):
     """
     Wraps a ``ComponentIdentifier`` with domain-specific eval-hash configuration.
 
-    Subclasses must set the two ``ClassVar`` frozensets:
+    Subclasses must set the ``ClassVar`` values:
 
-    * ``TARGET_CHILD_KEYS`` — child names whose operational params should be
-      stripped (e.g., ``{"prompt_target", "converter_target"}``).
-    * ``BEHAVIORAL_CHILD_PARAMS`` — param allowlist applied to those target
-      children (e.g., ``{"model_name", "temperature", "top_p"}``).
+    * ``BEHAVIORAL_CHILD_PARAMS`` — mapping of target child names to param
+      allowlists. Children whose names appear as keys have their params filtered
+      to only the specified set; all other children are included fully.
+    * ``IGNORED_CHILD_KEYS`` — child names to completely exclude from the
+      eval hash (default: empty).
 
     The concrete ``eval_hash`` property delegates to the module-level
     ``compute_eval_hash`` free function.
     """
 
-    TARGET_CHILD_KEYS: ClassVar[frozenset[str]]
-    BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]]
+    BEHAVIORAL_CHILD_PARAMS: ClassVar[dict[str, frozenset[str]]]
+    IGNORED_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset()
 
     def __init__(self, identifier: ComponentIdentifier) -> None:
         """Wrap a ComponentIdentifier and eagerly compute its eval hash."""
         self._identifier = identifier
         self._eval_hash = compute_eval_hash(
             identifier,
-            target_child_keys=self.TARGET_CHILD_KEYS,
             behavioral_child_params=self.BEHAVIORAL_CHILD_PARAMS,
+            ignored_child_keys=self.IGNORED_CHILD_KEYS,
         )
 
     @property
@@ -190,23 +200,31 @@ class ScorerEvaluationIdentity(EvaluationIdentity):
     same scorer configuration on different deployments produces the same eval hash.
     """
 
-    TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"prompt_target", "converter_target"})
-    BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature", "top_p"})
+    BEHAVIORAL_CHILD_PARAMS: ClassVar[dict[str, frozenset[str]]] = {
+        "prompt_target": frozenset({"model_name", "temperature", "top_p"}),
+        "converter_target": frozenset({"model_name", "temperature", "top_p"}),
+    }
 
 
-class AttackEvaluationIdentity(EvaluationIdentity):
+class AtomicAttackEvaluationIdentity(EvaluationIdentity):
     """
-    Evaluation identity for attacks.
+    Evaluation identity for atomic attacks.
 
-    Target children (``objective_target``) are filtered to behavioral params
-    only (``model_name``, ``temperature``, ``top_p``), so the same attack
-    configuration on different deployments produces the same eval hash.
-    Non-target children (e.g., seed identifiers) receive full recursive eval
-    treatment.
+    The ``objective_target`` child is filtered to only ``temperature``.
+    The ``adversarial_chat`` child is filtered to ``model_name``,
+    ``temperature``, and ``top_p``.
+    The ``objective_scorer`` child is completely excluded.
+
+    Non-target children (e.g., ``request_converters``, ``response_converters``,
+    and seed identifiers) receive full recursive eval treatment, meaning they
+    fully contribute to the hash.
     """
 
-    TARGET_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"objective_target"})
-    BEHAVIORAL_CHILD_PARAMS: ClassVar[frozenset[str]] = frozenset({"model_name", "temperature", "top_p"})
+    BEHAVIORAL_CHILD_PARAMS: ClassVar[dict[str, frozenset[str]]] = {
+        "objective_target": frozenset({"temperature"}),
+        "adversarial_chat": frozenset({"model_name", "temperature", "top_p"}),
+    }
+    IGNORED_CHILD_KEYS: ClassVar[frozenset[str]] = frozenset({"objective_scorer"})
 
 
 def compute_attack_eval_hash(identifier: ComponentIdentifier) -> str:
@@ -214,9 +232,10 @@ def compute_attack_eval_hash(identifier: ComponentIdentifier) -> str:
     Compute a behavioral equivalence hash for attack evaluation grouping.
 
     Convenience wrapper around ``compute_eval_hash`` with attack-specific
-    constants.  For the ``objective_target`` child, only model_name,
-    temperature, and top_p are included. For seed children, all params are
-    included.
+    constants.  The ``objective_scorer`` is excluded. For the
+    ``objective_target`` child, only temperature is included. For
+    ``adversarial_chat``, model_name, temperature, and top_p are included.
+    For all other children (converters, seeds), all params are included.
 
     Args:
         identifier (ComponentIdentifier): The atomic attack's composite identity.
@@ -226,6 +245,6 @@ def compute_attack_eval_hash(identifier: ComponentIdentifier) -> str:
     """
     return compute_eval_hash(
         identifier,
-        target_child_keys=AttackEvaluationIdentity.TARGET_CHILD_KEYS,
-        behavioral_child_params=AttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+        behavioral_child_params=AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+        ignored_child_keys=AtomicAttackEvaluationIdentity.IGNORED_CHILD_KEYS,
     )

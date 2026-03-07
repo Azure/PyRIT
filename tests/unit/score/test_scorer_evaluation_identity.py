@@ -17,13 +17,21 @@ from pyrit.identifiers.evaluation_identity import ScorerEvaluationIdentity
 class TestScorerEvaluationIdentityConstants:
     """Tests for the ClassVar constants on ScorerEvaluationIdentity."""
 
-    def test_target_child_keys(self):
-        """Test that TARGET_CHILD_KEYS contains the expected scorer target names."""
-        assert frozenset({"prompt_target", "converter_target"}) == ScorerEvaluationIdentity.TARGET_CHILD_KEYS
+    def test_behavioral_child_params_keys(self):
+        """Test that BEHAVIORAL_CHILD_PARAMS contains the expected scorer target names."""
+        assert set(ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS.keys()) == {"prompt_target", "converter_target"}
 
-    def test_behavioral_child_params(self):
-        """Test that BEHAVIORAL_CHILD_PARAMS contains the expected behavioral params."""
-        assert frozenset({"model_name", "temperature", "top_p"}) == ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
+    def test_prompt_target_behavioral_params(self):
+        """Test that prompt_target has the expected behavioral params."""
+        assert ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["prompt_target"] == frozenset(
+            {"model_name", "temperature", "top_p"}
+        )
+
+    def test_converter_target_behavioral_params(self):
+        """Test that converter_target has the expected behavioral params."""
+        assert ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["converter_target"] == frozenset(
+            {"model_name", "temperature", "top_p"}
+        )
 
 
 class TestScorerEvaluationIdentityEvalHash:
@@ -77,7 +85,6 @@ class TestScorerEvaluationIdentityEvalHash:
 
         expected = compute_eval_hash(
             cid,
-            target_child_keys=ScorerEvaluationIdentity.TARGET_CHILD_KEYS,
             behavioral_child_params=ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
         )
         assert identity.eval_hash == expected
@@ -105,7 +112,6 @@ class TestScorerGetEvalHash:
 
         expected = compute_eval_hash(
             identifier,
-            target_child_keys=ScorerEvaluationIdentity.TARGET_CHILD_KEYS,
             behavioral_child_params=ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
         )
         assert eval_hash == expected
