@@ -26,9 +26,38 @@ router = APIRouter()
 # Only serve files from known media subdirectories under results_path.
 _ALLOWED_SUBDIRECTORIES = {"prompt-memory-entries", "seed-prompt-entries"}
 
-# Block database and other sensitive file extensions even if they are
-# inside an allowed subdirectory.
-_BLOCKED_EXTENSIONS = {".db", ".sqlite", ".sqlite3", ".sql", ".json", ".yaml", ".yml", ".env", ".cfg", ".ini", ".toml"}
+# Only serve known media file types (allowlist approach).
+_ALLOWED_EXTENSIONS = {
+    # Images
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".webp",
+    ".svg",
+    ".ico",
+    ".tiff",
+    # Audio
+    ".mp3",
+    ".wav",
+    ".ogg",
+    ".flac",
+    ".aac",
+    ".m4a",
+    # Video
+    ".mp4",
+    ".webm",
+    ".mov",
+    ".avi",
+    ".mkv",
+    # Text / documents
+    ".txt",
+    ".md",
+    ".csv",
+    ".pdf",
+    ".html",
+}
 
 
 @router.get("/media")
@@ -71,8 +100,8 @@ async def serve_media_async(
     if not relative.parts or relative.parts[0] not in _ALLOWED_SUBDIRECTORIES:
         raise HTTPException(status_code=403, detail="Access denied: path is not in a media subdirectory.")
 
-    # Block sensitive file extensions
-    if requested.suffix.lower() in _BLOCKED_EXTENSIONS:
+    # Only allow known media file extensions
+    if requested.suffix.lower() not in _ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=403, detail="Access denied: file type is not allowed.")
 
     if not requested.is_file():

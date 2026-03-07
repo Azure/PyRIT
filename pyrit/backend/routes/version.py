@@ -68,7 +68,7 @@ async def get_version_async() -> VersionResponse:
         db_name = None
         if memory.engine.url.database:
             db_name = memory.engine.url.database.split("?")[0]
-        database_info = f"{db_type} ({db_name})" if db_name else db_type
+        database_info = f"{db_type} ({db_name})" if db_name else f"{db_type} (None)"
     except Exception as e:
         logger.debug(f"Could not detect database info: {e}")
 
