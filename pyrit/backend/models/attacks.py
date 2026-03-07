@@ -276,17 +276,18 @@ class CreateConversationResponse(BaseModel):
     created_at: datetime = Field(..., description="Conversation creation timestamp")
 
 
-class ChangeMainConversationRequest(BaseModel):
-    """Request to change the main conversation of an attack result."""
+class UpdateMainConversationRequest(BaseModel):
+    """Request to update the main conversation of an attack result."""
 
     conversation_id: str = Field(..., description="The conversation to promote to main")
 
 
-class ChangeMainConversationResponse(BaseModel):
-    """Response after changing the main conversation of an attack result."""
+class UpdateMainConversationResponse(BaseModel):
+    """Response after updating the main conversation of an attack result."""
 
     attack_result_id: str = Field(..., description="The AttackResult whose main conversation was swapped")
     conversation_id: str = Field(..., description="The conversation that is now the main conversation")
+    updated_at: datetime = Field(..., description="Timestamp when the main conversation was changed")
 
 
 # ============================================================================

@@ -607,20 +607,21 @@ class TestAttackRoutes:
 
             assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_change_main_conversation_success(self, client: TestClient) -> None:
+    def test_update_main_conversation_success(self, client: TestClient) -> None:
         """Test changing main conversation returns service response."""
         with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.change_main_conversation_async = AsyncMock(
+            mock_service.update_main_conversation_async = AsyncMock(
                 return_value={
                     "attack_result_id": "ar-attack-1",
                     "conversation_id": "branch-1",
+                    "updated_at": "2026-03-06T00:00:00+00:00",
                 }
             )
             mock_get_service.return_value = mock_service
 
             response = client.post(
-                "/api/attacks/ar-attack-1/change-main-conversation",
+                "/api/attacks/ar-attack-1/update-main-conversation",
                 json={"conversation_id": "branch-1"},
             )
 
@@ -628,29 +629,29 @@ class TestAttackRoutes:
             data = response.json()
             assert data["conversation_id"] == "branch-1"
 
-    def test_change_main_conversation_bad_request(self, client: TestClient) -> None:
+    def test_update_main_conversation_bad_request(self, client: TestClient) -> None:
         """Test changing main conversation with invalid conversation returns 400."""
         with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.change_main_conversation_async = AsyncMock(side_effect=ValueError("invalid conversation"))
+            mock_service.update_main_conversation_async = AsyncMock(side_effect=ValueError("invalid conversation"))
             mock_get_service.return_value = mock_service
 
             response = client.post(
-                "/api/attacks/ar-attack-1/change-main-conversation",
+                "/api/attacks/ar-attack-1/update-main-conversation",
                 json={"conversation_id": "missing-conv"},
             )
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_change_main_conversation_not_found(self, client: TestClient) -> None:
+    def test_update_main_conversation_not_found(self, client: TestClient) -> None:
         """Test changing main conversation for missing attack returns 404."""
         with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
             mock_service = MagicMock()
-            mock_service.change_main_conversation_async = AsyncMock(return_value=None)
+            mock_service.update_main_conversation_async = AsyncMock(return_value=None)
             mock_get_service.return_value = mock_service
 
             response = client.post(
-                "/api/attacks/missing/change-main-conversation",
+                "/api/attacks/missing/update-main-conversation",
                 json={"conversation_id": "branch-1"},
             )
 

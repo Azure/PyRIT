@@ -15,11 +15,11 @@ import pytest
 
 from pyrit.backend.models.attacks import (
     AddMessageRequest,
-    ChangeMainConversationRequest,
     CreateAttackRequest,
     MessagePieceRequest,
     PrependedMessageRequest,
     UpdateAttackRequest,
+    UpdateMainConversationRequest,
 )
 from pyrit.backend.services.attack_service import (
     AttackService,
@@ -1751,17 +1751,17 @@ class TestCreateRelatedConversation:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestChangeMainConversation:
-    """Tests for change_main_conversation_async (promote related conversation to main)."""
+class TestUpdateMainConversation:
+    """Tests for update_main_conversation_async (promote related conversation to main)."""
 
     @pytest.mark.asyncio
     async def test_returns_none_when_attack_not_found(self, attack_service, mock_memory):
         """Should return None when the attack doesn't exist."""
         mock_memory.get_attack_results.return_value = []
 
-        result = await attack_service.change_main_conversation_async(
+        result = await attack_service.update_main_conversation_async(
             attack_result_id="missing",
-            request=ChangeMainConversationRequest(conversation_id="conv-1"),
+            request=UpdateMainConversationRequest(conversation_id="conv-1"),
         )
 
         assert result is None
@@ -1772,9 +1772,9 @@ class TestChangeMainConversation:
         ar = make_attack_result(conversation_id="attack-1")
         mock_memory.get_attack_results.return_value = [ar]
 
-        result = await attack_service.change_main_conversation_async(
+        result = await attack_service.update_main_conversation_async(
             attack_result_id="ar-attack-1",
-            request=ChangeMainConversationRequest(conversation_id="attack-1"),
+            request=UpdateMainConversationRequest(conversation_id="attack-1"),
         )
 
         assert result is not None
@@ -1788,9 +1788,9 @@ class TestChangeMainConversation:
         mock_memory.get_attack_results.return_value = [ar]
 
         with pytest.raises(ValueError, match="not part of this attack"):
-            await attack_service.change_main_conversation_async(
+            await attack_service.update_main_conversation_async(
                 attack_result_id="ar-attack-1",
-                request=ChangeMainConversationRequest(conversation_id="not-related"),
+                request=UpdateMainConversationRequest(conversation_id="not-related"),
             )
 
     @pytest.mark.asyncio
@@ -1808,9 +1808,9 @@ class TestChangeMainConversation:
         }
         mock_memory.get_attack_results.return_value = [ar]
 
-        result = await attack_service.change_main_conversation_async(
+        result = await attack_service.update_main_conversation_async(
             attack_result_id="ar-attack-1",
-            request=ChangeMainConversationRequest(conversation_id="branch-1"),
+            request=UpdateMainConversationRequest(conversation_id="branch-1"),
         )
 
         assert result is not None
@@ -2271,7 +2271,7 @@ class TestAddMessageGuards:
         mock_memory.get_attack_results.return_value = [ar]
 
         existing_piece = make_mock_piece(conversation_id="test-id")
-        existing_piece.labels = {"op_name": "alice"}
+        existing_piece.labels = {"operator_name": "alice"}
         mock_memory.get_message_pieces.return_value = [existing_piece]
 
         request = AddMessageRequest(
@@ -2279,7 +2279,7 @@ class TestAddMessageGuards:
             pieces=[MessagePieceRequest(original_value="Hello")],
             target_conversation_id="test-id",
             send=False,
-            labels={"op_name": "bob"},
+            labels={"operator_name": "bob"},
         )
 
         with pytest.raises(ValueError, match="Operator mismatch"):
@@ -2292,7 +2292,7 @@ class TestAddMessageGuards:
         mock_memory.get_attack_results.return_value = [ar]
 
         existing_piece = make_mock_piece(conversation_id="test-id")
-        existing_piece.labels = {"op_name": "alice"}
+        existing_piece.labels = {"operator_name": "alice"}
         mock_memory.get_message_pieces.return_value = [existing_piece]
         mock_memory.get_conversation.return_value = []
 
@@ -2301,7 +2301,7 @@ class TestAddMessageGuards:
             pieces=[MessagePieceRequest(original_value="Hello")],
             target_conversation_id="test-id",
             send=False,
-            labels={"op_name": "alice"},
+            labels={"operator_name": "alice"},
         )
 
         result = await attack_service.add_message_async(attack_result_id="test-id", request=request)
