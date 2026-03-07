@@ -27,6 +27,7 @@ def _check_ffmpeg_installed() -> bool:
     """
     return shutil.which("ffmpeg") is not None
 
+
 class AudioTranscriptHelper(ABC):  # noqa: B024
     """
     Abstract base class for audio scorers that process audio by transcribing and scoring the text.
@@ -185,23 +186,28 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
         Raises:
             RuntimeError: If ffmpeg is not installed.
         """
-
         if not _check_ffmpeg_installed():
             raise RuntimeError(
                 "ffmpeg is required for audio processing but was not found on PATH. "
                 "Install it via: apt install ffmpeg / brew install ffmpeg / "
                 "https://ffmpeg.org/download.html"
             )
-        
+
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
             output_path = temp_wav.name
         subprocess.run(
             [
-                "ffmpeg", "-i", audio_path,
-                "-ar", str(self._DEFAULT_SAMPLE_RATE),
-                "-ac", str(self._DEFAULT_CHANNELS),
-                "-acodec", "pcm_s16le",  # 16-bit PCM
-                output_path, "-y",
+                "ffmpeg",
+                "-i",
+                audio_path,
+                "-ar",
+                str(self._DEFAULT_SAMPLE_RATE),
+                "-ac",
+                str(self._DEFAULT_CHANNELS),
+                "-acodec",
+                "pcm_s16le",  # 16-bit PCM
+                output_path,
+                "-y",
             ],
             check=True,
             capture_output=True,
@@ -252,19 +258,22 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
                 output_path = temp_audio.name
             subprocess.run(
                 [
-                    "ffmpeg", "-i", video_path,
-                    "-ar", str(AudioTranscriptHelper._DEFAULT_SAMPLE_RATE),
-                    "-ac", str(AudioTranscriptHelper._DEFAULT_CHANNELS),
-                    "-acodec", "pcm_s16le",  # 16-bit PCM
-                    output_path, "-y",
+                    "ffmpeg",
+                    "-i",
+                    video_path,
+                    "-ar",
+                    str(AudioTranscriptHelper._DEFAULT_SAMPLE_RATE),
+                    "-ac",
+                    str(AudioTranscriptHelper._DEFAULT_CHANNELS),
+                    "-acodec",
+                    "pcm_s16le",  # 16-bit PCM
+                    output_path,
+                    "-y",
                 ],
                 check=True,
                 capture_output=True,
             )
-            logger.info(
-                f"Audio exported to: {output_path} "
-                f"(rate={AudioTranscriptHelper._DEFAULT_SAMPLE_RATE}Hz, mono)"
-            )
+            logger.info(f"Audio exported to: {output_path} (rate={AudioTranscriptHelper._DEFAULT_SAMPLE_RATE}Hz, mono)")
             return output_path
         except Exception as e:
             logger.warning(f"Failed to extract audio from video {video_path}: {e}")
