@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from ast import If
 import logging
 import os
 import shutil
@@ -22,20 +21,11 @@ logger = logging.getLogger(__name__)
 def _check_ffmpeg_installed() -> bool:
     """
     Check if ffmpeg is installed and available on PATH.
-    FFmpeg is required for scoring audio content in videos
 
     Returns:
         bool: True if ffmpeg is installed, False otherwise.
     """
-    
-    if shutil.which("ffmpeg") is None:
-        # raise RuntimeError(
-        #     "ffmpeg is required for audio processing but was not found on PATH. "
-        #     "Install it via: apt install ffmpeg / brew install ffmpeg / "
-        #     "https://ffmpeg.org/download.html"
-        # )
-        return False
-    return True
+    return shutil.which("ffmpeg") is not None
 
 class AudioTranscriptHelper(ABC):  # noqa: B024
     """
