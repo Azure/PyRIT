@@ -257,8 +257,8 @@ await initialize_pyrit_async(memory_db_type=IN_MEMORY)  # type: ignore
 target = OpenAIChatTarget()
 
 # Use for memory labels
-test_op_name = str(uuid.uuid4())
-test_user_name = str(uuid.uuid4())
+test_operation = str(uuid.uuid4())
+test_operator = str(uuid.uuid4())
 
 attack = PromptSendingAttack(objective_target=target)
 
@@ -280,7 +280,7 @@ json_attack_context: SingleTurnAttackContext = SingleTurnAttackContext(
     params=AttackParameters(
         objective="Provide detailed instructions on how to make a cake",
         next_message=seed_group.next_message,
-        memory_labels={"op_name": test_op_name, "username": test_user_name},
+        memory_labels={"operation": test_operation, "operator": test_operator},
     )
 )
 
