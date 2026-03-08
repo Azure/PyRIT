@@ -2073,7 +2073,6 @@ class TreeOfAttacksWithPruningAttack(AttackStrategy[TAPAttackContext, TAPAttackR
 
         # Create the result with basic information
         result = TAPAttackResult(
-            attack_identifier=self.get_identifier(),
             atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=self.get_identifier()),
             conversation_id=context.best_conversation_id or "",
             objective=context.objective,

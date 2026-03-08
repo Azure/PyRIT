@@ -176,7 +176,6 @@ class SkeletonKeyAttack(PromptSendingAttack):
         return AttackResult(
             conversation_id=context.conversation_id,
             objective=context.objective,
-            attack_identifier=self.get_identifier(),
             atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=self.get_identifier()),
             last_response=None,
             last_score=None,

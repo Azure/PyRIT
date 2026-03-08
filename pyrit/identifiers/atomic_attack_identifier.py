@@ -96,9 +96,8 @@ def build_atomic_attack_identifier(
 
     children: dict[str, Any] = {
         "attack": attack_identifier,
+        "general_technique_seeds": seed_identifiers,
     }
-    if seed_identifiers:
-        children["general_technique_seeds"] = seed_identifiers
 
     return ComponentIdentifier(
         class_name=_ATOMIC_ATTACK_CLASS_NAME,

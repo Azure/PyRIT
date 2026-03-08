@@ -240,8 +240,9 @@ class AtomicAttack:
             results (AttackExecutorResult[AttackResult]): The execution results to enrich.
         """
         for result, idx in zip(results.completed_results, results.input_indices):
-            if result.attack_identifier and idx < len(self._seed_groups):
+            attack_strategy_id = result.get_attack_strategy_identifier()
+            if attack_strategy_id and idx < len(self._seed_groups):
                 result.atomic_attack_identifier = build_atomic_attack_identifier(
-                    attack_identifier=result.attack_identifier,
+                    attack_identifier=attack_strategy_id,
                     seed_group=self._seed_groups[idx],
                 )

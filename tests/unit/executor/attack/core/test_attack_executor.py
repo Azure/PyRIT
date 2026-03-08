@@ -45,7 +45,6 @@ def create_attack_result(objective: str) -> AttackResult:
     return AttackResult(
         conversation_id=str(uuid.uuid4()),
         objective=objective,
-        attack_identifier={"__type__": "TestAttack"},
         outcome=AttackOutcome.SUCCESS,
         executed_turns=1,
     )

@@ -40,6 +40,7 @@ from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.services.converter_service import get_converter_service
 from pyrit.backend.services.target_service import get_target_service
 from pyrit.identifiers import ComponentIdentifier
+from pyrit.identifiers.atomic_attack_identifier import build_atomic_attack_identifier
 from pyrit.memory import CentralMemory
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.prompt_normalizer import PromptConverterConfiguration, PromptNormalizer
@@ -217,10 +218,12 @@ class AttackService:
         attack_result = AttackResult(
             conversation_id=conversation_id,
             objective=request.name or "Manual attack via GUI",
-            attack_identifier=ComponentIdentifier(
-                class_name=request.name or "ManualAttack",
-                class_module="pyrit.backend",
-                children={"objective_target": target_identifier} if target_identifier else {},
+            atomic_attack_identifier=build_atomic_attack_identifier(
+                attack_identifier=ComponentIdentifier(
+                    class_name=request.name or "ManualAttack",
+                    class_module="pyrit.backend",
+                    children={"objective_target": target_identifier} if target_identifier else {},
+                ),
             ),
             outcome=AttackOutcome.UNDETERMINED,
             metadata={
@@ -295,7 +298,7 @@ class AttackService:
             raise ValueError(f"Attack '{conversation_id}' not found")
 
         ar = results[0]
-        aid = ar.attack_identifier
+        aid = ar.get_attack_strategy_identifier()
         objective_target = aid.get_child("objective_target") if aid else None
         if not aid or not objective_target:
             raise ValueError(f"Attack '{conversation_id}' has no target configured")

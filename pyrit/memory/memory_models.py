@@ -764,9 +764,12 @@ class AttackResultEntry(Base):
         self.id = uuid.uuid4()
         self.conversation_id = entry.conversation_id
         self.objective = entry.objective
+        # Deprecated column: populated from atomic_attack_identifier for backward compatibility.
+        # Will be removed in 0.15.0.
+        _attack_strategy_id = entry.get_attack_strategy_identifier()
         self.attack_identifier = (
-            entry.attack_identifier.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
-            if entry.attack_identifier
+            _attack_strategy_id.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
+            if _attack_strategy_id
             else {}
         )
         self.atomic_attack_identifier = (
@@ -871,16 +874,25 @@ class AttackResultEntry(Base):
                 )
             )
 
+        # Reconstruct atomic_attack_identifier, with backward compatibility for
+        # legacy rows that only have the attack_identifier column.
+        atomic_id = (
+            ComponentIdentifier.from_dict(self.atomic_attack_identifier)
+            if self.atomic_attack_identifier
+            else None
+        )
+        if atomic_id is None and self.attack_identifier:
+            from pyrit.identifiers.atomic_attack_identifier import build_atomic_attack_identifier
+
+            atomic_id = build_atomic_attack_identifier(
+                attack_identifier=ComponentIdentifier.from_dict(self.attack_identifier),
+            )
+
         return AttackResult(
             conversation_id=self.conversation_id,
             attack_result_id=str(self.id),
             objective=self.objective,
-            attack_identifier=ComponentIdentifier.from_dict(self.attack_identifier) if self.attack_identifier else None,
-            atomic_attack_identifier=(
-                ComponentIdentifier.from_dict(self.atomic_attack_identifier)
-                if self.atomic_attack_identifier
-                else None
-            ),
+            atomic_attack_identifier=atomic_id,
             last_response=self.last_response.get_message_piece() if self.last_response else None,
             last_score=self.last_score.get_score() if self.last_score else None,
             executed_turns=self.executed_turns,

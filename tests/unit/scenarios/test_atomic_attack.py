@@ -10,6 +10,8 @@ import pytest
 
 from pyrit.executor.attack import AttackExecutor, AttackStrategy
 from pyrit.executor.attack.core import AttackExecutorResult
+from pyrit.identifiers import ComponentIdentifier
+from pyrit.identifiers.atomic_attack_identifier import build_atomic_attack_identifier
 from pyrit.models import (
     AttackOutcome,
     AttackResult,
@@ -734,14 +736,13 @@ class TestEnrichAtomicAttackIdentifiers:
                 ]
             ),
         ]
-        attack_id = MagicMock()
-        attack_id.class_name = "MockAttack"
+        attack_id = ComponentIdentifier(class_name="MockAttack", class_module="test.mock")
         attack_result = AttackResult(
             conversation_id="conv-1",
             objective="obj1",
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
-            attack_identifier=attack_id,
+            atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
         )
 
         atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
@@ -767,7 +768,7 @@ class TestEnrichAtomicAttackIdentifiers:
             objective="obj1",
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
-            attack_identifier=None,
+            atomic_attack_identifier=None,
         )
 
         atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
@@ -785,12 +786,13 @@ class TestEnrichAtomicAttackIdentifiers:
         seed_groups = [
             SeedAttackGroup(seeds=[SeedObjective(value="obj1"), SeedPrompt(value="p1")]),
         ]
+        attack_id = ComponentIdentifier(class_name="MockAttack", class_module="test.mock")
         attack_result = AttackResult(
             conversation_id="conv-1",
             objective="obj1",
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
-            attack_identifier=MagicMock(),
+            atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
         )
 
         atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
@@ -820,13 +822,13 @@ class TestEnrichAtomicAttackIdentifiers:
                 ]
             ),
         ]
-        attack_id = MagicMock()
+        attack_id = ComponentIdentifier(class_name="MockAttack", class_module="test.mock")
         attack_result = AttackResult(
             conversation_id="conv-1",
             objective="obj1",
             outcome=AttackOutcome.SUCCESS,
             executed_turns=1,
-            attack_identifier=attack_id,
+            atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
         )
 
         atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
@@ -858,15 +860,15 @@ class TestEnrichAtomicAttackIdentifiers:
                 ]
             ),
         ]
-        attack_id = MagicMock()
+        attack_id = ComponentIdentifier(class_name="MockAttack", class_module="test.mock")
         results = [
             AttackResult(
                 conversation_id="c1", objective="obj1", outcome=AttackOutcome.SUCCESS,
-                executed_turns=1, attack_identifier=attack_id,
+                executed_turns=1, atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
             ),
             AttackResult(
                 conversation_id="c2", objective="obj2", outcome=AttackOutcome.SUCCESS,
-                executed_turns=1, attack_identifier=attack_id,
+                executed_turns=1, atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
             ),
         ]
 

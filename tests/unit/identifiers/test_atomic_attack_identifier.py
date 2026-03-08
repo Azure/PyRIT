@@ -117,15 +117,15 @@ class TestBuildAtomicAttackIdentifier:
         result = build_atomic_attack_identifier(attack_identifier=attack_id)
         assert result.children["attack"] == attack_id
 
-    def test_no_seed_group_no_general_technique_seeds(self):
+    def test_no_seed_group_empty_general_technique_seeds(self):
         result = build_atomic_attack_identifier(attack_identifier=_make_attack())
-        assert "general_technique_seeds" not in result.children
+        assert result.children["general_technique_seeds"] == []
 
-    def test_empty_seed_group_no_general_technique_seeds(self):
+    def test_empty_seed_group_empty_general_technique_seeds(self):
         result = build_atomic_attack_identifier(
             attack_identifier=_make_attack(), seed_group=_FakeSeedGroup(seeds=[])
         )
-        assert "general_technique_seeds" not in result.children
+        assert result.children["general_technique_seeds"] == []
 
     def test_filters_to_general_technique_seeds_only(self):
         general_seed = SeedPrompt(value="technique", value_sha256="abc", is_general_technique=True)

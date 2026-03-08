@@ -288,7 +288,6 @@ class MultiPromptSendingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[An
         return AttackResult(
             conversation_id=context.session.conversation_id,
             objective=context.objective,
-            attack_identifier=self.get_identifier(),
             atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=self.get_identifier()),
             last_response=response.get_piece() if response else None,
             last_score=score,
