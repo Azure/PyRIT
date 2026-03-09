@@ -109,7 +109,6 @@ for score in scores:
 # - Converted Value SHA256
 
 # %%
-import uuid
 
 from pyrit.memory import CentralMemory
 from pyrit.prompt_target import OpenAIChatTarget
@@ -126,9 +125,9 @@ from pyrit.score import (  # noqa: F401
 prompt_target = OpenAIChatTarget()
 
 # These labels can be set as an environment variable (or via run_attacks_async as shown below), which will be associated with each prompt and assist in retrieving or scoring later.
-test_operation = str(uuid.uuid4())
-test_operator = str(uuid.uuid4())
-memory_labels = {"operation": test_operation, "operator": test_operator}
+operation = "op_trash_panda"
+operator = "roakey"
+memory_labels = {"operation": operation, "operator": operator}
 
 attack = PromptSendingAttack(objective_target=prompt_target)
 

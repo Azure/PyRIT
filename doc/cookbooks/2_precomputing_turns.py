@@ -67,7 +67,7 @@ objective_target = OpenAIChatTarget(
 # Configure the labels you want to send
 # These should be unique to this test to make it easier to retrieve
 
-memory_labels = {"operation": "new_op", "operator": "roakey", "test_name": "cookbook_2"}
+memory_labels = {"operation": "op_trash_panda", "operator": "roakey", "test_name": "cookbook_2"}
 
 # Configure any converters you want to use for the first few turns of the conversation.
 # In this case, we are using a tense converter to make the prompts in past tense, and then
