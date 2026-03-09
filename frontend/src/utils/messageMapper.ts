@@ -122,8 +122,13 @@ function pieceToAttachment(
   if (!isMediaDataType(dataType) || !value) return null
 
   const mime = mimeField || defaultMimeForDataType(dataType)
-  const isBase64 = !value.startsWith('data:') && !value.startsWith('http') &&
-    value.length >= 16 && /^[A-Za-z0-9+/=]+$/.test(value)
+  // Detect base64-encoded content while excluding file paths and URL schemes.
+  // Base64 charset includes '/' so naive regex would match relative paths.
+  const looksLikePathOrScheme = /^[A-Za-z]:\\/.test(value) || // Windows path
+    value.startsWith('/') ||                                   // Unix absolute path
+    /^[a-z][a-z0-9+.-]*:/i.test(value)                        // URI scheme (file:, blob:, etc.)
+  const isBase64 = !looksLikePathOrScheme &&
+    value.length >= 16 && /^[A-Za-z0-9+/=\n]+$/.test(value)
   const url = isBase64 ? buildDataUri(value, mime) : value
   const prefix = isOriginal ? 'original_' : ''
   const filename = isOriginal ? piece.original_filename : piece.converted_filename
