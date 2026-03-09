@@ -13,7 +13,7 @@ from pyrit.executor.attack import (
     BeamSearchAttack,
     TopKBeamReviewer,
 )
-from pyrit.models import Message
+from pyrit.models import Message, MessagePiece
 from pyrit.prompt_target import OpenAIResponseTarget, PromptTarget
 from pyrit.score import FloatScaleScorer, Scorer, TrueFalseScorer
 
@@ -271,7 +271,6 @@ class TestBeamSearchAttackInit:
             )
 
 
-
 @pytest.mark.usefixtures("patch_central_database")
 class TestBeamSearchAttackE2E:
     @pytest.mark.asyncio
@@ -286,13 +285,28 @@ class TestBeamSearchAttackE2E:
             objective_target=mock_target,
             beam_reviewer=beam_reviewer,
             attack_scoring_config=scoring_config,
-            num_beams=3,
-            max_iterations=3,
+            num_beams=2,
+            max_iterations=4,
             num_chars_per_step=1,
         )
 
-        # Mock the target response and scorer outputs
-        mock_target.send_prompt_async.return_value = [Message.from_prompt(prompt="response1", role="assistant")]
+        call_count = 0
+
+        def mock_send_prompt_async(message: Message) -> list[Message]:
+            nonlocal call_count
+            call_count += 1
+            # Mock response generation based on the prompt content
+            last_piece = message.get_piece()
+            new_text = last_piece.original_value + ("X" * call_count)  # Simulate generation by appending "X"
+            return [
+                MessagePiece(
+                    original_value=new_text, role="assistant", id=str(uuid.uuid4()), conversation_id=str(uuid.uuid4())
+                ).to_message()
+            ]
+
+        # Generate fresh
+        mock_target.send_prompt_async.side_effect = mock_send_prompt_async
+        mock_target.fresh_instance.return_value = mock_target
         mock_target.fresh_instance.return_value = mock_target
         mock_true_false_scorer.score_text_async.return_value = True
         mock_float_scale_scorer.score_text_async.return_value = 0.5
@@ -300,3 +314,8 @@ class TestBeamSearchAttackE2E:
         # Execute the attack
         attack_result = await attack.execute_async(objective="Simple test run")
         assert attack_result is not None
+        assert attack_result.last_response is not None
+        # The exact number of X characters is not going to be well defined since the
+        # scorers are mocked and returning constants
+        # However, with four iterations, there should be at least four of them
+        assert attack_result.last_response.original_value.startswith("Simple test runXXXX")
