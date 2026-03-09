@@ -921,9 +921,7 @@ class TestExecutionPhase:
         context = helpers.create_basic_context()
 
         success_node = node_factory.create_node(
-            NodeMockConfig(
-                node_id="id_node", objective_score_value=0.9, objective_target_conversation_id="id_conv"
-            )
+            NodeMockConfig(node_id="id_node", objective_score_value=0.9, objective_target_conversation_id="id_conv")
         )
 
         with patch.object(attack, "_create_attack_node", return_value=success_node):

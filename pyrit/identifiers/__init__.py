@@ -3,13 +3,13 @@
 
 """Identifiers module for PyRIT components."""
 
-from pyrit.identifiers.class_name_utils import (
-    class_name_to_snake_case,
-    snake_case_to_class_name,
-)
 from pyrit.identifiers.atomic_attack_identifier import (
     build_atomic_attack_identifier,
     build_seed_identifier,
+)
+from pyrit.identifiers.class_name_utils import (
+    class_name_to_snake_case,
+    snake_case_to_class_name,
 )
 from pyrit.identifiers.component_identifier import ComponentIdentifier, Identifiable, config_hash
 from pyrit.identifiers.evaluation_identity import (

@@ -445,9 +445,9 @@ class AzureSQLMemory(MemoryInterface, metaclass=Singleton):
             bindparams_dict[param_name] = cls.lower()
 
         combined = " AND ".join(conditions)
-        return text(
-            f"""ISJSON("AttackResultEntries".atomic_attack_identifier) = 1 AND {combined}"""
-        ).bindparams(**bindparams_dict)
+        return text(f"""ISJSON("AttackResultEntries".atomic_attack_identifier) = 1 AND {combined}""").bindparams(
+            **bindparams_dict
+        )
 
     def get_unique_attack_class_names(self) -> list[str]:
         """

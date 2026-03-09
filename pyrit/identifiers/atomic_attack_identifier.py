@@ -90,9 +90,9 @@ def build_atomic_attack_identifier(
     seed_identifiers: list[ComponentIdentifier] = []
 
     if seed_group is not None:
-        for seed in seed_group.seeds:
-            if seed.is_general_technique:
-                seed_identifiers.append(build_seed_identifier(seed))
+        seed_identifiers.extend(
+            build_seed_identifier(seed) for seed in seed_group.seeds if seed.is_general_technique
+        )
 
     children: dict[str, Any] = {
         "attack": attack_identifier,

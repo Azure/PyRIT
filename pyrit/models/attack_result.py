@@ -87,7 +87,8 @@ class AttackResult(StrategyResult):
 
     @property
     def attack_identifier(self) -> Optional[ComponentIdentifier]:
-        """Deprecated: use ``get_attack_strategy_identifier()`` or ``atomic_attack_identifier`` instead.
+        """
+        Deprecated: use ``get_attack_strategy_identifier()`` or ``atomic_attack_identifier`` instead.
 
         Returns the attack strategy ``ComponentIdentifier`` extracted from
         ``atomic_attack_identifier``, emitting a deprecation warning.
@@ -106,7 +107,8 @@ class AttackResult(StrategyResult):
         return self.get_attack_strategy_identifier()
 
     def get_attack_strategy_identifier(self) -> Optional[ComponentIdentifier]:
-        """Return the attack strategy identifier from the composite atomic identifier.
+        """
+        Return the attack strategy identifier from the composite atomic identifier.
 
         This is the non-deprecated replacement for the ``attack_identifier`` property.
         Extracts and returns the ``"attack"`` child from ``atomic_attack_identifier``.
@@ -145,7 +147,8 @@ class AttackResult(StrategyResult):
 
 
 def _add_attack_identifier_compat(cls: type) -> type:
-    """Wrap a dataclass ``__init__`` to accept the deprecated ``attack_identifier`` kwarg.
+    """
+    Wrap a dataclass ``__init__`` to accept the deprecated ``attack_identifier`` kwarg.
 
     When ``attack_identifier`` is passed, it is automatically promoted to
     ``atomic_attack_identifier`` via ``build_atomic_attack_identifier`` and a

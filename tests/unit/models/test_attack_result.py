@@ -5,7 +5,7 @@ import warnings
 
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.identifiers.atomic_attack_identifier import build_atomic_attack_identifier
-from pyrit.models.attack_result import AttackOutcome, AttackResult
+from pyrit.models.attack_result import AttackResult
 
 
 class TestAttackResultDeprecation:
@@ -133,4 +133,3 @@ class TestAttackResultDeprecation:
         result = AttackResult(conversation_id="c1", objective="test")
         assert result.atomic_attack_identifier is None
         assert result.get_attack_strategy_identifier() is None
-

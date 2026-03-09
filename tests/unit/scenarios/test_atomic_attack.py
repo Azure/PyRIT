@@ -806,9 +806,12 @@ class TestEnrichAtomicAttackIdentifiers:
             )
             result = await atomic.run_async()
 
-        # Should not be enriched (index out of range)
+        # Should not be enriched (index out of range), so the identifier
+        # should still lack seed info (general_technique_seeds remains empty)
         enriched = result.completed_results[0]
-        assert enriched.atomic_attack_identifier is None or enriched.atomic_attack_identifier.class_name != "AtomicAttack"
+        assert enriched.atomic_attack_identifier is not None
+        seeds = enriched.atomic_attack_identifier.children.get("general_technique_seeds", [])
+        assert seeds == [], "Expected no general_technique_seeds since index was out of range"
 
     @pytest.mark.asyncio
     async def test_enrichment_only_includes_general_technique_seeds(self, mock_attack):
@@ -863,12 +866,18 @@ class TestEnrichAtomicAttackIdentifiers:
         attack_id = ComponentIdentifier(class_name="MockAttack", class_module="test.mock")
         results = [
             AttackResult(
-                conversation_id="c1", objective="obj1", outcome=AttackOutcome.SUCCESS,
-                executed_turns=1, atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
+                conversation_id="c1",
+                objective="obj1",
+                outcome=AttackOutcome.SUCCESS,
+                executed_turns=1,
+                atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
             ),
             AttackResult(
-                conversation_id="c2", objective="obj2", outcome=AttackOutcome.SUCCESS,
-                executed_turns=1, atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
+                conversation_id="c2",
+                objective="obj2",
+                outcome=AttackOutcome.SUCCESS,
+                executed_turns=1,
+                atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
             ),
         ]
 

@@ -847,12 +847,8 @@ class TestBuildEvalDict:
             class_module="pyrit.score",
             children={"prompt_target": child2},
         )
-        result1 = _build_eval_dict(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
-        result2 = _build_eval_dict(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
+        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
 
         assert result1["children"]["prompt_target"] == result2["children"]["prompt_target"]
 
@@ -878,12 +874,8 @@ class TestBuildEvalDict:
             class_module="pyrit.score",
             children={"prompt_target": child2},
         )
-        result1 = _build_eval_dict(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
-        result2 = _build_eval_dict(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
+        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
 
         assert result1["children"]["prompt_target"] != result2["children"]["prompt_target"]
 
@@ -968,12 +960,8 @@ class TestBuildEvalDict:
             class_module="pyrit.score",
             children={"sub_scorer": child2},
         )
-        result1 = _build_eval_dict(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
-        result2 = _build_eval_dict(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
+        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
 
         assert result1["children"]["sub_scorer"] != result2["children"]["sub_scorer"]
 
@@ -996,12 +984,8 @@ class TestBuildEvalDict:
             children={"sub_scorer": child},
         )
 
-        result_target = _build_eval_dict(
-            id_as_target, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
-        result_non_target = _build_eval_dict(
-            id_as_non_target, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
+        result_target = _build_eval_dict(id_as_target, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result_non_target = _build_eval_dict(id_as_non_target, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
 
         assert result_target["children"]["prompt_target"] != result_non_target["children"]["sub_scorer"]
 
@@ -1027,12 +1011,8 @@ class TestBuildEvalDict:
             class_module="pyrit.score",
             children={"converter_target": child2},
         )
-        result1 = _build_eval_dict(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
-        result2 = _build_eval_dict(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        )
+        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
 
         assert result1["children"]["converter_target"] == result2["children"]["converter_target"]
 
@@ -1078,9 +1058,7 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="ScorerA", class_module="pyrit.score")
         id2 = ComponentIdentifier(class_name="ScorerB", class_module="pyrit.score")
 
-        assert compute_eval_hash(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        ) != compute_eval_hash(
+        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
             id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
@@ -1089,9 +1067,7 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", params={"threshold": 0.5})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", params={"threshold": 0.8})
 
-        assert compute_eval_hash(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        ) != compute_eval_hash(
+        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
             id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
@@ -1139,9 +1115,7 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert compute_eval_hash(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        ) == compute_eval_hash(
+        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) == compute_eval_hash(
             id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
@@ -1160,9 +1134,7 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert compute_eval_hash(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        ) != compute_eval_hash(
+        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
             id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 
@@ -1175,9 +1147,7 @@ class TestComputeEvalHash:
             class_name="Scorer", class_module="pyrit.score", params={"system_prompt_template": "template_b"}
         )
 
-        assert compute_eval_hash(
-            id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
-        ) != compute_eval_hash(
+        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
             id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
         )
 

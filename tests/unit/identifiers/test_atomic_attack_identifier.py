@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import pytest
 
 from pyrit.identifiers import (
     AtomicAttackEvaluationIdentity,
@@ -122,9 +121,7 @@ class TestBuildAtomicAttackIdentifier:
         assert result.children["general_technique_seeds"] == []
 
     def test_empty_seed_group_empty_general_technique_seeds(self):
-        result = build_atomic_attack_identifier(
-            attack_identifier=_make_attack(), seed_group=_FakeSeedGroup(seeds=[])
-        )
+        result = build_atomic_attack_identifier(attack_identifier=_make_attack(), seed_group=_FakeSeedGroup(seeds=[]))
         assert result.children["general_technique_seeds"] == []
 
     def test_filters_to_general_technique_seeds_only(self):
@@ -252,9 +249,7 @@ class TestAtomicAttackEvaluationIdentity:
         assert "converter_target" not in AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
 
     def test_objective_target_allows_only_temperature(self):
-        assert AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["objective_target"] == frozenset(
-            {"temperature"}
-        )
+        assert AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["objective_target"] == frozenset({"temperature"})
 
     def test_adversarial_chat_allows_model_temperature_top_p(self):
         assert AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["adversarial_chat"] == frozenset(
@@ -329,11 +324,13 @@ class TestAtomicAttackEvaluationIdentity:
     def test_adversarial_chat_endpoint_ignored(self):
         """endpoint is NOT in the adversarial_chat allowlist."""
         chat1 = ComponentIdentifier(
-            class_name="Chat", class_module="m",
+            class_name="Chat",
+            class_module="m",
             params={"model_name": "gpt-4o", "endpoint": "https://a.com"},
         )
         chat2 = ComponentIdentifier(
-            class_name="Chat", class_module="m",
+            class_name="Chat",
+            class_module="m",
             params={"model_name": "gpt-4o", "endpoint": "https://b.com"},
         )
         a1 = _make_attack(children={"adversarial_chat": chat1})
@@ -424,7 +421,8 @@ class TestAtomicAttackEvaluationIdentity:
         """End-to-end: builds a realistic composite and verifies eval hash consistency."""
         target = _make_target(params={"model_name": "gpt-4o", "temperature": 0.7, "endpoint": "https://a.com"})
         chat = ComponentIdentifier(
-            class_name="OpenAIChatTarget", class_module=_TARGET_MODULE,
+            class_name="OpenAIChatTarget",
+            class_module=_TARGET_MODULE,
             params={"model_name": "gpt-4o", "temperature": 0.5, "top_p": 0.9, "endpoint": "https://b.com"},
         )
         scorer = ComponentIdentifier(
@@ -433,12 +431,14 @@ class TestAtomicAttackEvaluationIdentity:
         converter = ComponentIdentifier(class_name="Base64Converter", class_module="pyrit.prompt_converter")
         seed = SeedPrompt(value="technique", value_sha256="abc", is_general_technique=True)
 
-        attack_id = _make_attack(children={
-            "objective_target": target,
-            "adversarial_chat": chat,
-            "objective_scorer": scorer,
-            "request_converters": [converter],
-        })
+        attack_id = _make_attack(
+            children={
+                "objective_target": target,
+                "adversarial_chat": chat,
+                "objective_scorer": scorer,
+                "request_converters": [converter],
+            }
+        )
         composite = build_atomic_attack_identifier(
             attack_identifier=attack_id,
             seed_group=_FakeSeedGroup(seeds=[seed]),
@@ -451,12 +451,14 @@ class TestAtomicAttackEvaluationIdentity:
 
         # Changing only endpoint on target should NOT change hash
         target2 = _make_target(params={"model_name": "gpt-4o", "temperature": 0.7, "endpoint": "https://other.com"})
-        attack_id2 = _make_attack(children={
-            "objective_target": target2,
-            "adversarial_chat": chat,
-            "objective_scorer": scorer,
-            "request_converters": [converter],
-        })
+        attack_id2 = _make_attack(
+            children={
+                "objective_target": target2,
+                "adversarial_chat": chat,
+                "objective_scorer": scorer,
+                "request_converters": [converter],
+            }
+        )
         composite2 = build_atomic_attack_identifier(
             attack_identifier=attack_id2,
             seed_group=_FakeSeedGroup(seeds=[seed]),
@@ -467,12 +469,14 @@ class TestAtomicAttackEvaluationIdentity:
         scorer2 = ComponentIdentifier(
             class_name="FloatScaleScorer", class_module="pyrit.score", params={"threshold": 0.1}
         )
-        attack_id3 = _make_attack(children={
-            "objective_target": target,
-            "adversarial_chat": chat,
-            "objective_scorer": scorer2,
-            "request_converters": [converter],
-        })
+        attack_id3 = _make_attack(
+            children={
+                "objective_target": target,
+                "adversarial_chat": chat,
+                "objective_scorer": scorer2,
+                "request_converters": [converter],
+            }
+        )
         composite3 = build_atomic_attack_identifier(
             attack_identifier=attack_id3,
             seed_group=_FakeSeedGroup(seeds=[seed]),

@@ -768,9 +768,7 @@ class AttackResultEntry(Base):
         # Will be removed in 0.15.0.
         _attack_strategy_id = entry.get_attack_strategy_identifier()
         self.attack_identifier = (
-            _attack_strategy_id.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
-            if _attack_strategy_id
-            else {}
+            _attack_strategy_id.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH) if _attack_strategy_id else {}
         )
         self.atomic_attack_identifier = (
             entry.atomic_attack_identifier.to_dict(max_value_length=MAX_IDENTIFIER_VALUE_LENGTH)
@@ -877,9 +875,7 @@ class AttackResultEntry(Base):
         # Reconstruct atomic_attack_identifier, with backward compatibility for
         # legacy rows that only have the attack_identifier column.
         atomic_id = (
-            ComponentIdentifier.from_dict(self.atomic_attack_identifier)
-            if self.atomic_attack_identifier
-            else None
+            ComponentIdentifier.from_dict(self.atomic_attack_identifier) if self.atomic_attack_identifier else None
         )
         if atomic_id is None and self.attack_identifier:
             from pyrit.identifiers.atomic_attack_identifier import build_atomic_attack_identifier

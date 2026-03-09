@@ -226,9 +226,7 @@ class AtomicAttack:
             logger.error(f"Atomic attack execution failed: {str(e)}")
             raise ValueError(f"Failed to execute atomic attack: {str(e)}") from e
 
-    def _enrich_atomic_attack_identifiers(
-        self, *, results: AttackExecutorResult[AttackResult]
-    ) -> None:
+    def _enrich_atomic_attack_identifiers(self, *, results: AttackExecutorResult[AttackResult]) -> None:
         """
         Enrich each AttackResult's atomic_attack_identifier with seed group information.
 
@@ -239,7 +237,7 @@ class AtomicAttack:
         Args:
             results (AttackExecutorResult[AttackResult]): The execution results to enrich.
         """
-        for result, idx in zip(results.completed_results, results.input_indices):
+        for result, idx in zip(results.completed_results, results.input_indices, strict=True):
             attack_strategy_id = result.get_attack_strategy_identifier()
             if attack_strategy_id and idx < len(self._seed_groups):
                 result.atomic_attack_identifier = build_atomic_attack_identifier(

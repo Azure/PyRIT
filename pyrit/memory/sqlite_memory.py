@@ -573,12 +573,7 @@ class SQLiteMemory(MemoryInterface, metaclass=Singleton):
             class_name_expr = func.json_extract(
                 AttackResultEntry.atomic_attack_identifier, "$.children.attack.class_name"
             )
-            rows = (
-                session.query(class_name_expr)
-                .filter(class_name_expr.isnot(None))
-                .distinct()
-                .all()
-            )
+            rows = session.query(class_name_expr).filter(class_name_expr.isnot(None)).distinct().all()
         return sorted(row[0] for row in rows)
 
     def get_unique_converter_class_names(self) -> list[str]:

@@ -506,7 +506,7 @@ class TestFairnessBiasBenchmarkExecuteAsync:
 
         assert result.atomic_attack_identifier is not None
         assert result.atomic_attack_identifier.class_name == "AtomicAttack"
-        assert result.get_attack_strategy_identifier() == benchmark.get_identifier()
+        assert result.get_attack_strategy_identifier() == ComponentIdentifier.of(benchmark)
 
 
 @pytest.mark.usefixtures("patch_central_database")
