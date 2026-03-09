@@ -206,7 +206,7 @@ class AtomicAttack:
                 **self._attack_execute_params,
             )
 
-            # Enrich atomic_attack_identifier with general technique seed identifiers
+            # Enrich atomic_attack_identifier with seed identifiers
             self._enrich_atomic_attack_identifiers(results=results)
 
             # Log completion status
@@ -232,7 +232,7 @@ class AtomicAttack:
 
         Uses ``results.input_indices`` to map each completed result back to its
         originating seed group by index, then rebuilds the atomic_attack_identifier
-        to include the general technique seed identifiers from the seed group.
+        to include the seed identifiers from the seed group.
 
         Args:
             results (AttackExecutorResult[AttackResult]): The execution results to enrich.

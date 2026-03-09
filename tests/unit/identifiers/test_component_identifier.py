@@ -6,12 +6,13 @@ import pytest
 
 import pyrit
 from pyrit.identifiers import ComponentIdentifier, Identifiable, compute_eval_hash, config_hash
-from pyrit.identifiers.evaluation_identity import _build_eval_dict
+from pyrit.identifiers.evaluation_identity import ChildEvalRule, _build_eval_dict
 
 # Test constants mirroring Scorer's ClassVars — keeps tests decoupled from pyrit.score
-_BEHAVIORAL_CHILD_PARAMS: dict[str, frozenset[str]] = {
-    "prompt_target": frozenset({"model_name", "temperature", "top_p"}),
-    "converter_target": frozenset({"model_name", "temperature", "top_p"}),
+_CHILD_EVAL_RULES: dict[str, ChildEvalRule] = {
+    "prompt_target": ChildEvalRule(
+        included_params=frozenset({"model_name", "temperature", "top_p"}),
+    ),
 }
 
 
@@ -734,7 +735,7 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert result["class_name"] == "SimpleScorer"
@@ -750,15 +751,15 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert result["threshold"] == 0.5
         assert result["template"] == "prompt_text"
         assert result["mode"] == "strict"
 
-    def test_param_allowlist_filters_params(self):
-        """Test that param_allowlist restricts which params are included."""
+    def test_included_params_filters_params(self):
+        """Test that _included_params restricts which params are included."""
         identifier = ComponentIdentifier(
             class_name="FilteredScorer",
             class_module="pyrit.score",
@@ -766,8 +767,8 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
-            param_allowlist=frozenset({"threshold", "mode"}),
+            child_eval_rules=_CHILD_EVAL_RULES,
+            _included_params=frozenset({"threshold", "mode"}),
         )
 
         assert result["threshold"] == 0.5
@@ -783,7 +784,7 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert result["threshold"] == 0.5
@@ -809,7 +810,7 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert "children" in result
@@ -847,8 +848,8 @@ class TestBuildEvalDict:
             class_module="pyrit.score",
             children={"prompt_target": child2},
         )
-        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
-        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result1 = _build_eval_dict(id1, child_eval_rules=_CHILD_EVAL_RULES)
+        result2 = _build_eval_dict(id2, child_eval_rules=_CHILD_EVAL_RULES)
 
         assert result1["children"]["prompt_target"] == result2["children"]["prompt_target"]
 
@@ -874,8 +875,8 @@ class TestBuildEvalDict:
             class_module="pyrit.score",
             children={"prompt_target": child2},
         )
-        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
-        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result1 = _build_eval_dict(id1, child_eval_rules=_CHILD_EVAL_RULES)
+        result2 = _build_eval_dict(id2, child_eval_rules=_CHILD_EVAL_RULES)
 
         assert result1["children"]["prompt_target"] != result2["children"]["prompt_target"]
 
@@ -898,7 +899,7 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert "children" in result
@@ -919,7 +920,7 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert isinstance(result["children"]["target"], str)
@@ -933,7 +934,7 @@ class TestBuildEvalDict:
         )
         result = _build_eval_dict(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert "children" not in result
@@ -960,8 +961,8 @@ class TestBuildEvalDict:
             class_module="pyrit.score",
             children={"sub_scorer": child2},
         )
-        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
-        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result1 = _build_eval_dict(id1, child_eval_rules=_CHILD_EVAL_RULES)
+        result2 = _build_eval_dict(id2, child_eval_rules=_CHILD_EVAL_RULES)
 
         assert result1["children"]["sub_scorer"] != result2["children"]["sub_scorer"]
 
@@ -984,37 +985,10 @@ class TestBuildEvalDict:
             children={"sub_scorer": child},
         )
 
-        result_target = _build_eval_dict(id_as_target, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
-        result_non_target = _build_eval_dict(id_as_non_target, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
+        result_target = _build_eval_dict(id_as_target, child_eval_rules=_CHILD_EVAL_RULES)
+        result_non_target = _build_eval_dict(id_as_non_target, child_eval_rules=_CHILD_EVAL_RULES)
 
         assert result_target["children"]["prompt_target"] != result_non_target["children"]["sub_scorer"]
-
-    def test_converter_target_filtered_like_prompt_target(self):
-        """Test that converter_target children are also filtered to behavioral params only."""
-        child1 = ComponentIdentifier(
-            class_name="ConverterTarget",
-            class_module="pyrit.target",
-            params={"model_name": "gpt-4", "temperature": 0.7, "endpoint": "https://endpoint-a.com"},
-        )
-        child2 = ComponentIdentifier(
-            class_name="ConverterTarget",
-            class_module="pyrit.target",
-            params={"model_name": "gpt-4", "temperature": 0.7, "endpoint": "https://endpoint-b.com"},
-        )
-        id1 = ComponentIdentifier(
-            class_name="Scorer",
-            class_module="pyrit.score",
-            children={"converter_target": child1},
-        )
-        id2 = ComponentIdentifier(
-            class_name="Scorer",
-            class_module="pyrit.score",
-            children={"converter_target": child2},
-        )
-        result1 = _build_eval_dict(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
-        result2 = _build_eval_dict(id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS)
-
-        assert result1["children"]["converter_target"] == result2["children"]["converter_target"]
 
 
 class TestComputeEvalHash:
@@ -1029,11 +1003,11 @@ class TestComputeEvalHash:
         )
         hash1 = compute_eval_hash(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
         hash2 = compute_eval_hash(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert hash1 == hash2
@@ -1046,7 +1020,7 @@ class TestComputeEvalHash:
         )
         result = compute_eval_hash(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
 
         assert isinstance(result, str)
@@ -1058,8 +1032,8 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="ScorerA", class_module="pyrit.score")
         id2 = ComponentIdentifier(class_name="ScorerB", class_module="pyrit.score")
 
-        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        assert compute_eval_hash(id1, child_eval_rules=_CHILD_EVAL_RULES) != compute_eval_hash(
+            id2, child_eval_rules=_CHILD_EVAL_RULES
         )
 
     def test_different_params_produce_different_hashes(self):
@@ -1067,8 +1041,8 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", params={"threshold": 0.5})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", params={"threshold": 0.8})
 
-        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        assert compute_eval_hash(id1, child_eval_rules=_CHILD_EVAL_RULES) != compute_eval_hash(
+            id2, child_eval_rules=_CHILD_EVAL_RULES
         )
 
     def test_eval_hash_differs_from_component_hash(self):
@@ -1086,7 +1060,7 @@ class TestComputeEvalHash:
 
         eval_hash = compute_eval_hash(
             identifier,
-            behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=_CHILD_EVAL_RULES,
         )
         assert eval_hash != identifier.hash
 
@@ -1115,12 +1089,12 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) == compute_eval_hash(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        assert compute_eval_hash(id1, child_eval_rules=_CHILD_EVAL_RULES) == compute_eval_hash(
+            id2, child_eval_rules=_CHILD_EVAL_RULES
         )
 
-    def test_behavioral_child_params_affect_eval_hash(self):
-        """Test that behavioral params on target children do affect eval hash."""
+    def test_included_child_params_affect_eval_hash(self):
+        """Test that included params on target children do affect eval hash."""
         child1 = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
@@ -1134,8 +1108,8 @@ class TestComputeEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        assert compute_eval_hash(id1, child_eval_rules=_CHILD_EVAL_RULES) != compute_eval_hash(
+            id2, child_eval_rules=_CHILD_EVAL_RULES
         )
 
     def test_scorer_own_params_all_included(self):
@@ -1147,12 +1121,12 @@ class TestComputeEvalHash:
             class_name="Scorer", class_module="pyrit.score", params={"system_prompt_template": "template_b"}
         )
 
-        assert compute_eval_hash(id1, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS) != compute_eval_hash(
-            id2, behavioral_child_params=_BEHAVIORAL_CHILD_PARAMS
+        assert compute_eval_hash(id1, child_eval_rules=_CHILD_EVAL_RULES) != compute_eval_hash(
+            id2, child_eval_rules=_CHILD_EVAL_RULES
         )
 
-    def test_empty_behavioral_child_params_returns_component_hash(self):
-        """Test that empty behavioral_child_params means no filtering — returns component hash."""
+    def test_empty_rules_returns_component_hash(self):
+        """Test that empty child_eval_rules means no filtering — returns component hash."""
         child = ComponentIdentifier(
             class_name="Target",
             class_module="pyrit.target",
@@ -1166,6 +1140,6 @@ class TestComputeEvalHash:
 
         result = compute_eval_hash(
             identifier,
-            behavioral_child_params={},
+            child_eval_rules={},
         )
         assert result == identifier.hash

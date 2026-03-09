@@ -11,27 +11,20 @@ the ``Scorer.get_eval_hash()`` convenience method.
 import pytest
 
 from pyrit.identifiers import ComponentIdentifier, Identifiable, compute_eval_hash
-from pyrit.identifiers.evaluation_identity import ScorerEvaluationIdentity
+from pyrit.identifiers.evaluation_identity import ChildEvalRule, ScorerEvaluationIdentity
 
 
 class TestScorerEvaluationIdentityConstants:
     """Tests for the ClassVar constants on ScorerEvaluationIdentity."""
 
-    def test_behavioral_child_params_keys(self):
-        """Test that BEHAVIORAL_CHILD_PARAMS contains the expected scorer target names."""
-        assert set(ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS.keys()) == {"prompt_target", "converter_target"}
+    def test_child_eval_rules_keys(self):
+        """Test that CHILD_EVAL_RULES contains the expected scorer target names."""
+        assert set(ScorerEvaluationIdentity.CHILD_EVAL_RULES.keys()) == {"prompt_target"}
 
-    def test_prompt_target_behavioral_params(self):
-        """Test that prompt_target has the expected behavioral params."""
-        assert ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["prompt_target"] == frozenset(
-            {"model_name", "temperature", "top_p"}
-        )
-
-    def test_converter_target_behavioral_params(self):
-        """Test that converter_target has the expected behavioral params."""
-        assert ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["converter_target"] == frozenset(
-            {"model_name", "temperature", "top_p"}
-        )
+    def test_prompt_target_rule(self):
+        """Test that prompt_target has the expected included params."""
+        rule = ScorerEvaluationIdentity.CHILD_EVAL_RULES["prompt_target"]
+        assert rule.included_params == frozenset({"model_name", "temperature", "top_p"})
 
 
 class TestScorerEvaluationIdentityEvalHash:
@@ -85,7 +78,7 @@ class TestScorerEvaluationIdentityEvalHash:
 
         expected = compute_eval_hash(
             cid,
-            behavioral_child_params=ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=ScorerEvaluationIdentity.CHILD_EVAL_RULES,
         )
         assert identity.eval_hash == expected
 
@@ -112,7 +105,7 @@ class TestScorerGetEvalHash:
 
         expected = compute_eval_hash(
             identifier,
-            behavioral_child_params=ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=ScorerEvaluationIdentity.CHILD_EVAL_RULES,
         )
         assert eval_hash == expected
 

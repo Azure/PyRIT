@@ -72,6 +72,16 @@ class TestBuildSeedIdentifier:
         assert result.params["value_sha256"] == "abc"
         assert result.params["dataset_name"] == "my_dataset"
 
+    def test_includes_is_general_technique_true(self):
+        seed = SeedPrompt(value="hello", value_sha256="abc", is_general_technique=True)
+        result = build_seed_identifier(seed)
+        assert result.params["is_general_technique"] is True
+
+    def test_includes_is_general_technique_false(self):
+        seed = SeedPrompt(value="hello", value_sha256="abc", is_general_technique=False)
+        result = build_seed_identifier(seed)
+        assert result.params["is_general_technique"] is False
+
     def test_excludes_none_values(self):
         seed = SeedPrompt(value="hello")
         seed.value_sha256 = None
@@ -116,33 +126,36 @@ class TestBuildAtomicAttackIdentifier:
         result = build_atomic_attack_identifier(attack_identifier=attack_id)
         assert result.children["attack"] == attack_id
 
-    def test_no_seed_group_empty_general_technique_seeds(self):
+    def test_no_seed_group_empty_seeds(self):
         result = build_atomic_attack_identifier(attack_identifier=_make_attack())
-        assert result.children["general_technique_seeds"] == []
+        assert result.children["seeds"] == []
 
-    def test_empty_seed_group_empty_general_technique_seeds(self):
+    def test_empty_seed_group_empty_seeds(self):
         result = build_atomic_attack_identifier(attack_identifier=_make_attack(), seed_group=_FakeSeedGroup(seeds=[]))
-        assert result.children["general_technique_seeds"] == []
+        assert result.children["seeds"] == []
 
-    def test_filters_to_general_technique_seeds_only(self):
+    def test_includes_all_seeds(self):
         general_seed = SeedPrompt(value="technique", value_sha256="abc", is_general_technique=True)
         non_general_seed = SeedPrompt(value="objective", value_sha256="def", is_general_technique=False)
         result = build_atomic_attack_identifier(
             attack_identifier=_make_attack(),
             seed_group=_FakeSeedGroup(seeds=[general_seed, non_general_seed]),
         )
-        seed_ids = result.children["general_technique_seeds"]
-        assert len(seed_ids) == 1
+        seed_ids = result.children["seeds"]
+        assert len(seed_ids) == 2
         assert seed_ids[0].params.get("value_sha256") == "abc"
+        assert seed_ids[0].params.get("is_general_technique") is True
+        assert seed_ids[1].params.get("value_sha256") == "def"
+        assert seed_ids[1].params.get("is_general_technique") is False
 
-    def test_multiple_general_technique_seeds(self):
+    def test_multiple_seeds(self):
         seed1 = SeedPrompt(value="tech1", value_sha256="aaa", is_general_technique=True)
         seed2 = SeedPrompt(value="tech2", value_sha256="bbb", is_general_technique=True)
         result = build_atomic_attack_identifier(
             attack_identifier=_make_attack(),
             seed_group=_FakeSeedGroup(seeds=[seed1, seed2]),
         )
-        assert len(result.children["general_technique_seeds"]) == 2
+        assert len(result.children["seeds"]) == 2
 
     def test_deterministic_hash(self):
         attack_id = _make_attack()
@@ -237,27 +250,29 @@ class TestAtomicAttackEvaluationIdentity:
 
     # -- ClassVar constants ------------------------------------------------
 
-    def test_objective_target_in_behavioral_child_params(self):
-        assert "objective_target" in AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
+    def test_objective_target_rule(self):
+        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["objective_target"]
+        assert rule.included_params == frozenset({"temperature"})
+        assert not rule.exclude
 
-    def test_adversarial_chat_in_behavioral_child_params(self):
-        assert "adversarial_chat" in AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
+    def test_adversarial_chat_rule(self):
+        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["adversarial_chat"]
+        assert rule.included_params == frozenset({"model_name", "temperature", "top_p"})
+        assert not rule.exclude
 
     def test_scorer_only_keys_absent(self):
-        """Scorer-specific keys should not appear in attack constants."""
-        assert "prompt_target" not in AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
-        assert "converter_target" not in AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
+        """Scorer-specific keys should not appear in attack rules."""
+        assert "prompt_target" not in AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES
+        assert "converter_target" not in AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES
 
-    def test_objective_target_allows_only_temperature(self):
-        assert AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["objective_target"] == frozenset({"temperature"})
+    def test_objective_scorer_excluded(self):
+        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["objective_scorer"]
+        assert rule.exclude is True
 
-    def test_adversarial_chat_allows_model_temperature_top_p(self):
-        assert AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS["adversarial_chat"] == frozenset(
-            {"model_name", "temperature", "top_p"}
-        )
-
-    def test_objective_scorer_is_ignored(self):
-        assert "objective_scorer" in AtomicAttackEvaluationIdentity.IGNORED_CHILD_KEYS
+    def test_seeds_rule(self):
+        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["seeds"]
+        assert rule.included_item_values == {"is_general_technique": True}
+        assert not rule.exclude
 
     # -- Basic properties --------------------------------------------------
 
@@ -280,15 +295,14 @@ class TestAtomicAttackEvaluationIdentity:
         identity = AtomicAttackEvaluationIdentity(composite)
         assert identity.eval_hash == compute_attack_eval_hash(composite)
 
-    def test_eval_hash_matches_compute_eval_hash_with_constants(self):
+    def test_eval_hash_matches_compute_eval_hash_with_rules(self):
         composite = build_atomic_attack_identifier(
             attack_identifier=_make_attack(children={"objective_target": _make_target(params={"temperature": 0.5})})
         )
         identity = AtomicAttackEvaluationIdentity(composite)
         expected = compute_eval_hash(
             composite,
-            behavioral_child_params=AtomicAttackEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
-            ignored_child_keys=AtomicAttackEvaluationIdentity.IGNORED_CHILD_KEYS,
+            child_eval_rules=AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES,
         )
         assert identity.eval_hash == expected
 
@@ -405,15 +419,68 @@ class TestAtomicAttackEvaluationIdentity:
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
         assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
 
-    # -- Seeds (non-target, fully included) --------------------------------
+    # -- Seeds (eval hash uses only general technique seeds) ---------------
 
-    def test_different_seeds_different_eval_hash(self):
+    def test_different_general_technique_seeds_different_eval_hash(self):
         attack_id = _make_attack()
         seed1 = SeedPrompt(value="tech1", value_sha256="aaa", is_general_technique=True)
         seed2 = SeedPrompt(value="tech2", value_sha256="bbb", is_general_technique=True)
         c1 = build_atomic_attack_identifier(attack_identifier=attack_id, seed_group=_FakeSeedGroup(seeds=[seed1]))
         c2 = build_atomic_attack_identifier(attack_identifier=attack_id, seed_group=_FakeSeedGroup(seeds=[seed2]))
         assert AtomicAttackEvaluationIdentity(c1).eval_hash != AtomicAttackEvaluationIdentity(c2).eval_hash
+
+    def test_non_general_technique_seeds_ignored_in_eval_hash(self):
+        """Same general technique seeds but different non-general seeds -> same eval hash."""
+        attack_id = _make_attack()
+        general_seed = SeedPrompt(value="technique", value_sha256="abc", is_general_technique=True)
+        non_general_1 = SeedPrompt(value="obj1", value_sha256="xxx", is_general_technique=False)
+        non_general_2 = SeedPrompt(value="obj2", value_sha256="yyy", is_general_technique=False)
+        c1 = build_atomic_attack_identifier(
+            attack_identifier=attack_id,
+            seed_group=_FakeSeedGroup(seeds=[general_seed, non_general_1]),
+        )
+        c2 = build_atomic_attack_identifier(
+            attack_identifier=attack_id,
+            seed_group=_FakeSeedGroup(seeds=[general_seed, non_general_2]),
+        )
+        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+
+    def test_eval_hash_only_uses_general_technique_seeds(self):
+        """Eval hash with mixed seeds should match one built with only general technique seeds."""
+        attack_id = _make_attack()
+        general_seed = SeedPrompt(value="technique", value_sha256="abc", is_general_technique=True)
+        non_general_seed = SeedPrompt(value="objective", value_sha256="def", is_general_technique=False)
+
+        # Identifier with both general and non-general seeds
+        c_mixed = build_atomic_attack_identifier(
+            attack_identifier=attack_id,
+            seed_group=_FakeSeedGroup(seeds=[general_seed, non_general_seed]),
+        )
+        # Identifier with only general technique seed
+        c_general_only = build_atomic_attack_identifier(
+            attack_identifier=attack_id,
+            seed_group=_FakeSeedGroup(seeds=[general_seed]),
+        )
+        assert AtomicAttackEvaluationIdentity(c_mixed).eval_hash == AtomicAttackEvaluationIdentity(c_general_only).eval_hash
+
+    def test_identifier_hash_differs_with_non_general_seeds(self):
+        """The full identifier hash SHOULD differ when non-general seeds differ."""
+        attack_id = _make_attack()
+        general_seed = SeedPrompt(value="technique", value_sha256="abc", is_general_technique=True)
+        non_general_1 = SeedPrompt(value="obj1", value_sha256="xxx", is_general_technique=False)
+        non_general_2 = SeedPrompt(value="obj2", value_sha256="yyy", is_general_technique=False)
+        c1 = build_atomic_attack_identifier(
+            attack_identifier=attack_id,
+            seed_group=_FakeSeedGroup(seeds=[general_seed, non_general_1]),
+        )
+        c2 = build_atomic_attack_identifier(
+            attack_identifier=attack_id,
+            seed_group=_FakeSeedGroup(seeds=[general_seed, non_general_2]),
+        )
+        # Full identifier hash should differ (all seeds contribute)
+        assert c1.hash != c2.hash
+        # But eval hash should be the same (only general technique seeds)
+        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
 
     # -- Full composite scenario -------------------------------------------
 

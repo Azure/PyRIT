@@ -53,9 +53,8 @@ class AttackResult(StrategyResult):
     attack_result_id: Optional[str] = None
 
     # Composite identifier combining the attack strategy identity with
-    # general technique seed identifiers from the dataset.
-    # Contains the attack strategy as children["attack"] plus optional
-    # general_technique_seeds.
+    # seed identifiers from the dataset.
+    # Contains the attack strategy as children["attack"] plus optional seeds.
     atomic_attack_identifier: Optional[ComponentIdentifier] = None
 
     # Evidence

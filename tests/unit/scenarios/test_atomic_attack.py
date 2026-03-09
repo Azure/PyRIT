@@ -755,7 +755,7 @@ class TestEnrichAtomicAttackIdentifiers:
         assert enriched.atomic_attack_identifier is not None
         assert enriched.atomic_attack_identifier.class_name == "AtomicAttack"
         assert "attack" in enriched.atomic_attack_identifier.children
-        assert "general_technique_seeds" in enriched.atomic_attack_identifier.children
+        assert "seeds" in enriched.atomic_attack_identifier.children
 
     @pytest.mark.asyncio
     async def test_enrichment_skips_results_without_attack_identifier(self, mock_attack):
@@ -807,15 +807,15 @@ class TestEnrichAtomicAttackIdentifiers:
             result = await atomic.run_async()
 
         # Should not be enriched (index out of range), so the identifier
-        # should still lack seed info (general_technique_seeds remains empty)
+        # should still lack seed info (seeds remains empty)
         enriched = result.completed_results[0]
         assert enriched.atomic_attack_identifier is not None
-        seeds = enriched.atomic_attack_identifier.children.get("general_technique_seeds", [])
-        assert seeds == [], "Expected no general_technique_seeds since index was out of range"
+        seeds = enriched.atomic_attack_identifier.children.get("seeds", [])
+        assert seeds == [], "Expected no seeds since index was out of range"
 
     @pytest.mark.asyncio
-    async def test_enrichment_only_includes_general_technique_seeds(self, mock_attack):
-        """Test that only seeds with is_general_technique=True appear in the enriched identifier."""
+    async def test_enrichment_includes_all_seeds(self, mock_attack):
+        """Test that all seeds (general and non-general) appear in the enriched identifier."""
         seed_groups = [
             SeedAttackGroup(
                 seeds=[
@@ -842,9 +842,12 @@ class TestEnrichAtomicAttackIdentifiers:
 
         enriched = result.completed_results[0].atomic_attack_identifier
         assert enriched is not None
-        seed_ids = enriched.children["general_technique_seeds"]
-        assert len(seed_ids) == 1
-        assert seed_ids[0].params["value_sha256"] == "tech_hash"
+        seed_ids = enriched.children["seeds"]
+        # All three seeds (objective + technique + non_technique) should be present
+        assert len(seed_ids) == 3
+        sha_values = [s.params.get("value_sha256") for s in seed_ids]
+        assert "tech_hash" in sha_values
+        assert "other_hash" in sha_values
 
     @pytest.mark.asyncio
     async def test_enrichment_maps_multiple_results_to_correct_seed_groups(self, mock_attack):
@@ -889,8 +892,10 @@ class TestEnrichAtomicAttackIdentifiers:
 
         # First result should have hash_a seed
         enriched_0 = result.completed_results[0].atomic_attack_identifier
-        assert enriched_0.children["general_technique_seeds"][0].params["value_sha256"] == "hash_a"
+        seed_sha_values_0 = [s.params.get("value_sha256") for s in enriched_0.children["seeds"]]
+        assert "hash_a" in seed_sha_values_0
 
         # Second result should have hash_b seed
         enriched_1 = result.completed_results[1].atomic_attack_identifier
-        assert enriched_1.children["general_technique_seeds"][0].params["value_sha256"] == "hash_b"
+        seed_sha_values_1 = [s.params.get("value_sha256") for s in enriched_1.children["seeds"]]
+        assert "hash_b" in seed_sha_values_1

@@ -14,6 +14,7 @@ from pyrit.identifiers.class_name_utils import (
 from pyrit.identifiers.component_identifier import ComponentIdentifier, Identifiable, config_hash
 from pyrit.identifiers.evaluation_identity import (
     AtomicAttackEvaluationIdentity,
+    ChildEvalRule,
     EvaluationIdentity,
     ScorerEvaluationIdentity,
     compute_attack_eval_hash,
@@ -23,6 +24,7 @@ from pyrit.identifiers.evaluation_identity import (
 __all__ = [
     "AtomicAttackEvaluationIdentity",
     "build_atomic_attack_identifier",
+    "ChildEvalRule",
     "build_seed_identifier",
     "class_name_to_snake_case",
     "ComponentIdentifier",
