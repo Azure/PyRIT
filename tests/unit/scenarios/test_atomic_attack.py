@@ -899,3 +899,76 @@ class TestEnrichAtomicAttackIdentifiers:
         enriched_1 = result.completed_results[1].atomic_attack_identifier
         seed_sha_values_1 = [s.params.get("value_sha256") for s in enriched_1.children["seeds"]]
         assert "hash_b" in seed_sha_values_1
+
+    @pytest.mark.asyncio
+    async def test_enrichment_persists_to_db(self, mock_attack):
+        """Test that enrichment persists the updated atomic_attack_identifier to the database."""
+        seed_groups = [
+            SeedAttackGroup(
+                seeds=[
+                    SeedObjective(value="obj1"),
+                    SeedPrompt(value="technique1", is_general_technique=True),
+                ]
+            ),
+        ]
+        attack_id = ComponentIdentifier(class_name="MockAttack", class_module="test.mock")
+        attack_result = AttackResult(
+            conversation_id="conv-1",
+            objective="obj1",
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+            attack_result_id="00000000-0000-0000-0000-000000000001",
+            atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
+        )
+
+        atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
+
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results([attack_result])
+
+            mock_memory = MagicMock()
+            mock_memory.update_attack_result_by_id.return_value = True
+            with patch("pyrit.scenario.core.atomic_attack.CentralMemory") as mock_cm:
+                mock_cm.get_memory_instance.return_value = mock_memory
+                await atomic.run_async()
+
+        mock_memory.update_attack_result_by_id.assert_called_once()
+        call_kwargs = mock_memory.update_attack_result_by_id.call_args.kwargs
+        assert call_kwargs["attack_result_id"] == "00000000-0000-0000-0000-000000000001"
+        assert "atomic_attack_identifier" in call_kwargs["update_fields"]
+        # The persisted dict should have the AtomicAttack shape
+        persisted = call_kwargs["update_fields"]["atomic_attack_identifier"]
+        assert persisted["class_name"] == "AtomicAttack"
+
+    @pytest.mark.asyncio
+    async def test_enrichment_skips_db_update_when_no_attack_result_id(self, mock_attack):
+        """Test that enrichment does not attempt a DB update when attack_result_id is None."""
+        seed_groups = [
+            SeedAttackGroup(
+                seeds=[
+                    SeedObjective(value="obj1"),
+                    SeedPrompt(value="technique1", is_general_technique=True),
+                ]
+            ),
+        ]
+        attack_id = ComponentIdentifier(class_name="MockAttack", class_module="test.mock")
+        attack_result = AttackResult(
+            conversation_id="conv-1",
+            objective="obj1",
+            outcome=AttackOutcome.SUCCESS,
+            executed_turns=1,
+            attack_result_id=None,
+            atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=attack_id),
+        )
+
+        atomic = AtomicAttack(attack=mock_attack, seed_groups=seed_groups, atomic_attack_name="test")
+
+        with patch.object(AttackExecutor, "execute_attack_from_seed_groups_async", new_callable=AsyncMock) as mock_exec:
+            mock_exec.return_value = wrap_results([attack_result])
+
+            mock_memory = MagicMock()
+            with patch("pyrit.scenario.core.atomic_attack.CentralMemory") as mock_cm:
+                mock_cm.get_memory_instance.return_value = mock_memory
+                await atomic.run_async()
+
+        mock_memory.update_attack_result_by_id.assert_not_called()

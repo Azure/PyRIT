@@ -274,6 +274,7 @@ API Reference
     AtomicAttackEvaluationIdentity
     build_atomic_attack_identifier
     build_seed_identifier
+    ChildEvalRule
     class_name_to_snake_case
     ComponentIdentifier
     compute_attack_eval_hash

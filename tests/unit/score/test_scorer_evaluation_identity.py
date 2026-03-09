@@ -11,7 +11,7 @@ the ``Scorer.get_eval_hash()`` convenience method.
 import pytest
 
 from pyrit.identifiers import ComponentIdentifier, Identifiable, compute_eval_hash
-from pyrit.identifiers.evaluation_identity import ChildEvalRule, ScorerEvaluationIdentity
+from pyrit.identifiers.evaluation_identity import ScorerEvaluationIdentity
 
 
 class TestScorerEvaluationIdentityConstants:

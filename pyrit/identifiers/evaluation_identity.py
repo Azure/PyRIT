@@ -98,9 +98,7 @@ def _build_eval_dict(
             # Filter list items by param-value match (e.g., only is_general_technique=True seeds)
             if rule and rule.included_item_values:
                 required = rule.included_item_values
-                child_list = [
-                    c for c in child_list if all(c.params.get(k) == v for k, v in required.items())
-                ]
+                child_list = [c for c in child_list if all(c.params.get(k) == v for k, v in required.items())]
 
             # For children with a rule, apply included_params; otherwise None → all params kept.
             child_included_params = rule.included_params if rule else None

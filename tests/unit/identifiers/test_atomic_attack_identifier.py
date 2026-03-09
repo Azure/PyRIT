@@ -461,7 +461,10 @@ class TestAtomicAttackEvaluationIdentity:
             attack_identifier=attack_id,
             seed_group=_FakeSeedGroup(seeds=[general_seed]),
         )
-        assert AtomicAttackEvaluationIdentity(c_mixed).eval_hash == AtomicAttackEvaluationIdentity(c_general_only).eval_hash
+        assert (
+            AtomicAttackEvaluationIdentity(c_mixed).eval_hash
+            == AtomicAttackEvaluationIdentity(c_general_only).eval_hash
+        )
 
     def test_identifier_hash_differs_with_non_general_seeds(self):
         """The full identifier hash SHOULD differ when non-general seeds differ."""
