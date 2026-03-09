@@ -13,6 +13,7 @@ from pyrit.executor.attack import (
     BeamSearchAttack,
     TopKBeamReviewer,
 )
+from pyrit.models import Message
 from pyrit.prompt_target import OpenAIResponseTarget, PromptTarget
 from pyrit.score import FloatScaleScorer, Scorer, TrueFalseScorer
 
@@ -22,6 +23,7 @@ def mock_target():
     """Create a mock prompt target for testing"""
     target = OpenAIResponseTarget.__new__(OpenAIResponseTarget)
     target.send_prompt_async = AsyncMock()
+    target.fresh_instance = MagicMock()
     target.get_identifier = MagicMock(return_value=get_mock_target_identifier("MockTarget"))
     return target
 
@@ -182,7 +184,7 @@ class TestTopKBeamReviewer:
 
 
 @pytest.mark.usefixtures("patch_central_database")
-class TestBeamSearchAttack:
+class TestBeamSearchAttackInit:
     def test_init_with_invalid_target(self, mock_bad_target):
         """Test initialization with an invalid target type"""
         with pytest.raises(
@@ -267,3 +269,34 @@ class TestBeamSearchAttack:
                 attack_scoring_config=scoring_config,
                 num_chars_per_step=0,
             )
+
+
+
+@pytest.mark.usefixtures("patch_central_database")
+class TestBeamSearchAttackE2E:
+    @pytest.mark.asyncio
+    async def test_e2e_attack(self, mock_target, mock_true_false_scorer, mock_float_scale_scorer):
+        """Test a full end-to-end attack execution with mocked components"""
+        # Set up the scoring config and attack
+        scoring_config = AttackScoringConfig(
+            objective_scorer=mock_true_false_scorer, auxiliary_scorers=[mock_float_scale_scorer]
+        )
+        beam_reviewer = TopKBeamReviewer(k=2, drop_chars=1)
+        attack = BeamSearchAttack(
+            objective_target=mock_target,
+            beam_reviewer=beam_reviewer,
+            attack_scoring_config=scoring_config,
+            num_beams=3,
+            max_iterations=3,
+            num_chars_per_step=1,
+        )
+
+        # Mock the target response and scorer outputs
+        mock_target.send_prompt_async.return_value = [Message.from_prompt(prompt="response1", role="assistant")]
+        mock_target.fresh_instance.return_value = mock_target
+        mock_true_false_scorer.score_text_async.return_value = True
+        mock_float_scale_scorer.score_text_async.return_value = 0.5
+
+        # Execute the attack
+        attack_result = await attack.execute_async(objective="Simple test run")
+        assert attack_result is not None
