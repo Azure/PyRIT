@@ -310,9 +310,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 continue
 
             # Ideally use a TaskGroup, but that needs Python 3.11+
-            await asyncio.gather(
-                *(self._score_beam_async(beam=beam, context=context) for beam in scoreable_beams)
-            )
+            await asyncio.gather(*(self._score_beam_async(beam=beam, context=context) for beam in scoreable_beams))
 
             for i, beam in enumerate(beams):
                 self._logger.debug(f"Beam {i} score: {beam.score}")
