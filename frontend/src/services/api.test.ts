@@ -232,6 +232,7 @@ describe("api service", () => {
     it("should create an attack", async () => {
       const mockResponse = {
         data: {
+          attack_result_id: "ar-123",
           conversation_id: "conv-123",
           created_at: "2026-02-15T00:00:00Z",
         },
@@ -245,6 +246,7 @@ describe("api service", () => {
       expect(apiClient.post).toHaveBeenCalledWith("/attacks", {
         target_registry_name: "test-target",
       });
+      expect(result.attack_result_id).toBe("ar-123");
       expect(result.conversation_id).toBe("conv-123");
     });
 
@@ -308,6 +310,8 @@ describe("api service", () => {
         role: "user",
         pieces: [{ data_type: "text", original_value: "Hello" }],
         send: true,
+        target_conversation_id: "conv-123",
+        target_registry_name: "test-target",
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -316,6 +320,8 @@ describe("api service", () => {
           role: "user",
           pieces: [{ data_type: "text", original_value: "Hello" }],
           send: true,
+          target_conversation_id: "conv-123",
+          target_registry_name: "test-target",
         }
       );
       expect(result.attack.conversation_id).toBe("conv-123");
@@ -341,6 +347,8 @@ describe("api service", () => {
           },
         ],
         send: true,
+        target_conversation_id: "conv-123",
+        target_registry_name: "test-target",
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -372,6 +380,8 @@ describe("api service", () => {
           },
         ],
         send: true,
+        target_conversation_id: "conv-123",
+        target_registry_name: "test-target",
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -406,6 +416,8 @@ describe("api service", () => {
           },
         ],
         send: true,
+        target_conversation_id: "conv-123",
+        target_registry_name: "test-target",
       });
 
       expect(apiClient.post).toHaveBeenCalledWith(
@@ -449,6 +461,8 @@ describe("api service", () => {
           role: "user",
           pieces: [{ data_type: "text", original_value: "test" }],
           send: true,
+          target_conversation_id: "conv-456",
+          target_registry_name: "test-target",
         })
       ).rejects.toThrow("Target not found");
     });
