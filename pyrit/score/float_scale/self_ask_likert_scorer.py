@@ -154,7 +154,10 @@ class LikertScalePaths(enum.Enum):
 
 class SelfAskLikertScorer(FloatScaleScorer):
     """
-    A class that represents a "self-ask" score for text scoring for a likert scale.
+    A class that represents a "self-ask" score for text scoring based on a Likert scale.
+    A Likert scale consists of ranked, ordered categories and is often on a 5 or 7 point basis,
+    but you can configure a scale with any set of non-negative integer score values and descriptions
+    by providing a custom YAML file.
     """
 
     _DEFAULT_VALIDATOR: ScorerPromptValidator = ScorerPromptValidator(supported_data_types=["text"])
@@ -218,7 +221,7 @@ class SelfAskLikertScorer(FloatScaleScorer):
         derives the minimum and maximum score values from the scale entries. These
         are stored as ``_min_scale_value`` and ``_max_scale_value`` so that
         ``_score_piece_async`` can normalise the raw LLM score to [0, 1] correctly
-        for any custom range (not just the default 1-5).
+        for any custom non-negative integer range (not just the default 1-5).
 
         Args:
             likert_scale_path (Path): The path to the YAML file containing the Likert scale description.
@@ -256,8 +259,14 @@ class SelfAskLikertScorer(FloatScaleScorer):
         scale_values = [int(d["score_value"]) for d in scale_descriptions]
         # Derive the min/max score values from the scale descriptions so that
         # custom ranges (e.g. 0-7) are handled automatically.
-        self._min_scale_value: int = min(scale_values)
-        self._max_scale_value: int = max(scale_values)
+        self._min_scale_value = min(scale_values)
+        self._max_scale_value = max(scale_values)
+
+        if self._min_scale_value == self._max_scale_value:
+            raise ValueError(
+                f"Likert scale YAML file '{likert_scale_path}' must have at least two distinct score values, "
+                f"but only a single unique value was found: {self._max_scale_value}."
+            )
 
         self._scoring_instructions_template = SeedPrompt.from_yaml_file(
             SCORER_LIKERT_PATH / "likert_system_prompt.yaml"
@@ -296,10 +305,10 @@ class SelfAskLikertScorer(FloatScaleScorer):
                     f"must be a dict with 'score_value' and 'description' keys, but got {type(description).__name__}."
                 )
 
-            name = description.get("score_value")
+            val = description.get("score_value")
             desc = description.get("description")
 
-            if name is None:
+            if val is None:
                 raise ValueError(
                     f"Likert scale YAML file '{likert_scale_path}': scale_descriptions entry {i} "
                     f"is missing required key 'score_value'."
@@ -311,20 +320,20 @@ class SelfAskLikertScorer(FloatScaleScorer):
                 )
 
             try:
-                score_int = int(name)
+                score_int = int(val)
             except (ValueError, TypeError) as err:
                 raise ValueError(
                     f"Likert scale YAML file '{likert_scale_path}': score_value must be a non-negative integer, "
-                    f"but got '{name}' in entry {i}."
+                    f"but got '{val}' in entry {i}."
                 ) from err
 
             if score_int < 0:
                 raise ValueError(
                     f"Likert scale YAML file '{likert_scale_path}': score_value must be a non-negative integer, "
-                    f"but got '{name}' in entry {i}."
+                    f"but got '{val}' in entry {i}."
                 )
 
-            likert_scale_description += f"'{name}': {desc}\n"
+            likert_scale_description += f"'{val}': {desc}\n"
 
         return likert_scale_description
 

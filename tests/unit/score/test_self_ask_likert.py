@@ -176,15 +176,15 @@ def _make_custom_scale_yaml(
     return yaml_file
 
 
-def test_custom_scale_sets_min_max(tmp_path: Path):
-    """Verify that a YAML with a 0-7 scale sets _min/_max correctly."""
+@pytest.mark.parametrize("min_val, max_val", [(0, 7), (2, 6), (1, 10)])
+def test_custom_scale_sets_min_max(tmp_path: Path, min_val: int, max_val: int):
+    """Verify that custom YAML scales set _min/_max correctly for various ranges."""
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
         chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
 
-        custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
-        # Temporarily patch the LikertScalePaths enum path property
+        custom_path = _make_custom_scale_yaml(tmp_path, min_val=min_val, max_val=max_val)
         with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
             with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
                 scorer = SelfAskLikertScorer(
@@ -192,8 +192,8 @@ def test_custom_scale_sets_min_max(tmp_path: Path):
                     likert_scale=LikertScalePaths.CYBER_SCALE,
                 )
 
-        assert scorer._min_scale_value == 0
-        assert scorer._max_scale_value == 7
+        assert scorer._min_scale_value == min_val
+        assert scorer._max_scale_value == max_val
 
 
 def test_default_1_to_5_scale_sets_min_max():
@@ -212,14 +212,15 @@ def test_default_1_to_5_scale_sets_min_max():
         assert scorer._max_scale_value == 5
 
 
-def test_custom_scale_system_prompt_contains_dynamic_range(tmp_path: Path):
+@pytest.mark.parametrize("min_val, max_val", [(0, 7), (2, 6), (1, 10)])
+def test_custom_scale_system_prompt_contains_dynamic_range(tmp_path: Path, min_val: int, max_val: int):
     """Verify the system prompt references the custom min/max, not hardcoded 1/5."""
     memory = MagicMock(MemoryInterface)
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
         chat_target = MagicMock()
         chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
 
-        custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
+        custom_path = _make_custom_scale_yaml(tmp_path, min_val=min_val, max_val=max_val)
         with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
             with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
                 scorer = SelfAskLikertScorer(
@@ -228,21 +229,37 @@ def test_custom_scale_system_prompt_contains_dynamic_range(tmp_path: Path):
                 )
 
         # The system prompt should mention the custom range boundaries
-        assert "0 is the least severe" in scorer._system_prompt
-        assert "7 is the most severe" in scorer._system_prompt
+        assert f"{min_val} is the least severe" in scorer._system_prompt
+        assert f"{max_val} is the most severe" in scorer._system_prompt
 
 
 @pytest.mark.asyncio
-async def test_custom_scale_score_normalisation(patch_central_database, tmp_path: Path):
+@pytest.mark.parametrize(
+    "min_val, max_val, raw_score, expected_normalised",
+    [
+        (0, 7, 7, 1.0),  # max of 0-7 → 1.0
+        (0, 7, 0, 0.0),  # min of 0-7 → 0.0
+        (2, 6, 6, 1.0),  # max of non-zero-min range → 1.0
+        (2, 6, 2, 0.0),  # min of non-zero-min range → 0.0
+        (2, 6, 4, 0.5),  # mid of 2-6 → (4-2)/(6-2) = 0.5
+    ],
+)
+async def test_custom_scale_score_normalisation(
+    patch_central_database,
+    tmp_path: Path,
+    min_val: int,
+    max_val: int,
+    raw_score: int,
+    expected_normalised: float,
+):
     """
-    Verify that scoring normalises against the custom range, not 1-5.
+    Verify that scoring normalises correctly against arbitrary custom ranges.
 
-    For a 0-7 scale, a raw score of 7 should normalise to 1.0 and
-    a raw score of 0 should normalise to 0.0.
+    Covers zero-based ranges (0-7), non-zero/non-1 minimums (2-6), and
+    mid-range values to exercise the full normalisation formula.
     """
-    # Simulate LLM returning score_value "7" on a 0-7 scale
     json_response = (
-        '{"score_value": "7", "description": "Maximum severity", "rationale": "The response is extremely harmful."}'
+        f'{{"score_value": "{raw_score}", "description": "Level {raw_score}", "rationale": "Test rationale."}}'
     )
     llm_response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
 
@@ -250,7 +267,7 @@ async def test_custom_scale_score_normalisation(patch_central_database, tmp_path
     chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
     chat_target.send_prompt_async = AsyncMock(return_value=[llm_response])
 
-    custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
+    custom_path = _make_custom_scale_yaml(tmp_path, min_val=min_val, max_val=max_val)
     with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
         with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
             scorer = SelfAskLikertScorer(
@@ -258,40 +275,11 @@ async def test_custom_scale_score_normalisation(patch_central_database, tmp_path
                 likert_scale=LikertScalePaths.CYBER_SCALE,
             )
 
-    score = await scorer.score_text_async("extremely harmful content")
+    score = await scorer.score_text_async("test content")
 
     assert len(score) == 1
-    # 7/7 on a 0-7 scale = 1.0
-    assert score[0].score_value == "1.0"
-    assert score[0].get_value() == 1.0
-    assert score[0].score_metadata == {"likert_value": 7}
-
-
-@pytest.mark.asyncio
-async def test_custom_scale_score_min_value(patch_central_database, tmp_path: Path):
-    """
-    Verify min-range normalisation on a 0-7 scale.
-
-    Raw score 0 on a 0-7 scale should normalise to 0.0.
-    """
-    json_response = '{"score_value": "0", "description": "No harm", "rationale": "The response is benign."}'
-    llm_response = Message(message_pieces=[MessagePiece(role="assistant", original_value=json_response)])
-
-    chat_target = MagicMock()
-    chat_target.get_identifier.return_value = get_mock_target_identifier("MockChatTarget")
-    chat_target.send_prompt_async = AsyncMock(return_value=[llm_response])
-
-    custom_path = _make_custom_scale_yaml(tmp_path, min_val=0, max_val=7)
-    with patch.object(LikertScalePaths, "path", new_callable=lambda: property(lambda self: Path(custom_path))):
-        with patch.object(LikertScalePaths, "evaluation_files", new_callable=lambda: property(lambda self: None)):
-            scorer = SelfAskLikertScorer(
-                chat_target=chat_target,
-                likert_scale=LikertScalePaths.CYBER_SCALE,
-            )
-
-    score = await scorer.score_text_async("benign content")
-    assert score[0].score_value == "0.0"
-    assert score[0].get_value() == 0.0
+    assert score[0].get_value() == pytest.approx(expected_normalised)
+    assert score[0].score_metadata == {"likert_value": raw_score}
 
 
 def test_likert_scale_negative_value_rejected(tmp_path: Path):
