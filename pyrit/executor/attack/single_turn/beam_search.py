@@ -336,7 +336,9 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             objective=context.objective,
             attack_identifier=self.get_identifier(),
             last_response=(
-                beams[0].response_message.message_pieces[0] if beams[0].response_message and beams[0].response_message.message_pieces else None
+                beams[0].response_message.message_pieces[0]
+                if beams[0].response_message and beams[0].response_message.message_pieces
+                else None
             ),
             last_score=beams[0].objective_score,
             related_conversations=related_conversations,
@@ -379,10 +381,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             assistant_pieces = [
                 piece
                 for piece in model_response.message_pieces
-                if (
-                    piece.api_role == "assistant"
-                    and piece.original_value_data_type == "text"
-                )
+                if (piece.api_role == "assistant" and piece.original_value_data_type == "text")
                 or piece.original_value_data_type in ("assistant_text", "grammar")
             ]
             if not assistant_pieces:
