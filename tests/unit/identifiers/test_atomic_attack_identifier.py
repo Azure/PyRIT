@@ -3,11 +3,10 @@
 
 
 from pyrit.identifiers import (
-    AtomicAttackEvaluationIdentity,
+    AtomicAttackEvaluationIdentifier,
     ComponentIdentifier,
     build_atomic_attack_identifier,
     build_seed_identifier,
-    compute_attack_eval_hash,
     compute_eval_hash,
 )
 from pyrit.models.seeds.seed_prompt import SeedPrompt
@@ -82,13 +81,15 @@ class TestBuildSeedIdentifier:
         result = build_seed_identifier(seed)
         assert result.params["is_general_technique"] is False
 
-    def test_excludes_none_values(self):
+    def test_none_values_present_in_params(self):
         seed = SeedPrompt(value="hello")
         seed.value_sha256 = None
         seed.dataset_name = None
         result = build_seed_identifier(seed)
-        assert "value_sha256" not in result.params
-        assert "dataset_name" not in result.params
+        assert "value_sha256" in result.params
+        assert result.params["value_sha256"] is None
+        assert "dataset_name" in result.params
+        assert result.params["dataset_name"] is None
 
     def test_deterministic_hash(self):
         seed1 = SeedPrompt(value="hello", value_sha256="abc123", dataset_name="ds")
@@ -188,89 +189,36 @@ class TestBuildAtomicAttackIdentifier:
 
 
 # =========================================================================
-# compute_attack_eval_hash (free function)
+# AtomicAttackEvaluationIdentifier
 # =========================================================================
 
 
-class TestComputeAttackEvalHash:
-    """Tests for compute_attack_eval_hash."""
-
-    def test_returns_64_char_hex(self):
-        composite = build_atomic_attack_identifier(
-            attack_identifier=_make_attack(children={"objective_target": _make_target(params={"model_name": "gpt-4o"})})
-        )
-        result = compute_attack_eval_hash(composite)
-        assert isinstance(result, str) and len(result) == 64
-
-    def test_deterministic(self):
-        attack_id = _make_attack(children={"objective_target": _make_target(params={"model_name": "gpt-4o"})})
-        c1 = build_atomic_attack_identifier(attack_identifier=attack_id)
-        c2 = build_atomic_attack_identifier(attack_identifier=attack_id)
-        assert compute_attack_eval_hash(c1) == compute_attack_eval_hash(c2)
-
-    def test_ignores_operational_params_on_objective_target(self):
-        """Same temperature, different endpoint/model -> same eval hash."""
-        t1 = _make_target(params={"model_name": "gpt-4o", "endpoint": "https://a.com", "temperature": 0.7})
-        t2 = _make_target(params={"model_name": "gpt-3.5", "endpoint": "https://b.com", "temperature": 0.7})
-        c1 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t1}))
-        c2 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t2}))
-        assert compute_attack_eval_hash(c1) == compute_attack_eval_hash(c2)
-
-    def test_different_temperature_different_hash(self):
-        t1 = _make_target(params={"temperature": 0.7})
-        t2 = _make_target(params={"temperature": 0.0})
-        c1 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t1}))
-        c2 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t2}))
-        assert compute_attack_eval_hash(c1) != compute_attack_eval_hash(c2)
-
-    def test_model_name_ignored_on_objective_target(self):
-        """model_name is NOT in the objective_target allowlist."""
-        t1 = _make_target(params={"model_name": "gpt-4o"})
-        t2 = _make_target(params={"model_name": "gpt-3.5-turbo"})
-        c1 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t1}))
-        c2 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t2}))
-        assert compute_attack_eval_hash(c1) == compute_attack_eval_hash(c2)
-
-    def test_different_seeds_different_eval_hash(self):
-        attack_id = _make_attack()
-        seed1 = SeedPrompt(value="tech1", value_sha256="aaa", is_general_technique=True)
-        seed2 = SeedPrompt(value="tech2", value_sha256="bbb", is_general_technique=True)
-        c1 = build_atomic_attack_identifier(attack_identifier=attack_id, seed_group=_FakeSeedGroup(seeds=[seed1]))
-        c2 = build_atomic_attack_identifier(attack_identifier=attack_id, seed_group=_FakeSeedGroup(seeds=[seed2]))
-        assert compute_attack_eval_hash(c1) != compute_attack_eval_hash(c2)
-
-
-# =========================================================================
-# AtomicAttackEvaluationIdentity
-# =========================================================================
-
-
-class TestAtomicAttackEvaluationIdentity:
-    """Tests for AtomicAttackEvaluationIdentity."""
+class TestAtomicAttackEvaluationIdentifier:
+    """Tests for AtomicAttackEvaluationIdentifier."""
 
     # -- ClassVar constants ------------------------------------------------
 
     def test_objective_target_rule(self):
-        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["objective_target"]
+        rule = AtomicAttackEvaluationIdentifier.CHILD_EVAL_RULES["objective_target"]
         assert rule.included_params == frozenset({"temperature"})
         assert not rule.exclude
 
     def test_adversarial_chat_rule(self):
-        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["adversarial_chat"]
+        rule = AtomicAttackEvaluationIdentifier.CHILD_EVAL_RULES["adversarial_chat"]
         assert rule.included_params == frozenset({"model_name", "temperature", "top_p"})
         assert not rule.exclude
 
     def test_scorer_only_keys_absent(self):
         """Scorer-specific keys should not appear in attack rules."""
-        assert "prompt_target" not in AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES
-        assert "converter_target" not in AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES
+        assert "prompt_target" not in AtomicAttackEvaluationIdentifier.CHILD_EVAL_RULES
+        assert "converter_target" not in AtomicAttackEvaluationIdentifier.CHILD_EVAL_RULES
 
     def test_objective_scorer_excluded(self):
-        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["objective_scorer"]
+        rule = AtomicAttackEvaluationIdentifier.CHILD_EVAL_RULES["objective_scorer"]
         assert rule.exclude is True
 
     def test_seeds_rule(self):
-        rule = AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES["seeds"]
+        rule = AtomicAttackEvaluationIdentifier.CHILD_EVAL_RULES["seeds"]
         assert rule.included_item_values == {"is_general_technique": True}
         assert not rule.exclude
 
@@ -278,31 +226,24 @@ class TestAtomicAttackEvaluationIdentity:
 
     def test_identifier_property_returns_original(self):
         composite = build_atomic_attack_identifier(attack_identifier=_make_attack())
-        identity = AtomicAttackEvaluationIdentity(composite)
+        identity = AtomicAttackEvaluationIdentifier(composite)
         assert identity.identifier is composite
 
     def test_eval_hash_is_64_char_hex(self):
         composite = build_atomic_attack_identifier(attack_identifier=_make_attack())
-        identity = AtomicAttackEvaluationIdentity(composite)
+        identity = AtomicAttackEvaluationIdentifier(composite)
         assert isinstance(identity.eval_hash, str) and len(identity.eval_hash) == 64
 
     # -- Consistency with free functions -----------------------------------
-
-    def test_eval_hash_matches_compute_attack_eval_hash(self):
-        composite = build_atomic_attack_identifier(
-            attack_identifier=_make_attack(children={"objective_target": _make_target(params={"temperature": 0.5})})
-        )
-        identity = AtomicAttackEvaluationIdentity(composite)
-        assert identity.eval_hash == compute_attack_eval_hash(composite)
 
     def test_eval_hash_matches_compute_eval_hash_with_rules(self):
         composite = build_atomic_attack_identifier(
             attack_identifier=_make_attack(children={"objective_target": _make_target(params={"temperature": 0.5})})
         )
-        identity = AtomicAttackEvaluationIdentity(composite)
+        identity = AtomicAttackEvaluationIdentifier(composite)
         expected = compute_eval_hash(
             composite,
-            child_eval_rules=AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES,
+            child_eval_rules=AtomicAttackEvaluationIdentifier.CHILD_EVAL_RULES,
         )
         assert identity.eval_hash == expected
 
@@ -314,14 +255,14 @@ class TestAtomicAttackEvaluationIdentity:
         t2 = _make_target(params={"model_name": "gpt-3.5", "endpoint": "https://b.com", "temperature": 0.7})
         c1 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t1}))
         c2 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t2}))
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_objective_target_different_temperature_different_hash(self):
         t1 = _make_target(params={"temperature": 0.7})
         t2 = _make_target(params={"temperature": 0.0})
         c1 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t1}))
         c2 = build_atomic_attack_identifier(attack_identifier=_make_attack(children={"objective_target": t2}))
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash != AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash != AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     # -- adversarial_chat filtering ----------------------------------------
 
@@ -333,7 +274,7 @@ class TestAtomicAttackEvaluationIdentity:
         a2 = _make_attack(children={"adversarial_chat": chat2})
         c1 = build_atomic_attack_identifier(attack_identifier=a1)
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash != AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash != AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_adversarial_chat_endpoint_ignored(self):
         """endpoint is NOT in the adversarial_chat allowlist."""
@@ -351,7 +292,7 @@ class TestAtomicAttackEvaluationIdentity:
         a2 = _make_attack(children={"adversarial_chat": chat2})
         c1 = build_atomic_attack_identifier(attack_identifier=a1)
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     # -- objective_scorer exclusion ----------------------------------------
 
@@ -367,7 +308,7 @@ class TestAtomicAttackEvaluationIdentity:
         a2 = _make_attack(children={"objective_scorer": scorer2})
         c1 = build_atomic_attack_identifier(attack_identifier=a1)
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_objective_scorer_presence_vs_absence_same_hash(self):
         """Having or not having an objective_scorer must not change the eval hash."""
@@ -378,7 +319,7 @@ class TestAtomicAttackEvaluationIdentity:
         a_without = _make_attack()
         c1 = build_atomic_attack_identifier(attack_identifier=a_with)
         c2 = build_atomic_attack_identifier(attack_identifier=a_without)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     # -- Converters (non-target, fully included) ---------------------------
 
@@ -389,7 +330,7 @@ class TestAtomicAttackEvaluationIdentity:
         a2 = _make_attack(children={"request_converters": [conv2]})
         c1 = build_atomic_attack_identifier(attack_identifier=a1)
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash != AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash != AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_same_request_converters_same_hash(self):
         conv = ComponentIdentifier(class_name="Base64Converter", class_module="pyrit.prompt_converter")
@@ -397,7 +338,7 @@ class TestAtomicAttackEvaluationIdentity:
         a2 = _make_attack(children={"request_converters": [conv]})
         c1 = build_atomic_attack_identifier(attack_identifier=a1)
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_response_converters_contribute(self):
         conv1 = ComponentIdentifier(class_name="Base64Converter", class_module="pyrit.prompt_converter")
@@ -406,7 +347,7 @@ class TestAtomicAttackEvaluationIdentity:
         a2 = _make_attack(children={"response_converters": [conv2]})
         c1 = build_atomic_attack_identifier(attack_identifier=a1)
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash != AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash != AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_converters_contribute_while_target_endpoint_ignored(self):
         """Converters fully contribute even when objective_target operational params are stripped."""
@@ -417,7 +358,7 @@ class TestAtomicAttackEvaluationIdentity:
         a2 = _make_attack(children={"objective_target": t2, "request_converters": [conv]})
         c1 = build_atomic_attack_identifier(attack_identifier=a1)
         c2 = build_atomic_attack_identifier(attack_identifier=a2)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     # -- Seeds (eval hash uses only general technique seeds) ---------------
 
@@ -427,7 +368,7 @@ class TestAtomicAttackEvaluationIdentity:
         seed2 = SeedPrompt(value="tech2", value_sha256="bbb", is_general_technique=True)
         c1 = build_atomic_attack_identifier(attack_identifier=attack_id, seed_group=_FakeSeedGroup(seeds=[seed1]))
         c2 = build_atomic_attack_identifier(attack_identifier=attack_id, seed_group=_FakeSeedGroup(seeds=[seed2]))
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash != AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash != AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_non_general_technique_seeds_ignored_in_eval_hash(self):
         """Same general technique seeds but different non-general seeds -> same eval hash."""
@@ -443,7 +384,7 @@ class TestAtomicAttackEvaluationIdentity:
             attack_identifier=attack_id,
             seed_group=_FakeSeedGroup(seeds=[general_seed, non_general_2]),
         )
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     def test_eval_hash_only_uses_general_technique_seeds(self):
         """Eval hash with mixed seeds should match one built with only general technique seeds."""
@@ -462,8 +403,8 @@ class TestAtomicAttackEvaluationIdentity:
             seed_group=_FakeSeedGroup(seeds=[general_seed]),
         )
         assert (
-            AtomicAttackEvaluationIdentity(c_mixed).eval_hash
-            == AtomicAttackEvaluationIdentity(c_general_only).eval_hash
+            AtomicAttackEvaluationIdentifier(c_mixed).eval_hash
+            == AtomicAttackEvaluationIdentifier(c_general_only).eval_hash
         )
 
     def test_identifier_hash_differs_with_non_general_seeds(self):
@@ -483,7 +424,7 @@ class TestAtomicAttackEvaluationIdentity:
         # Full identifier hash should differ (all seeds contribute)
         assert c1.hash != c2.hash
         # But eval hash should be the same (only general technique seeds)
-        assert AtomicAttackEvaluationIdentity(c1).eval_hash == AtomicAttackEvaluationIdentity(c2).eval_hash
+        assert AtomicAttackEvaluationIdentifier(c1).eval_hash == AtomicAttackEvaluationIdentifier(c2).eval_hash
 
     # -- Full composite scenario -------------------------------------------
 
@@ -514,10 +455,7 @@ class TestAtomicAttackEvaluationIdentity:
             seed_group=_FakeSeedGroup(seeds=[seed]),
         )
 
-        identity = AtomicAttackEvaluationIdentity(composite)
-
-        # Should match free function
-        assert identity.eval_hash == compute_attack_eval_hash(composite)
+        identity = AtomicAttackEvaluationIdentifier(composite)
 
         # Changing only endpoint on target should NOT change hash
         target2 = _make_target(params={"model_name": "gpt-4o", "temperature": 0.7, "endpoint": "https://other.com"})
@@ -533,7 +471,7 @@ class TestAtomicAttackEvaluationIdentity:
             attack_identifier=attack_id2,
             seed_group=_FakeSeedGroup(seeds=[seed]),
         )
-        assert identity.eval_hash == AtomicAttackEvaluationIdentity(composite2).eval_hash
+        assert identity.eval_hash == AtomicAttackEvaluationIdentifier(composite2).eval_hash
 
         # Changing scorer should NOT change hash (scorer is ignored)
         scorer2 = ComponentIdentifier(
@@ -551,4 +489,4 @@ class TestAtomicAttackEvaluationIdentity:
             attack_identifier=attack_id3,
             seed_group=_FakeSeedGroup(seeds=[seed]),
         )
-        assert identity.eval_hash == AtomicAttackEvaluationIdentity(composite3).eval_hash
+        assert identity.eval_hash == AtomicAttackEvaluationIdentifier(composite3).eval_hash

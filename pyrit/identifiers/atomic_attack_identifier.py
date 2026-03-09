@@ -45,15 +45,12 @@ def build_seed_identifier(seed: "Seed") -> ComponentIdentifier:
     Returns:
         ComponentIdentifier: An identifier capturing the seed's behavioral properties.
     """
-    params: dict[str, Any] = {}
-
-    if seed.value:
-        params["value"] = seed.value
-    if seed.value_sha256:
-        params["value_sha256"] = seed.value_sha256
-    if seed.dataset_name:
-        params["dataset_name"] = seed.dataset_name
-    params["is_general_technique"] = seed.is_general_technique
+    params: dict[str, Any] = {
+        "value": seed.value,
+        "value_sha256": seed.value_sha256,
+        "dataset_name": seed.dataset_name,
+        "is_general_technique": seed.is_general_technique,
+    }
 
     return ComponentIdentifier(
         class_name=seed.__class__.__name__,

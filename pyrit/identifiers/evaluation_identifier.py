@@ -10,12 +10,11 @@ This module provides:
 * ``_build_eval_dict`` — builds a filtered dict for eval-hash computation.
 * ``compute_eval_hash`` — free function that computes a behavioral equivalence
   hash from a ``ComponentIdentifier``.
-* ``EvaluationIdentity`` — abstract base that wraps a ``ComponentIdentifier``
+* ``EvaluationIdentifier`` — abstract base that wraps a ``ComponentIdentifier``
   with domain-specific eval-hash configuration.  Concrete subclasses declare
   per-child rules via a single ``CHILD_EVAL_RULES`` ClassVar.
-* ``ScorerEvaluationIdentity`` — scorer-domain concrete subclass.
-* ``AtomicAttackEvaluationIdentity`` — attack-domain concrete subclass.
-* ``compute_attack_eval_hash`` — convenience wrapper for attacks.
+* ``ScorerEvaluationIdentifier`` — scorer-domain concrete subclass.
+* ``AtomicAttackEvaluationIdentifier`` — attack-domain concrete subclass.
 """
 
 from __future__ import annotations
@@ -156,7 +155,7 @@ def compute_eval_hash(
     return config_hash(eval_dict)
 
 
-class EvaluationIdentity(ABC):
+class EvaluationIdentifier(ABC):
     """
     Wraps a ``ComponentIdentifier`` with domain-specific eval-hash configuration.
 
@@ -189,7 +188,7 @@ class EvaluationIdentity(ABC):
         return self._eval_hash
 
 
-class ScorerEvaluationIdentity(EvaluationIdentity):
+class ScorerEvaluationIdentifier(EvaluationIdentifier):
     """
     Evaluation identity for scorers.
 
@@ -205,7 +204,7 @@ class ScorerEvaluationIdentity(EvaluationIdentity):
     }
 
 
-class AtomicAttackEvaluationIdentity(EvaluationIdentity):
+class AtomicAttackEvaluationIdentifier(EvaluationIdentifier):
     """
     Evaluation identity for atomic attacks.
 
@@ -233,26 +232,3 @@ class AtomicAttackEvaluationIdentity(EvaluationIdentity):
             included_item_values={"is_general_technique": True},
         ),
     }
-
-
-def compute_attack_eval_hash(identifier: ComponentIdentifier) -> str:
-    """
-    Compute a behavioral equivalence hash for attack evaluation grouping.
-
-    Convenience wrapper around ``compute_eval_hash`` with attack-specific
-    rules.  The ``objective_scorer`` is excluded. For ``objective_target``,
-    only temperature is included. For ``adversarial_chat``, model_name,
-    temperature, and top_p are included.  For ``seeds``, only items with
-    ``is_general_technique=True`` are included. All other children (converters)
-    are fully included.
-
-    Args:
-        identifier (ComponentIdentifier): The atomic attack's composite identity.
-
-    Returns:
-        str: A hash suitable for evaluation registry keying.
-    """
-    return compute_eval_hash(
-        identifier,
-        child_eval_rules=AtomicAttackEvaluationIdentity.CHILD_EVAL_RULES,
-    )

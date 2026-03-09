@@ -2,9 +2,9 @@
 # Licensed under the MIT license.
 
 """
-Tests for pyrit.identifiers.evaluation_identity.
+Tests for pyrit.identifiers.evaluation_identifier.
 
-Covers the ``EvaluationIdentity`` abstract base class, the ``_build_eval_dict``
+Covers the ``EvaluationIdentifier`` abstract base class, the ``_build_eval_dict``
 helper, and the ``compute_eval_hash`` free function.
 """
 
@@ -13,14 +13,14 @@ from typing import ClassVar
 import pytest
 
 from pyrit.identifiers import ComponentIdentifier, compute_eval_hash
-from pyrit.identifiers.evaluation_identity import ChildEvalRule, EvaluationIdentity, _build_eval_dict
+from pyrit.identifiers.evaluation_identifier import ChildEvalRule, EvaluationIdentifier, _build_eval_dict
 
 # ---------------------------------------------------------------------------
 # Concrete subclass for testing the ABC
 # ---------------------------------------------------------------------------
 
 
-class _StubEvaluationIdentity(EvaluationIdentity):
+class _StubEvaluationIdentifier(EvaluationIdentifier):
     """Minimal concrete subclass for testing the abstract base class."""
 
     CHILD_EVAL_RULES: ClassVar[dict[str, ChildEvalRule]] = {
@@ -138,19 +138,19 @@ class TestComputeEvalHash:
         assert all(c in "0123456789abcdef" for c in result)
 
 
-class TestEvaluationIdentity:
-    """Tests for the EvaluationIdentity abstract base class."""
+class TestEvaluationIdentifier:
+    """Tests for the EvaluationIdentifier abstract base class."""
 
     def test_identifier_property_returns_original(self):
         """Test that .identifier returns the ComponentIdentifier passed at construction."""
         cid = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score")
-        identity = _StubEvaluationIdentity(cid)
+        identity = _StubEvaluationIdentifier(cid)
         assert identity.identifier is cid
 
     def test_eval_hash_is_string(self):
         """Test that .eval_hash is a valid hex string."""
         cid = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score")
-        identity = _StubEvaluationIdentity(cid)
+        identity = _StubEvaluationIdentifier(cid)
         assert isinstance(identity.eval_hash, str)
         assert len(identity.eval_hash) == 64
 
@@ -161,11 +161,11 @@ class TestEvaluationIdentity:
             class_module="pyrit.score",
             params={"threshold": 0.5},
         )
-        identity = _StubEvaluationIdentity(cid)
+        identity = _StubEvaluationIdentifier(cid)
 
         expected = compute_eval_hash(
             cid,
-            child_eval_rules=_StubEvaluationIdentity.CHILD_EVAL_RULES,
+            child_eval_rules=_StubEvaluationIdentifier.CHILD_EVAL_RULES,
         )
         assert identity.eval_hash == expected
 
@@ -181,20 +181,20 @@ class TestEvaluationIdentity:
             class_module="pyrit.score",
             children={"my_target": child},
         )
-        identity = _StubEvaluationIdentity(cid)
+        identity = _StubEvaluationIdentifier(cid)
 
         # "endpoint" is operational, so eval hash should differ from full component hash
         assert identity.eval_hash != cid.hash
 
     def test_cannot_instantiate_abc_directly(self):
-        """Test that EvaluationIdentity cannot be instantiated without ClassVars."""
+        """Test that EvaluationIdentifier cannot be instantiated without ClassVars."""
         with pytest.raises(AttributeError):
-            EvaluationIdentity(ComponentIdentifier(class_name="X", class_module="m"))  # type: ignore[abstract]
+            EvaluationIdentifier(ComponentIdentifier(class_name="X", class_module="m"))  # type: ignore[abstract]
 
     def test_custom_classvars_produce_expected_hash(self):
         """Test that a concrete subclass with custom ClassVars produces the correct eval hash."""
 
-        class CustomIdentity(EvaluationIdentity):
+        class CustomIdentity(EvaluationIdentifier):
             CHILD_EVAL_RULES: ClassVar[dict[str, ChildEvalRule]] = {
                 "special_target": ChildEvalRule(
                     included_params=frozenset({"model_name", "temperature"}),

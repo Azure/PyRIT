@@ -271,18 +271,17 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
-    AtomicAttackEvaluationIdentity
+    AtomicAttackEvaluationIdentifier
     build_atomic_attack_identifier
     build_seed_identifier
     ChildEvalRule
     class_name_to_snake_case
     ComponentIdentifier
-    compute_attack_eval_hash
     compute_eval_hash
     config_hash
-    EvaluationIdentity
+    EvaluationIdentifier
     Identifiable
-    ScorerEvaluationIdentity
+    ScorerEvaluationIdentifier
     snake_case_to_class_name
 
 :py:mod:`pyrit.memory`
