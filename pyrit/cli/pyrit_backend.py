@@ -182,6 +182,16 @@ async def initialize_and_run_async(*, parsed_args: Namespace) -> int:
     # Start uvicorn server
     import uvicorn
 
+    from pyrit.backend.main import app
+
+    # Expose configured default labels to the version endpoint
+    default_labels: dict[str, str] = {}
+    if context._operator:
+        default_labels["operator"] = context._operator
+    if context._operation:
+        default_labels["operation"] = context._operation
+    app.state.default_labels = default_labels
+
     print(f"🚀 Starting PyRIT backend on http://{parsed_args.host}:{parsed_args.port}")
     print(f"   API Docs: http://{parsed_args.host}:{parsed_args.port}/docs")
 

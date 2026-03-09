@@ -14,6 +14,9 @@ jest.mock("./services/api", () => ({
     createAttack: jest.fn(),
     deleteAttack: jest.fn(),
   },
+  versionApi: {
+    getVersion: jest.fn().mockResolvedValue({ version: "1.0.0" }),
+  },
 }));
 
 const mockGetAttack = attacksApi.getAttack as jest.Mock;

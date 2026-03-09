@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { FluentProvider, webLightTheme, webDarkTheme } from '@fluentui/react-components'
 import MainLayout from './components/Layout/MainLayout'
 import ChatWindow from './components/Chat/ChatWindow'
@@ -10,7 +10,7 @@ import { ConnectionHealthProvider } from './hooks/useConnectionHealth'
 import { DEFAULT_GLOBAL_LABELS } from './components/Labels/LabelsBar'
 import type { ViewName } from './components/Sidebar/Navigation'
 import type { Message, TargetInstance, TargetInfo } from './types'
-import { attacksApi } from './services/api'
+import { attacksApi, versionApi } from './services/api'
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -20,6 +20,17 @@ function App() {
   const [globalLabels, setGlobalLabels] = useState<Record<string, string>>({ ...DEFAULT_GLOBAL_LABELS })
   /** True while loading a historical attack from the history view */
   const [isLoadingAttack, setIsLoadingAttack] = useState(false)
+
+  // Fetch default labels from backend configuration on startup
+  useEffect(() => {
+    versionApi.getVersion()
+      .then((data) => {
+        if (data.default_labels && Object.keys(data.default_labels).length > 0) {
+          setGlobalLabels(prev => ({ ...prev, ...data.default_labels }))
+        }
+      })
+      .catch(() => { /* version fetch handled elsewhere */ })
+  }, [])
 
   // When the user switches to a genuinely different target, start a fresh attack.
   // Just re-selecting the same target (or viewing config without changing) keeps
