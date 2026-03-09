@@ -118,7 +118,7 @@ export interface BackendScore {
   scorer_type: string
   score_type: string
   score_value: string
-  score_category?: string | null
+  score_category?: string[] | null
   score_rationale?: string | null
   scored_at: string
 }
@@ -156,7 +156,7 @@ export interface MessagePieceRequest {
   converted_value?: string
   mime_type?: string
   original_prompt_id?: string
-  prompt_metadata?: Record<string, string>
+  prompt_metadata?: Record<string, unknown>
 }
 
 export interface AddMessageRequest {

@@ -87,7 +87,7 @@ test.describe("Targets API", () => {
 
     const created = await createResp.json();
     expect(created).toHaveProperty("target_registry_name");
-    expect(created.type).toBe("OpenAIChatTarget");
+    expect(created.target_type).toBe("OpenAIChatTarget");
 
     // Retrieve via list and check it's there
     const listResp = await request.get("/api/targets?limit=200");

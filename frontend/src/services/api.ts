@@ -45,7 +45,7 @@ function generateRequestId(): string {
 }
 
 apiClient.interceptors.request.use((config) => {
-  config.headers['X-Request-ID'] = generateRequestId()
+  config.headers.set('X-Request-ID', generateRequestId())
   return config
 })
 

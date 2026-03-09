@@ -49,7 +49,11 @@ describe("api service", () => {
     });
 
     it("request interceptor adds X-Request-ID header", () => {
-      const config = { headers: {} as Record<string, string> };
+      const headers: Record<string, string> & { set: (k: string, v: string) => void } = Object.assign(
+        {} as Record<string, string>,
+        { set(k: string, v: string) { this[k] = v; } }
+      );
+      const config = { headers };
       const result = requestInterceptor(config);
       expect(result.headers["X-Request-ID"]).toBeDefined();
       expect(typeof result.headers["X-Request-ID"]).toBe("string");
@@ -57,7 +61,11 @@ describe("api service", () => {
     });
 
     it("request interceptor generates UUID-like format", () => {
-      const config = { headers: {} as Record<string, string> };
+      const headers: Record<string, string> & { set: (k: string, v: string) => void } = Object.assign(
+        {} as Record<string, string>,
+        { set(k: string, v: string) { this[k] = v; } }
+      );
+      const config = { headers };
       const result = requestInterceptor(config);
       // UUID v4 pattern: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
       expect(result.headers["X-Request-ID"]).toMatch(
