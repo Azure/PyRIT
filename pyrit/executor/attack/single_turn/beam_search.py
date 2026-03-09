@@ -41,7 +41,7 @@ class Beam:
     text: str
     score: float
     objective_score: Optional[Score] = None
-    message: Optional[Message] = None
+    response_message: Optional[Message] = None
 
     def get_grammar(self, *, n_chars: int) -> str:
         """
@@ -304,7 +304,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
                 self._logger.debug(f"Beam {i} text after iteration {step}: {beam.text}")
 
             # Make sure we only score beams which have a response
-            scoreable_beams = [beam for beam in beams if beam.message is not None]
+            scoreable_beams = [beam for beam in beams if beam.response_message is not None]
             if not scoreable_beams:
                 self._logger.warning("No beams produced a response to score in this iteration")
                 continue
@@ -336,7 +336,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             objective=context.objective,
             attack_identifier=self.get_identifier(),
             last_response=(
-                beams[0].message.message_pieces[0] if beams[0].message and beams[0].message.message_pieces else None
+                beams[0].response_message.message_pieces[0] if beams[0].response_message and beams[0].response_message.message_pieces else None
             ),
             last_score=beams[0].objective_score,
             related_conversations=related_conversations,
@@ -394,7 +394,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
             beam.text = "".join(
                 piece.converted_value for piece in assistant_pieces if isinstance(piece.converted_value, str)
             )
-            beam.message = model_response
+            beam.response_message = model_response
         except Exception as e:
             # Just log the error and skip the update
             self._logger.warning(f"Error propagating beam, skipping this update: {e}")
@@ -410,10 +410,10 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         Raises:
             ValueError: If beam.message is not set before scoring.
         """
-        if beam.message is None:
+        if beam.response_message is None:
             raise ValueError("Beam message must be set before scoring")
         scoring_results = await Scorer.score_response_async(
-            response=beam.message,
+            response=beam.response_message,
             objective_scorer=self._objective_scorer,
             auxiliary_scorers=self._auxiliary_scorers,
             role_filter="assistant",
