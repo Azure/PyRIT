@@ -14,8 +14,6 @@ from pyrit.backend.models.attacks import (
     AttackListResponse,
     AttackOptionsResponse,
     AttackSummary,
-    ChangeMainConversationRequest,
-    ChangeMainConversationResponse,
     ConversationMessagesResponse,
     ConversationSummary,
     ConverterOptionsResponse,
@@ -30,6 +28,8 @@ from pyrit.backend.models.attacks import (
     Score,
     TargetInfo,
     UpdateAttackRequest,
+    UpdateMainConversationRequest,
+    UpdateMainConversationResponse,
 )
 from pyrit.backend.models.common import (
     SENSITIVE_FIELD_PATTERNS,
@@ -61,8 +61,8 @@ __all__ = [
     "AttackListResponse",
     "AttackOptionsResponse",
     "AttackSummary",
-    "ChangeMainConversationRequest",
-    "ChangeMainConversationResponse",
+    "UpdateMainConversationRequest",
+    "UpdateMainConversationResponse",
     "ConversationMessagesResponse",
     "ConversationSummary",
     "ConverterOptionsResponse",

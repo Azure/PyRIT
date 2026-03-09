@@ -97,15 +97,14 @@ class TestServeMedia:
 
         assert response.status_code == 200
 
-    def test_unknown_extension_uses_octet_stream(self, client: TestClient, _mock_memory: Path) -> None:
-        """Files with unknown extensions use application/octet-stream."""
+    def test_rejects_unknown_extension(self, client: TestClient, _mock_memory: Path) -> None:
+        """Files with unknown extensions are rejected by the allowlist."""
         file_path = _mock_memory / "prompt-memory-entries" / "data.xyz123"
         file_path.write_bytes(b"binary data")
 
         response = client.get("/api/media", params={"path": str(file_path)})
 
-        assert response.status_code == 200
-        assert response.headers["content-type"] == "application/octet-stream"
+        assert response.status_code == 403
 
     def test_rejects_file_in_results_root(self, client: TestClient, _mock_memory: Path) -> None:
         """Files directly in results_path (not in allowed subdir) are rejected."""
@@ -117,7 +116,7 @@ class TestServeMedia:
         assert response.status_code == 403
 
     def test_rejects_database_file_in_allowed_subdir(self, client: TestClient, _mock_memory: Path) -> None:
-        """Database files are blocked even inside allowed subdirectories."""
+        """Database files are not in the extension allowlist."""
         file_path = _mock_memory / "prompt-memory-entries" / "leaked.db"
         file_path.write_bytes(b"SQLite format 3")
 
@@ -126,7 +125,7 @@ class TestServeMedia:
         assert response.status_code == 403
 
     def test_rejects_yaml_file(self, client: TestClient, _mock_memory: Path) -> None:
-        """YAML files are blocked even inside allowed subdirectories."""
+        """YAML files are not in the extension allowlist."""
         file_path = _mock_memory / "prompt-memory-entries" / "config.yaml"
         file_path.write_bytes(b"key: value")
 

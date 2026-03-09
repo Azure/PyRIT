@@ -20,8 +20,6 @@ from pyrit.backend.models.attacks import (
     AttackListResponse,
     AttackOptionsResponse,
     AttackSummary,
-    ChangeMainConversationRequest,
-    ChangeMainConversationResponse,
     ConversationMessagesResponse,
     ConverterOptionsResponse,
     CreateAttackRequest,
@@ -29,6 +27,8 @@ from pyrit.backend.models.attacks import (
     CreateConversationRequest,
     CreateConversationResponse,
     UpdateAttackRequest,
+    UpdateMainConversationRequest,
+    UpdateMainConversationResponse,
 )
 from pyrit.backend.models.common import ProblemDetail
 from pyrit.backend.services.attack_service import get_attack_service
@@ -345,17 +345,17 @@ async def create_related_conversation(
 
 
 @router.post(
-    "/{attack_result_id}/change-main-conversation",
-    response_model=ChangeMainConversationResponse,
+    "/{attack_result_id}/update-main-conversation",
+    response_model=UpdateMainConversationResponse,
     responses={
         404: {"model": ProblemDetail, "description": "Attack not found"},
         400: {"model": ProblemDetail, "description": "Invalid conversation"},
     },
 )
-async def change_main_conversation(
+async def update_main_conversation(
     attack_result_id: str,
-    request: ChangeMainConversationRequest,
-) -> ChangeMainConversationResponse:
+    request: UpdateMainConversationRequest,
+) -> UpdateMainConversationResponse:
     """
     Change the main conversation for an attack.
 
@@ -363,12 +363,12 @@ async def change_main_conversation(
     and moves the previous main into the related conversations list.
 
     Returns:
-        ChangeMainConversationResponse: The AttackResult ID and new main conversation.
+        UpdateMainConversationResponse: The AttackResult ID and new main conversation.
     """
     service = get_attack_service()
 
     try:
-        result = await service.change_main_conversation_async(
+        result = await service.update_main_conversation_async(
             attack_result_id=attack_result_id,
             request=request,
         )

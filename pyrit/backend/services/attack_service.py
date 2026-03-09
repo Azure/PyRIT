@@ -17,6 +17,7 @@ ARCHITECTURE:
 
 import mimetypes
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -35,8 +36,6 @@ from pyrit.backend.models.attacks import (
     AttackConversationsResponse,
     AttackListResponse,
     AttackSummary,
-    ChangeMainConversationRequest,
-    ChangeMainConversationResponse,
     ConversationMessagesResponse,
     ConversationSummary,
     CreateAttackRequest,
@@ -44,6 +43,8 @@ from pyrit.backend.models.attacks import (
     CreateConversationRequest,
     CreateConversationResponse,
     UpdateAttackRequest,
+    UpdateMainConversationRequest,
+    UpdateMainConversationResponse,
 )
 from pyrit.backend.models.common import PaginationInfo
 from pyrit.backend.services.converter_service import get_converter_service
@@ -55,6 +56,7 @@ from pyrit.models import (
     AttackResult,
     ConversationStats,
     ConversationType,
+    MessagePiece,
     PromptDataType,
     data_serializer_factory,
 )
@@ -147,7 +149,7 @@ class AttackService:
 
         stats_map = self._memory.get_conversation_stats(conversation_ids=list(all_conv_ids)) if all_conv_ids else {}
 
-        # Phase 2: Build summaries from aggregated stats for the page
+        # Phase 3: Build summaries from aggregated stats for the page
         page: list[AttackSummary] = []
         for ar in page_results:
             # Merge stats for the main conversation and its pruned relatives.
@@ -329,9 +331,6 @@ class AttackService:
                 labels=labels,
             )
 
-        if not attack_result.attack_result_id:
-            raise RuntimeError("attack_result_id was not assigned after persistence — this is a bug")
-
         return CreateAttackResponse(
             attack_result_id=attack_result.attack_result_id,
             conversation_id=conversation_id,
@@ -390,6 +389,7 @@ class AttackService:
         if not results:
             return None
 
+        # attack_result_id is a unique primary key, so at most one result is returned.
         ar = results[0]
 
         # Collect all conversation IDs (main + PRUNED related) and fetch stats in one query.
@@ -455,12 +455,6 @@ class AttackService:
 
         # --- Branch via duplication (preferred for tracking) ---------------
         if request.source_conversation_id is not None and request.cutoff_index is not None:
-            # Validate that the source conversation belongs to this attack
-            allowed_conv_ids = {ar.conversation_id} | {ref.conversation_id for ref in ar.related_conversations}
-            if request.source_conversation_id not in allowed_conv_ids:
-                raise ValueError(
-                    f"Conversation '{request.source_conversation_id}' is not part of attack '{attack_result_id}'"
-                )
             new_conversation_id = self._duplicate_conversation_up_to(
                 source_conversation_id=request.source_conversation_id,
                 cutoff_index=request.cutoff_index,
@@ -486,9 +480,9 @@ class AttackService:
 
         return CreateConversationResponse(conversation_id=new_conversation_id, created_at=now)
 
-    async def change_main_conversation_async(
-        self, *, attack_result_id: str, request: ChangeMainConversationRequest
-    ) -> Optional[ChangeMainConversationResponse]:
+    async def update_main_conversation_async(
+        self, *, attack_result_id: str, request: UpdateMainConversationRequest
+    ) -> Optional[UpdateMainConversationResponse]:
         """
         Change the main conversation by promoting a related conversation.
 
@@ -498,7 +492,7 @@ class AttackService:
         key) remains unchanged.
 
         Returns:
-            ChangeMainConversationResponse if the source attack exists, None otherwise.
+            UpdateMainConversationResponse if the source attack exists, None otherwise.
         """
         results = self._memory.get_attack_results(attack_result_ids=[attack_result_id])
         if not results:
@@ -509,9 +503,10 @@ class AttackService:
 
         # If the target is already the main conversation, nothing to do.
         if target_conv_id == ar.conversation_id:
-            return ChangeMainConversationResponse(
+            return UpdateMainConversationResponse(
                 attack_result_id=attack_result_id,
                 conversation_id=target_conv_id,
+                updated_at=datetime.now(timezone.utc),
             )
 
         # Verify the conversation belongs to this attack (main or related)
@@ -535,8 +530,9 @@ class AttackService:
         # visible in the GUI and fetchable via get_conversation_messages.
         updated_pruned.append(ar.conversation_id)
 
+        now = datetime.now(timezone.utc)
         updated_metadata = dict(ar.metadata or {})
-        updated_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
+        updated_metadata["updated_at"] = now.isoformat()
 
         self._memory.update_attack_result_by_id(
             attack_result_id=attack_result_id,
@@ -548,9 +544,10 @@ class AttackService:
             },
         )
 
-        return ChangeMainConversationResponse(
+        return UpdateMainConversationResponse(
             attack_result_id=attack_result_id,
             conversation_id=target_conv_id,
+            updated_at=now,
         )
 
     async def add_message_async(self, *, attack_result_id: str, request: AddMessageRequest) -> AddMessageResponse:
@@ -564,72 +561,25 @@ class AttackService:
         Returns:
             AddMessageResponse containing the updated attack detail.
         """
-        # Check if attack exists
         results = self._memory.get_attack_results(attack_result_ids=[attack_result_id])
         if not results:
             raise ValueError(f"Attack '{attack_result_id}' not found")
 
         ar = results[0]
         main_conversation_id = ar.conversation_id
-        aid = ar.attack_identifier
 
-        # --- Guard: prevent adding messages with a mismatched target ----------
-        # If the attack was created with a specific target, the caller must
-        # use exactly that target.  This prevents silently corrupting the
-        # conversation by sending to a different model.
-        if request.send and request.target_registry_name:
-            stored_target_id = aid.get_child("objective_target") if aid else None
-            if stored_target_id:
-                target_service = get_target_service()
-                request_target_obj = target_service.get_target_object(target_registry_name=request.target_registry_name)
-                if request_target_obj:
-                    request_target_id = request_target_obj.get_identifier()
-                    # Compare class, endpoint, and model – sufficient to catch
-                    # cross-target mistakes while allowing config-level changes.
-                    if (
-                        stored_target_id.class_name != request_target_id.class_name
-                        or (stored_target_id.params.get("endpoint") or "")
-                        != (request_target_id.params.get("endpoint") or "")
-                        or (stored_target_id.params.get("model_name") or "")
-                        != (request_target_id.params.get("model_name") or "")
-                    ):
-                        raise ValueError(
-                            f"Target mismatch: attack was created with "
-                            f"{stored_target_id.class_name}/{stored_target_id.params.get('model_name')} "
-                            f"but request uses "
-                            f"{request_target_id.class_name}/{request_target_id.params.get('model_name')}. "
-                            f"Create a new attack to use a different target."
-                        )
+        self._validate_target_match(attack_identifier=ar.attack_identifier, request=request)
+        self._validate_operator_match(conversation_id=main_conversation_id, request=request)
 
-        # --- Guard: prevent different operator from modifying the attack ------
-        # If existing messages have an operator label, the new message must
-        # come from the same operator.
-        existing_pieces_for_guard = self._memory.get_message_pieces(conversation_id=main_conversation_id)
-        existing_operator = next(
-            (p.labels.get("op_name") for p in existing_pieces_for_guard if p.labels and p.labels.get("op_name")),
-            None,
-        )
-        if existing_operator and request.labels:
-            request_operator = request.labels.get("op_name")
-            if request_operator and request_operator != existing_operator:
-                raise ValueError(
-                    f"Operator mismatch: attack belongs to operator '{existing_operator}' "
-                    f"but request is from '{request_operator}'. "
-                    f"Create a new attack to continue."
-                )
-
-        # Use the explicitly-provided conversation_id for message storage
         msg_conversation_id = request.target_conversation_id
 
-        # --- Guard: prevent writing to an unrelated conversation -------------
+        # Validate the target conversation belongs to this attack
         allowed_conv_ids = {main_conversation_id} | {
             ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
         }
         if msg_conversation_id not in allowed_conv_ids:
             raise ValueError(f"Conversation '{msg_conversation_id}' is not part of attack '{attack_result_id}'")
 
-        # The frontend must supply the target registry name so the backend
-        # stays stateless — no reverse lookups, no in-memory mapping.
         target_registry_name = request.target_registry_name
         if request.send and not target_registry_name:
             raise ValueError("target_registry_name is required when send=True")
@@ -641,16 +591,12 @@ class AttackService:
         existing = self._memory.get_message_pieces(conversation_id=msg_conversation_id)
         sequence = max((p.sequence for p in existing), default=-1) + 1
 
-        # Inherit labels from existing pieces so new messages stay consistent.
-        # Try the target conversation first, fall back to the main conversation,
-        # then fall back to labels provided explicitly in the request.
-        # Use explicit len() check because {} is falsy but a valid labels value.
-        attack_labels = next((p.labels for p in existing if p.labels and len(p.labels) > 0), None)
-        if not attack_labels:
-            main_pieces = self._memory.get_message_pieces(conversation_id=main_conversation_id)
-            attack_labels = next((p.labels for p in main_pieces if p.labels and len(p.labels) > 0), None)
-        if not attack_labels:
-            attack_labels = dict(request.labels) if request.labels else {}
+        attack_labels = self._resolve_labels(
+            conversation_id=msg_conversation_id,
+            main_conversation_id=main_conversation_id,
+            existing_pieces=existing,
+            request_labels=request.labels,
+        )
 
         if request.send:
             assert target_registry_name is not None  # validated above
@@ -669,15 +615,120 @@ class AttackService:
                 labels=attack_labels,
             )
 
-        # Persist updated timestamp so the history list reflects recent activity
+        await self._update_attack_after_message_async(attack_result_id=attack_result_id, ar=ar, request=request)
+
+        attack_detail = await self.get_attack_async(attack_result_id=attack_result_id)
+        if attack_detail is None:
+            raise ValueError(f"Attack '{attack_result_id}' not found after update")
+
+        attack_messages = await self.get_conversation_messages_async(
+            attack_result_id=attack_result_id,
+            conversation_id=msg_conversation_id,
+        )
+        if attack_messages is None:
+            raise ValueError(f"Attack '{attack_result_id}' messages not found after update")
+
+        return AddMessageResponse(attack=attack_detail, messages=attack_messages)
+
+    def _validate_target_match(
+        self, *, attack_identifier: Optional[ComponentIdentifier], request: AddMessageRequest
+    ) -> None:
+        """
+        Validate that the request target matches the attack's stored target.
+
+        Raises:
+            ValueError: If the target in the request doesn't match the attack's target.
+        """
+        if not request.send or not request.target_registry_name:
+            return
+
+        stored_target_id = attack_identifier.get_child("objective_target") if attack_identifier else None
+        if not stored_target_id:
+            return
+
+        target_service = get_target_service()
+        request_target_obj = target_service.get_target_object(target_registry_name=request.target_registry_name)
+        if not request_target_obj:
+            return
+
+        request_target_id = request_target_obj.get_identifier()
+        if (
+            stored_target_id.class_name != request_target_id.class_name
+            or (stored_target_id.params.get("endpoint") or "") != (request_target_id.params.get("endpoint") or "")
+            or (stored_target_id.params.get("model_name") or "") != (request_target_id.params.get("model_name") or "")
+        ):
+            raise ValueError(
+                f"Target mismatch: attack was created with "
+                f"{stored_target_id.class_name}/{stored_target_id.params.get('model_name')} "
+                f"but request uses "
+                f"{request_target_id.class_name}/{request_target_id.params.get('model_name')}. "
+                f"Create a new attack to use a different target."
+            )
+
+    def _validate_operator_match(self, *, conversation_id: str, request: AddMessageRequest) -> None:
+        """
+        Validate that the request operator matches existing messages' operator.
+
+        Raises:
+            ValueError: If the operator in the request doesn't match existing messages.
+        """
+        if not request.labels:
+            return
+
+        existing_pieces = self._memory.get_message_pieces(conversation_id=conversation_id)
+        existing_operator = next(
+            (p.labels.get("operator") for p in existing_pieces if p.labels and p.labels.get("operator")),
+            None,
+        )
+        if not existing_operator:
+            return
+
+        request_operator = request.labels.get("operator")
+        if request_operator and request_operator != existing_operator:
+            raise ValueError(
+                f"Operator mismatch: attack belongs to operator '{existing_operator}' "
+                f"but request is from '{request_operator}'. "
+                f"Create a new attack to continue."
+            )
+
+    def _resolve_labels(
+        self,
+        *,
+        conversation_id: str,
+        main_conversation_id: str,
+        existing_pieces: Sequence[MessagePiece],
+        request_labels: Optional[dict[str, str]],
+    ) -> dict[str, str]:
+        """
+        Resolve labels for a new message by inheriting from existing pieces.
+
+        Tries the target conversation first, falls back to the main conversation,
+        then falls back to labels provided explicitly in the request.
+
+        Returns:
+            dict[str, str]: Resolved labels for the new message.
+        """
+        attack_labels: Optional[dict[str, str]] = next(
+            (p.labels for p in existing_pieces if p.labels and len(p.labels) > 0), None
+        )
+        if not attack_labels:
+            main_pieces = self._memory.get_message_pieces(conversation_id=main_conversation_id)
+            attack_labels = next((p.labels for p in main_pieces if p.labels and len(p.labels) > 0), None)
+        if not attack_labels:
+            attack_labels = dict(request_labels) if request_labels else {}
+        return attack_labels
+
+    async def _update_attack_after_message_async(
+        self, *, attack_result_id: str, ar: AttackResult, request: AddMessageRequest
+    ) -> None:
+        """
+        Update attack metadata and converter tracking after a message is added.
+        """
         updated_metadata = dict(ar.metadata or {})
         updated_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
 
         update_fields: dict[str, Any] = {"attack_metadata": updated_metadata}
 
-        # Track converters used in this turn on the AttackResult.
-        # Always propagate when converter_ids are provided, regardless of
-        # whether the frontend already applied them (converted_value set).
         if request.converter_ids:
             converter_objs = get_converter_service().get_converter_objects_for_ids(converter_ids=request.converter_ids)
             new_converter_ids = [c.get_identifier() for c in converter_objs]
@@ -701,20 +752,6 @@ class AttackService:
             attack_result_id=attack_result_id,
             update_fields=update_fields,
         )
-
-        attack_detail = await self.get_attack_async(attack_result_id=attack_result_id)
-        if attack_detail is None:
-            raise ValueError(f"Attack '{attack_result_id}' not found after update")
-
-        # Return messages for the conversation that was written to
-        attack_messages = await self.get_conversation_messages_async(
-            attack_result_id=attack_result_id,
-            conversation_id=msg_conversation_id,
-        )
-        if attack_messages is None:
-            raise ValueError(f"Attack '{attack_result_id}' messages not found after update")
-
-        return AddMessageResponse(attack=attack_detail, messages=attack_messages)
 
     # ========================================================================
     # Private Helper Methods - Pagination

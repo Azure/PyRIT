@@ -926,7 +926,7 @@ def test_get_attack_results_labels_query_on_empty_labels(sqlite_instance: Memory
 
     sqlite_instance.add_attack_results_to_memory(attack_results=[attack_result1, attack_result2])
 
-    results = sqlite_instance.get_attack_results(labels={"op_name": "test"})
+    results = sqlite_instance.get_attack_results(labels={"operation": "test"})
     assert len(results) == 0
 
     results = sqlite_instance.get_attack_results(labels={"researcher": "roakey"})
@@ -940,8 +940,8 @@ def test_get_attack_results_labels_key_exists_value_mismatch(sqlite_instance: Me
     """Test querying for labels where the key exists but the value doesn't match."""
 
     # Create attack results with specific label values
-    message_piece1 = create_message_piece("conv_1", 1, labels={"op_name": "op_exists", "researcher": "roakey"})
-    message_piece2 = create_message_piece("conv_2", 1, labels={"op_name": "another_op", "researcher": "roakey"})
+    message_piece1 = create_message_piece("conv_1", 1, labels={"operation": "op_exists", "researcher": "roakey"})
+    message_piece2 = create_message_piece("conv_2", 1, labels={"operation": "another_op", "researcher": "roakey"})
     message_piece3 = create_message_piece("conv_3", 1, labels={"operation": "test_op"})
 
     sqlite_instance.add_message_pieces_to_memory(message_pieces=[message_piece1, message_piece2, message_piece3])
@@ -954,11 +954,11 @@ def test_get_attack_results_labels_key_exists_value_mismatch(sqlite_instance: Me
     sqlite_instance.add_attack_results_to_memory(attack_results=attack_results)
 
     # Query for key that exists but with wrong value
-    results = sqlite_instance.get_attack_results(labels={"op_name": "op_doesnotexist"})
+    results = sqlite_instance.get_attack_results(labels={"operation": "op_doesnotexist"})
     assert len(results) == 0
 
     # Query for existing key with correct value
-    results = sqlite_instance.get_attack_results(labels={"op_name": "op_exists"})
+    results = sqlite_instance.get_attack_results(labels={"operation": "op_exists"})
     assert len(results) == 1
     assert results[0].conversation_id == "conv_1"
 
@@ -983,11 +983,11 @@ def test_get_attack_results_labels_key_exists_value_mismatch(sqlite_instance: Me
     assert results[0].conversation_id == "conv_3"
 
     # Test multiple keys where one matches and one doesn't
-    results = sqlite_instance.get_attack_results(labels={"op_name": "op_exists", "researcher": "not_roakey"})
+    results = sqlite_instance.get_attack_results(labels={"operation": "op_exists", "researcher": "not_roakey"})
     assert len(results) == 0
 
     # Test multiple keys where both match
-    results = sqlite_instance.get_attack_results(labels={"op_name": "op_exists", "researcher": "roakey"})
+    results = sqlite_instance.get_attack_results(labels={"operation": "op_exists", "researcher": "roakey"})
     assert len(results) == 1
     assert results[0].conversation_id == "conv_1"
 
