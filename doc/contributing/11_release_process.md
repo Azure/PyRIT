@@ -54,7 +54,7 @@ scope of the release is known (see step 1).
 
 ## 3. Update the version
 
-### **init**.py, pyproject.toml, and package.json
+### __init__.py, pyproject.toml, and package.json
 
 Set the version in `pyrit/__init__.py`, `pyproject.toml`, and `package.json` to the version
 established in step 1.
