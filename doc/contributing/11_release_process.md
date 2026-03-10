@@ -164,7 +164,7 @@ git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct
 
 Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them. If you reuse the same environment, it is best to `uv pip uninstall pyrit` to force the reinstall.
 
-Internal maintainers should visit aka.ms/internal-release as well.
+Internal maintainers should visit [aka.ms/internal-release](https://aka.ms/internal-release) as well.
 
 ## 7. Publish to PyPI
 
