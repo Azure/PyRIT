@@ -10,6 +10,7 @@ from typing import Any, Optional
 from tqdm import tqdm
 
 from pyrit.models.seeds import SeedDataset
+from pyrit.datasets.seed_datasets.seed_metadata import SeedMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,12 @@ class SeedDatasetProvider(ABC):
         """
 
     @abstractmethod
+    def metadata_factory(self) -> SeedMetadata:
+        """
+        Build metadata from tags and derived fields (e.g. dataset size).
+        """
+
+    @abstractmethod
     async def fetch_dataset(self, *, cache: bool = True) -> SeedDataset:
         """
         Fetch the dataset and return as a SeedDataset.
@@ -78,9 +85,12 @@ class SeedDatasetProvider(ABC):
         return cls._registry.copy()
 
     @classmethod
-    def get_all_dataset_names(cls) -> list[str]:
+    def get_all_dataset_names(cls, filters: Optional[dict[str, str]] = None) -> list[str]:
         """
         Get the names of all registered datasets.
+
+        Args:
+            filters (Optional[Dict[str, str]]): List of filters to apply.
 
         Returns:
             List[str]: List of dataset names from all registered providers.
@@ -97,9 +107,21 @@ class SeedDatasetProvider(ABC):
             try:
                 # Instantiate to get dataset name
                 provider = provider_class()
+
+                # Injection point for filtering. TODO
+
+                # 1 Remove invalid filters by checking ground truth in seed_metadata
+
+                # 2 Remove invalid filter values by invoking helpers (e.g. size: <100 is fine, size: foobar is not)
+
+                # 3 Only execute the following line if the filter key is valid and so is the value, AND the dataset meets the condition
+
+                # Problem: We don't know size at this point because we're just collecting the name. Size and source are tricky for remote datasets
+                # since we can't check them statically
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
-                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}") from e
+                raise ValueError(
+                    f"Could not get dataset name from {provider_class.__name__}: {e}") from e
         return sorted(dataset_names)
 
     @classmethod
@@ -142,9 +164,11 @@ class SeedDatasetProvider(ABC):
         # Validate dataset names if specified
         if dataset_names is not None:
             available_names = cls.get_all_dataset_names()
-            invalid_names = [name for name in dataset_names if name not in available_names]
+            invalid_names = [
+                name for name in dataset_names if name not in available_names]
             if invalid_names:
-                raise ValueError(f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
+                raise ValueError(
+                    f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
 
         async def fetch_single_dataset(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -170,7 +194,8 @@ class SeedDatasetProvider(ABC):
 
         # Progress tracking
         total_count = len(cls._registry)
-        pbar = tqdm(total=total_count, desc="Loading datasets - this can take a few minutes", unit="dataset")
+        pbar = tqdm(total=total_count,
+                    desc="Loading datasets - this can take a few minutes", unit="dataset")
 
         async def fetch_with_semaphore(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -208,10 +233,12 @@ class SeedDatasetProvider(ABC):
                 logger.info(f"Merging multiple sources for {dataset_name}.")
 
                 existing_dataset = datasets[dataset_name]
-                combined_seeds = list(existing_dataset.seeds) + list(dataset.seeds)
+                combined_seeds = list(
+                    existing_dataset.seeds) + list(dataset.seeds)
                 existing_dataset.seeds = combined_seeds
             else:
                 datasets[dataset_name] = dataset
 
-        logger.info(f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
+        logger.info(
+            f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
         return list(datasets.values())
