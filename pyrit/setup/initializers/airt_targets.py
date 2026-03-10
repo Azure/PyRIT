@@ -14,7 +14,7 @@ Note: This module only includes PRIMARY endpoint configurations from .env_exampl
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
@@ -46,6 +46,7 @@ class TargetConfig:
     key_var: str = ""  # Empty string means no auth required
     model_var: Optional[str] = None
     underlying_model_var: Optional[str] = None
+    extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 # Define all supported target configurations.
@@ -168,6 +169,15 @@ TARGET_CONFIGS: list[TargetConfig] = [
         key_var="AZURE_OPENAI_GPT5_KEY",
         model_var="AZURE_OPENAI_GPT5_MODEL",
         underlying_model_var="AZURE_OPENAI_GPT5_UNDERLYING_MODEL",
+    ),
+    TargetConfig(
+        registry_name="azure_openai_gpt5_responses_high_reasoning",
+        target_class=OpenAIResponseTarget,
+        endpoint_var="AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT5_KEY",
+        model_var="AZURE_OPENAI_GPT5_MODEL",
+        underlying_model_var="AZURE_OPENAI_GPT5_UNDERLYING_MODEL",
+        extra_kwargs={"extra_body_parameters": {"reasoning": {"effort": "high"}}},
     ),
     TargetConfig(
         registry_name="platform_openai_responses",
@@ -311,6 +321,7 @@ class AIRTTargetInitializer(PyRITInitializer):
 
     **OpenAI Responses Targets (OpenAIResponseTarget):**
     - AZURE_OPENAI_GPT5_RESPONSES_* - Azure OpenAI GPT-5 Responses
+    - AZURE_OPENAI_GPT5_RESPONSES_* (high reasoning) - Azure OpenAI GPT-5 Responses with high reasoning effort
     - PLATFORM_OPENAI_RESPONSES_* - Platform OpenAI Responses
     - AZURE_OPENAI_RESPONSES_* - Azure OpenAI Responses
 
@@ -425,6 +436,12 @@ class AIRTTargetInitializer(PyRITInitializer):
         # Add underlying_model if specified (for Azure deployments where name differs from model)
         if underlying_model is not None:
             kwargs["underlying_model"] = underlying_model
+
+        # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning).
+        # NOTE: extra_kwargs are defined in TARGET_CONFIGS (code-controlled, not user input),
+        # so there is no risk of untrusted data overriding safety-critical parameters.
+        if config.extra_kwargs:
+            kwargs.update(config.extra_kwargs)
 
         target = config.target_class(**kwargs)
         registry = TargetRegistry.get_registry_singleton()

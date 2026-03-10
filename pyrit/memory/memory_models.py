@@ -760,7 +760,7 @@ class AttackResultEntry(Base):
         Args:
             entry (AttackResult): The attack result object to convert into a database entry.
         """
-        self.id = uuid.uuid4()
+        self.id = uuid.UUID(entry.attack_result_id)
         self.conversation_id = entry.conversation_id
         self.objective = entry.objective
         self.attack_identifier = (
