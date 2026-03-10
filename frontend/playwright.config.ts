@@ -17,6 +17,11 @@ export default defineConfig({
 
   projects: [
     {
+      name: "mock",
+      use: { ...devices["Desktop Chrome"] },
+      grepInvert: /@seeded|@live/,
+    },
+    {
       name: "seeded",
       use: { ...devices["Desktop Chrome"] },
       grep: /@seeded/,
