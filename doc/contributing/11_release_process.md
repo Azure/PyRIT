@@ -54,7 +54,7 @@ scope of the release is known (see step 1).
 
 ## 3. Update the version
 
-### __init__.py, pyproject.toml, and package.json
+### **init**.py, pyproject.toml, and package.json
 
 Set the version in `pyrit/__init__.py`, `pyproject.toml`, and `package.json` to the version
 established in step 1.
@@ -97,6 +97,7 @@ After pushing the branch to remote, check the release branch to make sure it loo
 ## 5. Build Package
 
 You'll need the build package to build the project. If it’s not already installed, install it `pip install build`.
+
 ### Build the Frontend
 
 The PyRIT package includes a web-based frontend that must be built before packaging. This requires Node.js and npm to be installed.
@@ -108,10 +109,12 @@ python build_scripts/prepare_package.py
 ```
 
 This will:
+
 1. Run `npm install` and `npm run build` in the `frontend/` directory
 2. Copy the built assets from `frontend/dist/` to `pyrit/backend/frontend/`. Double check to make sure the files exist after running the `prepare_package.py` script. This should at least include index.html, an `assets` folder with `js` and `css` files.
 
 ### Build the Python Package
+
 To build the package wheel and archive for PyPI run
 
 ```bash
@@ -148,6 +151,7 @@ If we run inside the repository, we may not face errors that users encounter
 with a clean installation and no locally cloned repository.
 
 If at any point you need to make changes to fix bugs discovered while testing, or there is another change to include with the release, follow the steps below after the item has been merged into `main`.
+
 ```bash
 git checkout main
 git fetch main
@@ -159,6 +163,8 @@ git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct
 ```
 
 Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them. If you reuse the same environment, it is best to `uv pip uninstall pyrit` to force the reinstall.
+
+Internal maintainers should visit aka.ms/internal-release as well.
 
 ## 7. Publish to PyPI
 
@@ -175,7 +181,7 @@ twine upload dist/* # this should be the same as dist/pyrit-x.y.z-py3-none-any.w
 If successful, it will print
 
 > View at:
-  https://pypi.org/project/pyrit/x.y.z/
+> https://pypi.org/project/pyrit/x.y.z/
 
 ## 8. Update main
 
