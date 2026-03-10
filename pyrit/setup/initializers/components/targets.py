@@ -63,6 +63,7 @@ class TargetConfig:
     model_var: Optional[str] = None
     underlying_model_var: Optional[str] = None
     temperature: Optional[float] = None
+    extra_kwargs: dict[str, Any] = field(default_factory=dict)
     tags: list[TargetTag] = field(default_factory=lambda: ["default"])
 
 
@@ -186,6 +187,15 @@ ENV_TARGET_CONFIGS: list[TargetConfig] = [
         key_var="AZURE_OPENAI_GPT5_KEY",
         model_var="AZURE_OPENAI_GPT5_MODEL",
         underlying_model_var="AZURE_OPENAI_GPT5_UNDERLYING_MODEL",
+    ),
+    TargetConfig(
+        registry_name="azure_openai_gpt5_responses_high_reasoning",
+        target_class=OpenAIResponseTarget,
+        endpoint_var="AZURE_OPENAI_GPT5_RESPONSES_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT5_KEY",
+        model_var="AZURE_OPENAI_GPT5_MODEL",
+        underlying_model_var="AZURE_OPENAI_GPT5_UNDERLYING_MODEL",
+        extra_kwargs={"extra_body_parameters": {"reasoning": {"effort": "high"}}},
     ),
     TargetConfig(
         registry_name="platform_openai_responses",
@@ -363,6 +373,54 @@ class TargetInitializer(PyRITInitializer):
             Pass multiple tags to register targets matching any tag.
             If not provided, only "default" targets are registered.
 
+    Supported Endpoints by Category:
+
+    **OpenAI Chat Targets (OpenAIChatTarget):**
+    - PLATFORM_OPENAI_CHAT_* - Platform OpenAI Chat API
+    - AZURE_OPENAI_GPT4O_* - Azure OpenAI GPT-4o
+    - AZURE_OPENAI_INTEGRATION_TEST_* - Integration test endpoint
+    - AZURE_OPENAI_GPT3_5_CHAT_* - Azure OpenAI GPT-3.5
+    - AZURE_OPENAI_GPT4_CHAT_* - Azure OpenAI GPT-4
+    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_* - Azure OpenAI GPT-4o unsafe
+    - AZURE_OPENAI_GPT4O_UNSAFE_CHAT_*2 - Azure OpenAI GPT-4o unsafe secondary
+    - AZURE_FOUNDRY_DEEPSEEK_* - Azure AI Foundry DeepSeek
+    - AZURE_FOUNDRY_PHI4_* - Azure AI Foundry Phi-4
+    - AZURE_FOUNDRY_MISTRAL_LARGE_* - Azure AI Foundry Mistral Large
+    - GROQ_* - Groq API
+    - OPEN_ROUTER_* - OpenRouter API
+    - OLLAMA_* - Ollama local
+    - GOOGLE_GEMINI_* - Google Gemini (OpenAI-compatible)
+
+    **OpenAI Responses Targets (OpenAIResponseTarget):**
+    - AZURE_OPENAI_GPT5_RESPONSES_* - Azure OpenAI GPT-5 Responses
+    - AZURE_OPENAI_GPT5_RESPONSES_* (high reasoning) - Azure OpenAI GPT-5 Responses with high reasoning effort
+    - PLATFORM_OPENAI_RESPONSES_* - Platform OpenAI Responses
+    - AZURE_OPENAI_RESPONSES_* - Azure OpenAI Responses
+
+    **Realtime Targets (RealtimeTarget):**
+    - PLATFORM_OPENAI_REALTIME_* - Platform OpenAI Realtime
+    - AZURE_OPENAI_REALTIME_* - Azure OpenAI Realtime
+
+    **Image Targets (OpenAIImageTarget):**
+    - OPENAI_IMAGE_*1 - Azure OpenAI Image
+    - OPENAI_IMAGE_*2 - Platform OpenAI Image
+
+    **TTS Targets (OpenAITTSTarget):**
+    - OPENAI_TTS_*1 - Azure OpenAI TTS
+    - OPENAI_TTS_*2 - Platform OpenAI TTS
+
+    **Video Targets (OpenAIVideoTarget):**
+    - AZURE_OPENAI_VIDEO_* - Azure OpenAI Video
+
+    **Completion Targets (OpenAICompletionTarget):**
+    - OPENAI_COMPLETION_* - OpenAI Completion
+
+    **Azure ML Targets (AzureMLChatTarget):**
+    - AZURE_ML_PHI_* - Azure ML Phi
+
+    **Safety Targets (PromptShieldTarget):**
+    - AZURE_CONTENT_SAFETY_* - Azure Content Safety
+
     Example:
         initializer = TargetInitializer()
         await initializer.initialize_async()
@@ -473,6 +531,12 @@ class TargetInitializer(PyRITInitializer):
         # Add temperature if specified (for scorer-specific temperature variants)
         if config.temperature is not None:
             kwargs["temperature"] = config.temperature
+
+        # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning).
+        # NOTE: extra_kwargs are defined in TARGET_CONFIGS (code-controlled, not user input),
+        # so there is no risk of untrusted data overriding safety-critical parameters.
+        if config.extra_kwargs:
+            kwargs.update(config.extra_kwargs)
 
         target = config.target_class(**kwargs)
         registry = TargetRegistry.get_registry_singleton()
