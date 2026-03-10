@@ -66,13 +66,9 @@ async def get_version_async(request: Request) -> VersionResponse:
     try:
         memory = CentralMemory.get_memory_instance()
         db_type = type(memory).__name__
-        db_name: Optional[str] = None
+        db_name = None
         if memory.engine.url.database:
-            raw_db_name = memory.engine.url.database.split("?")[0]
-            if raw_db_name and raw_db_name not in {":memory:"}:
-                db_name = Path(raw_db_name).name or raw_db_name
-            else:
-                db_name = raw_db_name
+            db_name = memory.engine.url.database.split("?")[0]
         database_info = f"{db_type} ({db_name})" if db_name else f"{db_type} (None)"
     except Exception as e:
         logger.debug(f"Could not detect database info: {e}")

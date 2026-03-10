@@ -140,12 +140,7 @@ class AttackService:
         # Collect conversation IDs we care about (main + pruned, not adversarial).
         all_conv_ids: set[str] = set()
         for ar in page_results:
-            all_conv_ids.add(ar.conversation_id)
-            all_conv_ids.update(
-                ref.conversation_id
-                for ref in ar.related_conversations
-                if ref.conversation_type == ConversationType.PRUNED
-            )
+            all_conv_ids.update(ar.get_active_conversation_ids())
 
         stats_map = self._memory.get_conversation_stats(conversation_ids=list(all_conv_ids)) if all_conv_ids else {}
 
@@ -154,11 +149,7 @@ class AttackService:
         for ar in page_results:
             # Merge stats for the main conversation and its pruned relatives.
             main_stats = stats_map.get(ar.conversation_id)
-            pruned_ids = [
-                ref.conversation_id
-                for ref in ar.related_conversations
-                if ref.conversation_type == ConversationType.PRUNED
-            ]
+            pruned_ids = ar.get_pruned_conversation_ids()
             pruned_stats = [stats_map[cid] for cid in pruned_ids if cid in stats_map]
 
             total_count = (main_stats.message_count if main_stats else 0) + sum(s.message_count for s in pruned_stats)
@@ -246,11 +237,7 @@ class AttackService:
 
         # Verify the conversation belongs to this attack
         ar = results[0]
-        allowed_related_ids = {
-            ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
-        }
-        all_conv_ids = {ar.conversation_id} | allowed_related_ids
-        if conversation_id not in all_conv_ids:
+        if conversation_id not in ar.get_active_conversation_ids():
             raise ValueError(f"Conversation '{conversation_id}' is not part of attack '{attack_result_id}'")
 
         # Get messages for this conversation
@@ -393,21 +380,19 @@ class AttackService:
         ar = results[0]
 
         # Collect all conversation IDs (main + PRUNED related) and fetch stats in one query.
-        pruned_related_ids = [
-            ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
-        ]
-        all_conv_ids = [ar.conversation_id] + pruned_related_ids
-        stats_map = self._memory.get_conversation_stats(conversation_ids=all_conv_ids)
+        active_conv_ids = list(ar.get_active_conversation_ids())
+        stats_map = self._memory.get_conversation_stats(conversation_ids=active_conv_ids)
 
         conversations: list[ConversationSummary] = []
-        for conv_id in all_conv_ids:
+        for conv_id in active_conv_ids:
             stats = stats_map.get(conv_id)
+            created_at = stats.created_at.isoformat() if stats and stats.created_at else None
             conversations.append(
                 ConversationSummary(
                     conversation_id=conv_id,
                     message_count=stats.message_count if stats else 0,
                     last_message_preview=stats.last_message_preview if stats else None,
-                    created_at=stats.created_at if stats else None,
+                    created_at=created_at,
                 )
             )
 
@@ -446,12 +431,10 @@ class AttackService:
             raise ValueError("Both source_conversation_id and cutoff_index must be provided together")
 
         # Validate source_conversation_id belongs to this attack
-        if request.source_conversation_id is not None:
-            all_conv_ids = {ar.conversation_id} | {ref.conversation_id for ref in ar.related_conversations}
-            if request.source_conversation_id not in all_conv_ids:
-                raise ValueError(
-                    f"Conversation '{request.source_conversation_id}' is not part of attack '{attack_result_id}'"
-                )
+        if request.source_conversation_id is not None and not ar.includes_conversation(request.source_conversation_id):
+            raise ValueError(
+                f"Conversation '{request.source_conversation_id}' is not part of attack '{attack_result_id}'"
+            )
 
         # --- Branch via duplication (preferred for tracking) ---------------
         if request.source_conversation_id is not None and request.cutoff_index is not None:
@@ -463,9 +446,7 @@ class AttackService:
             new_conversation_id = str(uuid.uuid4())
 
         # Add to pruned_conversation_ids so user-created branches are visible in the GUI history panel.
-        existing_pruned = [
-            ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
-        ]
+        existing_pruned = ar.get_pruned_conversation_ids()
 
         updated_metadata = dict(ar.metadata or {})
         updated_metadata["updated_at"] = now.isoformat()
@@ -510,8 +491,7 @@ class AttackService:
             )
 
         # Verify the conversation belongs to this attack (main or related)
-        all_conv_ids = {ar.conversation_id} | {ref.conversation_id for ref in ar.related_conversations}
-        if target_conv_id not in all_conv_ids:
+        if not ar.includes_conversation(target_conv_id):
             raise ValueError(f"Conversation '{target_conv_id}' is not part of this attack")
 
         # Build updated DB columns: remove target from its list, add old main
@@ -573,11 +553,8 @@ class AttackService:
 
         msg_conversation_id = request.target_conversation_id
 
-        # Validate the target conversation belongs to this attack
-        allowed_conv_ids = {main_conversation_id} | {
-            ref.conversation_id for ref in ar.related_conversations if ref.conversation_type == ConversationType.PRUNED
-        }
-        if msg_conversation_id not in allowed_conv_ids:
+        # Validate the target conversation belongs to this attack (main + pruned only)
+        if msg_conversation_id not in ar.get_active_conversation_ids():
             raise ValueError(f"Conversation '{msg_conversation_id}' is not part of attack '{attack_result_id}'")
 
         target_registry_name = request.target_registry_name
@@ -781,6 +758,7 @@ class AttackService:
         return page, has_more
 
     # ========================================================================
+    # Private Helper Methods - Duplicate / Branch
     # ========================================================================
 
     def _duplicate_conversation_up_to(
