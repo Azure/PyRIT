@@ -2111,13 +2111,17 @@ class TestAttackServiceAdditionalCoverage:
         )
 
         ar = make_attack_result(conversation_id="attack-1")
-        ar.attack_identifier = ComponentIdentifier(
-            class_name="ManualAttack",
-            class_module="pyrit.backend",
-            children={
-                "objective_target": ar.attack_identifier.get_child("objective_target"),
-                "request_converters": [existing_converter],
-            },
+        # Rebuild the atomic_attack_identifier to include an existing converter child
+        strategy = ar.get_attack_strategy_identifier()
+        ar.atomic_attack_identifier = build_atomic_attack_identifier(
+            attack_identifier=ComponentIdentifier(
+                class_name="ManualAttack",
+                class_module="pyrit.backend",
+                children={
+                    "objective_target": strategy.get_child("objective_target") if strategy else None,
+                    "request_converters": [existing_converter],
+                },
+            ),
         )
 
         mock_memory.get_attack_results.return_value = [ar]
