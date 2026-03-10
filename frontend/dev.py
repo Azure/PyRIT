@@ -209,6 +209,32 @@ def _detect_frontend_port(frontend_process, *, timeout: int = 10) -> int:
     return default_port
 
 
+def _wait_for_backend(backend_process, *, port: int = 8000, timeout: int = 120) -> bool:
+    """Poll the backend health endpoint until it responds or the process dies.
+
+    Returns True if the backend is healthy, False otherwise.
+    """
+    import urllib.error
+    import urllib.request
+
+    url = f"http://localhost:{port}/api/health"
+    deadline = time.time() + timeout
+
+    while time.time() < deadline:
+        # Check if process crashed
+        if backend_process.poll() is not None:
+            return False
+        try:
+            resp = urllib.request.urlopen(url, timeout=3)
+            if resp.status == 200:
+                return True
+        except (urllib.error.URLError, OSError, TimeoutError):
+            pass
+        time.sleep(2)
+
+    return False
+
+
 def start_servers(*, config_file: str | None = None):
     """Start both backend and frontend servers"""
     print("🚀 Starting PyRIT UI servers...")
@@ -218,17 +244,31 @@ def start_servers(*, config_file: str | None = None):
     stop_servers()
 
     backend = start_backend(config_file=config_file)
-    print("⏳ Waiting for backend to initialize...")
-    time.sleep(5)  # Give backend more time to fully start up
+    print("⏳ Waiting for backend to initialize (this may take a minute)...")
 
+    # Start frontend in parallel while backend initializes
     frontend = start_frontend()
     frontend_port = _detect_frontend_port(frontend)
 
+    # Now wait for backend to be actually healthy
+    backend_healthy = _wait_for_backend(backend)
+
     print()
-    print("✅ Servers running!")
-    print(f"   Backend:  http://localhost:8000 (PID: {backend.pid})")
-    print(f"   Frontend: http://localhost:{frontend_port} (PID: {frontend.pid})")
-    print("   API Docs: http://localhost:8000/docs")
+    if backend_healthy:
+        print("✅ Servers running!")
+        print(f"   Backend:  http://localhost:8000 (PID: {backend.pid})")
+        print(f"   Frontend: http://localhost:{frontend_port} (PID: {frontend.pid})")
+        print("   API Docs: http://localhost:8000/docs")
+    else:
+        if backend.poll() is not None:
+            print("❌ Backend failed to start (process exited).")
+            print("   Check the output above for errors.")
+        else:
+            print("⚠️  Backend is still starting (health endpoint not responding yet).")
+            print(f"   Backend:  http://localhost:8000 (PID: {backend.pid})")
+            print(f"   Frontend: http://localhost:{frontend_port} (PID: {frontend.pid})")
+            print("   API Docs: http://localhost:8000/docs")
+
     print()
     print("Press Ctrl+C to stop")
 
