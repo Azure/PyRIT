@@ -1418,4 +1418,92 @@ describe("ChatWindow Integration", () => {
 
     expect(screen.queryByTestId("conversation-panel")).not.toBeInTheDocument();
   });
+
+  it("should open conversation panel when branching a conversation", async () => {
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello", data_type: "text" },
+      { role: "assistant", content: "hi there", data_type: "text" },
+    ];
+
+    // Mock getMessages so loadConversation resolves and clears loading state
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+    mockedAttacksApi.createConversation.mockResolvedValue({
+      conversation_id: "new-conv-branched",
+    });
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-branch"
+          conversationId="conv-main"
+          activeConversationId="conv-main"
+          relatedConversationCount={0}
+        />
+      </TestWrapper>
+    );
+
+    // Wait for loading to complete (loadConversation resolves)
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    // Panel should NOT be open initially
+    expect(screen.queryByTestId("conversation-panel")).not.toBeInTheDocument();
+
+    // Click the branch-conversation button on the assistant message (index 1)
+    const branchBtn = screen.getByTestId("branch-conv-btn-1");
+    await userEvent.click(branchBtn);
+
+    // Panel should now be open
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-panel")).toBeInTheDocument();
+    });
+  });
+
+  it("should open conversation panel when copying to new conversation", async () => {
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello", data_type: "text" },
+      { role: "assistant", content: "hi there", data_type: "text" },
+    ];
+
+    // Mock getMessages so loadConversation resolves and clears loading state
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+    mockedAttacksApi.createConversation.mockResolvedValue({
+      conversation_id: "new-conv-copied",
+    });
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-copy"
+          conversationId="conv-main"
+          activeConversationId="conv-main"
+          relatedConversationCount={0}
+        />
+      </TestWrapper>
+    );
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    // Panel should NOT be open initially
+    expect(screen.queryByTestId("conversation-panel")).not.toBeInTheDocument();
+
+    // Click the copy-to-new-conversation button on the assistant message (index 1)
+    const copyBtn = screen.getByTestId("copy-to-new-conv-btn-1");
+    await userEvent.click(copyBtn);
+
+    // Panel should now be open
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-panel")).toBeInTheDocument();
+    });
+  });
 });

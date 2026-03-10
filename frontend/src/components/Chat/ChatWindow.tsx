@@ -371,6 +371,7 @@ export default function ChatWindow({
     try {
       const response = await attacksApi.createConversation(attackResultId, {})
       onSelectConversation(response.conversation_id)
+      setIsPanelOpen(true)
       // Small delay so the panel/messages update first
       setTimeout(() => {
         if (msg.content) inputBoxRef.current?.setText(msg.content)
@@ -396,6 +397,7 @@ export default function ChatWindow({
         cutoff_index: messageIndex,
       })
       onSelectConversation(response.conversation_id)
+      setIsPanelOpen(true)
       // Load the cloned messages
       const messagesResp = await attacksApi.getMessages(attackResultId, response.conversation_id)
       const frontendMessages = backendMessagesToFrontend(messagesResp.messages)
