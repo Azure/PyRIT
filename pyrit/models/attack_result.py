@@ -3,11 +3,8 @@
 
 from __future__ import annotations
 
-<<<<<<< HEAD
 import functools
-=======
 import uuid
->>>>>>> main
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
