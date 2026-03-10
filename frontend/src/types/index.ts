@@ -11,6 +11,8 @@ export interface MessageAttachment {
   file?: File
   /** Backend piece ID — preserved so remix/copy can trace back to the original piece */
   pieceId?: string
+  /** Backend prompt_metadata — preserved so video_id etc. carry over on remix/copy */
+  metadata?: Record<string, unknown>
 }
 
 export interface Message {
@@ -133,6 +135,7 @@ export interface BackendMessagePiece {
   converted_value_mime_type?: string | null
   original_filename?: string | null
   converted_filename?: string | null
+  prompt_metadata?: Record<string, unknown> | null
   scores: BackendScore[]
   response_error: string // 'none' | 'blocked' | 'processing' | 'empty' | 'unknown'
   response_error_description?: string | null

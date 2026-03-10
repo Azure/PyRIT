@@ -201,6 +201,32 @@ describe("messageMapper", () => {
       expect(result.attachments![0].url).toBe("/api/media?path=output%2Fclip.mp4");
     });
 
+    it("should preserve prompt_metadata on video attachment for remix", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "vid-1",
+            original_value_data_type: "text",
+            converted_value_data_type: "video_path",
+            original_value: "generate video",
+            converted_value: "/api/media?path=output%2Fclip.mp4",
+            converted_value_mime_type: "video/mp4",
+            prompt_metadata: { video_id: "sora-vid-789" },
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-15T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+
+      expect(result.attachments).toHaveLength(1);
+      expect(result.attachments![0].metadata).toEqual({ video_id: "sora-vid-789" });
+    });
+
     it("should handle error response", () => {
       const msg: BackendMessage = {
         turn_number: 1,
@@ -560,6 +586,51 @@ describe("messageMapper", () => {
       expect(pieces[0].data_type).toBe("text");
       expect(pieces[1].data_type).toBe("image_path");
       expect(pieces[2].data_type).toBe("audio_path");
+    });
+
+    it("should set video_id on text piece when video attachment has metadata", async () => {
+      const attachments: MessageAttachment[] = [
+        {
+          type: "video",
+          name: "clip.mp4",
+          url: "data:video/mp4;base64,AAAA",
+          mimeType: "video/mp4",
+          size: 4,
+          pieceId: "vid-piece-1",
+          metadata: { video_id: "sora-vid-123" },
+        },
+      ];
+
+      const pieces = await buildMessagePieces("remix this", attachments);
+
+      expect(pieces).toHaveLength(2);
+      expect(pieces[0].data_type).toBe("text");
+      expect(pieces[0].prompt_metadata).toEqual({ video_id: "sora-vid-123" });
+      expect(pieces[1].data_type).toBe("video_path");
+      expect(pieces[1].prompt_metadata).toEqual({ video_id: "sora-vid-123" });
+    });
+
+    it("should not set prompt_metadata on text piece when no video attachment", async () => {
+      const pieces = await buildMessagePieces("just text", []);
+
+      expect(pieces).toHaveLength(1);
+      expect(pieces[0].prompt_metadata).toBeUndefined();
+    });
+
+    it("should carry metadata through attachmentToMessagePieceRequest", async () => {
+      const att: MessageAttachment = {
+        type: "video",
+        name: "clip.mp4",
+        url: "data:video/mp4;base64,AAAA",
+        mimeType: "video/mp4",
+        size: 4,
+        pieceId: "vid-piece-1",
+        metadata: { video_id: "sora-vid-456" },
+      };
+
+      const result = await attachmentToMessagePieceRequest(att);
+
+      expect(result.prompt_metadata).toEqual({ video_id: "sora-vid-456" });
     });
   });
 

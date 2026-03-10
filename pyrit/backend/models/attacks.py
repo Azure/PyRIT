@@ -63,6 +63,9 @@ class MessagePiece(BaseModel):
     converted_filename: Optional[str] = Field(
         default=None, description="Converted filename extracted from file path or blob URL"
     )
+    prompt_metadata: Optional[dict[str, Any]] = Field(
+        default=None, description="Metadata associated with the piece (e.g., video_id for remix mode)"
+    )
 
 
 class Message(BaseModel):

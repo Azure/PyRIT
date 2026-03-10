@@ -369,6 +369,7 @@ async def pyrit_messages_to_dto_async(pyrit_messages: list[PyritMessage]) -> lis
                     original_value_mime_type=_infer_mime_type(value=p.original_value, data_type=orig_dtype),
                     converted_value=conv_val,
                     converted_value_mime_type=_infer_mime_type(value=p.converted_value, data_type=conv_dtype),
+                    prompt_metadata=dict(p.prompt_metadata) if p.prompt_metadata else None,
                     scores=pyrit_scores_to_dto(p.scores) if p.scores else [],
                     response_error=p.response_error or "none",
                     original_filename=_build_filename(

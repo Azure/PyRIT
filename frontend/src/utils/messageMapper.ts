@@ -141,6 +141,7 @@ function pieceToAttachment(
     mimeType: mime,
     size: value.length,
     pieceId: piece.piece_id,
+    metadata: piece.prompt_metadata || undefined,
   }
 }
 
@@ -257,6 +258,7 @@ export async function attachmentToMessagePieceRequest(att: MessageAttachment): P
     original_value: base64Value,
     mime_type: att.mimeType,
     original_prompt_id: att.pieceId,
+    prompt_metadata: att.metadata,
   }
 }
 
@@ -269,11 +271,18 @@ export async function buildMessagePieces(
 ): Promise<MessagePieceRequest[]> {
   const pieces: MessagePieceRequest[] = []
 
+  // Check for video_id in video attachments (needed for remix mode)
+  const videoId = attachments
+    .filter(a => a.type === 'video')
+    .map(a => a.metadata?.video_id)
+    .find(id => id != null)
+
   // Add text piece if present
   if (text.trim()) {
     pieces.push({
       data_type: 'text',
       original_value: text,
+      prompt_metadata: videoId ? { video_id: videoId } : undefined,
     })
   }
 
