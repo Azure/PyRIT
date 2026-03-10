@@ -986,8 +986,8 @@ class TestVideoTargetRemixValidation:
         with pytest.raises(ValueError, match="Cannot combine video_path and image_path"):
             video_target._validate_request(message=Message([msg_text, msg_video, msg_image]))
 
-    def test_remix_strips_video_path_when_ids_match(self, video_target: OpenAIVideoTarget) -> None:
-        """Test that video_path pieces are stripped when video_id matches on text piece."""
+    def test_remix_keeps_video_path_pieces_when_ids_match(self, video_target: OpenAIVideoTarget) -> None:
+        """Test that video_path pieces are preserved after validation so normalizer stores them."""
         conversation_id = str(uuid.uuid4())
         msg_text = MessagePiece(
             role="user",
@@ -1009,7 +1009,8 @@ class TestVideoTargetRemixValidation:
         OpenAIVideoTarget._validate_video_remix_pieces(message=message)
 
         assert msg_text.prompt_metadata["video_id"] == "vid_123"
-        assert all(p.converted_value_data_type != "video_path" for p in message.message_pieces)
+        assert len(message.message_pieces) == 2
+        assert any(p.converted_value_data_type == "video_path" for p in message.message_pieces)
 
     def test_remix_raises_when_video_ids_mismatch(self, video_target: OpenAIVideoTarget) -> None:
         """Test that mismatched video_id values between text and video_path raise ValueError."""
