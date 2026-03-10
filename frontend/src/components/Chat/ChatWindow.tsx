@@ -86,7 +86,7 @@ interface ChatWindowProps {
   onNavigate?: (view: ViewName) => void
   /** Labels from the loaded attack (for operator locking). Null for new attacks. */
   attackLabels?: Record<string, string> | null
-  /** Target info from the loaded historical attack (for cross-target guard). Null for new attacks. */
+  /** Target info that the current attack was started with (for cross-target guard). */
   attackTarget?: TargetInfo | null
   /** True while a historical attack is being loaded from the history view. */
   isLoadingAttack?: boolean

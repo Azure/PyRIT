@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FluentProvider, webLightTheme } from "@fluentui/react-components";
 import ChatWindow from "./ChatWindow";
-import { Message, TargetInstance } from "../../types";
+import { Message, TargetInfo, TargetInstance } from "../../types";
 import { attacksApi } from "../../services/api";
 import * as messageMapper from "../../utils/messageMapper";
 
@@ -1373,6 +1373,48 @@ describe("ChatWindow Integration", () => {
     );
 
     expect(screen.getByTestId("new-conversation-btn")).toBeInTheDocument();
+  });
+
+  it("should show cross-target banner when attackTarget differs from activeTarget", () => {
+    const differentTarget: TargetInfo = {
+      target_type: "AzureOpenAIChatTarget",
+      endpoint: "https://azure.openai.com",
+      model_name: "gpt-4o",
+    };
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          attackResultId="ar-cross"
+          conversationId="conv-cross"
+          attackTarget={differentTarget}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.getByTestId("cross-target-banner")).toBeInTheDocument();
+  });
+
+  it("should not show cross-target banner when attackTarget matches activeTarget", () => {
+    const sameTarget: TargetInfo = {
+      target_type: mockTarget.target_type,
+      endpoint: mockTarget.endpoint,
+      model_name: mockTarget.model_name,
+    };
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          attackResultId="ar-same"
+          conversationId="conv-same"
+          attackTarget={sameTarget}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.queryByTestId("cross-target-banner")).not.toBeInTheDocument();
   });
 
   it("should auto-open conversation panel when relatedConversationCount > 0", async () => {

@@ -98,8 +98,16 @@ function App() {
     setActiveConversationId(convId)
     // New attack was created by the current user — use their global labels
     setAttackLabels(null)
-    setAttackTarget(null)
-  }, [])
+    // Record the target used for this attack so the cross-target guard
+    // fires if the user switches targets mid-conversation.
+    if (activeTarget) {
+      setAttackTarget({
+        target_type: activeTarget.target_type,
+        endpoint: activeTarget.endpoint,
+        model_name: activeTarget.model_name,
+      })
+    }
+  }, [activeTarget])
 
   const handleSelectConversation = useCallback((convId: string) => {
     setActiveConversationId(convId)
