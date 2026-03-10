@@ -159,15 +159,54 @@ def start_backend(*, config_file: str | None = None, initializers: list[str] | N
 
 
 def start_frontend():
-    """Start the Vite frontend"""
-    print("🎨 Starting frontend on port 3000...")
+    """Start the Vite frontend."""
+    print("🎨 Starting frontend...")
 
     # Change to frontend directory
     os.chdir(FRONTEND_DIR)
 
-    # Start frontend process
+    # Start frontend process with stdout piped so we can detect the actual port
     npm_cmd = "npm.cmd" if is_windows() else "npm"
-    return subprocess.Popen([npm_cmd, "run", "dev"])
+    return subprocess.Popen([npm_cmd, "run", "dev"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+
+def _detect_frontend_port(frontend_process, *, timeout: int = 10) -> int:
+    """Read Vite's stdout to find the actual port it bound to.
+
+    Falls back to 3000 if detection times out.
+    """
+    import re
+    import selectors
+
+    default_port = 3000
+    deadline = time.time() + timeout
+
+    try:
+        sel = selectors.DefaultSelector()
+        sel.register(frontend_process.stdout, selectors.EVENT_READ)
+
+        collected = b""
+        while time.time() < deadline:
+            remaining = deadline - time.time()
+            events = sel.select(timeout=max(0.1, remaining))
+            for key, _ in events:
+                data = key.fileobj.read1(4096) if hasattr(key.fileobj, "read1") else key.fileobj.read(4096)
+                if data:
+                    collected += data
+                    text = collected.decode(errors="replace")
+                    # Vite prints:  ➜  Local:   http://localhost:XXXX/
+                    match = re.search(r"Local:\s+http://localhost:(\d+)", text)
+                    if match:
+                        sel.close()
+                        return int(match.group(1))
+            if frontend_process.poll() is not None:
+                break
+
+        sel.close()
+    except Exception:
+        pass
+
+    return default_port
 
 
 def start_servers(*, config_file: str | None = None):
@@ -183,12 +222,12 @@ def start_servers(*, config_file: str | None = None):
     time.sleep(5)  # Give backend more time to fully start up
 
     frontend = start_frontend()
-    time.sleep(2)
+    frontend_port = _detect_frontend_port(frontend)
 
     print()
     print("✅ Servers running!")
     print(f"   Backend:  http://localhost:8000 (PID: {backend.pid})")
-    print(f"   Frontend: http://localhost:3000 (PID: {frontend.pid})")
+    print(f"   Frontend: http://localhost:{frontend_port} (PID: {frontend.pid})")
     print("   API Docs: http://localhost:8000/docs")
     print()
     print("Press Ctrl+C to stop")
@@ -324,7 +363,8 @@ def main():
                 kill_pids(stale)
                 time.sleep(1)
             frontend = start_frontend()
-            print(f"✅ Frontend running on http://localhost:3000 (PID: {frontend.pid})")
+            frontend_port = _detect_frontend_port(frontend)
+            print(f"✅ Frontend running on http://localhost:{frontend_port} (PID: {frontend.pid})")
             print("\nPress Ctrl+C to stop")
             try:
                 frontend.wait()
