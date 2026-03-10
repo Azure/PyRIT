@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from pyrit.identifiers import ScorerIdentifier
+from pyrit.identifiers import ComponentIdentifier
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import (
     AttackResultEntry,
@@ -37,23 +37,25 @@ def generate_test_id() -> str:
     return str(uuid4())[:8]
 
 
-def get_test_scorer_identifier(**kwargs) -> ScorerIdentifier:
+def get_test_scorer_identifier(**kwargs) -> ComponentIdentifier:
     """
-    Returns a test ScorerIdentifier for use in integration tests.
+    Returns a test ComponentIdentifier for use in integration tests.
 
     Args:
-        **kwargs: Optional overrides for ScorerIdentifier fields.
+        **kwargs: Optional overrides for ComponentIdentifier fields.
 
     Returns:
-        ScorerIdentifier: A test scorer identifier with all required fields.
+        ComponentIdentifier: A test scorer identifier with all required fields.
     """
-    return ScorerIdentifier(
+    return ComponentIdentifier(
         class_name=kwargs.get("class_name", "TestScorer"),
         class_module=kwargs.get("class_module", "tests.integration.memory.test_azure_sql_memory_integration"),
-        class_description=kwargs.get("class_description", "Test scorer for integration testing"),
-        identifier_type=kwargs.get("identifier_type", "instance"),
-        scorer_type=kwargs.get("scorer_type", "true_false"),
-        system_prompt_template=kwargs.get("system_prompt_template"),
+        params={
+            "class_description": kwargs.get("class_description", "Test scorer for integration testing"),
+            "identifier_type": kwargs.get("identifier_type", "instance"),
+            "scorer_type": kwargs.get("scorer_type", "true_false"),
+            "system_prompt_template": kwargs.get("system_prompt_template"),
+        },
     )
 
 
@@ -394,13 +396,13 @@ async def test_scenario_result_scorer_identifier_roundtrip(azuresql_instance: Az
     """
     Integration test for storing and retrieving objective_scorer_identifier in ScenarioResult.
 
-    Verifies that ScorerIdentifier is correctly serialized to JSON when stored
-    and deserialized back to ScorerIdentifier when retrieved from Azure SQL.
+    Verifies that ComponentIdentifier is correctly serialized to JSON when stored
+    and deserialized back to ComponentIdentifier when retrieved from Azure SQL.
     """
     test_id = generate_test_id()
 
     with cleanup_scenario_data(azuresql_instance, test_id):
-        # Create a ScorerIdentifier with various fields
+        # Create a ComponentIdentifier with various fields
         scorer_identifier = get_test_scorer_identifier(
             scorer_type="true_false",
             system_prompt_template="Test prompt template for {objective}",
@@ -426,9 +428,12 @@ async def test_scenario_result_scorer_identifier_roundtrip(azuresql_instance: Az
 
         retrieved = results[0]
         assert retrieved.objective_scorer_identifier is not None
-        assert isinstance(retrieved.objective_scorer_identifier, ScorerIdentifier)
-        assert retrieved.objective_scorer_identifier.scorer_type == "true_false"
-        assert retrieved.objective_scorer_identifier.system_prompt_template == "Test prompt template for {objective}"
+        assert isinstance(retrieved.objective_scorer_identifier, ComponentIdentifier)
+        assert retrieved.objective_scorer_identifier.params["scorer_type"] == "true_false"
+        assert (
+            retrieved.objective_scorer_identifier.params["system_prompt_template"]
+            == "Test prompt template for {objective}"
+        )
         assert retrieved.objective_scorer_identifier.class_name == scorer_identifier.class_name
         assert retrieved.objective_scorer_identifier.hash == scorer_identifier.hash
 
