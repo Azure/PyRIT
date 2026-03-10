@@ -105,6 +105,39 @@ def kill_pids(pids):
             os.kill(pid, signal.SIGTERM)
 
 
+def _find_pids_on_port(port):
+    """Find PIDs listening on a given port (Windows and Unix)."""
+    pids = []
+    try:
+        if is_windows():
+            result = subprocess.run(
+                ["netstat", "-ano", "-p", "TCP"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            for line in result.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 5 and f":{port}" in parts[1] and parts[3] == "LISTENING":
+                    pid = int(parts[4])
+                    if pid != 0:
+                        pids.append(pid)
+        else:
+            result = subprocess.run(
+                ["lsof", "-ti", f":{port}"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            for line in result.stdout.strip().splitlines():
+                line = line.strip()
+                if line.isdigit():
+                    pids.append(int(line))
+    except Exception:
+        pass
+    return pids
+
+
 def stop_servers():
     """Stop all running servers"""
     print("🛑 Stopping servers...")
@@ -112,7 +145,11 @@ def stop_servers():
     frontend_pids = find_pids_by_pattern("node.*vite")
     # Also find any parent dev.py processes (detached wrappers)
     wrapper_pids = find_pids_by_pattern("frontend/dev.py")
-    all_pids = backend_pids + frontend_pids + wrapper_pids
+    # Catch anything still listening on our ports (e.g. orphaned processes)
+    port_pids = _find_pids_on_port(8000) + _find_pids_on_port(3000)
+    all_pids = list(set(backend_pids + frontend_pids + wrapper_pids + port_pids))
+    # Don't kill ourselves
+    all_pids = [p for p in all_pids if p != os.getpid()]
     if all_pids:
         print(f"   Killing PIDs: {all_pids}")
         kill_pids(all_pids)
@@ -135,6 +172,8 @@ def start_backend(*, config_file: str | None = None, initializers: list[str] | N
     # Set development mode environment variable
     env = os.environ.copy()
     env["PYRIT_DEV_MODE"] = "true"
+    # Force unbuffered output so init logs appear in real-time when piped
+    env["PYTHONUNBUFFERED"] = "1"
 
     cmd = [
         sys.executable,
