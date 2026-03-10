@@ -48,7 +48,7 @@ dependencies = [
     "pillow>=12.1.1",
     "pydantic>=2.11.5",
     "pyodbc>=5.1.0",
-    "pypdf>=6.7.1",
+    "pypdf>=6.7.5",
     "python-docx>=1.1.0",
     "python-dotenv>=1.0.1",
     "reportlab>=4.4.4",
@@ -317,7 +317,7 @@ notice-rgx = "Copyright \\(c\\) Microsoft Corporation\\.\\s*\\n.*Licensed under 
 [tool.ruff.lint.per-file-ignores]
 # Ignore D and DOC rules everywhere except for the pyrit/ directory
 "!pyrit/**.py" = ["D", "DOC"]
-# Ignore copyright check and notebook-inherent patterns in doc/ directory
+# Ignore copyright, import-location (E402), line length (E501), type-checking, and blanket type-ignore (PGH003) rules in doc/ directory
 # E402: notebooks have imports in code cells, not at top of file
 # E501: markdown comments in notebooks can exceed line length
 # PGH003: blanket type: ignore in notebooks (not mypy-checked)
