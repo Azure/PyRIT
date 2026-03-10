@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
@@ -11,9 +12,11 @@ from pyrit.models.strategy_result import StrategyResult
 
 if TYPE_CHECKING:
     from pyrit.identifiers.component_identifier import ComponentIdentifier
-    from pyrit.models.conversation_reference import ConversationReference, ConversationType
+    from pyrit.models.conversation_reference import ConversationReference
     from pyrit.models.message_piece import MessagePiece
     from pyrit.models.score import Score
+
+from pyrit.models.conversation_reference import ConversationType
 
 AttackResultT = TypeVar("AttackResultT", bound="AttackResult")
 
@@ -48,8 +51,8 @@ class AttackResult(StrategyResult):
     objective: str
 
     # Database-assigned unique ID for this AttackResult row.
-    # ``None`` for newly-constructed results that haven't been persisted yet.
-    attack_result_id: Optional[str] = None
+    # Auto-generated if not provided (e.g. when loading from DB, the persisted ID is passed in).
+    attack_result_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # Identifier of the attack strategy that produced this result
     attack_identifier: Optional[ComponentIdentifier] = None
@@ -93,6 +96,55 @@ class AttackResult(StrategyResult):
 
         """
         return [ref for ref in self.related_conversations if ref.conversation_type == conversation_type]
+
+    def get_all_conversation_ids(self) -> set[str]:
+        """
+        Return the main conversation ID plus all related conversation IDs.
+
+        Returns:
+            set[str]: All conversation IDs associated with this attack.
+        """
+        return {self.conversation_id} | {ref.conversation_id for ref in self.related_conversations}
+
+    def get_active_conversation_ids(self) -> set[str]:
+        """
+        Return the main conversation ID plus pruned (user-visible) related conversation IDs.
+
+        Excludes adversarial chat conversations which are internal implementation details.
+
+        Returns:
+            set[str]: Main + pruned conversation IDs.
+        """
+        return {self.conversation_id} | {
+            ref.conversation_id
+            for ref in self.related_conversations
+            if ref.conversation_type == ConversationType.PRUNED
+        }
+
+    def get_pruned_conversation_ids(self) -> list[str]:
+        """
+        Return IDs of pruned (branched) conversations only.
+
+        Returns:
+            list[str]: Pruned conversation IDs.
+        """
+        return [
+            ref.conversation_id
+            for ref in self.related_conversations
+            if ref.conversation_type == ConversationType.PRUNED
+        ]
+
+    def includes_conversation(self, conversation_id: str) -> bool:
+        """
+        Check whether a conversation belongs to this attack (main or any related).
+
+        Args:
+            conversation_id (str): The conversation ID to check.
+
+        Returns:
+            bool: True if the conversation is part of this attack.
+        """
+        return conversation_id in self.get_all_conversation_ids()
 
     def __str__(self) -> str:
         """
