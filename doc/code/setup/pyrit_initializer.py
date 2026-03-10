@@ -43,7 +43,7 @@ class CustomInitializer(PyRITInitializer):
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
 
-    async def initialize_async(self) -> None:
+    async def initialize_async(self, *, params=None) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
     @property
@@ -107,7 +107,7 @@ class CustomInitializer(PyRITInitializer):
     def execution_order(self) -> int:
         return 2  # Lower numbers run first (default is 1)
 
-    async def initialize_async(self) -> None:
+    async def initialize_async(self, *, params=None) -> None:
         set_default_value(class_type=OpenAIChatTarget, parameter_name="temperature", value=0.9)
 
     @property

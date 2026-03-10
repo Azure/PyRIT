@@ -10,7 +10,7 @@ from pyrit.common.apply_defaults import (
     set_default_value,
     set_global_variable,
 )
-from pyrit.setup.initializers import PyRITInitializer
+from pyrit.setup.initializers import InitializerParameter, PyRITInitializer
 
 
 class TestPyRITInitializerBase:
@@ -46,7 +46,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Concrete initializer"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = ConcreteInitializer()
@@ -60,7 +60,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Missing name"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         with pytest.raises(TypeError):
@@ -93,7 +93,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Default order"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = DefaultOrder()
@@ -115,7 +115,7 @@ class TestPyRITInitializerBase:
             def execution_order(self) -> int:
                 return 5
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = CustomOrder()
@@ -133,7 +133,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "No env vars"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = NoEnvVars()
@@ -155,7 +155,7 @@ class TestPyRITInitializerBase:
             def required_env_vars(self):
                 return ["API_KEY", "ENDPOINT"]
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = WithEnvVars()
@@ -173,7 +173,7 @@ class TestPyRITInitializerBase:
             def description(self) -> str:
                 return "Default validation"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = DefaultValidate()
@@ -195,7 +195,7 @@ class TestPyRITInitializerBase:
             def validate(self) -> None:
                 raise ValueError("Validation failed")
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = CustomValidate()
@@ -231,7 +231,7 @@ class TestInitializeWithTracking:
             def description(self) -> str:
                 return "Trackable init"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 nonlocal executed
                 executed = True
 
@@ -255,7 +255,7 @@ class TestInitializeWithTracking:
             def description(self) -> str:
                 return "Tracking defaults"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 set_default_value(class_type=DummyClass, parameter_name="value", value="tracked")
 
         init = TrackingInit()
@@ -279,7 +279,7 @@ class TestInitializeWithTracking:
             def description(self) -> str:
                 return "Sets global var"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 set_global_variable(name="tracked_var", value="test_value")
 
         init = GlobalVarInit()
@@ -313,7 +313,7 @@ class TestGetInfo:
             def description(self) -> str:
                 return "For testing get_info"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         info = await InfoInit.get_info_async()
@@ -331,7 +331,7 @@ class TestGetInfo:
             def description(self) -> str:
                 return "Basic description"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         info = await BasicInfoInit.get_info_async()
@@ -361,7 +361,7 @@ class TestGetInfo:
             def required_env_vars(self):
                 return ["API_KEY"]
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         info = await EnvVarsInit.get_info_async()
@@ -380,7 +380,7 @@ class TestGetInfo:
             def description(self) -> str:
                 return "No env vars"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         info = await NoEnvVarsInit.get_info_async()
@@ -399,7 +399,7 @@ class TestGetInfo:
             def description(self) -> str:
                 return "For class method test"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         # Should work without creating an instance
@@ -418,7 +418,7 @@ class TestGetInfo:
             def description(self) -> str:
                 return "Sets defaults"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         info = await DefaultsInit.get_info_async()
@@ -468,7 +468,7 @@ class TestGetInfoTracking:
             def description(self) -> str:
                 return "Sets both defaults and globals"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 # Set default values
                 set_default_value(class_type=DummyTarget, parameter_name="endpoint", value="custom_endpoint")
                 set_default_value(class_type=DummyConverter, parameter_name="target", value="custom_target")
@@ -503,7 +503,7 @@ class TestGetInfoTracking:
             def description(self) -> str:
                 return "Sets nothing"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass  # Don't set anything
 
         info = await EmptyInit.get_info_async()
@@ -539,7 +539,7 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Dynamic info"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = DynamicInit()
@@ -558,7 +558,7 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "For keys test"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = KeysInit()
@@ -582,7 +582,7 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Captures defaults"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 set_default_value(class_type=DummyClass, parameter_name="value", value="captured")
 
         init = DefaultsInit()
@@ -603,7 +603,7 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Captures globals"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 set_global_variable(name="dynamic_test_var", value="captured")
 
         init = GlobalsInit()
@@ -630,7 +630,7 @@ class TestGetDynamicDefaultValuesInfo:
             def description(self) -> str:
                 return "Restores state"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 set_default_value(class_type=DummyClass, parameter_name="other_value", value="temporary")
 
         init = RestoringInit()
@@ -663,7 +663,7 @@ class TestGetDynamicDefaultValuesInfoWithoutMemory:
             def description(self) -> str:
                 return "No memory initialized"
 
-            async def initialize_async(self) -> None:
+            async def initialize_async(self, *, params=None) -> None:
                 pass
 
         init = NoMemoryInit()
@@ -672,3 +672,164 @@ class TestGetDynamicDefaultValuesInfoWithoutMemory:
         # Should return helpful messages
         assert "await initialize_pyrit_async()" in str(info["default_values"])
         assert "await initialize_pyrit_async()" in str(info["global_variables"])
+
+
+class TestSupportedParameters:
+    """Tests for the parameter system on PyRITInitializer."""
+
+    def test_default_supported_parameters_is_empty(self) -> None:
+        """Test that base class returns empty supported_parameters."""
+
+        class NoParamsInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "no_params"
+
+            async def initialize_async(self, *, params=None) -> None:
+                pass
+
+        init = NoParamsInit()
+        assert init.supported_parameters == []
+
+    def test_supported_parameters_declared(self) -> None:
+        """Test that subclass can declare supported_parameters."""
+
+        class WithParamsInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "with_params"
+
+            @property
+            def supported_parameters(self) -> list:
+                return [
+                    InitializerParameter(name="mode", description="Operation mode", default="fast"),
+                    InitializerParameter(name="count", description="Item count", required=True),
+                ]
+
+            async def initialize_async(self, *, params=None) -> None:
+                pass
+
+        init = WithParamsInit()
+        assert len(init.supported_parameters) == 2
+        assert init.supported_parameters[0].name == "mode"
+        assert init.supported_parameters[1].required is True
+
+    def test_validate_params_raises_on_unknown(self) -> None:
+        """Test that unknown params raise ValueError."""
+
+        class StrictInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "strict"
+
+            @property
+            def supported_parameters(self) -> list:
+                return [InitializerParameter(name="level", description="Level")]
+
+            async def initialize_async(self, *, params=None) -> None:
+                pass
+
+        init = StrictInit()
+        with pytest.raises(ValueError, match="unknown parameter"):
+            init._validate_params(params={"bogus": "value"})
+
+    def test_validate_params_raises_on_missing_required(self) -> None:
+        """Test that missing required params raise ValueError."""
+
+        class RequiredInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "required"
+
+            @property
+            def supported_parameters(self) -> list:
+                return [InitializerParameter(name="key", description="API key", required=True)]
+
+            async def initialize_async(self, *, params=None) -> None:
+                pass
+
+        init = RequiredInit()
+        with pytest.raises(ValueError, match="requires parameter 'key'"):
+            init._validate_params(params={})
+
+    def test_validate_params_accepts_valid(self) -> None:
+        """Test that valid params pass validation."""
+
+        class ValidInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "valid"
+
+            @property
+            def supported_parameters(self) -> list:
+                return [
+                    InitializerParameter(name="mode", description="Mode", default="fast"),
+                    InitializerParameter(name="key", description="Key", required=True),
+                ]
+
+            async def initialize_async(self, *, params=None) -> None:
+                pass
+
+        init = ValidInit()
+        # Should not raise
+        init._validate_params(params={"key": "abc", "mode": "slow"})
+
+    def test_validate_checks_params_on_instance(self) -> None:
+        """Test that validate() checks self._params."""
+
+        class ParamInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "param_init"
+
+            @property
+            def supported_parameters(self) -> list:
+                return [InitializerParameter(name="x", description="X")]
+
+            async def initialize_async(self, *, params=None) -> None:
+                pass
+
+        init = ParamInit()
+        init._params = {"unknown_key": "val"}
+        with pytest.raises(ValueError, match="unknown parameter"):
+            init.validate()
+
+    @pytest.mark.asyncio
+    async def test_params_passed_to_initialize_async(self) -> None:
+        """Test that params are forwarded from initialize_with_tracking_async."""
+
+        received_params = {}
+
+        class TrackingInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "tracking"
+
+            async def initialize_async(self, *, params=None) -> None:
+                if params:
+                    received_params.update(params)
+
+        init = TrackingInit()
+        init._params = {"tags": "default,scorer"}
+        await init.initialize_with_tracking_async()
+
+        assert received_params == {"tags": "default,scorer"}
+
+    @pytest.mark.asyncio
+    async def test_empty_params_passes_none(self) -> None:
+        """Test that empty _params passes None to initialize_async."""
+
+        received = {"called_with": "not_set"}
+
+        class EmptyParamsInit(PyRITInitializer):
+            @property
+            def name(self) -> str:
+                return "empty"
+
+            async def initialize_async(self, *, params=None) -> None:
+                received["called_with"] = params
+
+        init = EmptyParamsInit()
+        await init.initialize_with_tracking_async()
+
+        assert received["called_with"] is None

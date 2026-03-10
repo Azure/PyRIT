@@ -10,6 +10,7 @@ the pre-defined datasets in PyRIT. These are meant as a starting point only.
 
 import logging
 import textwrap
+from typing import Optional
 
 from pyrit.datasets import SeedDatasetProvider
 from pyrit.memory import CentralMemory
@@ -50,7 +51,7 @@ class LoadDefaultDatasets(PyRITInitializer):
         """Return the list of required environment variables."""
         return []
 
-    async def initialize_async(self) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
         """Load default datasets from all registered scenarios."""
         # Get ScenarioRegistry to discover all scenarios
         registry = ScenarioRegistry.get_registry_singleton()

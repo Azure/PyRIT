@@ -10,6 +10,7 @@ AIRT configuration including converters, scorers, and targets using Azure OpenAI
 
 import os
 from collections.abc import Callable
+from typing import Optional
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
@@ -92,7 +93,7 @@ class AIRTInitializer(PyRITInitializer):
             "AZURE_CONTENT_SAFETY_API_ENDPOINT",
         ]
 
-    async def initialize_async(self) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
         """
         Execute the complete AIRT initialization.
 

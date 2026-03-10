@@ -31,7 +31,7 @@ from pyrit.score import (
     TrueFalseQuestionPaths,
     TrueFalseScoreAggregator,
 )
-from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
+from pyrit.setup.initializers.pyrit_initializer import InitializerParameter, PyRITInitializer
 
 if TYPE_CHECKING:
     from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
@@ -77,6 +77,9 @@ class ScorerInitializer(PyRITInitializer):
     so this initializer must run after the target initializer (enforced via execution_order).
     Scorers that fail to initialize (e.g., due to missing targets) are skipped with a warning.
 
+    Supported Parameters:
+        tags: Comma-separated tags for future filtering. Defaults to "default".
+
     Example:
         initializer = ScorerInitializer()
         await initializer.initialize_async()
@@ -84,15 +87,16 @@ class ScorerInitializer(PyRITInitializer):
         refusal = registry.get_instance_by_name(REFUSAL_GPT4O)
     """
 
-    def __init__(self, *, tags: list[ScorerTag] | None = None) -> None:
-        """
-        Initialize the Scorer Initializer.
-
-        Args:
-            tags (list[ScorerTag] | None): Tags for future filtering. Defaults to ["default"].
-        """
-        super().__init__()
-        self._tags = tags if tags is not None else ["default"]
+    @property
+    def supported_parameters(self) -> list[InitializerParameter]:
+        """Get the list of parameters this initializer accepts."""
+        return [
+            InitializerParameter(
+                name="tags",
+                description="Comma-separated tags for filtering (e.g., 'default')",
+                default="default",
+            ),
+        ]
 
     @property
     def name(self) -> str:
@@ -127,9 +131,12 @@ class ScorerInitializer(PyRITInitializer):
         """
         return []
 
-    async def initialize_async(self) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
         """
         Register available scorers using targets from the TargetRegistry.
+
+        Args:
+            params: Optional parameters. Supports 'tags' (comma-separated tag names).
 
         Raises:
             RuntimeError: If the TargetRegistry is empty or hasn't been initialized.

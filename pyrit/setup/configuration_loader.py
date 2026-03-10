@@ -312,8 +312,10 @@ class ConfigurationLoader(YamlLoadable):
                     f"Initializer '{config.name}' not found in registry.\nAvailable initializers: {available}"
                 )
 
-            # Instantiate with args if provided
-            instance = initializer_class(**config.args) if config.args else initializer_class()
+            # Instantiate and set params if provided
+            instance = initializer_class()
+            if config.args:
+                instance._params = {k: str(v) for k, v in config.args.items()}
 
             resolved.append(instance)
 

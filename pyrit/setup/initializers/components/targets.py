@@ -31,7 +31,7 @@ from pyrit.prompt_target import (
     RealtimeTarget,
 )
 from pyrit.registry import TargetRegistry
-from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
+from pyrit.setup.initializers.pyrit_initializer import InitializerParameter, PyRITInitializer
 
 logger = logging.getLogger(__name__)
 
@@ -366,11 +366,10 @@ class TargetInitializer(PyRITInitializer):
     the corresponding targets into the TargetRegistry. Targets can be filtered
     by tags to control which targets are registered.
 
-    Args:
-        tags: List of tags to filter which targets to register.
+    Supported Parameters:
+        tags: Comma-separated target tags to register.
             "default" registers the base environment targets.
             "scorer" registers scorer-specific temperature variant targets.
-            Pass multiple tags to register targets matching any tag.
             If not provided, only "default" targets are registered.
 
     Supported Endpoints by Category:
@@ -426,20 +425,19 @@ class TargetInitializer(PyRITInitializer):
         await initializer.initialize_async()
 
         # Register scorer temperature variants too
-        initializer = TargetInitializer(tags=["default", "scorer"])
-        await initializer.initialize_async()
+        await initializer.initialize_async(params={"tags": "default,scorer"})
     """
 
-    def __init__(self, *, tags: list[TargetTag] | None = None) -> None:
-        """
-        Initialize the Target Initializer.
-
-        Args:
-            tags (list[TargetTag] | None): Tags to filter which targets to register.
-                If None, only "default" targets are registered.
-        """
-        super().__init__()
-        self._tags = tags if tags is not None else ["default"]
+    @property
+    def supported_parameters(self) -> list[InitializerParameter]:
+        """Get the list of parameters this initializer accepts."""
+        return [
+            InitializerParameter(
+                name="tags",
+                description="Comma-separated target tags to register (e.g., 'default' or 'default,scorer')",
+                default="default",
+            ),
+        ]
 
     @property
     def name(self) -> str:
@@ -469,16 +467,23 @@ class TargetInitializer(PyRITInitializer):
         """
         return []
 
-    async def initialize_async(self) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
         """
         Register available targets based on environment variables.
 
         Scans for known endpoint environment variables and registers the
         corresponding targets into the TargetRegistry. Only targets with
         tags matching the configured tags are registered.
+
+        Args:
+            params: Optional parameters. Supports 'tags' (comma-separated tag names).
         """
+        params = params or {}
+        tags_str = params.get("tags", "default")
+        tags = [t.strip() for t in tags_str.split(",")]
+
         for config in TARGET_CONFIGS:
-            if not any(tag in self._tags for tag in config.tags):
+            if not any(tag in tags for tag in config.tags):
                 continue
             self._register_target(config)
 

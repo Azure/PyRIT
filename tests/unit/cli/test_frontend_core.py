@@ -24,7 +24,7 @@ class TestFrontendCore:
 
         assert context._database == frontend_core.SQLITE
         assert context._initialization_scripts is None
-        assert context._initializer_names is None
+        assert context._initializer_configs is None
         assert context._log_level == logging.WARNING
         assert context._initialized is False
 
@@ -45,7 +45,8 @@ class TestFrontendCore:
         assert context._initialization_scripts is not None
         assert len(context._initialization_scripts) == 1
         assert context._initialization_scripts[0].parts[-2:] == ("test", "script.py")
-        assert context._initializer_names == initializers
+        assert context._initializer_configs is not None
+        assert [ic.name for ic in context._initializer_configs] == initializers
         assert context._log_level == logging.DEBUG
 
     def test_init_with_invalid_database(self):
@@ -533,6 +534,23 @@ class TestParseRunArguments:
 
         assert result["scenario_name"] == "test_scenario"
         assert result["initializers"] == ["init1", "init2"]
+
+    def test_parse_run_arguments_with_initializer_params(self):
+        """Test parsing initializers with key=value params."""
+        result = frontend_core.parse_run_arguments(
+            args_string="test_scenario --initializers simple target:tags=default"
+        )
+
+        assert result["initializers"][0] == "simple"
+        assert result["initializers"][1] == {"name": "target", "args": {"tags": "default"}}
+
+    def test_parse_run_arguments_with_initializer_multiple_params(self):
+        """Test parsing initializers with multiple key=value params separated by semicolons."""
+        result = frontend_core.parse_run_arguments(
+            args_string="test_scenario --initializers target:tags=default;mode=strict"
+        )
+
+        assert result["initializers"][0] == {"name": "target", "args": {"tags": "default", "mode": "strict"}}
 
     def test_parse_run_arguments_with_strategies(self):
         """Test parsing with strategies."""

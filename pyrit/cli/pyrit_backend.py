@@ -91,7 +91,7 @@ Examples:
 
     parser.add_argument(
         "--initializers",
-        type=str,
+        type=frontend_core._parse_initializer_arg,
         nargs="+",
         help=frontend_core.ARG_HELP["initializers"],
     )
@@ -164,12 +164,15 @@ async def initialize_and_run_async(*, parsed_args: Namespace) -> int:
 
     # Run initializers up-front (backend runs them once at startup, not per-scenario)
     initializer_instances = None
-    if context._initializer_names:
-        print(f"Running {len(context._initializer_names)} initializer(s)...")
+    if context._initializer_configs:
+        print(f"Running {len(context._initializer_configs)} initializer(s)...")
         initializer_instances = []
-        for name in context._initializer_names:
-            initializer_class = context.initializer_registry.get_class(name)
-            initializer_instances.append(initializer_class())
+        for config in context._initializer_configs:
+            initializer_class = context.initializer_registry.get_class(config.name)
+            instance = initializer_class()
+            if config.args:
+                instance._params = {k: str(v) for k, v in config.args.items()}
+            initializer_instances.append(instance)
 
         # Re-initialize with initializers applied
         await initialize_pyrit_async(
