@@ -18,10 +18,6 @@ import {
 } from '@fluentui/react-icons'
 import { labelsApi } from '../../services/api'
 
-const FALLBACK_LABELS: Record<string, string> = {
-  operator: 'roakey',
-  operation: 'op_trash_panda',
-}
 
 const DUMMY_VALUES: Record<string, string> = {
   operator: 'roakey',
@@ -133,8 +129,6 @@ interface LabelsBarProps {
   labels: Record<string, string>
   onLabelsChange: (labels: Record<string, string>) => void
 }
-
-export const DEFAULT_GLOBAL_LABELS = FALLBACK_LABELS
 
 export default function LabelsBar({ labels, onLabelsChange }: LabelsBarProps) {
   const styles = useStyles()

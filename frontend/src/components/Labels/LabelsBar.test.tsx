@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { FluentProvider, webLightTheme } from '@fluentui/react-components'
-import LabelsBar, { DEFAULT_GLOBAL_LABELS } from './LabelsBar'
+import LabelsBar from './LabelsBar'
+import { DEFAULT_GLOBAL_LABELS } from './labelDefaults'
 import { labelsApi } from '../../services/api'
 
 jest.mock('../../services/api', () => ({

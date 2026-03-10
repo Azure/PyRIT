@@ -33,27 +33,9 @@ import {
 import { attacksApi, labelsApi } from '../../services/api'
 import { toApiError } from '../../services/errors'
 import type { AttackSummary } from '../../types'
+import { DEFAULT_HISTORY_FILTERS } from './historyFilters'
+import type { HistoryFilters } from './historyFilters'
 
-
-export interface HistoryFilters {
-  attackClass: string
-  outcome: string
-  converter: string
-  operator: string
-  operation: string
-  otherLabels: string[]
-  labelSearchText: string
-}
-
-export const DEFAULT_HISTORY_FILTERS: HistoryFilters = {
-  attackClass: '',
-  outcome: '',
-  converter: '',
-  operator: '',
-  operation: '',
-  otherLabels: [],
-  labelSearchText: '',
-}
 
 
 const useStyles = makeStyles({

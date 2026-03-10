@@ -13,7 +13,6 @@ import { apiClient } from '../services/api'
 import {
   ConnectionHealthProvider,
   useConnectionHealth,
-  type ConnectionStatus,
 } from './useConnectionHealth'
 
 // Helper component that displays connection health state

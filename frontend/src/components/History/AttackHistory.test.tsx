@@ -1,7 +1,7 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { FluentProvider, webLightTheme } from '@fluentui/react-components'
 import AttackHistory from './AttackHistory'
-import { DEFAULT_HISTORY_FILTERS } from './AttackHistory'
+import { DEFAULT_HISTORY_FILTERS } from './historyFilters'
 import { attacksApi, labelsApi } from '../../services/api'
 
 jest.mock('../../services/api', () => ({

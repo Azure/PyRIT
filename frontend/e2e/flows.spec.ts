@@ -527,7 +527,7 @@ for (const variant of TARGET_VARIANTS) {
       page,
       request,
     }) => {
-      const { attackResultId, conversationId } = await seedFullTurn(
+      const { attackResultId } = await seedFullTurn(
         request,
         targetRegistryName,
         variant,
@@ -560,7 +560,7 @@ for (const variant of TARGET_VARIANTS) {
       page,
       request,
     }) => {
-      const { attackResultId, conversationId } = await seedFullTurn(
+      const { attackResultId } = await seedFullTurn(
         request,
         targetRegistryName,
         variant,
@@ -648,7 +648,7 @@ for (const variant of TARGET_VARIANTS) {
       page,
       request,
     }) => {
-      const { attackResultId, conversationId } = await seedFullTurn(
+      const { attackResultId } = await seedFullTurn(
         request,
         targetRegistryName,
         variant,

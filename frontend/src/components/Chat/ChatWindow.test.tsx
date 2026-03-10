@@ -541,7 +541,7 @@ describe("ChatWindow Integration", () => {
     ]);
 
     // Simulate an axios error with response.data.detail (what FastAPI returns)
-    const axiosError = new Error("Request failed with status code 500") as any;
+    const axiosError = new Error("Request failed with status code 500") as Error & { isAxiosError: boolean; response: { status: number; data: { detail: string } } };
     axiosError.isAxiosError = true;
     axiosError.response = {
       status: 500,
@@ -583,7 +583,7 @@ describe("ChatWindow Integration", () => {
     ]);
 
     // Simulate a response where data is a plain string (not JSON)
-    const axiosError = new Error("Request failed with status code 500") as any;
+    const axiosError = new Error("Request failed with status code 500") as Error & { isAxiosError: boolean; response: { status: number; data: string } };
     axiosError.isAxiosError = true;
     axiosError.response = {
       status: 500,

@@ -37,6 +37,7 @@ const ConnectionHealthContext = createContext<ConnectionHealth>({
 /**
  * Access the current connection health from any descendant component.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useConnectionHealth(): ConnectionHealth {
   return useContext(ConnectionHealthContext)
 }
