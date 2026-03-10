@@ -278,4 +278,68 @@ describe("TargetConfig", () => {
       ).toBeGreaterThanOrEqual(1);
     });
   });
+
+  it("should display target_specific_params like reasoning_effort", async () => {
+    const targetsWithParams: TargetInstance[] = [
+      {
+        target_registry_name: "azure_responses",
+        target_type: "OpenAIResponseTarget",
+        endpoint: "https://api.openai.com",
+        model_name: "o3",
+        target_specific_params: {
+          reasoning_effort: "high",
+          reasoning_summary: "auto",
+          max_output_tokens: 4096,
+        },
+      },
+    ];
+
+    mockedTargetsApi.listTargets.mockResolvedValue({
+      items: targetsWithParams,
+      pagination: { limit: 200, has_more: false },
+    });
+
+    render(
+      <TestWrapper>
+        <TargetConfig {...defaultProps} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("OpenAIResponseTarget")).toBeInTheDocument();
+      // formatParams renders as "key: value, key: value"
+      expect(screen.getByText(/reasoning_effort: high/)).toBeInTheDocument();
+      expect(screen.getByText(/reasoning_summary: auto/)).toBeInTheDocument();
+      expect(screen.getByText(/max_output_tokens: 4096/)).toBeInTheDocument();
+    });
+  });
+
+  it("should show dash when no target_specific_params", async () => {
+    const targetsNoParams: TargetInstance[] = [
+      {
+        target_registry_name: "simple_target",
+        target_type: "TextTarget",
+        endpoint: "http://localhost",
+        model_name: "text",
+      },
+    ];
+
+    mockedTargetsApi.listTargets.mockResolvedValue({
+      items: targetsNoParams,
+      pagination: { limit: 200, has_more: false },
+    });
+
+    render(
+      <TestWrapper>
+        <TargetConfig {...defaultProps} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("TextTarget")).toBeInTheDocument();
+    });
+
+    // No reasoning or other special params should be displayed
+    expect(screen.queryByText(/reasoning_effort/)).not.toBeInTheDocument();
+  });
 });
