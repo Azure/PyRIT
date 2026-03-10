@@ -4,6 +4,8 @@ import MainLayout from './components/Layout/MainLayout'
 import ChatWindow from './components/Chat/ChatWindow'
 import TargetConfig from './components/Config/TargetConfig'
 import AttackHistory from './components/History/AttackHistory'
+import { DEFAULT_HISTORY_FILTERS } from './components/History/AttackHistory'
+import type { HistoryFilters } from './components/History/AttackHistory'
 import { ConnectionBanner } from './components/ConnectionBanner'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ConnectionHealthProvider } from './hooks/useConnectionHealth'
@@ -20,6 +22,8 @@ function App() {
   const [globalLabels, setGlobalLabels] = useState<Record<string, string>>({ ...DEFAULT_GLOBAL_LABELS })
   /** True while loading a historical attack from the history view */
   const [isLoadingAttack, setIsLoadingAttack] = useState(false)
+  /** Persisted filter state for the history view */
+  const [historyFilters, setHistoryFilters] = useState<HistoryFilters>({ ...DEFAULT_HISTORY_FILTERS })
 
   // Fetch default labels from backend configuration on startup
   useEffect(() => {
@@ -170,7 +174,11 @@ function App() {
               />
             )}
             {currentView === 'history' && (
-              <AttackHistory onOpenAttack={handleOpenAttack} />
+              <AttackHistory
+                onOpenAttack={handleOpenAttack}
+                filters={historyFilters}
+                onFiltersChange={setHistoryFilters}
+              />
             )}
           </MainLayout>
         </FluentProvider>

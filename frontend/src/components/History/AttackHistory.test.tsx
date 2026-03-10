@@ -1,6 +1,7 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { FluentProvider, webLightTheme } from '@fluentui/react-components'
 import AttackHistory from './AttackHistory'
+import { DEFAULT_HISTORY_FILTERS } from './AttackHistory'
 import { attacksApi, labelsApi } from '../../services/api'
 
 jest.mock('../../services/api', () => ({
@@ -57,6 +58,8 @@ const sampleAttacks = [
 describe('AttackHistory', () => {
   const defaultProps = {
     onOpenAttack: jest.fn(),
+    filters: { ...DEFAULT_HISTORY_FILTERS },
+    onFiltersChange: jest.fn(),
   }
 
   beforeEach(() => {
@@ -609,5 +612,47 @@ describe('AttackHistory', () => {
     })
     // Default empty text (no filters active)
     expect(screen.getByText('Run an attack to see it here.')).toBeInTheDocument()
+  })
+
+  it('should show reset filters button when a filter is active', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: sampleAttacks,
+      pagination: { limit: 25, has_more: false },
+    })
+
+    const onFiltersChange = jest.fn()
+    const activeFilters = { ...DEFAULT_HISTORY_FILTERS, outcome: 'true' }
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} filters={activeFilters} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('reset-filters-btn')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('reset-filters-btn'))
+    expect(onFiltersChange).toHaveBeenCalledWith(DEFAULT_HISTORY_FILTERS)
+  })
+
+  it('should not show reset filters button when no filters are active', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: sampleAttacks,
+      pagination: { limit: 25, has_more: false },
+    })
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Attack History')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByTestId('reset-filters-btn')).not.toBeInTheDocument()
   })
 })

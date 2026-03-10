@@ -28,10 +28,32 @@ import {
   DismissCircleRegular,
   QuestionCircleRegular,
   FilterRegular,
+  FilterDismissRegular,
 } from '@fluentui/react-icons'
 import { attacksApi, labelsApi } from '../../services/api'
 import { toApiError } from '../../services/errors'
 import type { AttackSummary } from '../../types'
+
+
+export interface HistoryFilters {
+  attackClass: string
+  outcome: string
+  converter: string
+  operator: string
+  operation: string
+  otherLabels: string[]
+  labelSearchText: string
+}
+
+export const DEFAULT_HISTORY_FILTERS: HistoryFilters = {
+  attackClass: '',
+  outcome: '',
+  converter: '',
+  operator: '',
+  operation: '',
+  otherLabels: [],
+  labelSearchText: '',
+}
 
 
 const useStyles = makeStyles({
@@ -137,22 +159,24 @@ const OUTCOME_COLORS: Record<string, 'success' | 'danger' | 'informative'> = {
 
 interface AttackHistoryProps {
   onOpenAttack: (attackResultId: string) => void
+  filters: HistoryFilters
+  onFiltersChange: (filters: HistoryFilters) => void
 }
 
-export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
+export default function AttackHistory({ onOpenAttack, filters, onFiltersChange }: AttackHistoryProps) {
   const styles = useStyles()
   const [attacks, setAttacks] = useState<AttackSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Filter state
-  const [attackClassFilter, setAttackClassFilter] = useState<string>('')
-  const [outcomeFilter, setOutcomeFilter] = useState<string>('')
-  const [converterFilter, setConverterFilter] = useState<string>('')
-  const [operatorFilter, setOperatorFilter] = useState<string>('')
-  const [operationFilter, setOperationFilter] = useState<string>('')
-  const [otherLabelFilters, setOtherLabelFilters] = useState<string[]>([])
-  const [labelSearchText, setLabelSearchText] = useState<string>('')
+  // Destructure filters for convenience
+  const { attackClass: attackClassFilter, outcome: outcomeFilter, converter: converterFilter,
+    operator: operatorFilter, operation: operationFilter, otherLabels: otherLabelFilters,
+    labelSearchText } = filters
+
+  const setFilter = useCallback(<K extends keyof HistoryFilters>(key: K, value: HistoryFilters[K]) => {
+    onFiltersChange({ ...filters, [key]: value })
+  }, [filters, onFiltersChange])
 
   // Filter options
   const [attackClassOptions, setAttackClassOptions] = useState<string[]>([])
@@ -273,12 +297,25 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
         </div>
         <div className={styles.filters}>
           <FilterRegular />
+          {(attackClassFilter || outcomeFilter || converterFilter || operatorFilter || operationFilter || otherLabelFilters.length > 0) && (
+            <Tooltip content="Reset all filters" relationship="label">
+              <Button
+                appearance="subtle"
+                size="small"
+                icon={<FilterDismissRegular />}
+                onClick={() => onFiltersChange({ ...DEFAULT_HISTORY_FILTERS })}
+                data-testid="reset-filters-btn"
+              >
+                Reset
+              </Button>
+            </Tooltip>
+          )}
           <Dropdown
             className={styles.filterDropdown}
             placeholder="All attack types"
             value={attackClassFilter || undefined}
             selectedOptions={attackClassFilter ? [attackClassFilter] : []}
-            onOptionSelect={(_e, data) => setAttackClassFilter(data.optionValue ?? '')}
+            onOptionSelect={(_e, data) => setFilter('attackClass', data.optionValue ?? '')}
             data-testid="attack-class-filter"
           >
             <Option value="">All attack types</Option>
@@ -291,7 +328,7 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
             placeholder="All outcomes"
             value={outcomeFilter || undefined}
             selectedOptions={outcomeFilter ? [outcomeFilter] : []}
-            onOptionSelect={(_e, data) => setOutcomeFilter(data.optionValue ?? '')}
+            onOptionSelect={(_e, data) => setFilter('outcome', data.optionValue ?? '')}
             data-testid="outcome-filter"
           >
             <Option value="">All outcomes</Option>
@@ -304,7 +341,7 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
             placeholder="All converters"
             value={converterFilter || undefined}
             selectedOptions={converterFilter ? [converterFilter] : []}
-            onOptionSelect={(_e, data) => setConverterFilter(data.optionValue ?? '')}
+            onOptionSelect={(_e, data) => setFilter('converter', data.optionValue ?? '')}
             data-testid="converter-filter"
           >
             <Option value="">All converters</Option>
@@ -317,7 +354,7 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
             placeholder="All operators"
             value={operatorFilter || undefined}
             selectedOptions={operatorFilter ? [operatorFilter] : []}
-            onOptionSelect={(_e, data) => setOperatorFilter(data.optionValue ?? '')}
+            onOptionSelect={(_e, data) => setFilter('operator', data.optionValue ?? '')}
             data-testid="operator-filter"
           >
             <Option value="">All operators</Option>
@@ -330,7 +367,7 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
             placeholder="All operations"
             value={operationFilter || undefined}
             selectedOptions={operationFilter ? [operationFilter] : []}
-            onOptionSelect={(_e, data) => setOperationFilter(data.optionValue ?? '')}
+            onOptionSelect={(_e, data) => setFilter('operation', data.optionValue ?? '')}
             data-testid="operation-filter"
           >
             <Option value="">All operations</Option>
@@ -344,11 +381,10 @@ export default function AttackHistory({ onOpenAttack }: AttackHistoryProps) {
             multiselect
             selectedOptions={otherLabelFilters}
             onOptionSelect={(_e, data) => {
-              setOtherLabelFilters(data.selectedOptions)
-              setLabelSearchText('')
+              onFiltersChange({ ...filters, otherLabels: data.selectedOptions, labelSearchText: '' })
             }}
             value={labelSearchText}
-            onChange={(e) => setLabelSearchText((e.target as HTMLInputElement).value)}
+            onChange={(e) => setFilter('labelSearchText', (e.target as HTMLInputElement).value)}
             data-testid="label-filter"
             freeform
           >
