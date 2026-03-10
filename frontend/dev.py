@@ -154,8 +154,8 @@ def start_backend(*, config_file: str | None = None, initializers: list[str] | N
     if initializers:
         cmd.extend(["--initializers"] + initializers)
 
-    # Start backend
-    return subprocess.Popen(cmd, env=env)
+    # Pipe stdout/stderr so dev.py controls output ordering
+    return subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
 
 def start_frontend():
@@ -209,6 +209,26 @@ def _detect_frontend_port(frontend_process, *, timeout: int = 10) -> int:
     return default_port
 
 
+def _forward_backend_output(backend_process):
+    """Forward backend stdout to the terminal in a background thread.
+
+    Runs until the pipe is closed (process exits or stdout is exhausted).
+    """
+    import threading
+
+    def _reader():
+        try:
+            for line in backend_process.stdout:
+                sys.stdout.buffer.write(line)
+                sys.stdout.buffer.flush()
+        except (ValueError, OSError):
+            pass
+
+    t = threading.Thread(target=_reader, daemon=True)
+    t.start()
+    return t
+
+
 def _wait_for_backend(backend_process, *, port: int = 8000, timeout: int = 120) -> bool:
     """Poll the backend health endpoint until it responds or the process dies.
 
@@ -246,6 +266,9 @@ def start_servers(*, config_file: str | None = None):
     backend = start_backend(config_file=config_file)
     print("⏳ Waiting for backend to initialize (this may take a minute)...")
 
+    # Forward backend output to the terminal in real-time
+    _forward_backend_output(backend)
+
     # Start frontend in parallel while backend initializes
     frontend = start_frontend()
     frontend_port = _detect_frontend_port(frontend)
@@ -261,6 +284,8 @@ def start_servers(*, config_file: str | None = None):
         print("   API Docs: http://localhost:8000/docs")
     else:
         if backend.poll() is not None:
+            # Give the reader thread a moment to flush remaining output
+            time.sleep(1)
             print("❌ Backend failed to start (process exited).")
             print("   Check the output above for errors.")
         else:
