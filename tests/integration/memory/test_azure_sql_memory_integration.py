@@ -59,6 +59,19 @@ def get_test_scorer_identifier(**kwargs) -> ComponentIdentifier:
     )
 
 
+def get_test_attack_identifier() -> ComponentIdentifier:
+    """
+    Returns a test ComponentIdentifier for attack results in integration tests.
+
+    Returns:
+        ComponentIdentifier: A test attack identifier.
+    """
+    return ComponentIdentifier(
+        class_name="test_attack",
+        class_module="tests.integration.memory.test_azure_sql_memory_integration",
+    )
+
+
 @contextmanager
 def cleanup_conversation_data(memory: AzureSQLMemory, conversation_ids: list[str]) -> Generator[None, None, None]:
     """
@@ -266,19 +279,19 @@ async def test_get_attack_results_by_harm_categories(azuresql_instance: AzureSQL
         result1 = AttackResult(
             conversation_id=conversation_ids[0],
             objective="Test objective 1",
-            attack_identifier={"name": "test_attack"},
+            attack_identifier=get_test_attack_identifier(),
             outcome=AttackOutcome.SUCCESS,
         )
         result2 = AttackResult(
             conversation_id=conversation_ids[1],
             objective="Test objective 2",
-            attack_identifier={"name": "test_attack"},
+            attack_identifier=get_test_attack_identifier(),
             outcome=AttackOutcome.SUCCESS,
         )
         result3 = AttackResult(
             conversation_id=conversation_ids[2],
             objective="Test objective 3",
-            attack_identifier={"name": "test_attack"},
+            attack_identifier=get_test_attack_identifier(),
             outcome=AttackOutcome.FAILURE,
         )
 
@@ -352,19 +365,19 @@ async def test_get_attack_results_by_labels(azuresql_instance: AzureSQLMemory):
         result1 = AttackResult(
             conversation_id=conversation_ids[0],
             objective="Test objective 1",
-            attack_identifier={"name": "test_attack"},
+            attack_identifier=get_test_attack_identifier(),
             outcome=AttackOutcome.SUCCESS,
         )
         result2 = AttackResult(
             conversation_id=conversation_ids[1],
             objective="Test objective 2",
-            attack_identifier={"name": "test_attack"},
+            attack_identifier=get_test_attack_identifier(),
             outcome=AttackOutcome.SUCCESS,
         )
         result3 = AttackResult(
             conversation_id=conversation_ids[2],
             objective="Test objective 3",
-            attack_identifier={"name": "test_attack"},
+            attack_identifier=get_test_attack_identifier(),
             outcome=AttackOutcome.FAILURE,
         )
 
