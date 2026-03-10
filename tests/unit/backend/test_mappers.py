@@ -1038,6 +1038,32 @@ class TestTargetObjectToInstance:
 
         assert result.supports_multi_turn is False
 
+    def test_extra_params_in_target_specific_params(self) -> None:
+        """Test that non-extracted params like reasoning_effort appear in target_specific_params."""
+        target_obj = MagicMock(spec=PromptTarget)
+        target_obj.capabilities = TargetCapabilities(supports_multi_turn=True)
+        mock_identifier = ComponentIdentifier(
+            class_name="OpenAIResponseTarget",
+            class_module="pyrit.prompt_target",
+            params={
+                "endpoint": "https://api.openai.com",
+                "model_name": "o3",
+                "temperature": 1.0,
+                "reasoning_effort": "high",
+                "reasoning_summary": "auto",
+                "max_output_tokens": 4096,
+            },
+        )
+        target_obj.get_identifier.return_value = mock_identifier
+
+        result = target_object_to_instance("t-1", target_obj)
+
+        assert result.temperature == 1.0
+        assert result.target_specific_params is not None
+        assert result.target_specific_params["reasoning_effort"] == "high"
+        assert result.target_specific_params["reasoning_summary"] == "auto"
+        assert result.target_specific_params["max_output_tokens"] == 4096
+
 
 # ============================================================================
 # Converter Mapper Tests
