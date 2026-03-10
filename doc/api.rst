@@ -719,7 +719,8 @@ API Reference
 
     PyRITInitializer
     AIRTInitializer
-    AIRTTargetInitializer
+    TargetInitializer
+    ScorerInitializer
     SimpleInitializer
     LoadDefaultDatasets
     ScenarioObjectiveListInitializer

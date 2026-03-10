@@ -4,7 +4,7 @@
 """
 AIRT Target Initializer for registering pre-configured targets from environment variables.
 
-This module provides the AIRTTargetInitializer class that registers available
+This module provides the TargetInitializer class that registers available
 targets into the TargetRegistry based on environment variable configuration.
 
 Note: This module only includes PRIMARY endpoint configurations from .env_example.
@@ -15,7 +15,7 @@ Note: This module only includes PRIMARY endpoint configurations from .env_exampl
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pyrit.auth import get_azure_openai_auth, get_azure_token_provider
 from pyrit.prompt_target import (
@@ -36,9 +36,25 @@ from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 logger = logging.getLogger(__name__)
 
 
+# Literal type for target tags
+TargetTag = Literal["default", "scorer"]
+
+
 @dataclass
 class TargetConfig:
-    """Configuration for a target to be registered."""
+    """
+    Configuration for a target to be registered.
+
+    Attributes:
+        registry_name: The name used to retrieve the target from the registry.
+        target_class: The target class to instantiate.
+        endpoint_var: The environment variable name for the endpoint URL.
+        key_var: The environment variable name for the API key. Empty string means no auth required.
+        model_var: The environment variable name for the model name.
+        underlying_model_var: The environment variable name for the underlying model.
+        temperature: Optional temperature override for the target.
+        tags: Tags for filtering which targets to register.
+    """
 
     registry_name: str
     target_class: type[PromptTarget]
@@ -46,13 +62,15 @@ class TargetConfig:
     key_var: str = ""  # Empty string means no auth required
     model_var: Optional[str] = None
     underlying_model_var: Optional[str] = None
+    temperature: Optional[float] = None
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
+    tags: list[TargetTag] = field(default_factory=lambda: ["default"])
 
 
 # Define all supported target configurations.
 # Only PRIMARY configurations are included here - alias configurations that use ${...}
 # syntax in .env_example are excluded since they reference other primary configurations.
-TARGET_CONFIGS: list[TargetConfig] = [
+ENV_TARGET_CONFIGS: list[TargetConfig] = [
     # ============================================
     # OpenAI Chat Targets (OpenAIChatTarget)
     # ============================================
@@ -291,15 +309,69 @@ TARGET_CONFIGS: list[TargetConfig] = [
     ),
 ]
 
+# Scorer-specific temperature variant targets.
+# These reuse the same endpoints as their base targets but with different temperatures.
+SCORER_TARGET_CONFIGS: list[TargetConfig] = [
+    TargetConfig(
+        registry_name="azure_openai_gpt4o_temp0",
+        target_class=OpenAIChatTarget,
+        endpoint_var="AZURE_OPENAI_GPT4O_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT4O_KEY",
+        model_var="AZURE_OPENAI_GPT4O_MODEL",
+        underlying_model_var="AZURE_OPENAI_GPT4O_UNDERLYING_MODEL",
+        temperature=0.0,
+        tags=["scorer"],
+    ),
+    TargetConfig(
+        registry_name="azure_openai_gpt4o_temp9",
+        target_class=OpenAIChatTarget,
+        endpoint_var="AZURE_OPENAI_GPT4O_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT4O_KEY",
+        model_var="AZURE_OPENAI_GPT4O_MODEL",
+        underlying_model_var="AZURE_OPENAI_GPT4O_UNDERLYING_MODEL",
+        temperature=0.9,
+        tags=["scorer"],
+    ),
+    TargetConfig(
+        registry_name="azure_gpt4o_unsafe_chat_temp0",
+        target_class=OpenAIChatTarget,
+        endpoint_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
+        model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL",
+        underlying_model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_UNDERLYING_MODEL",
+        temperature=0.0,
+        tags=["scorer"],
+    ),
+    TargetConfig(
+        registry_name="azure_gpt4o_unsafe_chat_temp9",
+        target_class=OpenAIChatTarget,
+        endpoint_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT",
+        key_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY",
+        model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL",
+        underlying_model_var="AZURE_OPENAI_GPT4O_UNSAFE_CHAT_UNDERLYING_MODEL",
+        temperature=0.9,
+        tags=["scorer"],
+    ),
+]
 
-class AIRTTargetInitializer(PyRITInitializer):
+# Combined list of all target configurations.
+TARGET_CONFIGS: list[TargetConfig] = ENV_TARGET_CONFIGS + SCORER_TARGET_CONFIGS
+
+
+class TargetInitializer(PyRITInitializer):
     """
-    AIRT Target Initializer for registering pre-configured targets.
+    Target Initializer for registering pre-configured targets.
 
     This initializer scans for known endpoint environment variables and registers
-    the corresponding targets into the TargetRegistry. It only includes PRIMARY
-    endpoint configurations - alias configurations (those using ${...} syntax in
-    .env_example) are excluded since they reference other primary configurations.
+    the corresponding targets into the TargetRegistry. Targets can be filtered
+    by tags to control which targets are registered.
+
+    Args:
+        tags: List of tags to filter which targets to register.
+            "default" registers the base environment targets.
+            "scorer" registers scorer-specific temperature variant targets.
+            Pass multiple tags to register targets matching any tag.
+            If not provided, only "default" targets are registered.
 
     Supported Endpoints by Category:
 
@@ -350,24 +422,40 @@ class AIRTTargetInitializer(PyRITInitializer):
     - AZURE_CONTENT_SAFETY_* - Azure Content Safety
 
     Example:
-        initializer = AIRTTargetInitializer()
+        initializer = TargetInitializer()
+        await initializer.initialize_async()
+
+        # Register scorer temperature variants too
+        initializer = TargetInitializer(tags=["default", "scorer"])
         await initializer.initialize_async()
     """
 
-    def __init__(self) -> None:
-        """Initialize the AIRT Target Initializer."""
+    def __init__(self, *, tags: list[TargetTag] | None = None) -> None:
+        """
+        Initialize the Target Initializer.
+
+        Args:
+            tags (list[TargetTag] | None): Tags to filter which targets to register.
+                If None, only "default" targets are registered.
+        """
         super().__init__()
+        self._tags = tags if tags is not None else ["default"]
 
     @property
     def name(self) -> str:
         """Get the name of this initializer."""
-        return "AIRT Target Initializer"
+        return "Target Initializer"
+
+    @property
+    def execution_order(self) -> int:
+        """Get the execution order. Runs before ScorerInitializer (order=2)."""
+        return 1
 
     @property
     def description(self) -> str:
         """Get the description of this initializer."""
         return (
-            "Instantiates a collection of (AI Red Team suggested) targets from "
+            "Instantiates a collection of targets from "
             "available environment variables and adds them to the TargetRegistry"
         )
 
@@ -386,9 +474,12 @@ class AIRTTargetInitializer(PyRITInitializer):
         Register available targets based on environment variables.
 
         Scans for known endpoint environment variables and registers the
-        corresponding targets into the TargetRegistry.
+        corresponding targets into the TargetRegistry. Only targets with
+        tags matching the configured tags are registered.
         """
         for config in TARGET_CONFIGS:
+            if not any(tag in self._tags for tag in config.tags):
+                continue
             self._register_target(config)
 
     def _register_target(self, config: TargetConfig) -> None:
@@ -436,6 +527,10 @@ class AIRTTargetInitializer(PyRITInitializer):
         # Add underlying_model if specified (for Azure deployments where name differs from model)
         if underlying_model is not None:
             kwargs["underlying_model"] = underlying_model
+
+        # Add temperature if specified (for scorer-specific temperature variants)
+        if config.temperature is not None:
+            kwargs["temperature"] = config.temperature
 
         # Add any extra constructor kwargs (e.g. extra_body_parameters for reasoning).
         # NOTE: extra_kwargs are defined in TARGET_CONFIGS (code-controlled, not user input),
