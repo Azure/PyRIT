@@ -540,6 +540,24 @@ class TestAttackRoutes:
             call_kwargs = mock_service.list_attacks_async.call_args[1]
             assert call_kwargs["converter_types"] == ["Base64", "ROT13"]
 
+    def test_list_attacks_normalizes_empty_converter_types(self, client: TestClient) -> None:
+        """Test that empty converter_types strings are stripped so [] means no-converter attacks."""
+        with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
+            mock_service = MagicMock()
+            mock_service.list_attacks_async = AsyncMock(
+                return_value=AttackListResponse(
+                    items=[],
+                    pagination=PaginationInfo(limit=20, has_more=False, next_cursor=None, prev_cursor=None),
+                )
+            )
+            mock_get_service.return_value = mock_service
+
+            response = client.get("/api/attacks?converter_types=")
+
+            assert response.status_code == status.HTTP_200_OK
+            call_kwargs = mock_service.list_attacks_async.call_args[1]
+            assert call_kwargs["converter_types"] == []
+
     def test_get_conversations_success(self, client: TestClient) -> None:
         """Test getting attack conversations returns service response."""
         with patch("pyrit.backend.routes.attacks.get_attack_service") as mock_get_service:
