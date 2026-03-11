@@ -2,38 +2,39 @@
 # Licensed under the MIT license.
 
 """
-Tests for pyrit.score.scorer_evaluation.scorer_evaluation_identity.
+Tests for pyrit.score.scorer_evaluation.scorer_evaluation_identifier.
 
-Covers ``ScorerEvaluationIdentity`` ClassVar values, eval-hash delegation, and
+Covers ``ScorerEvaluationIdentifier`` ClassVar values, eval-hash delegation, and
 the ``Scorer.get_eval_hash()`` convenience method.
 """
 
 import pytest
 
 from pyrit.identifiers import ComponentIdentifier, Identifiable, compute_eval_hash
-from pyrit.score.scorer_evaluation.scorer_evaluation_identity import ScorerEvaluationIdentity
+from pyrit.identifiers.evaluation_identifier import ScorerEvaluationIdentifier
 
 
-class TestScorerEvaluationIdentityConstants:
-    """Tests for the ClassVar constants on ScorerEvaluationIdentity."""
+class TestScorerEvaluationIdentifierConstants:
+    """Tests for the ClassVar constants on ScorerEvaluationIdentifier."""
 
-    def test_target_child_keys(self):
-        """Test that TARGET_CHILD_KEYS contains the expected scorer target names."""
-        assert frozenset({"prompt_target", "converter_target"}) == ScorerEvaluationIdentity.TARGET_CHILD_KEYS
+    def test_child_eval_rules_keys(self):
+        """Test that CHILD_EVAL_RULES contains the expected scorer target names."""
+        assert set(ScorerEvaluationIdentifier.CHILD_EVAL_RULES.keys()) == {"prompt_target"}
 
-    def test_behavioral_child_params(self):
-        """Test that BEHAVIORAL_CHILD_PARAMS contains the expected behavioral params."""
-        assert frozenset({"model_name", "temperature", "top_p"}) == ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS
+    def test_prompt_target_rule(self):
+        """Test that prompt_target has the expected included params."""
+        rule = ScorerEvaluationIdentifier.CHILD_EVAL_RULES["prompt_target"]
+        assert rule.included_params == frozenset({"model_name", "temperature", "top_p"})
 
 
-class TestScorerEvaluationIdentityEvalHash:
-    """Tests for ScorerEvaluationIdentity eval hash computation."""
+class TestScorerEvaluationIdentifierEvalHash:
+    """Tests for ScorerEvaluationIdentifier eval hash computation."""
 
     def test_deterministic(self):
         """Test that the same identifier produces the same eval hash."""
         cid = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", params={"threshold": 0.5})
-        h1 = ScorerEvaluationIdentity(cid).eval_hash
-        h2 = ScorerEvaluationIdentity(cid).eval_hash
+        h1 = ScorerEvaluationIdentifier(cid).eval_hash
+        h2 = ScorerEvaluationIdentifier(cid).eval_hash
         assert h1 == h2
 
     def test_operational_params_ignored(self):
@@ -51,7 +52,7 @@ class TestScorerEvaluationIdentityEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert ScorerEvaluationIdentity(id1).eval_hash == ScorerEvaluationIdentity(id2).eval_hash
+        assert ScorerEvaluationIdentifier(id1).eval_hash == ScorerEvaluationIdentifier(id2).eval_hash
 
     def test_behavioral_params_affect_hash(self):
         """Test that behavioral target params do affect the scorer eval hash."""
@@ -68,17 +69,16 @@ class TestScorerEvaluationIdentityEvalHash:
         id1 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child1})
         id2 = ComponentIdentifier(class_name="Scorer", class_module="pyrit.score", children={"prompt_target": child2})
 
-        assert ScorerEvaluationIdentity(id1).eval_hash != ScorerEvaluationIdentity(id2).eval_hash
+        assert ScorerEvaluationIdentifier(id1).eval_hash != ScorerEvaluationIdentifier(id2).eval_hash
 
     def test_eval_hash_matches_free_function(self):
         """Test that eval_hash matches calling compute_eval_hash with scorer constants."""
         cid = ComponentIdentifier(class_name="MyScorer", class_module="pyrit.score", params={"k": "v"})
-        identity = ScorerEvaluationIdentity(cid)
+        identity = ScorerEvaluationIdentifier(cid)
 
         expected = compute_eval_hash(
             cid,
-            target_child_keys=ScorerEvaluationIdentity.TARGET_CHILD_KEYS,
-            behavioral_child_params=ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=ScorerEvaluationIdentifier.CHILD_EVAL_RULES,
         )
         assert identity.eval_hash == expected
 
@@ -88,7 +88,7 @@ class TestScorerGetEvalHash:
     """Tests for Scorer.get_eval_hash() convenience method (adapted from old TestGetEvalHash)."""
 
     def test_get_eval_hash_uses_scorer_identity(self):
-        """Test that Scorer.get_eval_hash() delegates to ScorerEvaluationIdentity."""
+        """Test that Scorer.get_eval_hash() delegates to ScorerEvaluationIdentifier."""
 
         class FakeScorer(Identifiable):
             def _build_identifier(self) -> ComponentIdentifier:
@@ -101,12 +101,11 @@ class TestScorerGetEvalHash:
 
         scorer = FakeScorer()
         identifier = scorer.get_identifier()
-        eval_hash = ScorerEvaluationIdentity(identifier).eval_hash
+        eval_hash = ScorerEvaluationIdentifier(identifier).eval_hash
 
         expected = compute_eval_hash(
             identifier,
-            target_child_keys=ScorerEvaluationIdentity.TARGET_CHILD_KEYS,
-            behavioral_child_params=ScorerEvaluationIdentity.BEHAVIORAL_CHILD_PARAMS,
+            child_eval_rules=ScorerEvaluationIdentifier.CHILD_EVAL_RULES,
         )
         assert eval_hash == expected
 
@@ -128,8 +127,8 @@ class TestScorerGetEvalHash:
         scorer_a = ScorerLike(endpoint="https://endpoint-a.com")
         scorer_b = ScorerLike(endpoint="https://endpoint-b.com")
 
-        hash_a = ScorerEvaluationIdentity(scorer_a.get_identifier()).eval_hash
-        hash_b = ScorerEvaluationIdentity(scorer_b.get_identifier()).eval_hash
+        hash_a = ScorerEvaluationIdentifier(scorer_a.get_identifier()).eval_hash
+        hash_b = ScorerEvaluationIdentifier(scorer_b.get_identifier()).eval_hash
 
         # Different endpoints should produce same eval hash (operational param filtered)
         assert hash_a == hash_b
@@ -145,7 +144,7 @@ class TestScorerGetEvalHash:
 
         scorer = SimpleScorer()
         identifier = scorer.get_identifier()
-        eval_hash = ScorerEvaluationIdentity(identifier).eval_hash
+        eval_hash = ScorerEvaluationIdentifier(identifier).eval_hash
 
         # No children named "prompt_target" or "converter_target", so no filtering occurs
         assert eval_hash == identifier.hash

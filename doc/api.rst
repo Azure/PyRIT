@@ -271,12 +271,17 @@ API Reference
     :nosignatures:
     :toctree: _autosummary/
 
+    AtomicAttackEvaluationIdentifier
+    build_atomic_attack_identifier
+    build_seed_identifier
+    ChildEvalRule
     class_name_to_snake_case
     ComponentIdentifier
     compute_eval_hash
     config_hash
-    EvaluationIdentity
+    EvaluationIdentifier
     Identifiable
+    ScorerEvaluationIdentifier
     snake_case_to_class_name
 
 :py:mod:`pyrit.memory`
@@ -714,7 +719,8 @@ API Reference
 
     PyRITInitializer
     AIRTInitializer
-    AIRTTargetInitializer
+    TargetInitializer
+    ScorerInitializer
     SimpleInitializer
     LoadDefaultDatasets
     ScenarioObjectiveListInitializer
