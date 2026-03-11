@@ -26,6 +26,10 @@ class SeedDatasetProvider(ABC):
     Subclasses must implement:
     - fetch_dataset(): Fetch and return the dataset as a SeedDataset
     - dataset_name property: Human-readable name for the dataset
+
+    All subclasses also have a _metadata property that is optional to make
+    dataset addition easier, but failing to complete it makes downstream
+    analysis more difficult.
     """
 
     _registry: dict[str, type["SeedDatasetProvider"]] = {}
@@ -41,6 +45,10 @@ class SeedDatasetProvider(ABC):
         if not inspect.isabstract(cls) and getattr(cls, "should_register", True):
             SeedDatasetProvider._registry[cls.__name__] = cls
             logger.debug(f"Registered dataset provider: {cls.__name__}")
+            # Providing metadata is optional
+            if getattr(cls, "_metadata", False):
+                logger.debug(
+                    f"Dataset provider {cls.__name__} provided metadata.")
 
     @property
     @abstractmethod
@@ -50,12 +58,6 @@ class SeedDatasetProvider(ABC):
 
         Returns:
             str: The dataset name (e.g., "HarmBench", "JailbreakBench JBB-Behaviors")
-        """
-
-    @abstractmethod
-    def metadata_factory(self) -> SeedMetadata:
-        """
-        Build metadata from tags and derived fields (e.g. dataset size).
         """
 
     @abstractmethod
@@ -103,21 +105,38 @@ class SeedDatasetProvider(ABC):
             >>> print(f"Available datasets: {', '.join(names)}")
         """
         dataset_names = set()
+        # 1 Remove invalid filters by checking ground truth in seed_metadata
+        if filters:
+            valid_filters = [f.value for f in SeedMetadata.DatasetFilters]
+            # Prefer doing this to a list or set comprehension so we can raise ValueError on
+            # specific unsupported filters
+            for filter, _ in filters.items():
+                if filter not in valid_filters:
+                    raise ValueError(
+                        f"Tried to pass invalid filter `{filter}` to SeedDatasetProvider.get_all_dataset_names!")
+
         for provider_class in cls._registry.values():
             try:
                 # Instantiate to get dataset name
                 provider = provider_class()
 
-                # Injection point for filtering. TODO
+                if filters:
+                    # 1 Check if it has metadata
+                    # should this be none or false
+                    if getattr(provider, "_metadata", False):
+                        # Skip a dataset without metadata if we have filters enabled
+                        continue
 
-                # 1 Remove invalid filters by checking ground truth in seed_metadata
+                    # 2 Remove invalid filter values by invoking helpers (e.g. size: <100 is fine, size: foobar is not)
 
-                # 2 Remove invalid filter values by invoking helpers (e.g. size: <100 is fine, size: foobar is not)
+                    # 3 Only execute the following line if the filter key is valid and so is the value, AND the dataset meets the condition
 
-                # 3 Only execute the following line if the filter key is valid and so is the value, AND the dataset meets the condition
+                    # Problem: We don't know size at this point because we're just collecting the name. Size and source are tricky for remote datasets
+                    # since we can't check them statically
 
-                # Problem: We don't know size at this point because we're just collecting the name. Size and source are tricky for remote datasets
-                # since we can't check them statically
+                    # Solution: If filter is dynamic, then just download or load into central memory early to retrieve it
+                    # and present a warning to the user that this is occuring
+
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
                 raise ValueError(

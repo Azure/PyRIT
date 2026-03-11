@@ -37,10 +37,12 @@ class TestSeedDatasetProviderIntegration:
 
         try:
             # Use max_examples for slow providers that fetch many remote images
-            provider = provider_cls(max_examples=6) if provider_cls == _VLSUMultimodalDataset else provider_cls()
+            provider = provider_cls(
+                max_examples=6) if provider_cls == _VLSUMultimodalDataset else provider_cls()
             dataset = await provider.fetch_dataset(cache=False)
 
-            assert isinstance(dataset, SeedDataset), f"{name} did not return a SeedDataset"
+            assert isinstance(
+                dataset, SeedDataset), f"{name} did not return a SeedDataset"
             assert len(dataset.seeds) > 0, f"{name} returned an empty dataset"
             assert dataset.dataset_name, f"{name} has no dataset_name"
 
@@ -51,7 +53,14 @@ class TestSeedDatasetProviderIntegration:
                     f"Seed dataset_name mismatch in {name}: {seed.dataset_name} != {dataset.dataset_name}"
                 )
 
-            logger.info(f"Successfully verified {name} with {len(dataset.seeds)} seeds")
+            logger.info(
+                f"Successfully verified {name} with {len(dataset.seeds)} seeds")
 
         except Exception as e:
             pytest.fail(f"Failed to fetch dataset from {name}: {str(e)}")
+
+    @pytest.mark.asyncio
+    @pytest.mark.parameterize("name,provider_cls", get_dataset_providers())
+    async def test_fetch_dataset_with_filtering(self, name, provider_cls):
+        # TODO
+        pass
