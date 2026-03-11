@@ -65,7 +65,7 @@ function defaultMimeForDataType(dataType: string): string {
  * Check if a backend data type represents non-text media content.
  */
 function isMediaDataType(dataType: string): boolean {
-  return dataType.includes('image') || dataType.includes('audio') || dataType.includes('video')
+  return dataType.includes('image') || dataType.includes('audio') || dataType.includes('video') || dataType.includes('binary')
 }
 
 /**

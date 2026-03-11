@@ -227,6 +227,35 @@ describe("messageMapper", () => {
       expect(result.attachments![0].metadata).toEqual({ video_id: "sora-vid-789" });
     });
 
+    it("should render binary_path pieces as file attachments, not text", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "p1",
+            original_value_data_type: "text",
+            converted_value_data_type: "binary_path",
+            original_value: "convert this",
+            converted_value: "/api/media?path=output%2Fdoc.pdf",
+            converted_value_mime_type: "application/pdf",
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-15T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+
+      // Should NOT appear as text content
+      expect(result.content).toBe("");
+      // Should appear as a file attachment
+      expect(result.attachments).toHaveLength(1);
+      expect(result.attachments![0].type).toBe("file");
+      expect(result.attachments![0].url).toBe("/api/media?path=output%2Fdoc.pdf");
+    });
+
     it("should handle error response", () => {
       const msg: BackendMessage = {
         turn_number: 1,
