@@ -43,7 +43,7 @@ class PyRITShell(cmd.Cmd):
         --env-files <path> ...  Environment files to load in order - default for all runs
 
     Run Command Options:
-        --initializers <name> ...       Built-in initializers to run before the scenario
+        --initializers <name> ...       Built-in initializers (supports name:key=val1,val2 syntax)
         --initialization-scripts <...>  Custom Python scripts to run before the scenario
         --env-files <path> ...          Environment files to load in order (overrides startup default)
         --strategies, -s <s1> ...       Strategy names to use
@@ -150,7 +150,7 @@ class PyRITShell(cmd.Cmd):
             run <scenario_name> [options]
 
         Options:
-            --initializers <name> ...       Built-in initializers to run before the scenario
+            --initializers <name> ...       Built-in initializers (supports name:key=val1,val2 syntax)
             --initialization-scripts <...>  Custom Python scripts to run before the scenario
             --env-files <path> ...          Environment files to load in order
             --strategies, -s <s1> <s2> ...  Strategy names to use
@@ -375,6 +375,7 @@ class PyRITShell(cmd.Cmd):
             print(f"      {frontend_core.ARG_HELP['initializers']}")
             print("      Every scenario requires at least one initializer")
             print("      Example: run foundry --initializers openai_objective_target load_default_datasets")
+            print("      With params: run foundry --initializers target:tags=default,scorer")
             print()
             print("  --initialization-scripts <path> [<path> ...]  (Alternative to --initializers)")
             print(f"      {frontend_core.ARG_HELP['initialization_scripts']}")
