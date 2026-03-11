@@ -42,6 +42,7 @@ from pyrit.prompt_target import (
         ("AZURE_OPENAI_GPTV_CHAT_ENDPOINT", "AZURE_OPENAI_GPTV_CHAT_MODEL", True),
         ("AZURE_FOUNDRY_DEEPSEEK_ENDPOINT", "", True),
         ("AZURE_FOUNDRY_PHI4_ENDPOINT", "", True),
+        ("AZURE_FOUNDRY_MISTRAL_LARGE_ENDPOINT", "AZURE_FOUNDRY_MISTRAL_LARGE_MODEL", True),
     ],
 )
 async def test_openai_chat_target_entra_auth(sqlite_instance, endpoint, model_name, supports_seed):
