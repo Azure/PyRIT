@@ -204,7 +204,7 @@ def attack_result_to_summary(
     created_at = datetime.fromisoformat(created_str) if created_str else datetime.now(timezone.utc)
     updated_at = datetime.fromisoformat(updated_str) if updated_str else created_at
 
-    aid = ar.attack_identifier
+    aid = ar.get_attack_strategy_identifier()
 
     # Extract only frontend-relevant fields from ComponentIdentifier
     target_id = aid.get_child("objective_target") if aid else None
