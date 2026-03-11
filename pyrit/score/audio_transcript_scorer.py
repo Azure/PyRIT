@@ -3,12 +3,12 @@
 
 import logging
 import os
-import shutil
-import subprocess
 import tempfile
 import uuid
 from abc import ABC
 from typing import Optional
+
+import av
 
 from pyrit.memory import CentralMemory
 from pyrit.models import MessagePiece, Score
@@ -18,14 +18,74 @@ from pyrit.score.scorer import Scorer
 logger = logging.getLogger(__name__)
 
 
-def _check_ffmpeg_installed() -> bool:
+def _is_compliant_wav(input_path: str, *, sample_rate: int, channels: int) -> bool:
     """
-    Check if ffmpeg is installed and available on PATH.
+    Check if the audio file is already a compliant WAV with the target format.
+
+    Args:
+        input_path (str): Path to the audio file.
+        sample_rate (int): Expected sample rate in Hz.
+        channels (int): Expected number of channels.
 
     Returns:
-        bool: True if ffmpeg is installed, False otherwise.
+        bool: True if the file is already compliant, False otherwise.
     """
-    return shutil.which("ffmpeg") is not None
+    try:
+        with av.open(input_path) as container:
+            if not container.streams.audio:
+                return False
+            stream = container.streams.audio[0]
+            codec_name = stream.codec_context.name
+            is_pcm_s16 = codec_name == "pcm_s16le"
+            is_correct_rate = stream.rate == sample_rate
+            is_correct_channels = stream.channels == channels
+            return is_pcm_s16 and is_correct_rate and is_correct_channels
+    except Exception:
+        return False
+
+
+def _audio_to_wav(input_path: str, *, sample_rate: int, channels: int) -> str:
+    """
+    Convert any audio or video file to a normalised PCM WAV using PyAV.
+
+    If the input is already a compliant WAV (correct sample rate, channels, and codec),
+    returns the original path without re-encoding.
+
+    Args:
+        input_path (str): Source audio or video file.
+        sample_rate (int): Target sample rate in Hz.
+        channels (int): Target number of channels (1 = mono).
+
+    Returns:
+        str: Path to the WAV file (original if compliant, otherwise a temporary file).
+    """
+    # Skip conversion if already compliant
+    if _is_compliant_wav(input_path, sample_rate=sample_rate, channels=channels):
+        logger.debug(f"Audio file already compliant, skipping conversion: {input_path}")
+        return input_path
+
+    layout = "mono" if channels == 1 else "stereo"
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        output_path = tmp.name
+
+    with av.open(input_path) as in_container:
+        with av.open(output_path, "w", format="wav") as out_container:
+            out_stream = out_container.add_stream("pcm_s16le", rate=sample_rate, layout=layout)
+            resampler = av.AudioResampler(format="s16", layout=layout, rate=sample_rate)
+
+            for frame in in_container.decode(audio=0):
+                for out_frame in resampler.resample(frame):
+                    for packet in out_stream.encode(out_frame):
+                        out_container.mux(packet)
+
+            for out_frame in resampler.resample(None):
+                for packet in out_stream.encode(out_frame):
+                    out_container.mux(packet)
+
+            for packet in out_stream.encode(None):
+                out_container.mux(packet)
+
+    return output_path
 
 
 class AudioTranscriptHelper(ABC):  # noqa: B024
@@ -160,7 +220,7 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
         logger.info(f"Audio transcription: WAV file size = {file_size} bytes")
 
         try:
-            converter = AzureSpeechAudioToTextConverter()
+            converter = AzureSpeechAudioToTextConverter(use_entra_auth=True)
             logger.info("Audio transcription: Starting Azure Speech transcription...")
             result = await converter.convert_async(prompt=wav_path, input_type="audio_path")
             logger.info(f"Audio transcription: Result = '{result.output_text}'")
@@ -182,37 +242,12 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
 
         Returns:
             str: Path to WAV file (original if already WAV, or converted temporary file).
-
-        Raises:
-            RuntimeError: If ffmpeg is not installed.
         """
-        if not _check_ffmpeg_installed():
-            raise RuntimeError(
-                "ffmpeg is required for audio processing but was not found on PATH. "
-                "Install it via: apt install ffmpeg / brew install ffmpeg / "
-                "https://ffmpeg.org/download.html"
-            )
-
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
-            output_path = temp_wav.name
-        subprocess.run(
-            [
-                "ffmpeg",
-                "-i",
-                audio_path,
-                "-ar",
-                str(self._DEFAULT_SAMPLE_RATE),
-                "-ac",
-                str(self._DEFAULT_CHANNELS),
-                "-acodec",
-                "pcm_s16le",  # 16-bit PCM
-                output_path,
-                "-y",
-            ],
-            check=True,
-            capture_output=True,
+        return _audio_to_wav(
+            audio_path,
+            sample_rate=self._DEFAULT_SAMPLE_RATE,
+            channels=self._DEFAULT_CHANNELS,
         )
-        return output_path
 
     def _extract_audio_from_video(self, video_path: str) -> Optional[str]:
         """
@@ -224,9 +259,6 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
         Returns:
             str: a path to the extracted audio file (WAV format)
                 or returns None if extraction fails.
-
-        Raises:
-            RuntimeError: If ffmpeg is not installed.
         """
         return AudioTranscriptHelper.extract_audio_from_video(video_path)
 
@@ -241,37 +273,13 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
         Returns:
             str: a path to the extracted audio file (WAV format)
                 or returns None if extraction fails.
-
-        Raises:
-            RuntimeError: If ffmpeg is not installed.
         """
-        if not _check_ffmpeg_installed():
-            raise RuntimeError(
-                "ffmpeg is required for audio processing but was not found on PATH. "
-                "Install it via: apt install ffmpeg / brew install ffmpeg / "
-                "https://ffmpeg.org/download.html"
-            )
-
         try:
             logger.info(f"Extracting audio from video: {video_path}")
-            with tempfile.NamedTemporaryFile(suffix="_video_audio.wav", delete=False) as temp_audio:
-                output_path = temp_audio.name
-            subprocess.run(
-                [
-                    "ffmpeg",
-                    "-i",
-                    video_path,
-                    "-ar",
-                    str(AudioTranscriptHelper._DEFAULT_SAMPLE_RATE),
-                    "-ac",
-                    str(AudioTranscriptHelper._DEFAULT_CHANNELS),
-                    "-acodec",
-                    "pcm_s16le",  # 16-bit PCM
-                    output_path,
-                    "-y",
-                ],
-                check=True,
-                capture_output=True,
+            output_path = _audio_to_wav(
+                video_path,
+                sample_rate=AudioTranscriptHelper._DEFAULT_SAMPLE_RATE,
+                channels=AudioTranscriptHelper._DEFAULT_CHANNELS,
             )
             logger.info(f"Audio exported to: {output_path} (rate={AudioTranscriptHelper._DEFAULT_SAMPLE_RATE}Hz, mono)")
             return output_path
