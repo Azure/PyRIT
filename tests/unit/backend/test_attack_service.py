@@ -25,6 +25,7 @@ from pyrit.backend.services.attack_service import (
     get_attack_service,
 )
 from pyrit.identifiers import ComponentIdentifier
+from pyrit.identifiers.atomic_attack_identifier import build_atomic_attack_identifier
 from pyrit.models import AttackOutcome, AttackResult
 from pyrit.models.conversation_stats import ConversationStats
 
@@ -81,10 +82,12 @@ def make_attack_result(
     return AttackResult(
         conversation_id=conversation_id,
         objective=objective,
-        attack_identifier=ComponentIdentifier(
-            class_name=name,
-            class_module="pyrit.backend",
-            children={"objective_target": target_identifier} if target_identifier else {},
+        atomic_attack_identifier=build_atomic_attack_identifier(
+            attack_identifier=ComponentIdentifier(
+                class_name=name,
+                class_module="pyrit.backend",
+                children={"objective_target": target_identifier} if target_identifier else {},
+            ),
         ),
         outcome=outcome,
         attack_result_id=effective_ar_id,
@@ -232,29 +235,31 @@ class TestListAttacks:
     async def test_list_attacks_filters_by_converter_types_and_logic(self, attack_service, mock_memory) -> None:
         """Test that list_attacks passes converter_types to memory layer."""
         ar1 = make_attack_result(conversation_id="attack-1", name="Attack One")
-        ar1.attack_identifier = ComponentIdentifier(
-            class_name="Attack One",
-            class_module="pyrit.backend",
-            children={
-                "request_converters": [
-                    ComponentIdentifier(
-                        class_name="Base64Converter",
-                        class_module="pyrit.converters",
-                        params={
-                            "supported_input_types": ("text",),
-                            "supported_output_types": ("text",),
-                        },
-                    ),
-                    ComponentIdentifier(
-                        class_name="ROT13Converter",
-                        class_module="pyrit.converters",
-                        params={
-                            "supported_input_types": ("text",),
-                            "supported_output_types": ("text",),
-                        },
-                    ),
-                ],
-            },
+        ar1.atomic_attack_identifier = build_atomic_attack_identifier(
+            attack_identifier=ComponentIdentifier(
+                class_name="Attack One",
+                class_module="pyrit.backend",
+                children={
+                    "request_converters": [
+                        ComponentIdentifier(
+                            class_name="Base64Converter",
+                            class_module="pyrit.converters",
+                            params={
+                                "supported_input_types": ("text",),
+                                "supported_output_types": ("text",),
+                            },
+                        ),
+                        ComponentIdentifier(
+                            class_name="ROT13Converter",
+                            class_module="pyrit.converters",
+                            params={
+                                "supported_input_types": ("text",),
+                                "supported_output_types": ("text",),
+                            },
+                        ),
+                    ],
+                },
+            ),
         )
         mock_memory.get_attack_results.return_value = [ar1]
         mock_memory.get_message_pieces.return_value = []
@@ -2106,13 +2111,17 @@ class TestAttackServiceAdditionalCoverage:
         )
 
         ar = make_attack_result(conversation_id="attack-1")
-        ar.attack_identifier = ComponentIdentifier(
-            class_name="ManualAttack",
-            class_module="pyrit.backend",
-            children={
-                "objective_target": ar.attack_identifier.get_child("objective_target"),
-                "request_converters": [existing_converter],
-            },
+        # Rebuild the atomic_attack_identifier to include an existing converter child
+        strategy = ar.get_attack_strategy_identifier()
+        ar.atomic_attack_identifier = build_atomic_attack_identifier(
+            attack_identifier=ComponentIdentifier(
+                class_name="ManualAttack",
+                class_module="pyrit.backend",
+                children={
+                    "objective_target": strategy.get_child("objective_target") if strategy else None,
+                    "request_converters": [existing_converter],
+                },
+            ),
         )
 
         mock_memory.get_attack_results.return_value = [ar]
