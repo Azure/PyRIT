@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
-from pyrit.identifiers import ComponentIdentifier
+from pyrit.identifiers import ComponentIdentifier, build_atomic_attack_identifier
 from pyrit.memory import AzureSQLMemory
 from pyrit.memory.memory_models import (
     AttackResultEntry,
@@ -35,6 +35,20 @@ def generate_test_id() -> str:
         str: A unique 8-character identifier
     """
     return str(uuid4())[:8]
+
+
+def get_test_atomic_attack_identifier() -> ComponentIdentifier:
+    """
+    Returns a test atomic attack ComponentIdentifier for use in integration tests.
+
+    Returns:
+        ComponentIdentifier: A composite AtomicAttack identifier.
+    """
+    attack_strategy = ComponentIdentifier(
+        class_name="TestAttack",
+        class_module="tests.integration.memory.test_azure_sql_memory_integration",
+    )
+    return build_atomic_attack_identifier(attack_identifier=attack_strategy)
 
 
 def get_test_scorer_identifier(**kwargs) -> ComponentIdentifier:
@@ -264,23 +278,23 @@ async def test_get_attack_results_by_harm_categories(azuresql_instance: AzureSQL
         azuresql_instance.add_message_pieces_to_memory(message_pieces=[piece1, piece2, piece3])
 
         # Create attack results
-        test_attack_id = ComponentIdentifier(class_name="test_attack", class_module="tests.integration.memory")
+        atomic_id = get_test_atomic_attack_identifier()
         result1 = AttackResult(
             conversation_id=conversation_ids[0],
             objective="Test objective 1",
-            attack_identifier=test_attack_id,
+            atomic_attack_identifier=atomic_id,
             outcome=AttackOutcome.SUCCESS,
         )
         result2 = AttackResult(
             conversation_id=conversation_ids[1],
             objective="Test objective 2",
-            attack_identifier=test_attack_id,
+            atomic_attack_identifier=atomic_id,
             outcome=AttackOutcome.SUCCESS,
         )
         result3 = AttackResult(
             conversation_id=conversation_ids[2],
             objective="Test objective 3",
-            attack_identifier=test_attack_id,
+            atomic_attack_identifier=atomic_id,
             outcome=AttackOutcome.FAILURE,
         )
 
@@ -351,23 +365,23 @@ async def test_get_attack_results_by_labels(azuresql_instance: AzureSQLMemory):
         azuresql_instance.add_message_pieces_to_memory(message_pieces=[piece1, piece2, piece3])
 
         # Create attack results
-        test_attack_id = ComponentIdentifier(class_name="test_attack", class_module="tests.integration.memory")
+        atomic_id = get_test_atomic_attack_identifier()
         result1 = AttackResult(
             conversation_id=conversation_ids[0],
             objective="Test objective 1",
-            attack_identifier=test_attack_id,
+            atomic_attack_identifier=atomic_id,
             outcome=AttackOutcome.SUCCESS,
         )
         result2 = AttackResult(
             conversation_id=conversation_ids[1],
             objective="Test objective 2",
-            attack_identifier=test_attack_id,
+            atomic_attack_identifier=atomic_id,
             outcome=AttackOutcome.SUCCESS,
         )
         result3 = AttackResult(
             conversation_id=conversation_ids[2],
             objective="Test objective 3",
-            attack_identifier=test_attack_id,
+            atomic_attack_identifier=atomic_id,
             outcome=AttackOutcome.FAILURE,
         )
 
@@ -392,6 +406,46 @@ async def test_get_attack_results_by_labels(azuresql_instance: AzureSQLMemory):
         results = azuresql_instance.get_attack_results(labels={"op_id": "nonexistent"})
         results = [r for r in results if test_id in r.conversation_id]
         assert len(results) == 0
+
+
+@pytest.mark.asyncio
+async def test_legacy_attack_identifier_compat(azuresql_instance: AzureSQLMemory):
+    """
+    Legacy integration test verifying the deprecated attack_identifier parameter
+    is promoted to atomic_attack_identifier via the compatibility wrapper.
+    """
+    test_id = generate_test_id()
+    conversation_ids = [f"conv_legacy_{test_id}"]
+
+    with cleanup_conversation_data(azuresql_instance, conversation_ids):
+        piece = MessagePiece(
+            conversation_id=conversation_ids[0],
+            role="user",
+            original_value="Legacy test",
+            converted_value="Legacy test",
+        )
+        azuresql_instance.add_message_pieces_to_memory(message_pieces=[piece])
+
+        legacy_id = ComponentIdentifier(
+            class_name="LegacyAttack",
+            class_module="tests.integration.memory.test_azure_sql_memory_integration",
+        )
+        result = AttackResult(
+            conversation_id=conversation_ids[0],
+            objective="Legacy objective",
+            attack_identifier=legacy_id,
+            outcome=AttackOutcome.SUCCESS,
+        )
+        # The compat wrapper should have promoted attack_identifier to atomic_attack_identifier
+        assert result.atomic_attack_identifier is not None
+        assert result.atomic_attack_identifier.class_name == "AtomicAttack"
+
+        azuresql_instance.add_attack_results_to_memory(attack_results=[result])
+
+        results = azuresql_instance.get_attack_results()
+        results = [r for r in results if test_id in r.conversation_id]
+        assert len(results) == 1
+        assert results[0].atomic_attack_identifier is not None
 
 
 @pytest.mark.asyncio
