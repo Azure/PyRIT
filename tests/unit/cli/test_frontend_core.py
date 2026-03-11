@@ -517,6 +517,49 @@ class TestFormatFunctions:
         assert "Test description" in captured.out
 
 
+class TestParseInitializerArg:
+    """Tests for _parse_initializer_arg function."""
+
+    def test_simple_name_returns_string(self) -> None:
+        """Test that a plain name without ':' returns the string as-is."""
+        assert frontend_core._parse_initializer_arg("simple") == "simple"
+
+    def test_name_with_single_param(self) -> None:
+        """Test name:key=value parsing."""
+        result = frontend_core._parse_initializer_arg("target:tags=default")
+        assert result == {"name": "target", "args": {"tags": ["default"]}}
+
+    def test_name_with_comma_separated_values(self) -> None:
+        """Test that comma-separated values are split into a list."""
+        result = frontend_core._parse_initializer_arg("target:tags=default,scorer")
+        assert result == {"name": "target", "args": {"tags": ["default", "scorer"]}}
+
+    def test_name_with_multiple_params(self) -> None:
+        """Test semicolon-separated multiple params."""
+        result = frontend_core._parse_initializer_arg("target:tags=default;mode=strict")
+        assert result == {"name": "target", "args": {"tags": ["default"], "mode": ["strict"]}}
+
+    def test_missing_name_before_colon_raises(self) -> None:
+        """Test that ':key=val' with no name raises ValueError."""
+        with pytest.raises(ValueError, match="missing name before ':'"):
+            frontend_core._parse_initializer_arg(":tags=default")
+
+    def test_missing_equals_in_param_raises(self) -> None:
+        """Test that 'name:badparam' without '=' raises ValueError."""
+        with pytest.raises(ValueError, match="expected key=value format"):
+            frontend_core._parse_initializer_arg("target:badparam")
+
+    def test_empty_key_raises(self) -> None:
+        """Test that 'name:=value' with empty key raises ValueError."""
+        with pytest.raises(ValueError, match="empty key"):
+            frontend_core._parse_initializer_arg("target:=value")
+
+    def test_colon_but_no_params_returns_string(self) -> None:
+        """Test that 'name:' with trailing colon but no params returns the name string."""
+        result = frontend_core._parse_initializer_arg("target:")
+        assert result == "target"
+
+
 class TestParseRunArguments:
     """Tests for parse_run_arguments function."""
 

@@ -41,6 +41,8 @@ logger = logging.getLogger(__name__)
 # Shared tag type with TargetInitializer
 ScorerTag = Literal["default", "all"]
 
+ALL_SCORER_TAGS: list[str] = ["default"]
+
 # Target registry names used by scorer configurations.
 GPT4O_TARGET: str = "azure_openai_gpt4o"
 GPT4O_TEMP0_TARGET: str = "azure_openai_gpt4o_temp0"
@@ -144,7 +146,8 @@ class ScorerInitializer(PyRITInitializer):
         """
         params = params or {}
         tags = params.get("tags", ["default"])
-        register_all = "all" in tags
+        if "all" in tags:
+            tags = ALL_SCORER_TAGS
 
         target_registry = TargetRegistry.get_registry_singleton()
 
@@ -165,27 +168,24 @@ class ScorerInitializer(PyRITInitializer):
         unsafe_temp9: Optional[PromptChatTarget] = target_registry.get_instance_by_name(GPT4O_UNSAFE_TEMP9_TARGET)  # type: ignore[assignment]
 
         # Refusal Scorers
-        self._try_register(
-            scorer_registry, REFUSAL_GPT4O, lambda: SelfAskRefusalScorer(chat_target=gpt4o),
-            required_targets=[gpt4o], tags=["default"], register_all=register_all, active_tags=tags,
-        )
+        self._try_register(scorer_registry, REFUSAL_GPT4O, lambda: SelfAskRefusalScorer(chat_target=gpt4o), gpt4o)
         self._try_register(
             scorer_registry,
             INVERTED_REFUSAL_GPT4O,
             lambda: TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=gpt4o)),
-            required_targets=[gpt4o], tags=["default"], register_all=register_all, active_tags=tags,
+            gpt4o,
         )
         self._try_register(
             scorer_registry,
             INVERTED_REFUSAL_GPT4O_UNSAFE,
             lambda: TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=unsafe)),
-            required_targets=[unsafe], tags=["default"], register_all=register_all, active_tags=tags,
+            unsafe,
         )
         self._try_register(
             scorer_registry,
             INVERTED_REFUSAL_GPT4O_UNSAFE_TEMP9,
             lambda: TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=unsafe_temp9)),
-            required_targets=[unsafe_temp9], tags=["default"], register_all=register_all, active_tags=tags,
+            unsafe_temp9,
         )
 
         # Azure Content Filter Scorers (Threshold)
@@ -193,19 +193,16 @@ class ScorerInitializer(PyRITInitializer):
             scorer_registry,
             ACS_THRESHOLD_01,
             lambda: FloatScaleThresholdScorer(scorer=AzureContentFilterScorer(), threshold=0.1),
-            tags=["default"], register_all=register_all, active_tags=tags,
         )
         self._try_register(
             scorer_registry,
             ACS_THRESHOLD_05,
             lambda: FloatScaleThresholdScorer(scorer=AzureContentFilterScorer(), threshold=0.5),
-            tags=["default"], register_all=register_all, active_tags=tags,
         )
         self._try_register(
             scorer_registry,
             ACS_THRESHOLD_07,
             lambda: FloatScaleThresholdScorer(scorer=AzureContentFilterScorer(), threshold=0.7),
-            tags=["default"], register_all=register_all, active_tags=tags,
         )
 
         # Composite Scorers
@@ -219,7 +216,7 @@ class ScorerInitializer(PyRITInitializer):
                     TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=unsafe_temp9)),
                 ],
             ),
-            required_targets=[unsafe_temp9], tags=["default"], register_all=register_all, active_tags=tags,
+            unsafe_temp9,
         )
         self._try_register(
             scorer_registry,
@@ -228,7 +225,7 @@ class ScorerInitializer(PyRITInitializer):
                 scorer=SelfAskScaleScorer(chat_target=gpt4o_temp9),
                 threshold=0.9,
             ),
-            required_targets=[gpt4o_temp9], tags=["default"], register_all=register_all, active_tags=tags,
+            gpt4o_temp9,
         )
         self._try_register(
             scorer_registry,
@@ -243,29 +240,26 @@ class ScorerInitializer(PyRITInitializer):
                     TrueFalseInverterScorer(scorer=SelfAskRefusalScorer(chat_target=gpt4o)),
                 ],
             ),
-            required_targets=[gpt4o_temp9, gpt4o], tags=["default"], register_all=register_all, active_tags=tags,
+            gpt4o_temp9,
+            gpt4o,
         )
 
         # Azure Content Filter Scorers (Harm Category)
         self._try_register(
-            scorer_registry, ACS_HATE, lambda: AzureContentFilterScorer(harm_categories=[TextCategory.HATE]),
-            tags=["default"], register_all=register_all, active_tags=tags,
+            scorer_registry, ACS_HATE, lambda: AzureContentFilterScorer(harm_categories=[TextCategory.HATE])
         )
         self._try_register(
             scorer_registry,
             ACS_SELF_HARM,
             lambda: AzureContentFilterScorer(harm_categories=[TextCategory.SELF_HARM]),
-            tags=["default"], register_all=register_all, active_tags=tags,
         )
         self._try_register(
-            scorer_registry, ACS_SEXUAL, lambda: AzureContentFilterScorer(harm_categories=[TextCategory.SEXUAL]),
-            tags=["default"], register_all=register_all, active_tags=tags,
+            scorer_registry, ACS_SEXUAL, lambda: AzureContentFilterScorer(harm_categories=[TextCategory.SEXUAL])
         )
         self._try_register(
             scorer_registry,
             ACS_VIOLENCE,
             lambda: AzureContentFilterScorer(harm_categories=[TextCategory.VIOLENCE]),
-            tags=["default"], register_all=register_all, active_tags=tags,
         )
 
         # True/False Scorers
@@ -276,7 +270,7 @@ class ScorerInitializer(PyRITInitializer):
                 chat_target=gpt4o_temp9,
                 true_false_question_path=TrueFalseQuestionPaths.TASK_ACHIEVED.value,
             ),
-            required_targets=[gpt4o_temp9], tags=["default"], register_all=register_all, active_tags=tags,
+            gpt4o_temp9,
         )
         self._try_register(
             scorer_registry,
@@ -285,7 +279,7 @@ class ScorerInitializer(PyRITInitializer):
                 chat_target=gpt4o_temp9,
                 true_false_question_path=TrueFalseQuestionPaths.TASK_ACHIEVED_REFINED.value,
             ),
-            required_targets=[gpt4o_temp9], tags=["default"], register_all=register_all, active_tags=tags,
+            gpt4o_temp9,
         )
 
         # Likert Scorers (only those with evaluation files)
@@ -296,7 +290,7 @@ class ScorerInitializer(PyRITInitializer):
                     scorer_registry,
                     scorer_name,
                     lambda s=scale: SelfAskLikertScorer(chat_target=gpt4o, likert_scale=s),  # type: ignore[misc]
-                    required_targets=[gpt4o], tags=["default"], register_all=register_all, active_tags=tags,
+                    gpt4o,
                 )
 
     def _try_register(
@@ -304,11 +298,7 @@ class ScorerInitializer(PyRITInitializer):
         scorer_registry: ScorerRegistry,
         name: str,
         factory: Callable[[], Scorer],
-        *,
-        required_targets: Optional[list[object]] = None,
-        tags: list[str] = ["default"],
-        register_all: bool = False,
-        active_tags: Optional[list[str]] = None,
+        *required_targets: object,
     ) -> None:
         """
         Attempt to register a scorer, skipping with a warning on failure.
@@ -317,16 +307,9 @@ class ScorerInitializer(PyRITInitializer):
             scorer_registry (ScorerRegistry): The registry to register the scorer in.
             name (str): The name to register the scorer under.
             factory (Callable[[], Scorer]): A callable that creates the scorer.
-            required_targets: Targets that must be non-None for the scorer to be registered.
-            tags: Tags associated with this scorer entry.
-            register_all: If True, bypass tag filtering.
-            active_tags: The currently active tags to filter against.
+            *required_targets: Targets that must be non-None for the scorer to be registered.
         """
-        if not register_all and active_tags:
-            if not any(tag in active_tags for tag in tags):
-                return
-
-        for target in (required_targets or []):
+        for target in required_targets:
             if target is None:
                 logger.warning(f"Skipping scorer {name}: required target not found in TargetRegistry")
                 return

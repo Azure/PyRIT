@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 # Literal type for target tags
 TargetTag = Literal["default", "scorer", "all"]
 
+ALL_TARGET_TAGS: list[str] = ["default", "scorer"]
+
 
 @dataclass
 class TargetConfig:
@@ -481,10 +483,11 @@ class TargetInitializer(PyRITInitializer):
         """
         params = params or {}
         tags = params.get("tags", ["default"])
-        register_all = "all" in tags
+        if "all" in tags:
+            tags = ALL_TARGET_TAGS
 
         for config in TARGET_CONFIGS:
-            if not register_all and not any(tag in tags for tag in config.tags):
+            if not any(tag in tags for tag in config.tags):
                 continue
             self._register_target(config)
 
