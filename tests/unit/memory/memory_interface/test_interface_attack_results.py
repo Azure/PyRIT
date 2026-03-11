@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional
 
 from pyrit.common.utils import to_sha256
 from pyrit.identifiers import ComponentIdentifier
+from pyrit.identifiers.atomic_attack_identifier import build_atomic_attack_identifier
 from pyrit.memory import MemoryInterface
 from pyrit.memory.memory_models import AttackResultEntry
 from pyrit.models import (
@@ -464,7 +465,9 @@ def test_attack_result_all_outcomes(sqlite_instance: MemoryInterface):
         attack_result = AttackResult(
             conversation_id=f"conv_{i}",
             objective=f"Test objective {i}",
-            attack_identifier=ComponentIdentifier(class_name=f"TestAttack{i}", class_module="test.module"),
+            atomic_attack_identifier=build_atomic_attack_identifier(
+                attack_identifier=ComponentIdentifier(class_name=f"TestAttack{i}", class_module="test.module"),
+            ),
             executed_turns=i + 1,
             execution_time_ms=(i + 1) * 100,
             outcome=outcome,
@@ -1141,10 +1144,12 @@ def _make_attack_result_with_identifier(
     return AttackResult(
         conversation_id=conversation_id,
         objective=f"Objective for {conversation_id}",
-        attack_identifier=ComponentIdentifier(
-            class_name=class_name,
-            class_module="pyrit.attacks",
-            params=params,
+        atomic_attack_identifier=build_atomic_attack_identifier(
+            attack_identifier=ComponentIdentifier(
+                class_name=class_name,
+                class_module="pyrit.attacks",
+                params=params,
+            ),
         ),
     )
 
