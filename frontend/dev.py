@@ -391,14 +391,29 @@ def start_detached(*, config_file: str | None = None):
 
 
 def show_logs(*, follow: bool = False, lines: int = 50):
-    """Show dev.py logs."""
+    """Show dev.py logs (cross-platform, no external tools required)."""
     if not DEVPY_LOG_FILE.exists():
         print(f"No log file found at {DEVPY_LOG_FILE}")
         return
+
+    # Print last N lines
+    all_lines = DEVPY_LOG_FILE.read_text(errors="replace").splitlines()
+    for line in all_lines[-lines:]:
+        print(line)
+
     if follow:
-        subprocess.run(["tail", "-f", "-n", str(lines), str(DEVPY_LOG_FILE)])
-    else:
-        subprocess.run(["tail", "-n", str(lines), str(DEVPY_LOG_FILE)])
+        # Poll for new content
+        with open(DEVPY_LOG_FILE, errors="replace") as fh:
+            fh.seek(0, 2)  # Seek to end
+            try:
+                while True:
+                    new = fh.readline()
+                    if new:
+                        print(new, end="")
+                    else:
+                        time.sleep(0.3)
+            except KeyboardInterrupt:
+                pass
 
 
 def main():
