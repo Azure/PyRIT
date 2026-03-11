@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 # Literal type for target tags
-TargetTag = Literal["default", "scorer"]
+TargetTag = Literal["default", "scorer", "all"]
 
 
 @dataclass
@@ -370,6 +370,7 @@ class TargetInitializer(PyRITInitializer):
         tags: Target tags to register (list of strings).
             "default" registers the base environment targets.
             "scorer" registers scorer-specific temperature variant targets.
+            "all" registers all targets regardless of tag.
             If not provided, only "default" targets are registered.
 
     Supported Endpoints by Category:
@@ -434,7 +435,7 @@ class TargetInitializer(PyRITInitializer):
         return [
             InitializerParameter(
                 name="tags",
-                description="Target tags to register (e.g., ['default'] or ['default', 'scorer'])",
+                description="Target tags to register (e.g., ['default'], ['default', 'scorer'], or ['all'])",
                 default=["default"],
             ),
         ]
@@ -480,9 +481,10 @@ class TargetInitializer(PyRITInitializer):
         """
         params = params or {}
         tags = params.get("tags", ["default"])
+        register_all = "all" in tags
 
         for config in TARGET_CONFIGS:
-            if not any(tag in tags for tag in config.tags):
+            if not register_all and not any(tag in tags for tag in config.tags):
                 continue
             self._register_target(config)
 
