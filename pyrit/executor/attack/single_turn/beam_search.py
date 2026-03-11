@@ -334,7 +334,7 @@ class BeamSearchAttack(SingleTurnAttackStrategy):
         return AttackResult(
             conversation_id=beams[0].id,
             objective=context.objective,
-            attack_identifier=self.get_identifier(),
+            atomic_attack_identifier=self.get_identifier(),
             last_response=(
                 beams[0].response_message.message_pieces[0]
                 if beams[0].response_message and beams[0].response_message.message_pieces
