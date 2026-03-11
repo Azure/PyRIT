@@ -167,7 +167,7 @@ export const attacksApi = {
     attack_type?: string
     converter_types?: string[]
     outcome?: string
-    labels?: string[]
+    label?: string[]
     min_turns?: number
     max_turns?: number
   }): Promise<AttackListResponse> => {
