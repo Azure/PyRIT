@@ -171,7 +171,9 @@ async def initialize_and_run_async(*, parsed_args: Namespace) -> int:
             initializer_class = context.initializer_registry.get_class(config.name)
             instance = initializer_class()
             if config.args:
-                instance._params = {k: str(v) for k, v in config.args.items()}
+                instance._params = {
+                    k: [str(i) for i in v] if isinstance(v, list) else [str(v)] for k, v in config.args.items()
+                }
             initializer_instances.append(instance)
 
         # Re-initialize with initializers applied
@@ -188,14 +190,14 @@ async def initialize_and_run_async(*, parsed_args: Namespace) -> int:
     print(f"🚀 Starting PyRIT backend on http://{parsed_args.host}:{parsed_args.port}")
     print(f"   API Docs: http://{parsed_args.host}:{parsed_args.port}/docs")
 
-    config = uvicorn.Config(
+    uvicorn_config = uvicorn.Config(
         "pyrit.backend.main:app",
         host=parsed_args.host,
         port=parsed_args.port,
         log_level=parsed_args.log_level,
         reload=parsed_args.reload,
     )
-    server = uvicorn.Server(config)
+    server = uvicorn.Server(uvicorn_config)
     await server.serve()
 
     return 0

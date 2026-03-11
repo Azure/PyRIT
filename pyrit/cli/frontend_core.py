@@ -298,8 +298,7 @@ async def run_scenario_async(
             instance = initializer_class()
             if config.args:
                 instance._params = {
-                    k: [str(i) for i in v] if isinstance(v, list) else [str(v)]
-                    for k, v in config.args.items()
+                    k: [str(i) for i in v] if isinstance(v, list) else [str(v)] for k, v in config.args.items()
                 }
             initializer_instances.append(instance)
 
@@ -838,9 +837,7 @@ def _parse_initializer_arg(arg: str) -> dict[str, Any]:
         if not pair:
             continue
         if "=" not in pair:
-            raise ValueError(
-                f"Invalid initializer parameter '{pair}' in '{arg}': expected key=value format"
-            )
+            raise ValueError(f"Invalid initializer parameter '{pair}' in '{arg}': expected key=value format")
         key, value = pair.split("=", 1)
         key = key.strip()
         if not key:

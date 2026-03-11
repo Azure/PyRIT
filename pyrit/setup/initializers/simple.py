@@ -9,7 +9,6 @@ simple configuration including converters, scorers, and targets using basic Open
 """
 
 import os
-
 from typing import Optional
 
 from pyrit.common.apply_defaults import set_default_value, set_global_variable

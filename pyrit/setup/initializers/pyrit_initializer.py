@@ -192,8 +192,7 @@ class PyRITInitializer(ABC):
         for param_def in self.supported_parameters:
             if param_def.required and param_def.name not in params:
                 raise ValueError(
-                    f"Initializer '{self.name}' requires parameter '{param_def.name}': "
-                    f"{param_def.description}"
+                    f"Initializer '{self.name}' requires parameter '{param_def.name}': {param_def.description}"
                 )
 
     async def initialize_with_tracking_async(self) -> None:

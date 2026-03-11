@@ -316,8 +316,7 @@ class ConfigurationLoader(YamlLoadable):
             instance = initializer_class()
             if config.args:
                 instance._params = {
-                    k: [str(i) for i in v] if isinstance(v, list) else [str(v)]
-                    for k, v in config.args.items()
+                    k: [str(i) for i in v] if isinstance(v, list) else [str(v)] for k, v in config.args.items()
                 }
 
             resolved.append(instance)

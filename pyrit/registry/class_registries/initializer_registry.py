@@ -51,9 +51,7 @@ class InitializerMetadata(ClassRegistryEntry):
     execution_order: int = field(kw_only=True)
 
     # Supported parameters as tuples of (name, description, required, default).
-    supported_parameters: tuple[tuple[str, str, bool, Optional[list[str]]], ...] = field(
-        kw_only=True, default=()
-    )
+    supported_parameters: tuple[tuple[str, str, bool, Optional[list[str]]], ...] = field(kw_only=True, default=())
 
 
 class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetadata]):
@@ -229,8 +227,7 @@ class InitializerRegistry(BaseClassRegistry["PyRITInitializer", InitializerMetad
                 required_env_vars=tuple(instance.required_env_vars),
                 execution_order=instance.execution_order,
                 supported_parameters=tuple(
-                    (p.name, p.description, p.required, p.default)
-                    for p in instance.supported_parameters
+                    (p.name, p.description, p.required, p.default) for p in instance.supported_parameters
                 ),
             )
         except Exception as e:
