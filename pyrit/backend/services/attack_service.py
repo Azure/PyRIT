@@ -386,7 +386,7 @@ class AttackService:
         conversations: list[ConversationSummary] = []
         for conv_id in active_conv_ids:
             stats = stats_map.get(conv_id)
-            created_at = stats.created_at.isoformat() if stats and stats.created_at else None
+            created_at = stats.created_at if stats else None
             conversations.append(
                 ConversationSummary(
                     conversation_id=conv_id,
@@ -397,7 +397,9 @@ class AttackService:
             )
 
         # Sort all conversations by created_at (earliest first, None last)
-        conversations.sort(key=lambda c: (c.created_at is None, c.created_at or ""))
+        conversations.sort(
+            key=lambda c: (c.created_at is None, c.created_at or datetime.min.replace(tzinfo=timezone.utc))
+        )
 
         return AttackConversationsResponse(
             attack_result_id=attack_result_id,
