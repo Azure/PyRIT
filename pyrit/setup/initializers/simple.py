@@ -114,7 +114,7 @@ class SimpleInitializer(PyRITInitializer):
 
         return get_azure_openai_auth(endpoint)
 
-    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
         """
         Execute the complete simple initialization.
 

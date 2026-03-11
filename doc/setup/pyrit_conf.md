@@ -44,7 +44,7 @@ A list of built-in initializers to run during PyRIT initialization. Initializers
 Each entry can be:
 
 - **A simple string** — just the initializer name
-- **A dictionary** — with `name` and optional `args` (string key-value pairs passed to `initialize_async`)
+- **A dictionary** — with `name` and optional `args` (each arg is a list of strings passed to `initialize_async`)
 
 Example:
 
@@ -53,7 +53,9 @@ initializers:
   - simple
   - name: airt
     args:
-      tags: "default,scorer"
+      tags:
+        - default
+        - scorer
 ```
 
 Use `pyrit list initializers` in the CLI to see all registered initializers. See the [initializer documentation notebook](../code/setup/pyrit_initializer.ipynb) for reference.

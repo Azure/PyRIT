@@ -32,7 +32,7 @@ memory_db_type: sqlite
 # - A simple string (name only)
 # - A dictionary with 'name' and optional 'args' for parameters
 #
-# Parameters are string key-value pairs. Use the CLI command
+# Parameters are lists of strings. Use the CLI command
 # `pyrit_scan --list-initializers` to see available parameters.
 #
 # Example:
@@ -40,7 +40,9 @@ memory_db_type: sqlite
 #   - simple
 #   - name: target
 #     args:
-#       tags: "default,scorer"
+#       tags:
+#         - default
+#         - scorer
 initializers:
   - simple
 

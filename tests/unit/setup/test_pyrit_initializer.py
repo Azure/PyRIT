@@ -731,7 +731,7 @@ class TestSupportedParameters:
 
         init = StrictInit()
         with pytest.raises(ValueError, match="unknown parameter"):
-            init._validate_params(params={"bogus": "value"})
+            init._validate_params(params={"bogus": ["value"]})
 
     def test_validate_params_raises_on_missing_required(self) -> None:
         """Test that missing required params raise ValueError."""
@@ -772,7 +772,7 @@ class TestSupportedParameters:
 
         init = ValidInit()
         # Should not raise
-        init._validate_params(params={"key": "abc", "mode": "slow"})
+        init._validate_params(params={"key": ["abc"], "mode": ["slow"]})
 
     def test_validate_checks_params_on_instance(self) -> None:
         """Test that validate() checks self._params."""
@@ -790,7 +790,7 @@ class TestSupportedParameters:
                 pass
 
         init = ParamInit()
-        init._params = {"unknown_key": "val"}
+        init._params = {"unknown_key": ["val"]}
         with pytest.raises(ValueError, match="unknown parameter"):
             init.validate()
 
@@ -810,10 +810,10 @@ class TestSupportedParameters:
                     received_params.update(params)
 
         init = TrackingInit()
-        init._params = {"tags": "default,scorer"}
+        init._params = {"tags": ["default", "scorer"]}
         await init.initialize_with_tracking_async()
 
-        assert received_params == {"tags": "default,scorer"}
+        assert received_params == {"tags": ["default", "scorer"]}
 
     @pytest.mark.asyncio
     async def test_empty_params_passes_none(self) -> None:

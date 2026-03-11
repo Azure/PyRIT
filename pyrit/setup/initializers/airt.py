@@ -93,7 +93,7 @@ class AIRTInitializer(PyRITInitializer):
             "AZURE_CONTENT_SAFETY_API_ENDPOINT",
         ]
 
-    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
         """
         Execute the complete AIRT initialization.
 

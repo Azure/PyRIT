@@ -367,7 +367,7 @@ class TargetInitializer(PyRITInitializer):
     by tags to control which targets are registered.
 
     Supported Parameters:
-        tags: Comma-separated target tags to register.
+        tags: Target tags to register (list of strings).
             "default" registers the base environment targets.
             "scorer" registers scorer-specific temperature variant targets.
             If not provided, only "default" targets are registered.
@@ -425,7 +425,7 @@ class TargetInitializer(PyRITInitializer):
         await initializer.initialize_async()
 
         # Register scorer temperature variants too
-        await initializer.initialize_async(params={"tags": "default,scorer"})
+        await initializer.initialize_async(params={"tags": ["default", "scorer"]})
     """
 
     @property
@@ -434,8 +434,8 @@ class TargetInitializer(PyRITInitializer):
         return [
             InitializerParameter(
                 name="tags",
-                description="Comma-separated target tags to register (e.g., 'default' or 'default,scorer')",
-                default="default",
+                description="Target tags to register (e.g., ['default'] or ['default', 'scorer'])",
+                default=["default"],
             ),
         ]
 
@@ -467,7 +467,7 @@ class TargetInitializer(PyRITInitializer):
         """
         return []
 
-    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
         """
         Register available targets based on environment variables.
 
@@ -476,11 +476,10 @@ class TargetInitializer(PyRITInitializer):
         tags matching the configured tags are registered.
 
         Args:
-            params: Optional parameters. Supports 'tags' (comma-separated tag names).
+            params: Optional parameters. Supports 'tags' (list of tag names).
         """
         params = params or {}
-        tags_str = params.get("tags", "default")
-        tags = [t.strip() for t in tags_str.split(",")]
+        tags = params.get("tags", ["default"])
 
         for config in TARGET_CONFIGS:
             if not any(tag in tags for tag in config.tags):

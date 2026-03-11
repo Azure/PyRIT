@@ -287,7 +287,7 @@ class TestTargetInitializerTags:
         os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "gpt-4o"
 
         init = TargetInitializer()
-        await init.initialize_async(params={"tags": "default"})
+        await init.initialize_async(params={"tags": ["default"]})
 
         registry = TargetRegistry.get_registry_singleton()
         assert registry.get_instance_by_name("azure_openai_gpt4o") is not None
@@ -306,7 +306,7 @@ class TestTargetInitializerTags:
         os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "gpt-4o"
 
         init = TargetInitializer()
-        await init.initialize_async(params={"tags": "scorer"})
+        await init.initialize_async(params={"tags": ["scorer"]})
 
         registry = TargetRegistry.get_registry_singleton()
         assert registry.get_instance_by_name("azure_openai_gpt4o") is None
@@ -325,7 +325,7 @@ class TestTargetInitializerTags:
         os.environ["AZURE_OPENAI_GPT4O_MODEL"] = "gpt-4o"
 
         init = TargetInitializer()
-        await init.initialize_async(params={"tags": "default,scorer"})
+        await init.initialize_async(params={"tags": ["default", "scorer"]})
 
         registry = TargetRegistry.get_registry_singleton()
         assert registry.get_instance_by_name("azure_openai_gpt4o") is not None

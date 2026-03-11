@@ -542,7 +542,7 @@ class TestParseRunArguments:
         )
 
         assert result["initializers"][0] == "simple"
-        assert result["initializers"][1] == {"name": "target", "args": {"tags": "default"}}
+        assert result["initializers"][1] == {"name": "target", "args": {"tags": ["default"]}}
 
     def test_parse_run_arguments_with_initializer_multiple_params(self):
         """Test parsing initializers with multiple key=value params separated by semicolons."""
@@ -550,7 +550,15 @@ class TestParseRunArguments:
             args_string="test_scenario --initializers target:tags=default;mode=strict"
         )
 
-        assert result["initializers"][0] == {"name": "target", "args": {"tags": "default", "mode": "strict"}}
+        assert result["initializers"][0] == {"name": "target", "args": {"tags": ["default"], "mode": ["strict"]}}
+
+    def test_parse_run_arguments_with_initializer_comma_list(self):
+        """Test parsing initializer params with comma-separated values into lists."""
+        result = frontend_core.parse_run_arguments(
+            args_string="test_scenario --initializers target:tags=default,scorer"
+        )
+
+        assert result["initializers"][0] == {"name": "target", "args": {"tags": ["default", "scorer"]}}
 
     def test_parse_run_arguments_with_strategies(self):
         """Test parsing with strategies."""

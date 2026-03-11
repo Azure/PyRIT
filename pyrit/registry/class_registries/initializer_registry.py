@@ -51,7 +51,7 @@ class InitializerMetadata(ClassRegistryEntry):
     execution_order: int = field(kw_only=True)
 
     # Supported parameters as tuples of (name, description, required, default).
-    supported_parameters: tuple[tuple[str, str, bool, Optional[str]], ...] = field(
+    supported_parameters: tuple[tuple[str, str, bool, Optional[list[str]]], ...] = field(
         kw_only=True, default=()
     )
 

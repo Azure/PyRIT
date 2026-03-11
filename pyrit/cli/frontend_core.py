@@ -297,7 +297,10 @@ async def run_scenario_async(
             initializer_class = context.initializer_registry.get_class(config.name)
             instance = initializer_class()
             if config.args:
-                instance._params = {k: str(v) for k, v in config.args.items()}
+                instance._params = {
+                    k: [str(i) for i in v] if isinstance(v, list) else [str(v)]
+                    for k, v in config.args.items()
+                }
             initializer_instances.append(instance)
 
     # Re-initialize PyRIT with the scenario-specific initializers
@@ -829,7 +832,7 @@ def _parse_initializer_arg(arg: str) -> dict[str, Any]:
     if not name:
         raise ValueError(f"Invalid initializer argument '{arg}': missing name before ':'")
 
-    args: dict[str, str] = {}
+    args: dict[str, list[str]] = {}
     for pair in params_str.split(";"):
         pair = pair.strip()
         if not pair:
@@ -842,7 +845,7 @@ def _parse_initializer_arg(arg: str) -> dict[str, Any]:
         key = key.strip()
         if not key:
             raise ValueError(f"Invalid initializer parameter in '{arg}': empty key")
-        args[key] = value
+        args[key] = [v.strip() for v in value.split(",")]
 
     if args:
         return {"name": name, "args": args}

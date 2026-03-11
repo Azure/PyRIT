@@ -23,8 +23,8 @@ class InitializerParameter:
     """
     Describes a parameter that an initializer accepts.
 
-    Parameters are always string values (CLI/YAML compatible).
-    Initializers parse values internally if needed (e.g., comma-separated lists).
+    Each parameter value is a list of strings, which works naturally with
+    CLI (comma-separated), YAML (lists), and programmatic APIs.
 
     Args:
         name: The parameter name (used as key in the params dict).
@@ -36,7 +36,7 @@ class InitializerParameter:
     name: str
     description: str
     required: bool = False
-    default: Optional[str] = None
+    default: Optional[list[str]] = None
 
 
 class PyRITInitializer(ABC):
@@ -54,7 +54,7 @@ class PyRITInitializer(ABC):
 
     def __init__(self) -> None:  # noqa: B027
         """Initialize the PyRIT initializer with no parameters."""
-        self._params: dict[str, str] = {}
+        self._params: dict[str, list[str]] = {}
 
     @property
     @abstractmethod
@@ -117,8 +117,8 @@ class PyRITInitializer(ABC):
         """
         Get the list of parameters this initializer accepts.
 
-        Override this property to declare what string parameters the initializer
-        supports. Parameters are passed as a dict[str, str] to initialize_async().
+        Override this property to declare what parameters the initializer
+        supports. Parameters are passed as a dict[str, list[str]] to initialize_async().
 
         Returns:
             list[InitializerParameter]: List of supported parameters. Defaults to empty list.
@@ -126,7 +126,7 @@ class PyRITInitializer(ABC):
         return []
 
     @abstractmethod
-    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
         """
         Execute the initialization logic asynchronously.
 
@@ -135,7 +135,7 @@ class PyRITInitializer(ABC):
         All initializers must implement this as an async method.
 
         Args:
-            params: Optional dictionary of string key-value parameters.
+            params: Optional dictionary of string-list parameters.
                 Use supported_parameters to declare which params are accepted.
         """
 
@@ -164,7 +164,7 @@ class PyRITInitializer(ABC):
         if self._params:
             self._validate_params(params=self._params)
 
-    def _validate_params(self, *, params: dict[str, str]) -> None:
+    def _validate_params(self, *, params: dict[str, list[str]]) -> None:
         """
         Validate parameters against supported_parameters.
 

@@ -78,7 +78,7 @@ class ScorerInitializer(PyRITInitializer):
     Scorers that fail to initialize (e.g., due to missing targets) are skipped with a warning.
 
     Supported Parameters:
-        tags: Comma-separated tags for future filtering. Defaults to "default".
+        tags: Tags for future filtering. Defaults to ["default"].
 
     Example:
         initializer = ScorerInitializer()
@@ -93,8 +93,8 @@ class ScorerInitializer(PyRITInitializer):
         return [
             InitializerParameter(
                 name="tags",
-                description="Comma-separated tags for filtering (e.g., 'default')",
-                default="default",
+                description="Tags for filtering (e.g., ['default'])",
+                default=["default"],
             ),
         ]
 
@@ -131,12 +131,12 @@ class ScorerInitializer(PyRITInitializer):
         """
         return []
 
-    async def initialize_async(self, *, params: Optional[dict[str, str]] = None) -> None:
+    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
         """
         Register available scorers using targets from the TargetRegistry.
 
         Args:
-            params: Optional parameters. Supports 'tags' (comma-separated tag names).
+            params: Optional parameters. Supports 'tags' (list of tag names).
 
         Raises:
             RuntimeError: If the TargetRegistry is empty or hasn't been initialized.
