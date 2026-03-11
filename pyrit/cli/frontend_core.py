@@ -297,7 +297,7 @@ async def run_scenario_async(
             initializer_class = context.initializer_registry.get_class(config.name)
             instance = initializer_class()
             if config.args:
-                instance._params = {
+                instance.params = {
                     k: [str(i) for i in v] if isinstance(v, list) else [str(v)] for k, v in config.args.items()
                 }
             initializer_instances.append(instance)

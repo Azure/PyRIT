@@ -54,7 +54,7 @@ class PyRITInitializer(ABC):
 
     def __init__(self) -> None:  # noqa: B027
         """Initialize the PyRIT initializer with no parameters."""
-        self._params: dict[str, list[str]] = {}
+        self.params: dict[str, list[str]] = {}
 
     @property
     @abstractmethod
@@ -161,8 +161,8 @@ class PyRITInitializer(ABC):
             )
 
         # Validate configured params
-        if self._params:
-            self._validate_params(params=self._params)
+        if self.params:
+            self._validate_params(params=self.params)
 
     def _validate_params(self, *, params: dict[str, list[str]]) -> None:
         """
@@ -205,7 +205,7 @@ class PyRITInitializer(ABC):
         initialization run.
         """
         with self._track_initialization_changes():
-            params = self._params if self._params else None
+            params = self.params if self.params else None
             try:
                 await self.initialize_async(params=params)
             except TypeError:
@@ -293,7 +293,7 @@ class PyRITInitializer(ABC):
         try:
             # Run initialization in sandbox with tracking (starting from empty state)
             with self._track_initialization_changes() as tracking_info:
-                params = self._params if self._params else None
+                params = self.params if self.params else None
                 try:
                     await self.initialize_async(params=params)
                 except TypeError:

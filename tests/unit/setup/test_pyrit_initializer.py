@@ -775,7 +775,7 @@ class TestSupportedParameters:
         init._validate_params(params={"key": ["abc"], "mode": ["slow"]})
 
     def test_validate_checks_params_on_instance(self) -> None:
-        """Test that validate() checks self._params."""
+        """Test that validate() checks self.params."""
 
         class ParamInit(PyRITInitializer):
             @property
@@ -790,7 +790,7 @@ class TestSupportedParameters:
                 pass
 
         init = ParamInit()
-        init._params = {"unknown_key": ["val"]}
+        init.params = {"unknown_key": ["val"]}
         with pytest.raises(ValueError, match="unknown parameter"):
             init.validate()
 
@@ -810,7 +810,7 @@ class TestSupportedParameters:
                     received_params.update(params)
 
         init = TrackingInit()
-        init._params = {"tags": ["default", "scorer"]}
+        init.params = {"tags": ["default", "scorer"]}
         await init.initialize_with_tracking_async()
 
         assert received_params == {"tags": ["default", "scorer"]}

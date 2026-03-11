@@ -315,7 +315,7 @@ class ConfigurationLoader(YamlLoadable):
             # Instantiate and set params if provided
             instance = initializer_class()
             if config.args:
-                instance._params = {
+                instance.params = {
                     k: [str(i) for i in v] if isinstance(v, list) else [str(v)] for k, v in config.args.items()
                 }
 
