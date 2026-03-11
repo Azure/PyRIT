@@ -135,9 +135,9 @@ async def _sign_blob_url_async(*, blob_url: str) -> str:
         return blob_url
 
     parsed = urlparse(blob_url)
-    # Already signed
-    if parsed.query:
-        return blob_url
+
+    # Strip any existing query string (e.g. expired SAS) so we always re-sign
+    base_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
 
     # Extract container name from path: /container/path/to/blob
     parts = parsed.path.strip("/").split("/", 1)
@@ -148,7 +148,7 @@ async def _sign_blob_url_async(*, blob_url: str) -> str:
 
     try:
         sas = await _get_sas_for_container_async(container_url=container_url)
-        return f"{blob_url}?{sas}"
+        return f"{base_url}?{sas}"
     except Exception:
         logger.warning("Failed to generate SAS token for %s; returning unsigned URL", blob_url, exc_info=True)
         return blob_url

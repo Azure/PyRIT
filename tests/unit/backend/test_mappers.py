@@ -566,11 +566,16 @@ class TestSignBlobUrlAsync:
         assert result == "http://example.com/img.png"
 
     @pytest.mark.asyncio
-    async def test_already_signed_url_unchanged(self) -> None:
-        """URLs that already have query params (SAS) are not re-signed."""
-        url = "https://acct.blob.core.windows.net/c/b.png?sv=2024&sig=abc"
-        result = await _sign_blob_url_async(blob_url=url)
-        assert result == url
+    async def test_already_signed_url_is_re_signed(self) -> None:
+        """URLs with existing query params (expired SAS) are stripped and re-signed."""
+        url = "https://acct.blob.core.windows.net/c/b.png?sv=2024&sig=old"
+        with patch(
+            "pyrit.backend.mappers.attack_mappers._get_sas_for_container_async",
+            new_callable=AsyncMock,
+            return_value="sv=2024&sig=fresh",
+        ):
+            result = await _sign_blob_url_async(blob_url=url)
+        assert result == "https://acct.blob.core.windows.net/c/b.png?sv=2024&sig=fresh"
 
     @pytest.mark.asyncio
     async def test_appends_sas_token(self) -> None:
