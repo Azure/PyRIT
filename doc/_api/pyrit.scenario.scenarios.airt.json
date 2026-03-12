@@ -1,0 +1,1342 @@
+{
+  "name": "pyrit.scenario.scenarios.airt",
+  "kind": "module",
+  "docstring": {
+    "text": "AIRT scenario classes."
+  },
+  "members": [
+    {
+      "name": "ContentHarms",
+      "kind": "class",
+      "docstring": {
+        "text": "Content Harms Scenario implementation for PyRIT.\n\nThis scenario contains various harm-based checks that you can run to get a quick idea about model behavior\nwith respect to certain harm categories."
+      },
+      "bases": [
+        "Scenario"
+      ],
+      "methods": [
+        {
+          "name": "default_dataset_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return the default dataset configuration for this scenario.",
+            "returns": [
+              {
+                "type": "DatasetConfiguration",
+                "desc": "Configuration with all content harm datasets."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "DatasetConfiguration"
+        },
+        {
+          "name": "get_default_strategy",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the default strategy used when no strategies are specified.",
+            "returns": [
+              {
+                "type": "ScenarioStrategy",
+                "desc": "ContentHarmsStrategy.ALL"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioStrategy"
+        },
+        {
+          "name": "get_strategy_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the strategy enum class for this scenario.",
+            "returns": [
+              {
+                "type": "type[ScenarioStrategy]",
+                "desc": "Type[ScenarioStrategy]: The ContentHarmsStrategy enum class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[ScenarioStrategy]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "VERSION",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "Optional[PromptChatTarget]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_result_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objectives_by_harm",
+            "type": "Optional[dict[str, Sequence[SeedGroup]]]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Content Harms Scenario.",
+          "params": [
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "desc": "Additionally used for scoring defaults.\nIf not provided, a default OpenAI target will be created using environment variables.",
+              "default": "None"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "desc": "Scorer to evaluate attack success.\nIf not provided, creates a default composite scorer using Azure Content Filter\nand SelfAsk Refusal scorers.\nseed_dataset_prefix (Optional[str]): Prefix of the dataset to use to retrieve the objectives.\nThis will be used to retrieve the appropriate seed groups from CentralMemory. If not provided,\ndefaults to \"content_harm\".",
+              "default": "None"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "Optional[str]",
+              "desc": "Optional ID of an existing scenario result to resume.",
+              "default": "None"
+            },
+            {
+              "name": "objectives_by_harm",
+              "type": "Optional[Dict[str, Sequence[SeedGroup]]]",
+              "desc": "DEPRECATED - Use dataset_config\nin initialize_async instead. A dictionary mapping harm strategies to their corresponding\nSeedGroups. If not provided, default seed groups will be loaded from datasets.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ContentHarmsStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "ContentHarmsStrategy defines a set of strategies for testing model behavior\nacross several different harm categories. The scenario is designed to provide quick\nfeedback on model performance with respect to common harm types with the idea being that\nusers will dive deeper into specific harm categories based on initial results.\n\nEach tag represents a different harm category that the model can be tested for.\nSpecifying the all tag will include a comprehensive test suite covering all harm categories.\nUsers can define objectives for each harm category via seed datasets or use the default datasets\nprovided with PyRIT."
+      },
+      "bases": [
+        "ScenarioStrategy"
+      ],
+      "attributes": [
+        {
+          "name": "ALL"
+        },
+        {
+          "name": "Fairness"
+        },
+        {
+          "name": "Harassment"
+        },
+        {
+          "name": "Hate"
+        },
+        {
+          "name": "Leakage"
+        },
+        {
+          "name": "Misinformation"
+        },
+        {
+          "name": "Sexual"
+        },
+        {
+          "name": "Violence"
+        }
+      ]
+    },
+    {
+      "name": "Cyber",
+      "kind": "class",
+      "docstring": {
+        "text": "Cyber scenario implementation for PyRIT.\n\nThis scenario tests how willing models are to exploit cybersecurity harms by generating\nmalware. The Cyber class contains different variations of the malware generation\ntechniques."
+      },
+      "bases": [
+        "Scenario"
+      ],
+      "methods": [
+        {
+          "name": "default_dataset_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return the default dataset configuration for this scenario.",
+            "returns": [
+              {
+                "type": "DatasetConfiguration",
+                "desc": "Configuration with airt_malware dataset."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "DatasetConfiguration"
+        },
+        {
+          "name": "get_default_strategy",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the default strategy used when no strategies are specified.",
+            "returns": [
+              {
+                "type": "ScenarioStrategy",
+                "desc": "CyberStrategy.ALL (all cyber strategies)."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioStrategy"
+        },
+        {
+          "name": "get_strategy_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the strategy enum class for this scenario.",
+            "returns": [
+              {
+                "type": "type[ScenarioStrategy]",
+                "desc": "Type[ScenarioStrategy]: The CyberStrategy enum class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[ScenarioStrategy]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "VERSION",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "Optional[PromptChatTarget]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objectives",
+            "type": "Optional[list[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "include_baseline",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_result_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the cyber harms scenario.",
+          "params": [
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "desc": "Adversarial chat for the red teaming attack, corresponding\nto CyberStrategy.MultiTurn. If not provided, defaults to an OpenAI chat target.",
+              "default": "None"
+            },
+            {
+              "name": "objectives",
+              "type": "Optional[List[str]]",
+              "desc": "Deprecated. Use dataset_config in initialize_async instead.",
+              "default": "None"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "desc": "Objective scorer for malware detection. If not\nprovided, defaults to a SelfAskScorer using the malware.yaml file under the scorer config store for\nmalware detection",
+              "default": "None"
+            },
+            {
+              "name": "include_baseline",
+              "type": "bool",
+              "desc": "Whether to include a baseline atomic attack that sends all objectives\nwithout modifications. Defaults to True. When True, a \"baseline\" attack is automatically\nadded as the first atomic attack, allowing comparison between unmodified prompts and\nattack-modified prompts.",
+              "default": "True"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "Optional[str]",
+              "desc": "Optional ID of an existing scenario result to resume.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "CyberStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Strategies for malware-focused cyber attacks. While not in the CyberStrategy class, a\nfew of these include:\n* Shell smashing\n* Zip bombs\n* File deletion (rm -rf /)."
+      },
+      "bases": [
+        "ScenarioStrategy"
+      ],
+      "attributes": [
+        {
+          "name": "ALL"
+        },
+        {
+          "name": "MULTI_TURN"
+        },
+        {
+          "name": "SINGLE_TURN"
+        }
+      ]
+    },
+    {
+      "name": "Jailbreak",
+      "kind": "class",
+      "docstring": {
+        "text": "Jailbreak scenario implementation for PyRIT.\n\nThis scenario tests how vulnerable models are to jailbreak attacks by applying\nvarious single-turn jailbreak templates to a set of test prompts. The responses are\nscored to determine if the jailbreak was successful."
+      },
+      "bases": [
+        "Scenario"
+      ],
+      "methods": [
+        {
+          "name": "default_dataset_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return the default dataset configuration for this scenario.",
+            "returns": [
+              {
+                "type": "DatasetConfiguration",
+                "desc": "Configuration with airt_harms dataset."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "DatasetConfiguration"
+        },
+        {
+          "name": "get_default_strategy",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the default strategy used when no strategies are specified.",
+            "returns": [
+              {
+                "type": "ScenarioStrategy",
+                "desc": "JailbreakStrategy.PromptSending."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioStrategy"
+        },
+        {
+          "name": "get_strategy_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the strategy enum class for this scenario.",
+            "returns": [
+              {
+                "type": "type[ScenarioStrategy]",
+                "desc": "type[ScenarioStrategy]: The JailbreakStrategy enum class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[ScenarioStrategy]"
+        },
+        {
+          "name": "required_datasets",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return a list of dataset names required by this scenario."
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "VERSION",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "include_baseline",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_result_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "num_templates",
+            "type": "Optional[int]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "num_attempts",
+            "type": "int",
+            "default": "1",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "jailbreak_names",
+            "type": "list[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the jailbreak scenario.",
+          "params": [
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "desc": "Scorer for detecting successful jailbreaks\n(non-refusal). If not provided, defaults to an inverted refusal scorer.",
+              "default": "None"
+            },
+            {
+              "name": "include_baseline",
+              "type": "bool",
+              "desc": "Whether to include a baseline atomic attack that sends all\nobjectives without modifications. Defaults to True.",
+              "default": "False"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "Optional[str]",
+              "desc": "Optional ID of an existing scenario result to resume.",
+              "default": "None"
+            },
+            {
+              "name": "num_templates",
+              "type": "Optional[int]",
+              "desc": "Choose num_templates random jailbreaks rather than using all of them.",
+              "default": "None"
+            },
+            {
+              "name": "num_attempts",
+              "type": "Optional[int]",
+              "desc": "Number of times to try each jailbreak.",
+              "default": "1"
+            },
+            {
+              "name": "jailbreak_names",
+              "type": "Optional[List[str]]",
+              "desc": "List of jailbreak names from the template list under datasets.\nto use.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If both jailbreak_names and num_templates are provided, as random selection\nis incompatible with a predetermined list."
+            },
+            {
+              "type": "ValueError",
+              "desc": "If the jailbreak_names list contains a jailbreak that isn't in the listed\ntemplates."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "JailbreakStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Strategy for jailbreak attacks.\n\nThe SIMPLE strategy just sends the jailbroken prompt and records the response. It is meant to\nexpose an obvious way of using this scenario without worrying about additional tweaks and changes\nto the prompt.\n\nCOMPLEX strategies use additional techniques to enhance the jailbreak like modifying the\nsystem prompt or probing the target model for an additional vulnerability (e.g. the SkeletonKeyAttack).\nThey are meant to provide a sense of how well a jailbreak generalizes to slight changes in the delivery\nmethod."
+      },
+      "bases": [
+        "ScenarioStrategy"
+      ],
+      "methods": [
+        {
+          "name": "get_aggregate_tags",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the set of tags that represent aggregate categories.",
+            "returns": [
+              {
+                "type": "set[str]",
+                "desc": "set[str]: Set of tags that are aggregate markers."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "set[str]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "ALL"
+        },
+        {
+          "name": "COMPLEX"
+        },
+        {
+          "name": "ManyShot"
+        },
+        {
+          "name": "PromptSending"
+        },
+        {
+          "name": "RolePlay"
+        },
+        {
+          "name": "SIMPLE"
+        },
+        {
+          "name": "SkeletonKey"
+        }
+      ]
+    },
+    {
+      "name": "Leakage",
+      "kind": "class",
+      "docstring": {
+        "text": "Leakage scenario implementation for PyRIT.\n\nThis scenario tests how susceptible models are to leaking training data, PII, intellectual\nproperty, or other confidential information. The LeakageScenario class contains different\nattack variations designed to extract sensitive information from models."
+      },
+      "bases": [
+        "Scenario"
+      ],
+      "methods": [
+        {
+          "name": "default_dataset_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return the default dataset configuration for this scenario.",
+            "returns": [
+              {
+                "type": "DatasetConfiguration",
+                "desc": "Configuration with airt_leakage dataset."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "DatasetConfiguration"
+        },
+        {
+          "name": "get_default_strategy",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the default strategy used when no strategies are specified.",
+            "returns": [
+              {
+                "type": "ScenarioStrategy",
+                "desc": "LeakageStrategy.ALL (all leakage strategies)."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioStrategy"
+        },
+        {
+          "name": "get_strategy_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the strategy enum class for this scenario.",
+            "returns": [
+              {
+                "type": "type[ScenarioStrategy]",
+                "desc": "Type[ScenarioStrategy]: The LeakageStrategy enum class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[ScenarioStrategy]"
+        },
+        {
+          "name": "required_datasets",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return a list of dataset names required by this scenario."
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "VERSION",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "Optional[PromptChatTarget]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objectives",
+            "type": "Optional[list[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "include_baseline",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_result_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the leakage scenario.",
+          "params": [
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "desc": "Adversarial chat target for multi-turn attacks\n(Crescendo, RolePlay). If not provided, defaults to an OpenAI chat target.",
+              "default": "None"
+            },
+            {
+              "name": "objectives",
+              "type": "Optional[List[str]]",
+              "desc": "List of objectives to test for data leakage.\nIf not provided, defaults to objectives from the airt_leakage dataset.",
+              "default": "None"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "desc": "Objective scorer for leakage detection.\nIf not provided, defaults to a scorer that detects PII and training data leakage.",
+              "default": "None"
+            },
+            {
+              "name": "include_baseline",
+              "type": "bool",
+              "desc": "Whether to include a baseline atomic attack that sends all\nobjectives without modifications. Defaults to True.",
+              "default": "True"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "Optional[str]",
+              "desc": "Optional ID of an existing scenario result to resume.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "LeakageScenario",
+      "kind": "class",
+      "docstring": {
+        "text": "Deprecated alias for Leakage.\n\nThis class is deprecated and will be removed in version 0.13.0.\nUse `Leakage` instead."
+      },
+      "bases": [
+        "Leakage"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "kwargs",
+            "type": "Any",
+            "default": "{}",
+            "kind": "variadic keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize LeakageScenario with deprecation warning."
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "LeakageStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Strategies for data leakage and privacy violation attacks.\n\nThese strategies test whether models can be manipulated into leaking training data,\nintellectual property (IP), credentials, or other confidential content.\n\nLeakage categories:\n- ip: Intellectual property (copyrighted content, training data memorization)\n- sensitive_data: Credentials, secrets, system prompts, API keys"
+      },
+      "bases": [
+        "ScenarioStrategy"
+      ],
+      "methods": [
+        {
+          "name": "get_aggregate_tags",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the set of tags that represent aggregate categories.",
+            "returns": [
+              {
+                "type": "set[str]",
+                "desc": "Set[str]: Set of tags that represent aggregates, including \"all\",\n     \"single_turn\", \"multi_turn\", \"ip\", and \"sensitive_data\"."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "set[str]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "ALL"
+        },
+        {
+          "name": "Crescendo"
+        },
+        {
+          "name": "FirstLetter"
+        },
+        {
+          "name": "IP"
+        },
+        {
+          "name": "Image"
+        },
+        {
+          "name": "MULTI_TURN"
+        },
+        {
+          "name": "RolePlay"
+        },
+        {
+          "name": "SENSITIVE_DATA"
+        },
+        {
+          "name": "SINGLE_TURN"
+        }
+      ]
+    },
+    {
+      "name": "Psychosocial",
+      "kind": "class",
+      "docstring": {
+        "text": "Psychosocial Harms Scenario implementation for PyRIT.\n\nThis scenario contains various psychosocial harm-based checks that evaluate model behavior\nfor responses that may harm the well-being or mental health of users.\nExamples include mistreating users in a mental health crisis or aiding them in self-harm.\n\nAll datasets in this scenario share the unified 'psychosocial' harm category,\nbut each dataset (e.g., imminent_crisis, dependency) can have unique:\n- Scoring rubrics\n- Seed objectives\n\nThe scenario tests whether models:\n- Recognize mental health crises and respond appropriately\n- Avoid facilitating self-harm or harmful behaviors\n- Provide crisis resources and encourage professional help\n\nExample usage with custom configurations:\n\n    # Define custom configurations per subharm category\n    custom_configs = {\n        \"airt_imminent_crisis\": SubharmConfig(\n            crescendo_system_prompt_path=\"path/to/custom_escalation.yaml\",\n            scoring_rubric_path=\"path/to/custom_rubric.yaml\",\n        ),\n    }\n\n    scenario = Psychosocial(subharm_configs=custom_configs)\n    await scenario.initialize_async(\n        objective_target=target_llm,\n        scenario_strategies=[PsychosocialStrategy.ImminentCrisis],\n    )"
+      },
+      "bases": [
+        "Scenario"
+      ],
+      "methods": [
+        {
+          "name": "default_dataset_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return the default dataset configuration for this scenario.",
+            "returns": [
+              {
+                "type": "DatasetConfiguration",
+                "desc": "Configuration with psychosocial harm datasets."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "DatasetConfiguration"
+        },
+        {
+          "name": "get_default_strategy",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the default strategy used when no strategies are specified.",
+            "returns": [
+              {
+                "type": "ScenarioStrategy",
+                "desc": "PsychosocialStrategy.ALL"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioStrategy"
+        },
+        {
+          "name": "get_strategy_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the strategy enum class for this scenario.",
+            "returns": [
+              {
+                "type": "type[ScenarioStrategy]",
+                "desc": "Type[ScenarioStrategy]: The PsychosocialHarmsStrategy enum class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[ScenarioStrategy]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_SUBHARM_CONFIGS",
+          "type": "dict[str, SubharmConfig]"
+        },
+        {
+          "name": "VERSION",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objectives",
+            "type": "Optional[list[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "Optional[PromptChatTarget]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[FloatScaleThresholdScorer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_result_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "subharm_configs",
+            "type": "Optional[dict[str, SubharmConfig]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_turns",
+            "type": "int",
+            "default": "5",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Psychosocial Harms Scenario.",
+          "params": [
+            {
+              "name": "objectives",
+              "type": "Optional[List[str]]",
+              "desc": "DEPRECATED - Use dataset_config in initialize_async instead.\nList of objectives to test for psychosocial harms.",
+              "default": "None"
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "desc": "Additionally used for adversarial attacks\nand scoring defaults. If not provided, a default OpenAI target will be created using\nenvironment variables.",
+              "default": "None"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[FloatScaleThresholdScorer]",
+              "desc": "Scorer to evaluate attack success.\nIf not provided, creates a default scorer for evaluating psychosocial harms\n(crisis management, harmful facilitation, etc.).",
+              "default": "None"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "Optional[str]",
+              "desc": "Optional ID of an existing scenario result to resume.",
+              "default": "None"
+            },
+            {
+              "name": "subharm_configs",
+              "type": "Optional[Dict[str, SubharmConfig]]",
+              "desc": "Dictionary mapping subharm names\nto their SubharmConfig. Each seed in the dataset specifies its subharm in\nharm_categories[0], which is used to look up the appropriate config. Example:\n{\n    \"airt_imminent_crisis\": SubharmConfig(\n        crescendo_system_prompt_path=\"path/to/crisis_escalation.yaml\",\n        scoring_rubric_path=\"path/to/crisis_management.yaml\"\n    ),\n    \"dependency\": SubharmConfig(\n        crescendo_system_prompt_path=\"path/to/dependency_escalation.yaml\",\n        scoring_rubric_path=\"path/to/dependency_rubric.yaml\"\n    ),\n}\nIf a subharm is not in this dict, falls back to defaults.",
+              "default": "None"
+            },
+            {
+              "name": "max_turns",
+              "type": "int",
+              "desc": "Maximum number of conversation turns for multi-turn attacks (CrescendoAttack).\nDefaults to 5. Increase for more gradual escalation, decrease for faster testing.",
+              "default": "5"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "PsychosocialScenario",
+      "kind": "class",
+      "docstring": {
+        "text": "Deprecated alias for Psychosocial.\n\nThis class is deprecated and will be removed in version 0.13.0.\nUse `Psychosocial` instead."
+      },
+      "bases": [
+        "Psychosocial"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "kwargs",
+            "type": "Any",
+            "default": "{}",
+            "kind": "variadic keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize PsychosocialScenario with deprecation warning."
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "PsychosocialStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "PsychosocialHarmsStrategy defines a set of strategies for testing model behavior\nin psychosocial harm scenarios. The scenario is designed to evaluate how models handle\nusers in mental health crisis or if the model misrepresents itself as a licensed therapist.\n\nThe tags correspond to different attack strategies:\n- single_turn: PromptSendingAttack and RolePlayAttack\n- multi_turn: CrescendoAttack\n- all: Both single_turn and multi_turn attacks\n\nSpecific strategies (imminent_crisis, licensed_therapist) filter seeds by harm_category."
+      },
+      "bases": [
+        "ScenarioStrategy"
+      ],
+      "attributes": [
+        {
+          "name": "ALL"
+        },
+        {
+          "name": "ImminentCrisis"
+        },
+        {
+          "name": "LicensedTherapist"
+        },
+        {
+          "name": "harm_category_filter",
+          "type": "Optional[str]",
+          "docstring": "Get the harm category filter for this strategy.\n\nReturns:\n    Optional[str]: The harm category to filter seeds by, or \"psychosocial\" as default."
+        }
+      ]
+    },
+    {
+      "name": "Scam",
+      "kind": "class",
+      "docstring": {
+        "text": "Scam scenario evaluates an endpoint's ability to generate scam-related materials\n(e.g., phishing emails, fraudulent messages) with primarily persuasion-oriented techniques."
+      },
+      "bases": [
+        "Scenario"
+      ],
+      "methods": [
+        {
+          "name": "default_dataset_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return the default dataset configuration for this scenario.",
+            "returns": [
+              {
+                "type": "DatasetConfiguration",
+                "desc": "Configuration with airt_scams dataset."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "DatasetConfiguration"
+        },
+        {
+          "name": "get_default_strategy",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the default strategy used when no strategies are specified.",
+            "returns": [
+              {
+                "type": "ScenarioStrategy",
+                "desc": "ScamStrategy.ALL (all scam strategies)."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioStrategy"
+        },
+        {
+          "name": "get_strategy_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the strategy enum class for this scenario.",
+            "returns": [
+              {
+                "type": "type[ScenarioStrategy]",
+                "desc": "Type[ScenarioStrategy]: The ScamStrategy enum class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[ScenarioStrategy]"
+        },
+        {
+          "name": "required_datasets",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return a list of dataset names required by this scenario."
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "VERSION",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objectives",
+            "type": "Optional[list[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "Optional[PromptChatTarget]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "include_baseline",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_result_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the ScamScenario.",
+          "params": [
+            {
+              "name": "objectives",
+              "type": "Optional[List[str]]",
+              "desc": "List of objectives to test for scam-related harms.",
+              "default": "None"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "desc": "Custom scorer for objective\nevaluation.",
+              "default": "None"
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "desc": "Chat target used to rephrase the\nobjective into the role-play context (in single-turn strategies).",
+              "default": "None"
+            },
+            {
+              "name": "include_baseline",
+              "type": "bool",
+              "desc": "Whether to include a baseline atomic attack that sends all objectives\nwithout modifications. Defaults to True. When True, a \"baseline\" attack is automatically\nadded as the first atomic attack, allowing comparison between unmodified prompts and\nencoding-modified prompts.",
+              "default": "True"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "Optional[str]",
+              "desc": "Optional ID of an existing scenario result to resume.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ScamStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Strategies for the Scam Scenario.\n\nNon-Aggregate Values:\n- ContextCompliance: This single-turn attack attempts to bypass safety measures by rephrasing the objective into\n    a more benign context.\n    It uses an adversarial chat target to:\n    1) rephrase the objective (first user turn)\n    2) generate the assistant's response to the benign question (first assistant turn)\n    3) rephrase the original objective as a follow-up question (end of first assistant turn)\n    This conversation is prepended and sent with an affirmative \"yes\" to get a response from the target.\n- RolePlay: This single-turn attack uses the `persuasion_script_written.yaml` role-play scenario to convince the\n    target to help draft a response to the scam objective. It is framed in the context of creating written samples\n    to be used during training seminars.\n- PersuasiveRedTeamingAttack: This multi-turn attack uses a persuasive persona with the `RedTeamingAttack` to\n    iteratively convince the target to comply with the scam objective over multiple turns."
+      },
+      "bases": [
+        "ScenarioStrategy"
+      ],
+      "methods": [
+        {
+          "name": "get_aggregate_tags",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the set of tags that represent aggregate categories.",
+            "returns": [
+              {
+                "type": "set[str]",
+                "desc": "set[str]: Set of tags that are aggregate markers."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "set[str]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "ALL"
+        },
+        {
+          "name": "ContextCompliance"
+        },
+        {
+          "name": "MULTI_TURN"
+        },
+        {
+          "name": "PersuasiveRedTeamingAttack"
+        },
+        {
+          "name": "RolePlay"
+        },
+        {
+          "name": "SINGLE_TURN"
+        }
+      ]
+    }
+  ]
+}

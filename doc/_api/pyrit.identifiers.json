@@ -1,0 +1,760 @@
+{
+  "name": "pyrit.identifiers",
+  "kind": "module",
+  "docstring": {
+    "text": "Identifiers module for PyRIT components."
+  },
+  "members": [
+    {
+      "name": "AtomicAttackEvaluationIdentifier",
+      "kind": "class",
+      "docstring": {
+        "text": "Evaluation identity for atomic attacks.\n\nPer-child rules:\n\n* ``objective_target`` \u2014 include only ``temperature``.\n* ``adversarial_chat`` \u2014 include ``model_name``, ``temperature``, ``top_p``.\n* ``objective_scorer`` \u2014 excluded entirely.\n* ``seeds`` \u2014 include only items where ``is_general_technique=True``.\n\nNon-target children (e.g., ``request_converters``, ``response_converters``)\nreceive full recursive eval treatment, meaning they fully contribute to\nthe hash."
+      },
+      "bases": [
+        "EvaluationIdentifier"
+      ],
+      "attributes": [
+        {
+          "name": "CHILD_EVAL_RULES",
+          "type": "dict[str, ChildEvalRule]"
+        }
+      ]
+    },
+    {
+      "name": "ChildEvalRule",
+      "kind": "class",
+      "docstring": {
+        "text": "Per-child configuration for eval-hash computation.\n\nControls how a specific named child is treated when building the\nevaluation hash:\n\n* ``exclude`` \u2014 if ``True``, drop this child entirely from the hash.\n* ``included_params`` \u2014 if set, only include these param keys for this\n  child (and its recursive descendants). ``None`` means all params.\n* ``included_item_values`` \u2014 for list-valued children, only include items\n  whose ``params`` match **all** specified key-value pairs. ``None``\n  means include all items."
+      },
+      "attributes": [
+        {
+          "name": "exclude",
+          "type": "bool"
+        },
+        {
+          "name": "included_item_values",
+          "type": "Optional[dict[str, Any]]"
+        },
+        {
+          "name": "included_params",
+          "type": "Optional[frozenset[str]]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "exclude",
+            "type": "bool",
+            "default": "False",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "included_params",
+            "type": "Optional[frozenset[str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "included_item_values",
+            "type": "Optional[dict[str, Any]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ComponentIdentifier",
+      "kind": "class",
+      "docstring": {
+        "text": "Immutable snapshot of a component's behavioral configuration.\n\nA single type for all component identity \u2014 scorers, targets, converters, and\nany future component types all produce a ComponentIdentifier with their relevant\nparams and children.\n\nThe hash is content-addressed: two ComponentIdentifiers with the same class, params,\nand children produce the same hash. This enables deterministic metrics lookup,\nDB deduplication, and registry keying."
+      },
+      "methods": [
+        {
+          "name": "from_dict",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "data",
+              "type": "dict[str, Any]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Deserialize from a stored dictionary.\n\nReconstructs a ComponentIdentifier from data previously saved via to_dict().\nHandles both the current format (``class_name``/``class_module``) and legacy\nformat (``__type__``/``__module__``) for backward compatibility with\nolder database records.",
+            "params": [
+              {
+                "name": "data",
+                "type": "Dict[str, Any]",
+                "desc": "Dictionary from DB/JSONL storage. The original\ndict is not mutated; a copy is made internally.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "ComponentIdentifier",
+                "desc": "Reconstructed identifier with the stored hash\npreserved (if available) to maintain correct identity despite\npotential param truncation."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ComponentIdentifier"
+        },
+        {
+          "name": "get_child",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "key",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get a single child by key.",
+            "params": [
+              {
+                "name": "key",
+                "type": "str",
+                "desc": "The child key.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "Optional[ComponentIdentifier]",
+                "desc": "Optional[ComponentIdentifier]: The child, or None if not found."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the child is a list (use get_child_list instead)."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[ComponentIdentifier]"
+        },
+        {
+          "name": "get_child_list",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "key",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get a list of children by key.",
+            "params": [
+              {
+                "name": "key",
+                "type": "str",
+                "desc": "The child key.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[ComponentIdentifier]",
+                "desc": "List[ComponentIdentifier]: The children. Returns empty list if\nnot found, wraps single child in a list."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[ComponentIdentifier]"
+        },
+        {
+          "name": "normalize",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "value",
+              "type": "Union[ComponentIdentifier, dict[str, Any]]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Normalize a value to a ComponentIdentifier instance.\n\nAccepts either an existing ComponentIdentifier (returned as-is) or a dict\n(reconstructed via from_dict). This supports code paths that may receive\neither typed identifiers or raw dicts from database storage.",
+            "params": [
+              {
+                "name": "value",
+                "type": "Union[ComponentIdentifier, Dict[str, Any]]",
+                "desc": "A ComponentIdentifier or\na dictionary representation.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "ComponentIdentifier",
+                "desc": "The normalized identifier instance."
+              }
+            ],
+            "raises": [
+              {
+                "type": "TypeError",
+                "desc": "If value is neither a ComponentIdentifier nor a dict."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ComponentIdentifier"
+        },
+        {
+          "name": "of",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "obj",
+              "type": "object",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "params",
+              "type": "Optional[dict[str, Any]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "children",
+              "type": "Optional[dict[str, Union[ComponentIdentifier, list[ComponentIdentifier]]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Build a ComponentIdentifier from a live object instance.\n\nThis factory method extracts class_name and class_module from the object's\ntype automatically, making it the preferred way to create identifiers in\ncomponent implementations. None-valued params and children are filtered out\nto ensure backward-compatible hashing.",
+            "params": [
+              {
+                "name": "obj",
+                "type": "object",
+                "desc": "The live component instance whose type info will be captured.",
+                "default": ""
+              },
+              {
+                "name": "params",
+                "type": "Optional[Dict[str, Any]]",
+                "desc": "Behavioral parameters that affect the\ncomponent's output. Only include params that change behavior \u2014 exclude\noperational settings like rate limits, retry counts, or logging config.",
+                "default": "None"
+              },
+              {
+                "name": "children",
+                "type": "Optional[Dict[str, Union[ComponentIdentifier, List[ComponentIdentifier]]]]",
+                "desc": "\nNamed child component identifiers. Use for compositional components like\nscorers that wrap other scorers or targets that chain converters.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "ComponentIdentifier",
+                "desc": "The frozen identity snapshot with computed hash."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ComponentIdentifier"
+        },
+        {
+          "name": "to_dict",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "max_value_length",
+              "type": "Optional[int]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Serialize to a JSON-compatible dictionary for DB/JSONL storage.\n\nProduces a flat structure where params are inlined at the top level alongside\nclass_name, class_module, hash, and pyrit_version.\n\nChildren are recursively serialized into a nested \"children\" key.",
+            "params": [
+              {
+                "name": "max_value_length",
+                "type": "Optional[int]",
+                "desc": "If provided, string param values longer\nthan this limit are truncated and suffixed with \"...\". Useful for\nDB storage where column sizes may be limited. The truncation applies\nonly to param values, not to structural keys like class_name or hash.\nThe limit is propagated to children. Defaults to None (no truncation).",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "dict[str, Any]",
+                "desc": "Dict[str, Any]: JSON-serializable dictionary suitable for database storage\nor JSONL export."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, Any]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "KEY_CHILDREN",
+          "type": "str"
+        },
+        {
+          "name": "KEY_CLASS_MODULE",
+          "type": "str"
+        },
+        {
+          "name": "KEY_CLASS_NAME",
+          "type": "str"
+        },
+        {
+          "name": "KEY_HASH",
+          "type": "str"
+        },
+        {
+          "name": "KEY_PYRIT_VERSION",
+          "type": "str"
+        },
+        {
+          "name": "LEGACY_KEY_MODULE",
+          "type": "str"
+        },
+        {
+          "name": "LEGACY_KEY_TYPE",
+          "type": "str"
+        },
+        {
+          "name": "children",
+          "type": "dict[str, Union[ComponentIdentifier, list[ComponentIdentifier]]]"
+        },
+        {
+          "name": "class_module",
+          "type": "str"
+        },
+        {
+          "name": "class_name",
+          "type": "str"
+        },
+        {
+          "name": "hash",
+          "type": "str"
+        },
+        {
+          "name": "params",
+          "type": "dict[str, Any]"
+        },
+        {
+          "name": "pyrit_version",
+          "type": "str"
+        },
+        {
+          "name": "short_hash",
+          "type": "str",
+          "docstring": "Return the first 8 characters of the hash for display and logging.\n\nReturns:\n    str: First 8 hex characters of the SHA256 hash."
+        },
+        {
+          "name": "unique_name",
+          "type": "str",
+          "docstring": "Globally unique display name: ``class_name::short_hash``.\n\nUsed as the default registration key in instance registries (e.g., \"SelfAskScaleScorer::a1b2c3d4\").\n\nReturns:\n    str: Unique name combining class name and short hash."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_name",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_module",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "dict[str, Any]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "children",
+            "type": "dict[str, Union[ComponentIdentifier, list[ComponentIdentifier]]]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "pyrit_version",
+            "type": "str",
+            "default": "(lambda: pyrit.__version__)()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "EvaluationIdentifier",
+      "kind": "class",
+      "docstring": {
+        "text": "Wraps a ``ComponentIdentifier`` with domain-specific eval-hash configuration.\n\nSubclasses set ``CHILD_EVAL_RULES`` \u2014 a mapping of child names to\n``ChildEvalRule`` instances that control how each child is treated during\neval-hash computation.  Children not listed receive full recursive treatment.\n\nThe concrete ``eval_hash`` property delegates to the module-level\n``compute_eval_hash`` free function."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "attributes": [
+        {
+          "name": "CHILD_EVAL_RULES",
+          "type": "dict[str, ChildEvalRule]"
+        },
+        {
+          "name": "eval_hash",
+          "type": "str",
+          "docstring": "Behavioral equivalence hash for evaluation grouping."
+        },
+        {
+          "name": "identifier",
+          "type": "ComponentIdentifier",
+          "docstring": "The underlying component identity."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "identifier",
+            "type": "ComponentIdentifier",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Wrap a ComponentIdentifier and eagerly compute its eval hash."
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "Identifiable",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for components that provide a behavioral identity.\n\nComponents implement ``_build_identifier()`` to return a frozen ComponentIdentifier\nsnapshot. The identifier is built lazily on first access and cached for the\ncomponent's lifetime."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "get_identifier",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the component's identifier, building it lazily on first access.\n\nThe identifier is computed once via _build_identifier() and then cached for\nsubsequent calls. This ensures consistent identity throughout the\ncomponent's lifetime while deferring computation until actually needed.",
+            "returns": [
+              {
+                "type": "ComponentIdentifier",
+                "desc": "The frozen identity snapshot representing\nthis component's behavioral configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ComponentIdentifier"
+        }
+      ]
+    },
+    {
+      "name": "ScorerEvaluationIdentifier",
+      "kind": "class",
+      "docstring": {
+        "text": "Evaluation identity for scorers.\n\nThe ``prompt_target`` child is filtered to behavioral params only\n(``model_name``, ``temperature``, ``top_p``), so the same scorer\nconfiguration on different deployments produces the same eval hash."
+      },
+      "bases": [
+        "EvaluationIdentifier"
+      ],
+      "attributes": [
+        {
+          "name": "CHILD_EVAL_RULES",
+          "type": "dict[str, ChildEvalRule]"
+        }
+      ]
+    },
+    {
+      "name": "build_atomic_attack_identifier",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "attack_identifier",
+          "type": "ComponentIdentifier",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "seed_group",
+          "type": "Optional[SeedGroup]",
+          "default": "None",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Build a composite ComponentIdentifier for an atomic attack.\n\nCombines the attack strategy's identity with identifiers for all seeds\nfrom the seed group. Every seed in the group is included in the identity;\neach seed's ``is_general_technique`` flag is captured as a param so that\ndownstream consumers (e.g., evaluation identity) can filter as needed.\n\nWhen no seed_group is provided, the resulting identifier has an empty\n``seeds`` children list, but still has the standard ``AtomicAttack``\nshape for consistent querying.",
+        "params": [
+          {
+            "name": "attack_identifier",
+            "type": "ComponentIdentifier",
+            "desc": "The attack strategy's identifier\n(from ``attack.get_identifier()``).",
+            "default": ""
+          },
+          {
+            "name": "seed_group",
+            "type": "Optional[SeedGroup]",
+            "desc": "The seed group to extract seeds from.\nIf None, the identifier has an empty seeds list.",
+            "default": "None"
+          }
+        ],
+        "returns": [
+          {
+            "type": "ComponentIdentifier",
+            "desc": "A composite identifier with class_name=\"AtomicAttack\",\nthe attack as a child, and seed identifiers as children."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "ComponentIdentifier"
+    },
+    {
+      "name": "build_seed_identifier",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "seed",
+          "type": "Seed",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Build a ComponentIdentifier from a seed's behavioral properties.\n\nCaptures the seed's content hash, dataset name, and class type so that\ndifferent seeds produce different identifiers while the same seed content\nalways produces the same identifier.",
+        "params": [
+          {
+            "name": "seed",
+            "type": "Seed",
+            "desc": "The seed to build an identifier for.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "ComponentIdentifier",
+            "desc": "An identifier capturing the seed's behavioral properties."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "ComponentIdentifier"
+    },
+    {
+      "name": "class_name_to_snake_case",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "class_name",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "suffix",
+          "type": "str",
+          "default": "''",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Convert a PascalCase class name to snake_case, optionally stripping a suffix.",
+        "params": [
+          {
+            "name": "class_name",
+            "type": "str",
+            "desc": "The class name to convert (e.g., \"SelfAskRefusalScorer\").",
+            "default": ""
+          },
+          {
+            "name": "suffix",
+            "type": "str",
+            "desc": "Optional explicit suffix to strip before conversion (e.g., \"Scorer\").",
+            "default": "''"
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "The snake_case name (e.g., \"self_ask_refusal\" if suffix=\"Scorer\")."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    },
+    {
+      "name": "compute_eval_hash",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "identifier",
+          "type": "ComponentIdentifier",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "child_eval_rules",
+          "type": "dict[str, ChildEvalRule]",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Compute a behavioral equivalence hash for evaluation grouping.\n\nUnlike ``ComponentIdentifier.hash`` (which includes all params of self and\nchildren), the eval hash applies per-child rules to strip operational params\n(like endpoint, max_requests_per_minute), exclude children entirely, or\nfilter list items.  This ensures the same logical configuration on different\ndeployments produces the same eval hash.\n\nChildren not listed in ``child_eval_rules`` receive full recursive treatment.\n\nWhen ``child_eval_rules`` is empty, no filtering occurs and the result\nequals ``identifier.hash``.",
+        "params": [
+          {
+            "name": "identifier",
+            "type": "ComponentIdentifier",
+            "desc": "The component identity to compute\nthe hash for.",
+            "default": ""
+          },
+          {
+            "name": "child_eval_rules",
+            "type": "dict[str, ChildEvalRule]",
+            "desc": "Per-child eval rules.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "A hex-encoded SHA256 hash suitable for eval registry keying."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    },
+    {
+      "name": "config_hash",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "config_dict",
+          "type": "dict[str, Any]",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Compute a deterministic SHA256 hash from a config dictionary.\n\nThis is the single source of truth for identity hashing across the entire\nsystem. The dict is serialized with sorted keys and compact separators to\nensure determinism.",
+        "params": [
+          {
+            "name": "config_dict",
+            "type": "Dict[str, Any]",
+            "desc": "A JSON-serializable dictionary.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "Hex-encoded SHA256 hash string."
+          }
+        ],
+        "raises": [
+          {
+            "type": "TypeError",
+            "desc": "If config_dict contains values that are not JSON-serializable."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    },
+    {
+      "name": "snake_case_to_class_name",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "snake_case_name",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "suffix",
+          "type": "str",
+          "default": "''",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Convert a snake_case name to a PascalCase class name.",
+        "params": [
+          {
+            "name": "snake_case_name",
+            "type": "str",
+            "desc": "The snake_case name to convert (e.g., \"my_custom\").",
+            "default": ""
+          },
+          {
+            "name": "suffix",
+            "type": "str",
+            "desc": "Optional suffix to append to the class name\n(e.g., \"Scenario\" would convert \"my_custom\" to \"MyCustomScenario\").",
+            "default": "''"
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "The PascalCase class name (e.g., \"MyCustomScenario\")."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    }
+  ]
+}

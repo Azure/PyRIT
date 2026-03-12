@@ -1,0 +1,213 @@
+{
+  "name": "pyrit.score.printer",
+  "kind": "module",
+  "docstring": {
+    "text": "Scorer printer classes for displaying scorer information in various formats."
+  },
+  "members": [
+    {
+      "name": "ConsoleScorerPrinter",
+      "kind": "class",
+      "docstring": {
+        "text": "Console printer for scorer information with enhanced formatting.\n\nThis printer formats scorer details for console display with optional color coding,\nproper indentation, and visual hierarchy. Colors can be disabled for consoles\nthat don't support ANSI characters."
+      },
+      "bases": [
+        "ScorerPrinter"
+      ],
+      "methods": [
+        {
+          "name": "print_harm_scorer",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scorer_identifier",
+              "type": "ComponentIdentifier",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "harm_category",
+              "type": "str",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print harm scorer information including type, nested scorers, and evaluation metrics.\n\nThis method displays:\n- Scorer type and identity information\n- Nested sub-scorers (for composite scorers)\n- Harm evaluation metrics (MAE, Krippendorff alpha) from the registry",
+            "params": [
+              {
+                "name": "scorer_identifier",
+                "type": "ComponentIdentifier",
+                "desc": "The scorer identifier to print information for.",
+                "default": ""
+              },
+              {
+                "name": "harm_category",
+                "type": "str",
+                "desc": "The harm category for looking up metrics (e.g., \"hate_speech\", \"violence\").",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_objective_scorer",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scorer_identifier",
+              "type": "ComponentIdentifier",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print objective scorer information including type, nested scorers, and evaluation metrics.\n\nThis method displays:\n- Scorer type and identity information\n- Nested sub-scorers (for composite scorers)\n- Objective evaluation metrics (accuracy, precision, recall, F1) from the registry",
+            "params": [
+              {
+                "name": "scorer_identifier",
+                "type": "ComponentIdentifier",
+                "desc": "The scorer identifier to print information for.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "indent_size",
+            "type": "int",
+            "default": "2",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "enable_colors",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the console scorer printer.",
+          "params": [
+            {
+              "name": "indent_size",
+              "type": "int",
+              "desc": "Number of spaces for indentation. Must be non-negative.\nDefaults to 2.",
+              "default": "2"
+            },
+            {
+              "name": "enable_colors",
+              "type": "bool",
+              "desc": "Whether to enable ANSI color output. When False,\nall output will be plain text without colors. Defaults to True.",
+              "default": "True"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If indent_size < 0."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ScorerPrinter",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for printing scorer information.\n\nThis interface defines the contract for printing scorer details including\ntype information, nested sub-scorers, and evaluation metrics from the registry.\nImplementations can render output to console, logs, files, or other outputs."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "print_harm_scorer",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scorer_identifier",
+              "type": "ComponentIdentifier",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "harm_category",
+              "type": "str",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print harm scorer information including type, nested scorers, and evaluation metrics.\n\nThis method displays:\n- Scorer type and identity information\n- Nested sub-scorers (for composite scorers)\n- Harm evaluation metrics (MAE, Krippendorff alpha) from the registry",
+            "params": [
+              {
+                "name": "scorer_identifier",
+                "type": "ComponentIdentifier",
+                "desc": "The scorer identifier to print information for.",
+                "default": ""
+              },
+              {
+                "name": "harm_category",
+                "type": "str",
+                "desc": "The harm category for looking up metrics (e.g., \"hate_speech\", \"violence\").",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_objective_scorer",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scorer_identifier",
+              "type": "ComponentIdentifier",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print objective scorer information including type, nested scorers, and evaluation metrics.\n\nThis method displays:\n- Scorer type and identity information\n- Nested sub-scorers (for composite scorers)\n- Objective evaluation metrics (accuracy, precision, recall, F1) from the registry",
+            "params": [
+              {
+                "name": "scorer_identifier",
+                "type": "ComponentIdentifier",
+                "desc": "The scorer identifier to print information for.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ]
+    }
+  ]
+}

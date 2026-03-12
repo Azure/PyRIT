@@ -1,0 +1,159 @@
+{
+  "name": "pyrit.scenario.printer",
+  "kind": "module",
+  "docstring": {
+    "text": "Printer components for scenarios."
+  },
+  "members": [
+    {
+      "name": "ConsoleScenarioResultPrinter",
+      "kind": "class",
+      "docstring": {
+        "text": "Console printer for scenario results with enhanced formatting.\n\nThis printer formats scenario results for console display with optional color coding,\nproper indentation, and visual separators. Colors can be disabled for consoles\nthat don't support ANSI characters."
+      },
+      "bases": [
+        "ScenarioResultPrinter"
+      ],
+      "methods": [
+        {
+          "name": "print_summary_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "ScenarioResult",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Print a summary of the scenario result with per-strategy breakdown.\n\nDisplays:\n- Scenario identification (name, version, PyRIT version)\n- Target and scorer information\n- Overall statistics\n- Per-strategy success rates and result counts",
+            "params": [
+              {
+                "name": "result",
+                "type": "ScenarioResult",
+                "desc": "The scenario result to summarize",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "width",
+            "type": "int",
+            "default": "100",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "indent_size",
+            "type": "int",
+            "default": "2",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "enable_colors",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scorer_printer",
+            "type": "Optional[ScorerPrinter]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the console printer.",
+          "params": [
+            {
+              "name": "width",
+              "type": "int",
+              "desc": "Maximum width for text wrapping. Must be positive.\nDefaults to 100.",
+              "default": "100"
+            },
+            {
+              "name": "indent_size",
+              "type": "int",
+              "desc": "Number of spaces for indentation. Must be non-negative.\nDefaults to 2.",
+              "default": "2"
+            },
+            {
+              "name": "enable_colors",
+              "type": "bool",
+              "desc": "Whether to enable ANSI color output. When False,\nall output will be plain text without colors. Defaults to True.",
+              "default": "True"
+            },
+            {
+              "name": "scorer_printer",
+              "type": "Optional[ScorerPrinter]",
+              "desc": "Printer for scorer information.\nIf not provided, a ConsoleScorerPrinter with matching settings is created.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If width <= 0 or indent_size < 0."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ScenarioResultPrinter",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for printing scenario results.\n\nThis interface defines the contract for printing scenario results in various formats.\nImplementations can render results to console, logs, files, or other outputs."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "print_summary_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "ScenarioResult",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Print a summary of the scenario result with per-strategy breakdown.\n\nDisplays:\n- Scenario identification (name, version, PyRIT version)\n- Target information\n- Overall statistics\n- Per-strategy success rates and result counts",
+            "params": [
+              {
+                "name": "result",
+                "type": "ScenarioResult",
+                "desc": "The scenario result to summarize",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ]
+    }
+  ]
+}

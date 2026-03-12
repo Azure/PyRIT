@@ -1,0 +1,4320 @@
+{
+  "name": "pyrit.memory",
+  "kind": "module",
+  "docstring": {
+    "text": "Provide functionality for storing and retrieving conversation history and embeddings.\n\nThis package defines the core `MemoryInterface` and concrete implementations for different storage backends."
+  },
+  "members": [
+    {
+      "name": "AttackResultEntry",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents the attack result data in the database.",
+        "params": [
+          {
+            "name": "__tablename__",
+            "type": "str",
+            "desc": "The name of the database table.",
+            "default": ""
+          },
+          {
+            "name": "__table_args__",
+            "type": "dict",
+            "desc": "Additional arguments for the database table.",
+            "default": ""
+          },
+          {
+            "name": "id",
+            "type": "Uuid",
+            "desc": "The unique identifier for the attack result entry.",
+            "default": ""
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "desc": "The unique identifier of the conversation that produced this result.",
+            "default": ""
+          },
+          {
+            "name": "objective",
+            "type": "str",
+            "desc": "Natural-language description of the attacker's objective.",
+            "default": ""
+          },
+          {
+            "name": "attack_identifier",
+            "type": "dict[str, str]",
+            "desc": "Identifier of the attack (e.g., name, module).",
+            "default": ""
+          },
+          {
+            "name": "objective_sha256",
+            "type": "str",
+            "desc": "The SHA256 hash of the objective.",
+            "default": ""
+          },
+          {
+            "name": "last_response_id",
+            "type": "Uuid",
+            "desc": "Foreign key to the last response MessagePiece.",
+            "default": ""
+          },
+          {
+            "name": "last_score_id",
+            "type": "Uuid",
+            "desc": "Foreign key to the last score ScoreEntry.",
+            "default": ""
+          },
+          {
+            "name": "executed_turns",
+            "type": "int",
+            "desc": "Total number of turns that were executed.",
+            "default": ""
+          },
+          {
+            "name": "execution_time_ms",
+            "type": "int",
+            "desc": "Total execution time of the attack in milliseconds.",
+            "default": ""
+          },
+          {
+            "name": "outcome",
+            "type": "AttackOutcome",
+            "desc": "The outcome of the attack, indicating success, failure, or undetermined.",
+            "default": ""
+          },
+          {
+            "name": "outcome_reason",
+            "type": "str",
+            "desc": "Optional reason for the outcome, providing additional context.",
+            "default": ""
+          },
+          {
+            "name": "attack_metadata",
+            "type": "dict[str, Any]",
+            "desc": "Metadata can be included as key-value pairs to provide extra context.",
+            "default": ""
+          },
+          {
+            "name": "pruned_conversation_ids",
+            "type": "List[str]",
+            "desc": "List of conversation IDs that were pruned from the attack.",
+            "default": ""
+          },
+          {
+            "name": "adversarial_chat_conversation_ids",
+            "type": "List[str]",
+            "desc": "List of conversation IDs used for adversarial chat.",
+            "default": ""
+          },
+          {
+            "name": "timestamp",
+            "type": "DateTime",
+            "desc": "The timestamp of the attack result entry.",
+            "default": ""
+          },
+          {
+            "name": "last_response",
+            "type": "PromptMemoryEntry",
+            "desc": "Relationship to the last response prompt memory entry.",
+            "default": ""
+          },
+          {
+            "name": "last_score",
+            "type": "ScoreEntry",
+            "desc": "Relationship to the last score entry.",
+            "default": ""
+          }
+        ]
+      },
+      "bases": [
+        "Base"
+      ],
+      "methods": [
+        {
+          "name": "filter_json_serializable_metadata",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "metadata",
+              "type": "dict[str, Any]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Filter a dictionary to only include JSON-serializable values.\n\nThis function iterates through the metadata dictionary and keeps only\nvalues that can be serialized to JSON, discarding any non-serializable objects.",
+            "params": [
+              {
+                "name": "metadata",
+                "type": "dict[str, Any]",
+                "desc": "Dictionary with potentially non-serializable values",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "dict[str, Any]",
+                "desc": "Dictionary with only JSON-serializable values"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, Any]"
+        },
+        {
+          "name": "get_attack_result",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Convert this database entry back into an AttackResult object.",
+            "returns": [
+              {
+                "type": "AttackResult",
+                "desc": "The reconstructed attack result including related conversations and scores."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackResult"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "adversarial_chat_conversation_ids",
+          "type": "Mapped[Optional[list[str]]]"
+        },
+        {
+          "name": "atomic_attack_identifier",
+          "type": "Mapped[Optional[dict[str, Any]]]"
+        },
+        {
+          "name": "attack_identifier",
+          "type": "Mapped[dict[str, str]]"
+        },
+        {
+          "name": "attack_metadata",
+          "type": "Mapped[dict[str, Union[str, int, float, bool]]]"
+        },
+        {
+          "name": "conversation_id"
+        },
+        {
+          "name": "executed_turns"
+        },
+        {
+          "name": "execution_time_ms"
+        },
+        {
+          "name": "id"
+        },
+        {
+          "name": "last_response",
+          "type": "Mapped[Optional[PromptMemoryEntry]]"
+        },
+        {
+          "name": "last_response_id",
+          "type": "Mapped[Optional[uuid.UUID]]"
+        },
+        {
+          "name": "last_score",
+          "type": "Mapped[Optional[ScoreEntry]]"
+        },
+        {
+          "name": "last_score_id",
+          "type": "Mapped[Optional[uuid.UUID]]"
+        },
+        {
+          "name": "objective"
+        },
+        {
+          "name": "objective_sha256"
+        },
+        {
+          "name": "outcome",
+          "type": "Mapped[Literal['success', 'failure', 'undetermined']]"
+        },
+        {
+          "name": "outcome_reason"
+        },
+        {
+          "name": "pruned_conversation_ids",
+          "type": "Mapped[Optional[list[str]]]"
+        },
+        {
+          "name": "pyrit_version"
+        },
+        {
+          "name": "timestamp"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "entry",
+            "type": "AttackResult",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize an AttackResultEntry from an AttackResult object.",
+          "params": [
+            {
+              "name": "entry",
+              "type": "AttackResult",
+              "desc": "The attack result object to convert into a database entry.",
+              "default": ""
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "AzureSQLMemory",
+      "kind": "class",
+      "docstring": {
+        "text": "A class to manage conversation memory using Azure SQL Server as the backend database. It leverages SQLAlchemy Base\nmodels for creating tables and provides CRUD operations to interact with the tables.\n\nThis class encapsulates the setup of the database connection, table creation based on SQLAlchemy models,\nand session management to perform database operations."
+      },
+      "bases": [
+        "MemoryInterface"
+      ],
+      "methods": [
+        {
+          "name": "add_message_pieces_to_memory",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "message_pieces",
+              "type": "Sequence[MessagePiece]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of message pieces into the memory storage."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "dispose_engine",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Dispose the engine and clean up resources."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "get_all_embeddings",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Fetch all entries from the specified table and returns them as model instances.",
+            "returns": [
+              {
+                "type": "Sequence[EmbeddingDataEntry]",
+                "desc": "Sequence[EmbeddingDataEntry]: A sequence of EmbeddingDataEntry instances representing all stored embeddings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[EmbeddingDataEntry]"
+        },
+        {
+          "name": "get_conversation_stats",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_ids",
+              "type": "Sequence[str]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Azure SQL implementation: lightweight aggregate stats per conversation.\n\nExecutes a single SQL query that returns message count (distinct\nsequences), a truncated last-message preview, the first non-empty\nlabels dict, and the earliest timestamp for each conversation_id.",
+            "params": [
+              {
+                "name": "conversation_ids",
+                "type": "Sequence[str]",
+                "desc": "The conversation IDs to query.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "dict[str, ConversationStats]",
+                "desc": "Mapping from conversation_id to ConversationStats."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, ConversationStats]"
+        },
+        {
+          "name": "get_session",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Provide a session for database operations.",
+            "returns": [
+              {
+                "type": "Session",
+                "desc": "A new SQLAlchemy session bound to the configured engine."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Session"
+        },
+        {
+          "name": "get_unique_attack_class_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Azure SQL implementation: extract unique class_name values from\nthe atomic_attack_identifier JSON column.",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "Sorted list of unique attack class name strings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "get_unique_converter_class_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Azure SQL implementation: extract unique converter class_name values\nfrom the request_converter_identifiers array in the atomic_attack_identifier\nJSON column.",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "Sorted list of unique converter class name strings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "reset_database",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Drop and recreate existing tables."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "AZURE_SQL_DB_CONNECTION_STRING"
+        },
+        {
+          "name": "AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL",
+          "type": "str"
+        },
+        {
+          "name": "AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN",
+          "type": "str"
+        },
+        {
+          "name": "SQL_COPT_SS_ACCESS_TOKEN"
+        },
+        {
+          "name": "SessionFactory"
+        },
+        {
+          "name": "TOKEN_URL"
+        },
+        {
+          "name": "engine"
+        },
+        {
+          "name": "results_path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "connection_string",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "results_container_url",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "results_sas_token",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "verbose",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize an Azure SQL Memory backend.",
+          "params": [
+            {
+              "name": "connection_string",
+              "type": "Optional[str]",
+              "desc": "The connection string for the Azure Sql Database. If not provided,\nit falls back to the 'AZURE_SQL_DB_CONNECTION_STRING' environment variable.",
+              "default": "None"
+            },
+            {
+              "name": "results_container_url",
+              "type": "Optional[str]",
+              "desc": "The URL to an Azure Storage Container. If not provided,\nit falls back to the 'AZURE_STORAGE_ACCOUNT_DB_DATA_CONTAINER_URL' environment variable.",
+              "default": "None"
+            },
+            {
+              "name": "results_sas_token",
+              "type": "Optional[str]",
+              "desc": "The Shared Access Signature (SAS) token for the storage container.\nIf not provided, falls back to the 'AZURE_STORAGE_ACCOUNT_DB_DATA_SAS_TOKEN' environment variable.",
+              "default": "None"
+            },
+            {
+              "name": "verbose",
+              "type": "bool",
+              "desc": "Whether to enable verbose logging for the database engine. Defaults to False.",
+              "default": "False"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "CentralMemory",
+      "kind": "class",
+      "docstring": {
+        "text": "Provide a centralized memory instance across the framework.\nThe provided memory instance will be reused for future calls."
+      },
+      "methods": [
+        {
+          "name": "get_memory_instance",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return a centralized memory instance.",
+            "returns": [
+              {
+                "type": "MemoryInterface",
+                "desc": "The singleton memory instance."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the central memory instance has not been set."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "MemoryInterface"
+        },
+        {
+          "name": "set_memory_instance",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "passed_memory",
+              "type": "MemoryInterface",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Set a provided memory instance as the central instance for subsequent calls.",
+            "params": [
+              {
+                "name": "passed_memory",
+                "type": "MemoryInterface",
+                "desc": "The memory instance to set as the central instance.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ]
+    },
+    {
+      "name": "EmbeddingDataEntry",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents the embedding data associated with conversation entries in the database.\nEach embedding is linked to a specific conversation entry via an id.",
+        "params": [
+          {
+            "name": "id",
+            "type": "Uuid",
+            "desc": "The primary key, which is a foreign key referencing the UUID in the PromptMemoryEntries table.",
+            "default": ""
+          },
+          {
+            "name": "embedding",
+            "type": "ARRAY(Float)",
+            "desc": "An array of floats representing the embedding vector.",
+            "default": ""
+          },
+          {
+            "name": "embedding_type_name",
+            "type": "String",
+            "desc": "The name or type of the embedding, indicating the model or method used.",
+            "default": ""
+          }
+        ]
+      },
+      "bases": [
+        "Base"
+      ],
+      "attributes": [
+        {
+          "name": "embedding"
+        },
+        {
+          "name": "embedding_type_name"
+        },
+        {
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "name": "MemoryEmbedding",
+      "kind": "class",
+      "docstring": {
+        "text": "The MemoryEmbedding class is responsible for encoding the memory embeddings.",
+        "params": [
+          {
+            "name": "embedding_model",
+            "type": "EmbeddingSupport",
+            "desc": "An instance of a class that supports embedding generation.",
+            "default": "None"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "generate_embedding_memory_data",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "message_piece",
+              "type": "MessagePiece",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Generate metadata for a message piece.",
+            "params": [
+              {
+                "name": "message_piece",
+                "type": "MessagePiece",
+                "desc": "the message piece for which to generate a text embedding",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "EmbeddingDataEntry",
+                "desc": "The generated metadata."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the message piece is not of type text."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "EmbeddingDataEntry"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "embedding_model"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "embedding_model",
+            "type": "Optional[EmbeddingSupport]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the memory embedding helper with a backing embedding model.",
+          "params": [
+            {
+              "name": "embedding_model",
+              "type": "Optional[EmbeddingSupport]",
+              "desc": "The embedding model used to\ngenerate text embeddings. If not provided, a ValueError is raised.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If `embedding_model` is not provided."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "MemoryExporter",
+      "kind": "class",
+      "docstring": {
+        "text": "Handles the export of data to various formats, currently supporting only JSON format.\nThis class utilizes the strategy design pattern to select the appropriate export format."
+      },
+      "methods": [
+        {
+          "name": "export_data",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "data",
+              "type": "list[MessagePiece]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "file_path",
+              "type": "Optional[Path]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "export_type",
+              "type": "str",
+              "default": "'json'",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Export the provided data to a file in the specified format.",
+            "params": [
+              {
+                "name": "data",
+                "type": "list[MessagePiece]",
+                "desc": "The data to be exported, as a list of MessagePiece instances.",
+                "default": ""
+              },
+              {
+                "name": "file_path",
+                "type": "str",
+                "desc": "The full path, including the file name, where the data will be exported.",
+                "default": "None"
+              },
+              {
+                "name": "export_type",
+                "type": "(str, Optional)",
+                "desc": "The format for exporting data. Defaults to \"json\".",
+                "default": "'json'"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no file_path is provided or if the specified export format is not supported."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "export_to_csv",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "data",
+              "type": "list[MessagePiece]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "file_path",
+              "type": "Optional[Path]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Export the provided data to a CSV file at the specified file path.\nEach item in the data list, representing a row from the table,\nis converted to a dictionary before being written to the file.",
+            "params": [
+              {
+                "name": "data",
+                "type": "list[MessagePiece]",
+                "desc": "The data to be exported, as a list of MessagePiece instances.",
+                "default": ""
+              },
+              {
+                "name": "file_path",
+                "type": "Path",
+                "desc": "The full path, including the file name, where the data will be exported.",
+                "default": "None"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no file_path is provided."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "export_to_json",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "data",
+              "type": "list[MessagePiece]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "file_path",
+              "type": "Optional[Path]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Export the provided data to a JSON file at the specified file path.\nEach item in the data list, representing a row from the table,\nis converted to a dictionary before being written to the file.",
+            "params": [
+              {
+                "name": "data",
+                "type": "list[MessagePiece]",
+                "desc": "The data to be exported, as a list of MessagePiece instances.",
+                "default": ""
+              },
+              {
+                "name": "file_path",
+                "type": "Path",
+                "desc": "The full path, including the file name, where the data will be exported.",
+                "default": "None"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no file_path is provided."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "export_to_markdown",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "data",
+              "type": "list[MessagePiece]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "file_path",
+              "type": "Optional[Path]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Export the provided data to a Markdown file at the specified file path.\nEach item in the data list is converted to a dictionary and formatted as a table.",
+            "params": [
+              {
+                "name": "data",
+                "type": "list[MessagePiece]",
+                "desc": "The data to be exported, as a list of MessagePiece instances.",
+                "default": ""
+              },
+              {
+                "name": "file_path",
+                "type": "Path",
+                "desc": "The full path, including the file name, where the data will be exported.",
+                "default": "None"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no file_path is provided or if there is no data to export."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "export_strategies"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the MemoryExporter.\n\nSets up the available export formats using the strategy design pattern."
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "MemoryInterface",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract interface for conversation memory storage systems.\n\nThis interface defines the contract for storing and retrieving chat messages\nand conversation history. Implementations can use different storage backends\nsuch as files, databases, or cloud storage services."
+      },
+      "bases": [
+        "abc.ABC"
+      ],
+      "methods": [
+        {
+          "name": "add_attack_results_to_memory",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack_results",
+              "type": "Sequence[AttackResult]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of attack results into the memory storage.\nThe database model automatically calculates objective_sha256 for consistency.",
+            "raises": [
+              {
+                "type": "SQLAlchemyError",
+                "desc": "If the database transaction fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "add_attack_results_to_scenario",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "atomic_attack_name",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "attack_results",
+              "type": "Sequence[AttackResult]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Add attack results to an existing scenario result in memory.\n\nThis method efficiently updates a scenario result by appending new attack results\nto a specific atomic attack name without requiring a full retrieve-modify-save cycle.",
+            "params": [
+              {
+                "name": "scenario_result_id",
+                "type": "str",
+                "desc": "The ID of the scenario result to update.",
+                "default": ""
+              },
+              {
+                "name": "atomic_attack_name",
+                "type": "str",
+                "desc": "The name of the atomic attack to add results for.",
+                "default": ""
+              },
+              {
+                "name": "attack_results",
+                "type": "Sequence[AttackResult]",
+                "desc": "The attack results to add.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if the update was successful, False otherwise."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "add_message_pieces_to_memory",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "message_pieces",
+              "type": "Sequence[MessagePiece]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of message pieces into the memory storage."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "add_message_to_memory",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "request",
+              "type": "Message",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of message pieces into the memory storage.\n\nAutomatically updates the sequence to be the next number in the conversation.\nIf necessary, generates embedding data for applicable entries",
+            "params": [
+              {
+                "name": "request",
+                "type": "MessagePiece",
+                "desc": "The message piece to add to the memory.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "add_scenario_results_to_memory",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scenario_results",
+              "type": "Sequence[ScenarioResult]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of scenario results into the memory storage.",
+            "params": [
+              {
+                "name": "scenario_results",
+                "type": "Sequence[ScenarioResult]",
+                "desc": "Sequence of ScenarioResult objects to store in the database.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "add_scores_to_memory",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scores",
+              "type": "Sequence[Score]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of scores into the memory storage."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "add_seed_datasets_to_memory_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "datasets",
+              "type": "Sequence[SeedDataset]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "added_by",
+              "type": "str",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of seed datasets into the memory storage.",
+            "params": [
+              {
+                "name": "datasets",
+                "type": "Sequence[SeedDataset]",
+                "desc": "A list of seed datasets to insert.",
+                "default": ""
+              },
+              {
+                "name": "added_by",
+                "type": "str",
+                "desc": "The user who added the datasets.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "add_seed_groups_to_memory_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "prompt_groups",
+              "type": "Sequence[SeedGroup]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "added_by",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of seed groups into the memory storage.",
+            "params": [
+              {
+                "name": "prompt_groups",
+                "type": "Sequence[SeedGroup]",
+                "desc": "A list of prompt groups to insert.",
+                "default": ""
+              },
+              {
+                "name": "added_by",
+                "type": "str",
+                "desc": "The user who added the prompt groups.",
+                "default": "None"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If a seed group does not have at least one seed."
+              },
+              {
+                "type": "ValueError",
+                "desc": "If seed group IDs are inconsistent within the same seed group."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "add_seeds_to_memory_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "seeds",
+              "type": "Sequence[Seed]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "added_by",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of seeds into the memory storage.",
+            "params": [
+              {
+                "name": "seeds",
+                "type": "Sequence[Seed]",
+                "desc": "A list of seeds to insert.",
+                "default": ""
+              },
+              {
+                "name": "added_by",
+                "type": "str",
+                "desc": "The user who added the seeds.",
+                "default": "None"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the 'added_by' attribute is not set for each prompt."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "cleanup",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Ensure cleanup on process exit."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "disable_embedding",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Disable embedding functionality for the memory interface.\n\nSets the memory_embedding attribute to None, disabling any embedding operations."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "dispose_engine",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Dispose the engine and clean up resources."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "duplicate_conversation",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Duplicate a conversation for reuse.\n\nThis can be useful when an attack strategy requires branching out from a particular point in the conversation.\nOne cannot continue both branches with the same conversation ID since that would corrupt\nthe memory. Instead, one needs to duplicate the conversation and continue with the new conversation ID.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The conversation ID with existing conversations.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The uuid for the new conversation."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "duplicate_conversation_excluding_last_turn",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Duplicate a conversation, excluding the last turn. In this case, last turn is defined as before the last\nuser request (e.g. if there is half a turn, it just removes that half).\n\nThis can be useful when an attack strategy requires back tracking the last prompt/response pair.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The conversation ID with existing conversations.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The uuid for the new conversation."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "duplicate_messages",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "Sequence[Message]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Duplicate messages with a new conversation ID.\n\nEach duplicated piece gets a fresh ``id`` and ``timestamp`` while\npreserving ``original_prompt_id`` for tracking lineage.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "Sequence[Message]",
+                "desc": "The messages to duplicate.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "tuple[str, Sequence[MessagePiece]]",
+                "desc": "Tuple of (new_conversation_id, duplicated_message_pieces)."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "tuple[str, Sequence[MessagePiece]]"
+        },
+        {
+          "name": "enable_embedding",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "embedding_model",
+              "type": "Optional[Any]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Enable embedding functionality for the memory interface.",
+            "params": [
+              {
+                "name": "embedding_model",
+                "type": "Optional[Any]",
+                "desc": "Optional embedding model to use. If not provided,\nattempts to create a default embedding model from environment variables.",
+                "default": "None"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no embedding model is provided and required environment"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "export_conversations",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_ids",
+              "type": "Optional[Sequence[str] | Sequence[uuid.UUID]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_after",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_before",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "original_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "not_data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_value_sha256",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "file_path",
+              "type": "Optional[Path]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "export_type",
+              "type": "str",
+              "default": "'json'",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Export conversation data with the given inputs to a specified file.\n    Defaults to all conversations if no filters are provided.",
+            "params": [
+              {
+                "name": "attack_id",
+                "type": "Optional[str | uuid.UUID]",
+                "desc": "The ID of the attack. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "conversation_id",
+                "type": "Optional[str | uuid.UUID]",
+                "desc": "The ID of the conversation. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "prompt_ids",
+                "type": "Optional[Sequence[str] | Sequence[uuid.UUID]]",
+                "desc": "A list of prompt IDs.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "A dictionary of labels. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "sent_after",
+                "type": "Optional[datetime]",
+                "desc": "Filter for prompts sent after this datetime. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "sent_before",
+                "type": "Optional[datetime]",
+                "desc": "Filter for prompts sent before this datetime. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "original_values",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of original values. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "converted_values",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of converted values. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "data_type",
+                "type": "Optional[str]",
+                "desc": "The data type to filter by. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "not_data_type",
+                "type": "Optional[str]",
+                "desc": "The data type to exclude. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "converted_value_sha256",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of SHA256 hashes of converted values.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "file_path",
+                "type": "Optional[Path]",
+                "desc": "The path to the file where the data will be exported.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "export_type",
+                "type": "str",
+                "desc": "The format of the export. Defaults to \"json\".",
+                "default": "'json'"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Path",
+                "desc": "The path to the exported file."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Path"
+        },
+        {
+          "name": "get_all_embeddings",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Load all EmbeddingData from the memory storage handler."
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[EmbeddingDataEntry]"
+        },
+        {
+          "name": "get_attack_results",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack_result_ids",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objective",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objective_sha256",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "outcome",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "attack_class",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converter_classes",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "targeted_harm_categories",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a list of AttackResult objects based on the specified filters.",
+            "params": [
+              {
+                "name": "attack_result_ids",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of attack result IDs. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "conversation_id",
+                "type": "Optional[str]",
+                "desc": "The conversation ID to filter by. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "objective",
+                "type": "Optional[str]",
+                "desc": "The objective to filter by (substring match). Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "objective_sha256",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of objective SHA256 hashes to filter by.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "outcome",
+                "type": "Optional[str]",
+                "desc": "The outcome to filter by (success, failure, undetermined).\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "attack_class",
+                "type": "Optional[str]",
+                "desc": "Filter by exact attack class_name in attack_identifier.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "converter_classes",
+                "type": "Optional[Sequence[str]]",
+                "desc": "Filter by converter class names.\nReturns only attacks that used ALL specified converters (AND logic, case-insensitive).\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "targeted_harm_categories",
+                "type": "Optional[Sequence[str]]",
+                "desc": "\nA list of targeted harm categories to filter results by.\nThese targeted harm categories are associated with the prompts themselves,\nmeaning they are harm(s) we're trying to elicit with the prompt,\nnot necessarily one(s) that were found in the response.\nBy providing a list, this means ALL categories in the list must be present.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "A dictionary of memory labels to filter results by.\nThese labels are associated with the prompts themselves, used for custom tagging and tracking.\nDefaults to None.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[AttackResult]",
+                "desc": "Sequence[AttackResult]: A list of AttackResult objects that match the specified filters."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[AttackResult]"
+        },
+        {
+          "name": "get_conversation",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a list of Message objects that have the specified conversation ID.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The conversation ID to match.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "MutableSequence[Message]",
+                "desc": "MutableSequence[Message]: A list of chat memory entries with the specified conversation ID."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "MutableSequence[Message]"
+        },
+        {
+          "name": "get_conversation_stats",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_ids",
+              "type": "Sequence[str]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Return lightweight aggregate statistics for one or more conversations.\n\nComputes per-conversation message count (distinct sequence numbers),\na truncated last-message preview, the first non-empty labels dict,\nand the earliest message timestamp using efficient SQL aggregation\ninstead of loading full pieces.",
+            "params": [
+              {
+                "name": "conversation_ids",
+                "type": "Sequence[str]",
+                "desc": "The conversation IDs to query.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "dict[str, ConversationStats]",
+                "desc": "Mapping from conversation_id to ConversationStats."
+              },
+              {
+                "type": "dict[str, ConversationStats]",
+                "desc": "Conversations with no pieces are omitted from the result."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, ConversationStats]"
+        },
+        {
+          "name": "get_message_pieces",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "role",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_ids",
+              "type": "Optional[Sequence[str | uuid.UUID]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_metadata",
+              "type": "Optional[dict[str, Union[str, int]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_after",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_before",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "original_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "not_data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_value_sha256",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a list of MessagePiece objects based on the specified filters.",
+            "params": [
+              {
+                "name": "attack_id",
+                "type": "Optional[str | uuid.UUID]",
+                "desc": "The ID of the attack. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "role",
+                "type": "Optional[str]",
+                "desc": "The role of the prompt. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "conversation_id",
+                "type": "Optional[str | uuid.UUID]",
+                "desc": "The ID of the conversation. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "prompt_ids",
+                "type": "Optional[Sequence[str] | Sequence[uuid.UUID]]",
+                "desc": "A list of prompt IDs.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "A dictionary of labels. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "prompt_metadata",
+                "type": "Optional[dict[str, Union[str, int]]]",
+                "desc": "The metadata associated with the prompt.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "sent_after",
+                "type": "Optional[datetime]",
+                "desc": "Filter for prompts sent after this datetime. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "sent_before",
+                "type": "Optional[datetime]",
+                "desc": "Filter for prompts sent before this datetime. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "original_values",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of original values. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "converted_values",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of converted values. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "data_type",
+                "type": "Optional[str]",
+                "desc": "The data type to filter by. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "not_data_type",
+                "type": "Optional[str]",
+                "desc": "The data type to exclude. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "converted_value_sha256",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of SHA256 hashes of converted values.\nDefaults to None.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[MessagePiece]",
+                "desc": "Sequence[MessagePiece]: A list of MessagePiece objects that match the specified filters."
+              }
+            ],
+            "raises": [
+              {
+                "type": "Exception",
+                "desc": "If there is an error retrieving the prompts,\nan exception is logged and an empty list is returned."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[MessagePiece]"
+        },
+        {
+          "name": "get_prompt_scores",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "role",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_ids",
+              "type": "Optional[Sequence[str | uuid.UUID]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_metadata",
+              "type": "Optional[dict[str, Union[str, int]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_after",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_before",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "original_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "not_data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_value_sha256",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve scores attached to message pieces based on the specified filters.",
+            "params": [
+              {
+                "name": "attack_id",
+                "type": "Optional[str | uuid.UUID]",
+                "desc": "The ID of the attack. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "role",
+                "type": "Optional[str]",
+                "desc": "The role of the prompt. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "conversation_id",
+                "type": "Optional[str | uuid.UUID]",
+                "desc": "The ID of the conversation. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "prompt_ids",
+                "type": "Optional[Sequence[str] | Sequence[uuid.UUID]]",
+                "desc": "A list of prompt IDs.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "A dictionary of labels. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "prompt_metadata",
+                "type": "Optional[dict[str, Union[str, int]]]",
+                "desc": "The metadata associated with the prompt.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "sent_after",
+                "type": "Optional[datetime]",
+                "desc": "Filter for prompts sent after this datetime. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "sent_before",
+                "type": "Optional[datetime]",
+                "desc": "Filter for prompts sent before this datetime. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "original_values",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of original values. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "converted_values",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of converted values. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "data_type",
+                "type": "Optional[str]",
+                "desc": "The data type to filter by. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "not_data_type",
+                "type": "Optional[str]",
+                "desc": "The data type to exclude. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "converted_value_sha256",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of SHA256 hashes of converted values.\nDefaults to None.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[Score]",
+                "desc": "Sequence[Score]: A list of scores extracted from the message pieces."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[Score]"
+        },
+        {
+          "name": "get_request_from_response",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "response",
+              "type": "Message",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve the request that produced the given response.",
+            "params": [
+              {
+                "name": "response",
+                "type": "Message",
+                "desc": "The response message object to match.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "Message",
+                "desc": "The corresponding message object."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the response is not from an assistant role or has no preceding request."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Message"
+        },
+        {
+          "name": "get_scenario_results",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scenario_result_ids",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "scenario_name",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "scenario_version",
+              "type": "Optional[int]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "pyrit_version",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "added_after",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "added_before",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objective_target_endpoint",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objective_target_model_name",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a list of ScenarioResult objects based on the specified filters.",
+            "params": [
+              {
+                "name": "scenario_result_ids",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of scenario result IDs.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "scenario_name",
+                "type": "Optional[str]",
+                "desc": "The scenario name to filter by (substring match).\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "scenario_version",
+                "type": "Optional[int]",
+                "desc": "The scenario version to filter by. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "pyrit_version",
+                "type": "Optional[str]",
+                "desc": "The PyRIT version to filter by. Defaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "added_after",
+                "type": "Optional[datetime]",
+                "desc": "Filter for scenarios completed after this datetime.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "added_before",
+                "type": "Optional[datetime]",
+                "desc": "Filter for scenarios completed before this datetime.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "A dictionary of memory labels to filter by.\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "objective_target_endpoint",
+                "type": "Optional[str]",
+                "desc": "Filter for scenarios where the\nobjective_target_identifier has an endpoint attribute containing this value (case-insensitive).\nDefaults to None.",
+                "default": "None"
+              },
+              {
+                "name": "objective_target_model_name",
+                "type": "Optional[str]",
+                "desc": "Filter for scenarios where the\nobjective_target_identifier has a model_name attribute containing this value (case-insensitive).\nDefaults to None.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[ScenarioResult]",
+                "desc": "Sequence[ScenarioResult]: A list of ScenarioResult objects that match the specified filters."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[ScenarioResult]"
+        },
+        {
+          "name": "get_scores",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "score_ids",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "score_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "score_category",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_after",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_before",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a list of Score objects based on the specified filters.",
+            "params": [
+              {
+                "name": "score_ids",
+                "type": "Optional[Sequence[str]]",
+                "desc": "A list of score IDs to filter by.",
+                "default": "None"
+              },
+              {
+                "name": "score_type",
+                "type": "Optional[str]",
+                "desc": "The type of the score to filter by.",
+                "default": "None"
+              },
+              {
+                "name": "score_category",
+                "type": "Optional[str]",
+                "desc": "The category of the score to filter by.",
+                "default": "None"
+              },
+              {
+                "name": "sent_after",
+                "type": "Optional[datetime]",
+                "desc": "Filter for scores sent after this datetime.",
+                "default": "None"
+              },
+              {
+                "name": "sent_before",
+                "type": "Optional[datetime]",
+                "desc": "Filter for scores sent before this datetime.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[Score]",
+                "desc": "Sequence[Score]: A list of Score objects that match the specified filters."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[Score]"
+        },
+        {
+          "name": "get_seed_dataset_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return a list of all seed dataset names in the memory storage.",
+            "returns": [
+              {
+                "type": "Sequence[str]",
+                "desc": "Sequence[str]: A list of unique dataset names."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[str]"
+        },
+        {
+          "name": "get_seed_groups",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "value",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "value_sha256",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "dataset_name",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "dataset_name_pattern",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "data_types",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "harm_categories",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "added_by",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "authors",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "groups",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "source",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "seed_type",
+              "type": "Optional[SeedType]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "is_objective",
+              "type": "Optional[bool]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "parameters",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "metadata",
+              "type": "Optional[dict[str, Union[str, int]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_group_ids",
+              "type": "Optional[Sequence[uuid.UUID]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "group_length",
+              "type": "Optional[Sequence[int]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve groups of seed prompts based on the provided filtering criteria.",
+            "params": [
+              {
+                "name": "value",
+                "type": "(Optional[str], Optional)",
+                "desc": "The value to match by substring.",
+                "default": "None"
+              },
+              {
+                "name": "value_sha256",
+                "type": "(Optional[Sequence[str]], Optional)",
+                "desc": "SHA256 hash of value to filter seed groups by.",
+                "default": "None"
+              },
+              {
+                "name": "dataset_name",
+                "type": "(Optional[str], Optional)",
+                "desc": "Name of the dataset to match exactly.",
+                "default": "None"
+              },
+              {
+                "name": "dataset_name_pattern",
+                "type": "(Optional[str], Optional)",
+                "desc": "A pattern to match dataset names using SQL LIKE syntax.\nSupports wildcards: % (any characters) and _ (single character).\nExamples: \"harm%\" matches names starting with \"harm\", \"%test%\" matches names containing \"test\".\nIf both dataset_name and dataset_name_pattern are provided, dataset_name takes precedence.",
+                "default": "None"
+              },
+              {
+                "name": "data_types",
+                "type": "(Optional[Sequence[str]], Optional)",
+                "desc": "List of data types to filter seed prompts by",
+                "default": "None"
+              },
+              {
+                "name": "harm_categories",
+                "type": "(Optional[Sequence[str]], Optional)",
+                "desc": "List of harm categories to filter seed prompts by.",
+                "default": "None"
+              },
+              {
+                "name": "added_by",
+                "type": "(Optional[str], Optional)",
+                "desc": "The user who added the seed groups to filter by.",
+                "default": "None"
+              },
+              {
+                "name": "authors",
+                "type": "(Optional[Sequence[str]], Optional)",
+                "desc": "List of authors to filter seed groups by.",
+                "default": "None"
+              },
+              {
+                "name": "groups",
+                "type": "(Optional[Sequence[str]], Optional)",
+                "desc": "List of groups to filter seed groups by.",
+                "default": "None"
+              },
+              {
+                "name": "source",
+                "type": "(Optional[str], Optional)",
+                "desc": "The source from which the seed prompts originated.",
+                "default": "None"
+              },
+              {
+                "name": "seed_type",
+                "type": "(Optional[SeedType], Optional)",
+                "desc": "The type of seed to filter by (\"prompt\", \"objective\", or\n\"simulated_conversation\").",
+                "default": "None"
+              },
+              {
+                "name": "is_objective",
+                "type": "bool",
+                "desc": "Deprecated in 0.13.0. Use seed_type=\"objective\" instead.",
+                "default": "None"
+              },
+              {
+                "name": "parameters",
+                "type": "(Optional[Sequence[str]], Optional)",
+                "desc": "List of parameters to filter by.",
+                "default": "None"
+              },
+              {
+                "name": "metadata",
+                "type": "(Optional[dict[str, Union[str, int]]], Optional)",
+                "desc": "A free-form dictionary for tagging\nprompts with custom metadata.",
+                "default": "None"
+              },
+              {
+                "name": "prompt_group_ids",
+                "type": "(Optional[Sequence[uuid.UUID]], Optional)",
+                "desc": "List of prompt group IDs to filter by.",
+                "default": "None"
+              },
+              {
+                "name": "group_length",
+                "type": "(Optional[Sequence[int]], Optional)",
+                "desc": "The number of seeds in the group to filter by.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[SeedGroup]",
+                "desc": "Sequence[SeedGroup]: A list of `SeedGroup` objects that match the filtering criteria."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[SeedGroup]"
+        },
+        {
+          "name": "get_seeds",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "value",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "value_sha256",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "dataset_name",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "dataset_name_pattern",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "data_types",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "harm_categories",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "added_by",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "authors",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "groups",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "source",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "seed_type",
+              "type": "Optional[SeedType]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "is_objective",
+              "type": "Optional[bool]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "parameters",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "metadata",
+              "type": "Optional[dict[str, Union[str, int]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_group_ids",
+              "type": "Optional[Sequence[uuid.UUID]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a list of seed prompts based on the specified filters.",
+            "params": [
+              {
+                "name": "value",
+                "type": "str",
+                "desc": "The value to match by substring. If None, all values are returned.",
+                "default": "None"
+              },
+              {
+                "name": "value_sha256",
+                "type": "str",
+                "desc": "The SHA256 hash of the value to match. If None, all values are returned.",
+                "default": "None"
+              },
+              {
+                "name": "dataset_name",
+                "type": "str",
+                "desc": "The dataset name to match exactly. If None, all dataset names are considered.",
+                "default": "None"
+              },
+              {
+                "name": "dataset_name_pattern",
+                "type": "str",
+                "desc": "A pattern to match dataset names using SQL LIKE syntax.\nSupports wildcards: % (any characters) and _ (single character).\nExamples: \"harm%\" matches names starting with \"harm\", \"%test%\" matches names containing \"test\".\nIf both dataset_name and dataset_name_pattern are provided, dataset_name takes precedence.",
+                "default": "None"
+              },
+              {
+                "name": "data_types",
+                "type": "Optional[Sequence[str], Optional",
+                "desc": "List of data types to filter seed prompts by\n(e.g., text, image_path).",
+                "default": "None"
+              },
+              {
+                "name": "harm_categories",
+                "type": "Sequence[str]",
+                "desc": "A list of harm categories to filter by. If None,",
+                "default": "None"
+              },
+              {
+                "name": "added_by",
+                "type": "str",
+                "desc": "The user who added the prompts.",
+                "default": "None"
+              },
+              {
+                "name": "authors",
+                "type": "Sequence[str]",
+                "desc": "A list of authors to filter by.\nNote that this filters by substring, so a query for \"Adam Jones\" may not return results if the record\nis \"A. Jones\", \"Jones, Adam\", etc. If None, all authors are considered.",
+                "default": "None"
+              },
+              {
+                "name": "groups",
+                "type": "Sequence[str]",
+                "desc": "A list of groups to filter by. If None, all groups are considered.",
+                "default": "None"
+              },
+              {
+                "name": "source",
+                "type": "str",
+                "desc": "The source to filter by. If None, all sources are considered.",
+                "default": "None"
+              },
+              {
+                "name": "seed_type",
+                "type": "SeedType",
+                "desc": "The type of seed to filter by (\"prompt\", \"objective\", or\n\"simulated_conversation\").",
+                "default": "None"
+              },
+              {
+                "name": "is_objective",
+                "type": "bool",
+                "desc": "Deprecated in 0.13.0. Use seed_type=\"objective\" instead.",
+                "default": "None"
+              },
+              {
+                "name": "parameters",
+                "type": "Sequence[str]",
+                "desc": "A list of parameters to filter by. Specifying parameters effectively returns\nprompt templates instead of prompts.",
+                "default": "None"
+              },
+              {
+                "name": "metadata",
+                "type": "dict[str, str | int]",
+                "desc": "A free-form dictionary for tagging prompts with custom metadata.",
+                "default": "None"
+              },
+              {
+                "name": "prompt_group_ids",
+                "type": "Sequence[uuid.UUID]",
+                "desc": "A list of prompt group IDs to filter by.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[Seed]",
+                "desc": "Sequence[SeedPrompt]: A list of prompts matching the criteria."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If both 'seed_type' and deprecated 'is_objective' parameters are specified."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[Seed]"
+        },
+        {
+          "name": "get_session",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Provide a SQLAlchemy session for transactional operations.",
+            "returns": [
+              {
+                "type": "Any",
+                "desc": "A SQLAlchemy session bound to the engine."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Any"
+        },
+        {
+          "name": "get_unique_attack_class_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return sorted unique attack class names from all stored attack results.\n\nExtracts class_name from the attack_identifier JSON column via a\ndatabase-level DISTINCT query.",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "Sorted list of unique attack class name strings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "get_unique_attack_labels",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return all unique label key-value pairs across attack results.\n\nLabels live on ``PromptMemoryEntry.labels`` (the established SDK\npath).  This method JOINs with ``AttackResultEntry`` to scope the\nquery to conversations that belong to an attack, applies DISTINCT\nto reduce duplicate label dicts, then aggregates unique key-value\npairs in Python.",
+            "returns": [
+              {
+                "type": "dict[str, list[str]]",
+                "desc": "dict[str, list[str]]: Mapping of label keys to sorted lists of"
+              },
+              {
+                "type": "dict[str, list[str]]",
+                "desc": "unique values."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, list[str]]"
+        },
+        {
+          "name": "get_unique_converter_class_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return sorted unique converter class names used across all attack results.\n\nExtracts class_name values from the request_converter_identifiers array\nwithin the attack_identifier JSON column via a database-level query.",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "Sorted list of unique converter class name strings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "print_schema",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Print the schema of all tables in the database."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "update_attack_result",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "update_fields",
+              "type": "dict[str, Any]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Update specific fields of an existing AttackResultEntry identified by conversation_id.\n\nThis method queries for the raw database entry by conversation_id and updates\nthe specified fields in place, avoiding the creation of duplicate rows.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The conversation ID of the attack result to update.",
+                "default": ""
+              },
+              {
+                "name": "update_fields",
+                "type": "dict[str, Any]",
+                "desc": "A dictionary of column names to new values.\nValid fields include 'adversarial_chat_conversation_ids',\n'pruned_conversation_ids', 'outcome', 'attack_metadata', etc.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if the update was successful, False if the entry was not found."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If update_fields is empty."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "update_attack_result_by_id",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack_result_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "update_fields",
+              "type": "dict[str, Any]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Update specific fields of an existing AttackResultEntry identified by its primary key.",
+            "params": [
+              {
+                "name": "attack_result_id",
+                "type": "str",
+                "desc": "The UUID primary key of the AttackResultEntry.",
+                "default": ""
+              },
+              {
+                "name": "update_fields",
+                "type": "dict[str, Any]",
+                "desc": "Column names to new values.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if the update was successful, False if the entry was not found."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "update_labels_by_conversation_id",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "dict[str, Any]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Update the labels of prompt entries in memory for a given conversation ID.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The conversation ID of the entries to be updated.",
+                "default": ""
+              },
+              {
+                "name": "labels",
+                "type": "dict",
+                "desc": "New dictionary of labels.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if the update was successful, False otherwise."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "update_prompt_entries_by_conversation_id",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "update_fields",
+              "type": "dict[str, Any]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Update prompt entries for a given conversation ID with the specified field values.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The conversation ID of the entries to be updated.",
+                "default": ""
+              },
+              {
+                "name": "update_fields",
+                "type": "dict",
+                "desc": "A dictionary of field names and their new values (ex. {\"labels\": {\"test\": \"value\"}})",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if the update was successful, False otherwise."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If update_fields is empty or not provided."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "update_prompt_metadata_by_conversation_id",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_metadata",
+              "type": "dict[str, Union[str, int]]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Update the metadata of prompt entries in memory for a given conversation ID.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The conversation ID of the entries to be updated.",
+                "default": ""
+              },
+              {
+                "name": "prompt_metadata",
+                "type": "dict[str, str | int]",
+                "desc": "New metadata.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if the update was successful, False otherwise."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "update_scenario_run_state",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "scenario_run_state",
+              "type": "str",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Update the run state of an existing scenario result.",
+            "params": [
+              {
+                "name": "scenario_result_id",
+                "type": "str",
+                "desc": "The ID of the scenario result to update.",
+                "default": ""
+              },
+              {
+                "name": "scenario_run_state",
+                "type": "str",
+                "desc": "The new state for the scenario\n(e.g., \"CREATED\", \"IN_PROGRESS\", \"COMPLETED\", \"FAILED\").",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if the update was successful, False otherwise."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "engine",
+          "type": "Engine"
+        },
+        {
+          "name": "exporter"
+        },
+        {
+          "name": "memory_embedding",
+          "type": "MemoryEmbedding"
+        },
+        {
+          "name": "results_path",
+          "type": "str"
+        },
+        {
+          "name": "results_storage_io",
+          "type": "StorageIO"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "embedding_model",
+            "type": "Optional[Any]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the MemoryInterface.",
+          "params": [
+            {
+              "name": "embedding_model",
+              "type": "Optional[Any]",
+              "desc": "If set, this includes embeddings in the memory entries\nwhich are extremely useful for comparing chat messages and similarities,\nbut also includes overhead.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "PromptMemoryEntry",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents the prompt data.\n\nBecause of the nature of database and sql alchemy, type ignores are abundant :)",
+        "params": [
+          {
+            "name": "__tablename__",
+            "type": "str",
+            "desc": "The name of the database table.",
+            "default": ""
+          },
+          {
+            "name": "__table_args__",
+            "type": "dict",
+            "desc": "Additional arguments for the database table.",
+            "default": ""
+          },
+          {
+            "name": "id",
+            "type": "Uuid",
+            "desc": "The unique identifier for the memory entry.",
+            "default": ""
+          },
+          {
+            "name": "role",
+            "type": "PromptType",
+            "desc": "system, assistant, user",
+            "default": ""
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "desc": "The identifier for the conversation which is associated with a single target.",
+            "default": ""
+          },
+          {
+            "name": "sequence",
+            "type": "int",
+            "desc": "The order of the conversation within a conversation_id.\nCan be the same number for multi-part requests or multi-part responses.",
+            "default": ""
+          },
+          {
+            "name": "timestamp",
+            "type": "DateTime",
+            "desc": "The timestamp of the memory entry.",
+            "default": ""
+          },
+          {
+            "name": "labels",
+            "type": "Dict[str, str]",
+            "desc": "The labels associated with the memory entry. Several can be standardized.",
+            "default": ""
+          },
+          {
+            "name": "targeted_harm_categories",
+            "type": "List[str]",
+            "desc": "The targeted harm categories for the memory entry.",
+            "default": ""
+          },
+          {
+            "name": "prompt_metadata",
+            "type": "JSON",
+            "desc": "The metadata associated with the prompt. This can be specific to any scenarios.\nBecause memory is how components talk with each other, this can be component specific.\ne.g. the URI from a file uploaded to a blob store, or a document type you want to upload.",
+            "default": ""
+          },
+          {
+            "name": "converters",
+            "type": "list[PromptConverter]",
+            "desc": "The converters for the prompt.",
+            "default": ""
+          },
+          {
+            "name": "prompt_target",
+            "type": "PromptTarget",
+            "desc": "The target for the prompt.",
+            "default": ""
+          },
+          {
+            "name": "attack_identifier",
+            "type": "Dict[str, str]",
+            "desc": "The attack identifier for the prompt.",
+            "default": ""
+          },
+          {
+            "name": "original_value_data_type",
+            "type": "PromptDataType",
+            "desc": "The data type of the original prompt (text, image)",
+            "default": ""
+          },
+          {
+            "name": "original_value",
+            "type": "str",
+            "desc": "The text of the original prompt. If prompt is an image, it's a link.",
+            "default": ""
+          },
+          {
+            "name": "original_value_sha256",
+            "type": "str",
+            "desc": "The SHA256 hash of the original prompt data.",
+            "default": ""
+          },
+          {
+            "name": "converted_value_data_type",
+            "type": "PromptDataType",
+            "desc": "The data type of the converted prompt (text, image)",
+            "default": ""
+          },
+          {
+            "name": "converted_value",
+            "type": "str",
+            "desc": "The text of the converted prompt. If prompt is an image, it's a link.",
+            "default": ""
+          },
+          {
+            "name": "converted_value_sha256",
+            "type": "str",
+            "desc": "The SHA256 hash of the original prompt data.",
+            "default": ""
+          },
+          {
+            "name": "idx_conversation_id",
+            "type": "Index",
+            "desc": "The index for the conversation ID.",
+            "default": ""
+          },
+          {
+            "name": "original_prompt_id",
+            "type": "UUID",
+            "desc": "The original prompt id. It is equal to id unless it is a duplicate.",
+            "default": ""
+          },
+          {
+            "name": "scores",
+            "type": "list[ScoreEntry]",
+            "desc": "The list of scores associated with the prompt.",
+            "default": ""
+          }
+        ]
+      },
+      "bases": [
+        "Base"
+      ],
+      "methods": [
+        {
+          "name": "get_message_piece",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Convert this database entry back into a MessagePiece object.",
+            "returns": [
+              {
+                "type": "MessagePiece",
+                "desc": "The reconstructed message piece with all its data and scores."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "MessagePiece"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "attack_identifier",
+          "type": "Mapped[dict[str, str]]"
+        },
+        {
+          "name": "conversation_id"
+        },
+        {
+          "name": "converted_value"
+        },
+        {
+          "name": "converted_value_data_type",
+          "type": "Mapped[Literal['text', 'image_path', 'audio_path', 'url', 'error']]"
+        },
+        {
+          "name": "converted_value_sha256"
+        },
+        {
+          "name": "converter_identifiers",
+          "type": "Mapped[Optional[list[dict[str, str]]]]"
+        },
+        {
+          "name": "id"
+        },
+        {
+          "name": "idx_conversation_id"
+        },
+        {
+          "name": "labels",
+          "type": "Mapped[dict[str, str]]"
+        },
+        {
+          "name": "original_prompt_id"
+        },
+        {
+          "name": "original_value"
+        },
+        {
+          "name": "original_value_data_type",
+          "type": "Mapped[Literal['text', 'image_path', 'audio_path', 'url', 'error']]"
+        },
+        {
+          "name": "original_value_sha256"
+        },
+        {
+          "name": "prompt_metadata",
+          "type": "Mapped[dict[str, Union[str, int]]]"
+        },
+        {
+          "name": "prompt_target_identifier",
+          "type": "Mapped[dict[str, str]]"
+        },
+        {
+          "name": "pyrit_version"
+        },
+        {
+          "name": "response_error",
+          "type": "Mapped[Literal['blocked', 'none', 'processing', 'unknown']]"
+        },
+        {
+          "name": "role",
+          "type": "Mapped[Literal['system', 'user', 'assistant', 'simulated_assistant', 'tool', 'developer']]"
+        },
+        {
+          "name": "scores",
+          "type": "Mapped[list[ScoreEntry]]"
+        },
+        {
+          "name": "sequence"
+        },
+        {
+          "name": "targeted_harm_categories",
+          "type": "Mapped[Optional[list[str]]]"
+        },
+        {
+          "name": "timestamp"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "entry",
+            "type": "MessagePiece",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a PromptMemoryEntry from a MessagePiece.",
+          "params": [
+            {
+              "name": "entry",
+              "type": "MessagePiece",
+              "desc": "The message piece to convert into a database entry.",
+              "default": ""
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SQLiteMemory",
+      "kind": "class",
+      "docstring": {
+        "text": "A memory interface that uses SQLite as the backend database.\n\nThis class provides functionality to insert, query, and manage conversation data\nusing SQLite. It supports both file-based and in-memory databases.\n\nNote: this is replacing the old DuckDB implementation."
+      },
+      "bases": [
+        "MemoryInterface"
+      ],
+      "methods": [
+        {
+          "name": "add_message_pieces_to_memory",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "message_pieces",
+              "type": "Sequence[MessagePiece]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Insert a list of message pieces into the memory storage."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "dispose_engine",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Dispose the engine and close all connections."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "export_all_tables",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "export_type",
+              "type": "str",
+              "default": "'json'",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Export all table data using the specified exporter.\n\nIterate over all tables, retrieves their data, and exports each to a file named after the table.",
+            "params": [
+              {
+                "name": "export_type",
+                "type": "str",
+                "desc": "The format to export the data in (defaults to \"json\").",
+                "default": "'json'"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "export_conversations",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "Optional[str | uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_ids",
+              "type": "Optional[Sequence[str] | Sequence[uuid.UUID]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_after",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "sent_before",
+              "type": "Optional[datetime]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "original_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_values",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "not_data_type",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "converted_value_sha256",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "file_path",
+              "type": "Optional[Path]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "export_type",
+              "type": "str",
+              "default": "'json'",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Export conversations and their associated scores from the database to a specified file.",
+            "returns": [
+              {
+                "type": "Path",
+                "desc": "The path to the exported file."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Path"
+        },
+        {
+          "name": "get_all_embeddings",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Fetch all entries from the specified table and returns them as model instances.",
+            "returns": [
+              {
+                "type": "Sequence[EmbeddingDataEntry]",
+                "desc": "Sequence[EmbeddingDataEntry]: A sequence of EmbeddingDataEntry instances representing all stored embeddings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[EmbeddingDataEntry]"
+        },
+        {
+          "name": "get_all_table_models",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return a list of all table models used in the database by inspecting the Base registry.",
+            "returns": [
+              {
+                "type": "list[type[Base]]",
+                "desc": "list[Base]: A list of SQLAlchemy model classes."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[type[Base]]"
+        },
+        {
+          "name": "get_conversation_stats",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_ids",
+              "type": "Sequence[str]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "SQLite implementation: lightweight aggregate stats per conversation.\n\nExecutes a single SQL query that returns message count (distinct\nsequences), a truncated last-message preview, the first non-empty\nlabels dict, and the earliest timestamp for each conversation_id.",
+            "params": [
+              {
+                "name": "conversation_ids",
+                "type": "Sequence[str]",
+                "desc": "The conversation IDs to query.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "dict[str, ConversationStats]",
+                "desc": "Mapping from conversation_id to ConversationStats."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, ConversationStats]"
+        },
+        {
+          "name": "get_session",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Provide a SQLAlchemy session for transactional operations.",
+            "returns": [
+              {
+                "type": "Session",
+                "desc": "A SQLAlchemy session bound to the engine."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Session"
+        },
+        {
+          "name": "get_unique_attack_class_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "SQLite implementation: extract unique class_name values from\nthe atomic_attack_identifier JSON column.",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "Sorted list of unique attack class name strings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "get_unique_converter_class_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "SQLite implementation: extract unique converter class_name values\nfrom the request_converter_identifiers array in the atomic_attack_identifier\nJSON column.",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "Sorted list of unique converter class name strings."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "print_schema",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Print the schema of all tables in the SQLite database."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "reset_database",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Drop and recreates all tables in the database."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_DB_FILE_NAME"
+        },
+        {
+          "name": "SessionFactory"
+        },
+        {
+          "name": "db_path",
+          "type": "Union[Path, str]"
+        },
+        {
+          "name": "engine"
+        },
+        {
+          "name": "results_path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "db_path",
+            "type": "Optional[Union[Path, str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "verbose",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the SQLiteMemory instance.",
+          "params": [
+            {
+              "name": "db_path",
+              "type": "Optional[Union[Path, str]]",
+              "desc": "Path to the SQLite database file.\nDefaults to \"pyrit.db\".",
+              "default": "None"
+            },
+            {
+              "name": "verbose",
+              "type": "bool",
+              "desc": "Whether to enable verbose logging.\nDefaults to False.",
+              "default": "False"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SeedEntry",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents the raw prompt or prompt template data as found in open datasets.\n\nNote: This is different from the PromptMemoryEntry which is the processed prompt data.\nSeedPrompt merely reflects basic prompts before plugging into attacks,\nrunning through models with corresponding attack strategies, and applying converters.\nPromptMemoryEntry captures the processed prompt data before and after the above steps.",
+        "params": [
+          {
+            "name": "__tablename__",
+            "type": "str",
+            "desc": "The name of the database table.",
+            "default": ""
+          },
+          {
+            "name": "__table_args__",
+            "type": "dict",
+            "desc": "Additional arguments for the database table.",
+            "default": ""
+          },
+          {
+            "name": "id",
+            "type": "Uuid",
+            "desc": "The unique identifier for the memory entry.",
+            "default": ""
+          },
+          {
+            "name": "value",
+            "type": "str",
+            "desc": "The value of the seed prompt.",
+            "default": ""
+          },
+          {
+            "name": "value_sha256",
+            "type": "str",
+            "desc": "The SHA256 hash of the value of the seed prompt data.",
+            "default": ""
+          },
+          {
+            "name": "data_type",
+            "type": "PromptDataType",
+            "desc": "The data type of the seed prompt.",
+            "default": ""
+          },
+          {
+            "name": "dataset_name",
+            "type": "str",
+            "desc": "The name of the dataset the seed prompt belongs to.",
+            "default": ""
+          },
+          {
+            "name": "harm_categories",
+            "type": "List[str]",
+            "desc": "The harm categories associated with the seed prompt.",
+            "default": ""
+          },
+          {
+            "name": "description",
+            "type": "str",
+            "desc": "The description of the seed prompt.",
+            "default": ""
+          },
+          {
+            "name": "authors",
+            "type": "List[str]",
+            "desc": "The authors of the seed prompt.",
+            "default": ""
+          },
+          {
+            "name": "groups",
+            "type": "List[str]",
+            "desc": "The groups involved in authoring the seed prompt (if any).",
+            "default": ""
+          },
+          {
+            "name": "source",
+            "type": "str",
+            "desc": "The source of the seed prompt.",
+            "default": ""
+          },
+          {
+            "name": "date_added",
+            "type": "DateTime",
+            "desc": "The date the seed prompt was added.",
+            "default": ""
+          },
+          {
+            "name": "added_by",
+            "type": "str",
+            "desc": "The user who added the seed prompt.",
+            "default": ""
+          },
+          {
+            "name": "prompt_metadata",
+            "type": "dict[str, str | int]",
+            "desc": "The metadata associated with the seed prompt. This includes\ninformation that is useful for the specific target you're probing, such as encoding data.",
+            "default": ""
+          },
+          {
+            "name": "parameters",
+            "type": "List[str]",
+            "desc": "The parameters included in the value.\nNote that seed prompts do not have parameters, only prompt templates do.\nHowever, they are stored in the same table.",
+            "default": ""
+          },
+          {
+            "name": "prompt_group_id",
+            "type": "uuid.UUID",
+            "desc": "The ID of a group the seed prompt may optionally belong to.\nGroups are used to organize prompts for multi-turn conversations or multi-modal prompts.",
+            "default": ""
+          },
+          {
+            "name": "sequence",
+            "type": "int",
+            "desc": "The turn of the seed prompt in a group. When entire multi-turn conversations\nare stored, this is used to order the prompts.",
+            "default": ""
+          },
+          {
+            "name": "role",
+            "type": "str",
+            "desc": "The role of the prompt (e.g., user, system, assistant).",
+            "default": ""
+          },
+          {
+            "name": "seed_type",
+            "type": "SeedType",
+            "desc": "The type of seed - \"prompt\", \"objective\", or \"simulated_conversation\".",
+            "default": ""
+          },
+          {
+            "name": "is_objective",
+            "type": "bool",
+            "desc": "Deprecated in 0.13.0. Use seed_type=\"objective\" instead.",
+            "default": ""
+          }
+        ]
+      },
+      "bases": [
+        "Base"
+      ],
+      "methods": [
+        {
+          "name": "get_seed",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Convert this database entry back into a Seed object.",
+            "returns": [
+              {
+                "type": "Seed",
+                "desc": "The reconstructed seed object (SeedPrompt, SeedObjective, or SeedSimulatedConversation)"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Seed"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "added_by"
+        },
+        {
+          "name": "authors",
+          "type": "Mapped[Optional[list[str]]]"
+        },
+        {
+          "name": "data_type",
+          "type": "Mapped[PromptDataType]"
+        },
+        {
+          "name": "dataset_name"
+        },
+        {
+          "name": "date_added"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "groups",
+          "type": "Mapped[Optional[list[str]]]"
+        },
+        {
+          "name": "harm_categories",
+          "type": "Mapped[Optional[list[str]]]"
+        },
+        {
+          "name": "id"
+        },
+        {
+          "name": "is_objective",
+          "type": "Mapped[Optional[bool]]"
+        },
+        {
+          "name": "name"
+        },
+        {
+          "name": "parameters",
+          "type": "Mapped[Optional[list[str]]]"
+        },
+        {
+          "name": "prompt_group_id",
+          "type": "Mapped[Optional[uuid.UUID]]"
+        },
+        {
+          "name": "prompt_metadata",
+          "type": "Mapped[dict[str, Union[str, int]]]"
+        },
+        {
+          "name": "role",
+          "type": "Mapped[ChatMessageRole]"
+        },
+        {
+          "name": "seed_type",
+          "type": "Mapped[SeedType]"
+        },
+        {
+          "name": "sequence",
+          "type": "Mapped[Optional[int]]"
+        },
+        {
+          "name": "source"
+        },
+        {
+          "name": "value"
+        },
+        {
+          "name": "value_sha256"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "entry",
+            "type": "Seed",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a SeedEntry from a Seed object.",
+          "params": [
+            {
+              "name": "entry",
+              "type": "Seed",
+              "desc": "The seed object to convert into a database entry.",
+              "default": ""
+            }
+          ]
+        },
+        "is_async": false
+      }
+    }
+  ]
+}

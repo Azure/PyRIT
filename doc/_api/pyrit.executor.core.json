@@ -1,0 +1,394 @@
+{
+  "name": "pyrit.executor.core",
+  "kind": "module",
+  "docstring": {
+    "text": "Core executor module."
+  },
+  "members": [
+    {
+      "name": "Strategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for strategies with enforced lifecycle management.\n\nEnsures a consistent execution flow: validate -> setup -> execute -> teardown.\nThe teardown phase is guaranteed to run even if exceptions occur.\n\nSubclasses must implement:\n_validate_context(): Validate context\n_setup_async(): Initialize resources\n_perform_async(): Execute the logic\n_teardown_async(): Clean up resources"
+      },
+      "bases": [
+        "ABC",
+        "Generic[StrategyContextT, StrategyResultT]"
+      ],
+      "methods": [
+        {
+          "name": "execute_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the strategy asynchronously with the given keyword arguments.",
+            "returns": [
+              {
+                "type": "StrategyResultT",
+                "desc": "The result of the strategy execution."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "StrategyResultT"
+        },
+        {
+          "name": "execute_with_context_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "context",
+              "type": "StrategyContextT",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Execute strategy with complete lifecycle management.\n\nEnforces: validate -> setup -> execute -> teardown.",
+            "params": [
+              {
+                "name": "context",
+                "type": "StrategyContextT",
+                "desc": "The context for the strategy, containing configuration and state.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "StrategyResultT",
+                "desc": "The result of the strategy execution, including outcome and reason."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the context validation fails."
+              },
+              {
+                "type": "RuntimeError",
+                "desc": "If the strategy execution fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "StrategyResultT"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "context_type",
+            "type": "type[StrategyContextT]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "event_handler",
+            "type": "Optional[StrategyEventHandler[StrategyContextT, StrategyResultT]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "logger",
+            "type": "logging.Logger",
+            "default": "logger",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the strategy with a context type and logger.",
+          "params": [
+            {
+              "name": "context_type",
+              "type": "type[StrategyContextT]",
+              "desc": "The type of context this strategy will use.",
+              "default": ""
+            },
+            {
+              "name": "event_handler",
+              "type": "Optional[StrategyEventHandler[StrategyContextT, StrategyResultT]]",
+              "desc": "An optional\nevent handler for strategy events.",
+              "default": "None"
+            },
+            {
+              "name": "logger",
+              "type": "logging.Logger",
+              "desc": "The logger to use for this strategy.",
+              "default": "logger"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "StrategyContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Base class for all strategy contexts."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "duplicate",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "type": "StrategyContextT",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create a deep copy of the context.",
+            "returns": [
+              {
+                "type": "StrategyContextT",
+                "desc": "A deep copy of the context."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "StrategyContextT"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "StrategyConverterConfig",
+      "kind": "class",
+      "docstring": {
+        "text": "Configuration for prompt converters used in strategies.\n\nThis class defines the converter configurations that transform prompts\nduring the strategy process, both for requests and responses."
+      },
+      "attributes": [
+        {
+          "name": "request_converters",
+          "type": "list[PromptConverterConfiguration]"
+        },
+        {
+          "name": "response_converters",
+          "type": "list[PromptConverterConfiguration]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "request_converters",
+            "type": "list[PromptConverterConfiguration]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "response_converters",
+            "type": "list[PromptConverterConfiguration]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "StrategyEvent",
+      "kind": "class",
+      "docstring": {
+        "text": "Enumeration of all strategy lifecycle events."
+      },
+      "bases": [
+        "Enum"
+      ],
+      "attributes": [
+        {
+          "name": "ON_ERROR"
+        },
+        {
+          "name": "ON_POST_EXECUTE"
+        },
+        {
+          "name": "ON_POST_SETUP"
+        },
+        {
+          "name": "ON_POST_TEARDOWN"
+        },
+        {
+          "name": "ON_POST_VALIDATE"
+        },
+        {
+          "name": "ON_PRE_EXECUTE"
+        },
+        {
+          "name": "ON_PRE_SETUP"
+        },
+        {
+          "name": "ON_PRE_TEARDOWN"
+        },
+        {
+          "name": "ON_PRE_VALIDATE"
+        }
+      ]
+    },
+    {
+      "name": "StrategyEventData",
+      "kind": "class",
+      "docstring": {
+        "text": "Data passed to event observers."
+      },
+      "bases": [
+        "Generic[StrategyContextT, StrategyResultT]"
+      ],
+      "attributes": [
+        {
+          "name": "context",
+          "type": "StrategyContextT"
+        },
+        {
+          "name": "error",
+          "type": "Optional[Exception]"
+        },
+        {
+          "name": "event",
+          "type": "StrategyEvent"
+        },
+        {
+          "name": "result",
+          "type": "Optional[StrategyResultT]"
+        },
+        {
+          "name": "strategy_id",
+          "type": "str"
+        },
+        {
+          "name": "strategy_name",
+          "type": "str"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "event",
+            "type": "StrategyEvent",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "strategy_name",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "strategy_id",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "context",
+            "type": "StrategyContextT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "result",
+            "type": "Optional[StrategyResultT]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "error",
+            "type": "Optional[Exception]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "StrategyEventHandler",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for strategy event handlers."
+      },
+      "bases": [
+        "ABC",
+        "Generic[StrategyContextT, StrategyResultT]"
+      ],
+      "methods": [
+        {
+          "name": "on_event",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "event_data",
+              "type": "StrategyEventData[StrategyContextT, StrategyResultT]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Handle a strategy event.",
+            "params": [
+              {
+                "name": "event_data",
+                "type": "StrategyEventData[StrategyContextT, StrategyResultT]",
+                "desc": "Data about the event that occurred.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ]
+    }
+  ]
+}

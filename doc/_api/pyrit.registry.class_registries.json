@@ -1,0 +1,872 @@
+{
+  "name": "pyrit.registry.class_registries",
+  "kind": "module",
+  "docstring": {
+    "text": "Class registries package.\n\nThis package contains registries that store classes (Type[T]) which can be\ninstantiated on demand. Examples include ScenarioRegistry and InitializerRegistry.\n\nFor registries that store pre-configured instances, see instance_registries/."
+  },
+  "members": [
+    {
+      "name": "BaseClassRegistry",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for registries that store classes (Type[T]).\n\nThis class implements RegistryProtocol and provides the common infrastructure\nfor class registries including:\n- Lazy discovery of classes\n- Registration of classes or factory callables\n- Metadata caching\n- Consistent API: get_class(), get_names(), list_metadata(), create_instance()\n- Singleton pattern support via get_registry_singleton()\n\nSubclasses must implement:\n- _discover(): Populate the registry with discovered classes\n- _build_metadata(): Build a metadata TypedDict for a class"
+      },
+      "bases": [
+        "ABC",
+        "RegistryProtocol[MetadataT]",
+        "Generic[T, MetadataT]"
+      ],
+      "methods": [
+        {
+          "name": "create_instance",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "name",
+              "type": "str",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "object",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create an instance of a registered class.",
+            "params": [
+              {
+                "name": "name",
+                "type": "str",
+                "desc": "The registry name of the class.",
+                "default": ""
+              },
+              {
+                "name": "**kwargs",
+                "type": "object",
+                "desc": "Keyword arguments to pass to the factory or constructor.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "T",
+                "desc": "A new instance of type T."
+              }
+            ],
+            "raises": [
+              {
+                "type": "KeyError",
+                "desc": "If the name is not registered."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "T"
+        },
+        {
+          "name": "get_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "name",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get a registered class by name.",
+            "params": [
+              {
+                "name": "name",
+                "type": "str",
+                "desc": "The registry name (snake_case identifier).",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "type[T]",
+                "desc": "The registered class (Type[T])."
+              },
+              {
+                "type": "type[T]",
+                "desc": "This returns the class itself, not an instance."
+              }
+            ],
+            "raises": [
+              {
+                "type": "KeyError",
+                "desc": "If the name is not registered."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[T]"
+        },
+        {
+          "name": "get_entry",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "name",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the full ClassEntry for a registered class.\n\nThis is useful when you need access to factory or default_kwargs.",
+            "params": [
+              {
+                "name": "name",
+                "type": "str",
+                "desc": "The registry name.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "Optional[ClassEntry[T]]",
+                "desc": "The ClassEntry containing class, factory, and defaults, or None if not found."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[ClassEntry[T]]"
+        },
+        {
+          "name": "get_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get a sorted list of all registered names.\n\nThese are the snake_case registry keys (e.g., \"encoding\", \"self_ask_refusal\"),\nnot the actual class names (e.g., \"EncodingScenario\", \"SelfAskRefusalScorer\").",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "Sorted list of registry names."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "get_registry_singleton",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the singleton instance of this registry.\n\nCreates the instance on first call with default parameters.",
+            "returns": [
+              {
+                "type": "BaseClassRegistry[T, MetadataT]",
+                "desc": "The singleton instance of this registry class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "BaseClassRegistry[T, MetadataT]"
+        },
+        {
+          "name": "list_metadata",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_filters",
+              "type": "Optional[dict[str, object]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "exclude_filters",
+              "type": "Optional[dict[str, object]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "List metadata for all registered classes, optionally filtered.\n\nSupports filtering on any metadata property:\n- Simple types (str, int, bool): exact match\n- List types: checks if filter value is in the list",
+            "params": [
+              {
+                "name": "include_filters",
+                "type": "Optional[dict[str, object]]",
+                "desc": "Optional dict of filters that items must match.\nKeys are metadata property names, values are the filter criteria.\nAll filters must match (AND logic).",
+                "default": "None"
+              },
+              {
+                "name": "exclude_filters",
+                "type": "Optional[dict[str, object]]",
+                "desc": "Optional dict of filters that items must NOT match.\nKeys are metadata property names, values are the filter criteria.\nAny matching filter excludes the item.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[MetadataT]",
+                "desc": "List of metadata dictionaries (TypedDict) describing each registered class."
+              },
+              {
+                "type": "list[MetadataT]",
+                "desc": "This returns descriptive info, not the classes themselves."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[MetadataT]"
+        },
+        {
+          "name": "register",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "name",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "factory",
+              "type": "Optional[Callable[..., T]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "default_kwargs",
+              "type": "Optional[dict[str, object]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "description",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Register a class with the registry.",
+            "params": [
+              {
+                "name": "cls",
+                "type": "type[T]",
+                "desc": "The class to register (Type[T], not an instance).",
+                "default": ""
+              },
+              {
+                "name": "name",
+                "type": "Optional[str]",
+                "desc": "Optional custom registry name. If not provided, derived from class name.",
+                "default": "None"
+              },
+              {
+                "name": "factory",
+                "type": "Optional[Callable[..., T]]",
+                "desc": "Optional callable for creating instances with custom logic.",
+                "default": "None"
+              },
+              {
+                "name": "default_kwargs",
+                "type": "Optional[dict[str, object]]",
+                "desc": "Default keyword arguments for instance creation.",
+                "default": "None"
+              },
+              {
+                "name": "description",
+                "type": "Optional[str]",
+                "desc": "Optional description override.",
+                "default": "None"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "reset_instance",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Reset the singleton instance.\n\nUseful for testing or when re-discovery is needed."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "lazy_discovery",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the registry.",
+          "params": [
+            {
+              "name": "lazy_discovery",
+              "type": "bool",
+              "desc": "If True, discovery is deferred until first access.\nIf False, discovery runs immediately in constructor.",
+              "default": "True"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ClassEntry",
+      "kind": "class",
+      "docstring": {
+        "text": "Internal wrapper for a registered class.\n\nThis holds the class itself (Type[T]) along with optional factory\nand default parameters for creating instances.\n\nNote: This is an internal implementation detail. Users interact with\nregistries via get_class(), create_instance(), and list_metadata()."
+      },
+      "bases": [
+        "Generic[T]"
+      ],
+      "methods": [
+        {
+          "name": "create_instance",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "object",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create an instance of the registered class.",
+            "params": [
+              {
+                "name": "**kwargs",
+                "type": "object",
+                "desc": "Additional keyword arguments. These override default_kwargs.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "T",
+                "desc": "An instance of type T."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "T"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "default_kwargs"
+        },
+        {
+          "name": "description"
+        },
+        {
+          "name": "factory"
+        },
+        {
+          "name": "registered_class"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "registered_class",
+            "type": "type[T]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "factory",
+            "type": "Optional[Callable[..., T]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "default_kwargs",
+            "type": "Optional[dict[str, object]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "description",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a class entry.",
+          "params": [
+            {
+              "name": "registered_class",
+              "type": "type[T]",
+              "desc": "The actual Python class (Type[T]).",
+              "default": ""
+            },
+            {
+              "name": "factory",
+              "type": "Optional[Callable[..., T]]",
+              "desc": "Optional callable that creates an instance.",
+              "default": "None"
+            },
+            {
+              "name": "default_kwargs",
+              "type": "Optional[dict[str, object]]",
+              "desc": "Default keyword arguments for instantiation.",
+              "default": "None"
+            },
+            {
+              "name": "description",
+              "type": "Optional[str]",
+              "desc": "Optional description override.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "InitializerMetadata",
+      "kind": "class",
+      "docstring": {
+        "text": "Metadata describing a registered PyRITInitializer class.\n\nUse get_class() to get the actual class."
+      },
+      "bases": [
+        "ClassRegistryEntry"
+      ],
+      "attributes": [
+        {
+          "name": "display_name",
+          "type": "str"
+        },
+        {
+          "name": "execution_order",
+          "type": "int"
+        },
+        {
+          "name": "required_env_vars",
+          "type": "tuple[str, ...]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_name",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_module",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_description",
+            "type": "str",
+            "default": "''",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "display_name",
+            "type": "str",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "required_env_vars",
+            "type": "tuple[str, ...]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "execution_order",
+            "type": "int",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "InitializerRegistry",
+      "kind": "class",
+      "docstring": {
+        "text": "Registry for discovering and managing available initializers.\n\nThis class discovers all PyRITInitializer subclasses from the\npyrit/setup/initializers directory structure.\n\nInitializers are identified by their filename (e.g., \"objective_target\", \"simple\").\nThe directory structure is used for organization but not exposed to users."
+      },
+      "bases": [
+        "BaseClassRegistry['PyRITInitializer', InitializerMetadata]"
+      ],
+      "methods": [
+        {
+          "name": "get_registry_singleton",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the singleton instance of the InitializerRegistry.",
+            "returns": [
+              {
+                "type": "InitializerRegistry",
+                "desc": "The singleton InitializerRegistry instance."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "InitializerRegistry"
+        },
+        {
+          "name": "resolve_initializer_paths",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "initializer_names",
+              "type": "list[str]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Resolve initializer names to their file paths.",
+            "params": [
+              {
+                "name": "initializer_names",
+                "type": "list[str]",
+                "desc": "List of initializer names to resolve.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[Path]",
+                "desc": "List of resolved file paths."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If any initializer name is not found or has no file path."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[Path]"
+        },
+        {
+          "name": "resolve_script_paths",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "script_paths",
+              "type": "list[str]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Resolve and validate custom script paths.",
+            "params": [
+              {
+                "name": "script_paths",
+                "type": "list[str]",
+                "desc": "List of script path strings to resolve.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[Path]",
+                "desc": "List of resolved Path objects."
+              }
+            ],
+            "raises": [
+              {
+                "type": "FileNotFoundError",
+                "desc": "If any script path does not exist."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[Path]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "discovery_path",
+            "type": "Optional[Path]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "lazy_discovery",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the initializer registry.",
+          "params": [
+            {
+              "name": "discovery_path",
+              "type": "Optional[Path]",
+              "desc": "The path to discover initializers from.\nIf None, defaults to pyrit/setup/initializers (discovers all).\nTo discover only scenarios, pass pyrit/setup/initializers/scenarios.",
+              "default": "None"
+            },
+            {
+              "name": "lazy_discovery",
+              "type": "bool",
+              "desc": "If True, discovery is deferred until first access.\nDefaults to False for backwards compatibility.",
+              "default": "False"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ScenarioMetadata",
+      "kind": "class",
+      "docstring": {
+        "text": "Metadata describing a registered Scenario class.\n\nUse get_class() to get the actual class."
+      },
+      "bases": [
+        "ClassRegistryEntry"
+      ],
+      "attributes": [
+        {
+          "name": "aggregate_strategies",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "name": "all_strategies",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "name": "default_datasets",
+          "type": "tuple[str, ...]"
+        },
+        {
+          "name": "default_strategy",
+          "type": "str"
+        },
+        {
+          "name": "max_dataset_size",
+          "type": "Optional[int]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_name",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_module",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_description",
+            "type": "str",
+            "default": "''",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "default_strategy",
+            "type": "str",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "all_strategies",
+            "type": "tuple[str, ...]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "aggregate_strategies",
+            "type": "tuple[str, ...]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "default_datasets",
+            "type": "tuple[str, ...]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_dataset_size",
+            "type": "Optional[int]",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ScenarioRegistry",
+      "kind": "class",
+      "docstring": {
+        "text": "Registry for discovering and managing available scenario classes.\n\nThis class discovers all Scenario subclasses from:\n1. Built-in scenarios in pyrit.scenario.scenarios module\n2. User-defined scenarios from initialization scripts (set via globals)\n\nScenarios are identified by their simple name (e.g., \"encoding\", \"foundry\")."
+      },
+      "bases": [
+        "BaseClassRegistry['Scenario', ScenarioMetadata]"
+      ],
+      "methods": [
+        {
+          "name": "discover_user_scenarios",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Discover user-defined scenarios from global variables.\n\nAfter initialization scripts are executed, they may define Scenario subclasses\nand store them in globals. This method searches for such classes.\n\nUser scenarios will override built-in scenarios with the same name."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "get_registry_singleton",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the singleton instance of the ScenarioRegistry.",
+            "returns": [
+              {
+                "type": "ScenarioRegistry",
+                "desc": "The singleton ScenarioRegistry instance."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioRegistry"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "lazy_discovery",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the scenario registry.",
+          "params": [
+            {
+              "name": "lazy_discovery",
+              "type": "bool",
+              "desc": "If True, discovery is deferred until first access.\nDefaults to True for performance.",
+              "default": "True"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    }
+  ]
+}

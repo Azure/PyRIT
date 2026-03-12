@@ -1,0 +1,288 @@
+{
+  "name": "pyrit.setup.initializers.components",
+  "kind": "module",
+  "docstring": {
+    "text": "Component initializers for targets, scorers, and other components."
+  },
+  "members": [
+    {
+      "name": "ScorerInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Scorer Initializer for registering pre-configured scorers.\n\nThis initializer registers all evaluation scorers into the ScorerRegistry.\nTargets are pulled from the TargetRegistry (populated by TargetInitializer),\nso this initializer must run after the target initializer (enforced via execution_order).\nScorers that fail to initialize (e.g., due to missing targets) are skipped with a warning."
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Register available scorers using targets from the TargetRegistry.",
+            "raises": [
+              {
+                "type": "RuntimeError",
+                "desc": "If the TargetRegistry is empty or hasn't been initialized."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Get the description of this initializer."
+        },
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Get the execution order for this initializer.\n\nReturns 2 to ensure this runs after TargetInitializer (order=1),\nwhich populates the TargetRegistry that scorers depend on."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables.\n\nReturns empty list since this initializer handles missing targets\ngracefully by skipping individual scorers with a warning."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tags",
+            "type": "list[ScorerTag] | None",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Scorer Initializer.",
+          "params": [
+            {
+              "name": "tags",
+              "type": "list[ScorerTag] | None",
+              "desc": "Tags for future filtering. Defaults to [\"default\"].",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "TargetConfig",
+      "kind": "class",
+      "docstring": {
+        "text": "Configuration for a target to be registered."
+      },
+      "attributes": [
+        {
+          "name": "endpoint_var",
+          "type": "str"
+        },
+        {
+          "name": "extra_kwargs",
+          "type": "dict[str, Any]"
+        },
+        {
+          "name": "key_var",
+          "type": "str"
+        },
+        {
+          "name": "model_var",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "registry_name",
+          "type": "str"
+        },
+        {
+          "name": "tags",
+          "type": "list[TargetTag]"
+        },
+        {
+          "name": "target_class",
+          "type": "type[PromptTarget]"
+        },
+        {
+          "name": "temperature",
+          "type": "Optional[float]"
+        },
+        {
+          "name": "underlying_model_var",
+          "type": "Optional[str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "registry_name",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "target_class",
+            "type": "type[PromptTarget]",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "endpoint_var",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "key_var",
+            "type": "str",
+            "default": "''",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "model_var",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "underlying_model_var",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "temperature",
+            "type": "Optional[float]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "extra_kwargs",
+            "type": "dict[str, Any]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tags",
+            "type": "list[TargetTag]",
+            "default": "(lambda: ['default'])()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "TargetInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Supported Endpoints by Category:\n\n**OpenAI Chat Targets (OpenAIChatTarget):**\n- PLATFORM_OPENAI_CHAT_* - Platform OpenAI Chat API\n- AZURE_OPENAI_GPT4O_* - Azure OpenAI GPT-4o\n- AZURE_OPENAI_INTEGRATION_TEST_* - Integration test endpoint\n- AZURE_OPENAI_GPT3_5_CHAT_* - Azure OpenAI GPT-3.5\n- AZURE_OPENAI_GPT4_CHAT_* - Azure OpenAI GPT-4\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_* - Azure OpenAI GPT-4o unsafe\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_*2 - Azure OpenAI GPT-4o unsafe secondary\n- AZURE_FOUNDRY_DEEPSEEK_* - Azure AI Foundry DeepSeek\n- AZURE_FOUNDRY_PHI4_* - Azure AI Foundry Phi-4\n- AZURE_FOUNDRY_MISTRAL_LARGE_* - Azure AI Foundry Mistral Large\n- GROQ_* - Groq API\n- OPEN_ROUTER_* - OpenRouter API\n- OLLAMA_* - Ollama local\n- GOOGLE_GEMINI_* - Google Gemini (OpenAI-compatible)\n\n**OpenAI Responses Targets (OpenAIResponseTarget):**\n- AZURE_OPENAI_GPT5_RESPONSES_* - Azure OpenAI GPT-5 Responses\n- AZURE_OPENAI_GPT5_RESPONSES_* (high reasoning) - Azure OpenAI GPT-5 Responses with high reasoning effort\n- PLATFORM_OPENAI_RESPONSES_* - Platform OpenAI Responses\n- AZURE_OPENAI_RESPONSES_* - Azure OpenAI Responses\n\n**Realtime Targets (RealtimeTarget):**\n- PLATFORM_OPENAI_REALTIME_* - Platform OpenAI Realtime\n- AZURE_OPENAI_REALTIME_* - Azure OpenAI Realtime\n\n**Image Targets (OpenAIImageTarget):**\n- OPENAI_IMAGE_*1 - Azure OpenAI Image\n- OPENAI_IMAGE_*2 - Platform OpenAI Image\n\n**TTS Targets (OpenAITTSTarget):**\n- OPENAI_TTS_*1 - Azure OpenAI TTS\n- OPENAI_TTS_*2 - Platform OpenAI TTS\n\n**Video Targets (OpenAIVideoTarget):**\n- AZURE_OPENAI_VIDEO_* - Azure OpenAI Video\n\n**Completion Targets (OpenAICompletionTarget):**\n- OPENAI_COMPLETION_* - OpenAI Completion\n\n**Azure ML Targets (AzureMLChatTarget):**\n- AZURE_ML_PHI_* - Azure ML Phi\n\n**Safety Targets (PromptShieldTarget):**\n- AZURE_CONTENT_SAFETY_* - Azure Content Safety",
+        "params": [
+          {
+            "name": "tags",
+            "type": "list[TargetTag] | None",
+            "desc": "List of tags to filter which targets to register.\n\"default\" registers the base environment targets.\n\"scorer\" registers scorer-specific temperature variant targets.\nPass multiple tags to register targets matching any tag.\nIf not provided, only \"default\" targets are registered.",
+            "default": "None"
+          }
+        ]
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Register available targets based on environment variables.\n\nScans for known endpoint environment variables and registers the\ncorresponding targets into the TargetRegistry. Only targets with\ntags matching the configured tags are registered."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Get the description of this initializer."
+        },
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Get the execution order. Runs before ScorerInitializer (order=2)."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables.\n\nReturns empty list since this initializer is optional - it registers\nwhatever endpoints are available without requiring any."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tags",
+            "type": "list[TargetTag] | None",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Target Initializer.",
+          "params": [
+            {
+              "name": "tags",
+              "type": "list[TargetTag] | None",
+              "desc": "Tags to filter which targets to register.\nIf None, only \"default\" targets are registered.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    }
+  ]
+}

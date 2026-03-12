@@ -1,0 +1,2036 @@
+{
+  "name": "pyrit.models.seeds",
+  "kind": "module",
+  "docstring": {
+    "text": "Seeds module - Contains all seed-related classes for PyRIT.\n\nThis module provides the core seed types used throughout PyRIT:\n- Seed: Base class for all seed types\n- SeedPrompt: Seed with role and sequence for conversations\n- SeedObjective: Seed representing an attack objective\n- SeedGroup: Base container for grouping seeds\n- SeedAttackGroup: Attack-specific seed group with objectives and prepended conversations\n- SeedAttackTechniqueGroup: Technique-specific seed group where all seeds must be general strategies\n- SeedSimulatedConversation: Configuration for generating simulated conversations\n- SeedDataset: Container for managing collections of seeds"
+  },
+  "members": [
+    {
+      "name": "NextMessageSystemPromptPaths",
+      "kind": "class",
+      "docstring": {
+        "text": "Enum for predefined next message generation system prompt paths."
+      },
+      "bases": [
+        "enum.Enum"
+      ],
+      "attributes": [
+        {
+          "name": "DIRECT"
+        }
+      ]
+    },
+    {
+      "name": "Seed",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents seed data with various attributes and metadata."
+      },
+      "bases": [
+        "YamlLoadable"
+      ],
+      "methods": [
+        {
+          "name": "from_yaml_with_required_parameters",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "template_path",
+              "type": "Union[str, Path]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "required_parameters",
+              "type": "list[str]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "error_message",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Load a Seed from a YAML file and validate that it contains specific parameters.",
+            "params": [
+              {
+                "name": "template_path",
+                "type": "Union[str, Path]",
+                "desc": "Path to the YAML file containing the template.",
+                "default": ""
+              },
+              {
+                "name": "required_parameters",
+                "type": "list[str]",
+                "desc": "List of parameter names that must exist in the template.",
+                "default": ""
+              },
+              {
+                "name": "error_message",
+                "type": "Optional[str]",
+                "desc": "Custom error message if validation fails. If None, a default message is used.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Seed",
+                "desc": "The loaded and validated seed of the specific subclass type."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Seed"
+        },
+        {
+          "name": "render_template_value",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Render self.value as a template with provided parameters.",
+            "params": [
+              {
+                "name": "kwargs",
+                "type": "Any",
+                "desc": "Key-value pairs to replace in the SeedPrompt value.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A new prompt with the parameters applied."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If parameters are missing or invalid in the template."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "render_template_value_silent",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Render self.value as a template with provided parameters. For parameters in the template\nthat are not provided as kwargs here, this function will leave them as is instead of raising an error.",
+            "params": [
+              {
+                "name": "kwargs",
+                "type": "Any",
+                "desc": "Key-value pairs to replace in the SeedPrompt value.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A new prompt with the parameters applied."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If parameters are missing or invalid in the template."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "set_sha256_value_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Compute the SHA256 hash value asynchronously.\nIt should be called after prompt `value` is serialized to text,\nas file paths used in the `value` may have changed from local to memory storage paths.\n\nNote, this method is async due to the blob retrieval. And because of that, we opted\nto take it out of main and setter functions. The disadvantage is that it must be explicitly called."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "added_by",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "authors",
+          "type": "Optional[Sequence[str]]"
+        },
+        {
+          "name": "data_type",
+          "type": "PromptDataType",
+          "docstring": "Return the data type for this seed.\n\nBase implementation returns 'text'. SeedPrompt overrides this\nto support multiple data types (image_path, audio_path, etc.)."
+        },
+        {
+          "name": "dataset_name",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "date_added",
+          "type": "Optional[datetime]"
+        },
+        {
+          "name": "description",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "groups",
+          "type": "Optional[Sequence[str]]"
+        },
+        {
+          "name": "harm_categories",
+          "type": "Optional[Sequence[str]]"
+        },
+        {
+          "name": "id",
+          "type": "Optional[uuid.UUID]"
+        },
+        {
+          "name": "is_general_technique",
+          "type": "bool"
+        },
+        {
+          "name": "metadata",
+          "type": "Optional[dict[str, Union[str, int]]]"
+        },
+        {
+          "name": "name",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "prompt_group_alias",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "prompt_group_id",
+          "type": "Optional[uuid.UUID]"
+        },
+        {
+          "name": "source",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "value",
+          "type": "str"
+        },
+        {
+          "name": "value_sha256",
+          "type": "Optional[str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "value",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "value_sha256",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "id",
+            "type": "Optional[uuid.UUID]",
+            "default": "(lambda: uuid.uuid4())()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "dataset_name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "harm_categories",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "description",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "authors",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "groups",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "source",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "date_added",
+            "type": "Optional[datetime]",
+            "default": "(lambda: datetime.now(tz=(timezone.utc)))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "added_by",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "metadata",
+            "type": "Optional[dict[str, Union[str, int]]]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_group_id",
+            "type": "Optional[uuid.UUID]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_group_alias",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "is_general_technique",
+            "type": "bool",
+            "default": "False",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "SeedAttackGroup",
+      "kind": "class",
+      "docstring": {
+        "text": "A group of seeds for use in attack scenarios.\n\nThis class extends SeedGroup with attack-specific validation:\n- Requires exactly one SeedObjective (not optional like in SeedGroup)\n\nAll other functionality (simulated conversation, prepended conversation,\nnext_message, etc.) is inherited from SeedGroup."
+      },
+      "bases": [
+        "SeedGroup"
+      ],
+      "methods": [
+        {
+          "name": "validate",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Validate the seed attack group state.\n\nExtends SeedGroup validation to require exactly one objective.",
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If validation fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "objective",
+          "type": "SeedObjective",
+          "docstring": "Get the objective for this attack group.\n\nUnlike SeedGroup.objective which may return None, SeedAttackGroup\nguarantees exactly one objective exists.\n\nReturns:\n    The SeedObjective for this attack group."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "seeds",
+            "type": "Sequence[Union[Seed, dict[str, Any]]]",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a SeedAttackGroup.",
+          "params": [
+            {
+              "name": "seeds",
+              "type": "Sequence[Union[Seed, dict[str, Any]]]",
+              "desc": "Sequence of seeds. Must include exactly one SeedObjective.",
+              "default": ""
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If seeds is empty."
+            },
+            {
+              "type": "ValueError",
+              "desc": "If exactly one objective is not provided."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SeedAttackTechniqueGroup",
+      "kind": "class",
+      "docstring": {
+        "text": "A group of seeds representing a general attack technique.\n\nThis class extends SeedGroup with technique-specific validation:\n- Requires all seeds to have is_general_technique=True\n\nAll other functionality (simulated conversation, prepended conversation,\nnext_message, etc.) is inherited from SeedGroup."
+      },
+      "bases": [
+        "SeedGroup"
+      ],
+      "methods": [
+        {
+          "name": "validate",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Validate the seed attack technique group state.\n\nExtends SeedGroup validation to require all seeds to be general strategies.",
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If validation fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "seeds",
+            "type": "Sequence[Union[Seed, dict[str, Any]]]",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a SeedAttackTechniqueGroup.",
+          "params": [
+            {
+              "name": "seeds",
+              "type": "Sequence[Union[Seed, dict[str, Any]]]",
+              "desc": "Sequence of seeds. All seeds must have is_general_technique=True.",
+              "default": ""
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If seeds is empty."
+            },
+            {
+              "type": "ValueError",
+              "desc": "If any seed does not have is_general_technique=True."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SeedDataset",
+      "kind": "class",
+      "docstring": {
+        "text": "SeedDataset manages seed prompts plus optional top-level defaults.\nPrompts are stored as a Sequence[Seed], so references to prompt properties\nare straightforward (e.g. ds.seeds[0].value)."
+      },
+      "bases": [
+        "YamlLoadable"
+      ],
+      "methods": [
+        {
+          "name": "from_dict",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "data",
+              "type": "dict[str, Any]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Build a SeedDataset by merging top-level defaults into each item in `seeds`.",
+            "params": [
+              {
+                "name": "data",
+                "type": "Dict[str, Any]",
+                "desc": "Dataset payload with top-level defaults and seed entries.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "SeedDataset",
+                "desc": "Constructed dataset with merged defaults."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If any seed entry includes a pre-set prompt_group_id."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "SeedDataset"
+        },
+        {
+          "name": "get_random_values",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "number",
+              "type": "PositiveInt",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "harm_categories",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Extract and return random prompt values from the dataset.",
+            "params": [
+              {
+                "name": "number",
+                "type": "int",
+                "desc": "The number of random prompt values to return.",
+                "default": ""
+              },
+              {
+                "name": "harm_categories",
+                "type": "Optional[Sequence[str]]",
+                "desc": "If provided, only prompts containing at least one of\nthese harm categories are included.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[str]",
+                "desc": "Sequence[str]: A list of prompt values."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[str]"
+        },
+        {
+          "name": "get_values",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "first",
+              "type": "Optional[PositiveInt]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "last",
+              "type": "Optional[PositiveInt]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "harm_categories",
+              "type": "Optional[Sequence[str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Extract and return prompt values from the dataset.",
+            "params": [
+              {
+                "name": "first",
+                "type": "Optional[int]",
+                "desc": "If provided, values from the first N prompts are included.",
+                "default": "None"
+              },
+              {
+                "name": "last",
+                "type": "Optional[int]",
+                "desc": "If provided, values from the last N prompts are included.",
+                "default": "None"
+              },
+              {
+                "name": "harm_categories",
+                "type": "Optional[Sequence[str]]",
+                "desc": "If provided, only prompts containing at least one of\nthese harm categories are included.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[str]",
+                "desc": "Sequence[str]: A list of prompt values."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[str]"
+        },
+        {
+          "name": "group_seed_prompts_by_prompt_group_id",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "seeds",
+              "type": "Sequence[Seed]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Group the given list of seeds by prompt_group_id and create\nSeedGroup or SeedAttackGroup instances.\n\nFor each group, this method first attempts to create a SeedAttackGroup\n(which has attack-specific properties like objective). If validation fails,\nit falls back to a basic SeedGroup.",
+            "params": [
+              {
+                "name": "seeds",
+                "type": "Sequence[Seed]",
+                "desc": "A list of Seed objects.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "Sequence[SeedGroup]",
+                "desc": "A list of SeedGroup or SeedAttackGroup objects, with seeds grouped by"
+              },
+              {
+                "type": "Sequence[SeedGroup]",
+                "desc": "prompt_group_id. Each group will be ordered by the sequence number of"
+              },
+              {
+                "type": "Sequence[SeedGroup]",
+                "desc": "the seeds, if available."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Sequence[SeedGroup]"
+        },
+        {
+          "name": "render_template_value",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "object",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Render seed values as templates using provided parameters.",
+            "params": [
+              {
+                "name": "kwargs",
+                "type": "object",
+                "desc": "Key-value pairs to replace in the SeedDataset value.",
+                "default": "{}"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If parameters are missing or invalid in the template."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "added_by",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "authors",
+          "type": "Optional[Sequence[str]]"
+        },
+        {
+          "name": "data_type",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "dataset_name",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "date_added",
+          "type": "Optional[datetime]"
+        },
+        {
+          "name": "description",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "groups",
+          "type": "Optional[Sequence[str]]"
+        },
+        {
+          "name": "harm_categories",
+          "type": "Optional[Sequence[str]]"
+        },
+        {
+          "name": "name",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "objectives",
+          "type": "Sequence[SeedObjective]",
+          "docstring": "Return all objective-type seeds.\n\nReturns:\n    Sequence[SeedObjective]: Objective seeds in this dataset."
+        },
+        {
+          "name": "prompts",
+          "type": "Sequence[SeedPrompt]",
+          "docstring": "Return all prompt-type seeds.\n\nReturns:\n    Sequence[SeedPrompt]: Prompt seeds in this dataset."
+        },
+        {
+          "name": "seed_groups",
+          "type": "Sequence[SeedGroup]",
+          "docstring": "Returns the seeds grouped by their prompt_group_id.\n\nReturns:\n    Sequence[SeedGroup]: A list of SeedGroup objects, with seeds grouped by prompt_group_id."
+        },
+        {
+          "name": "seeds",
+          "type": "Sequence[Seed]"
+        },
+        {
+          "name": "source",
+          "type": "Optional[str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "seeds",
+            "type": "Optional[Union[Sequence[dict[str, Any]], Sequence[Seed]]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "data_type",
+            "type": "Optional[PromptDataType]",
+            "default": "'text'",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "dataset_name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "harm_categories",
+            "type": "Optional[Sequence[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "description",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "authors",
+            "type": "Optional[Sequence[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "groups",
+            "type": "Optional[Sequence[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "source",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "date_added",
+            "type": "Optional[datetime]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "added_by",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "seed_type",
+            "type": "Optional[SeedType]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "is_objective",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the dataset.\nTypically, you'll call from_dict or from_yaml_file so that top-level defaults\nare merged into each seed. If you're passing seeds directly, they can be\neither a list of Seed objects or seed dictionaries (which then get\nconverted to Seed objects).",
+          "params": [
+            {
+              "name": "seeds",
+              "type": "Optional[Union[Sequence[dict[str, Any]], Sequence[Seed]]]",
+              "desc": "List of seed dictionaries or Seed objects.",
+              "default": "None"
+            },
+            {
+              "name": "data_type",
+              "type": "Optional[PromptDataType]",
+              "desc": "Default data type for seeds.",
+              "default": "'text'"
+            },
+            {
+              "name": "name",
+              "type": "Optional[str]",
+              "desc": "Name of the dataset.",
+              "default": "None"
+            },
+            {
+              "name": "dataset_name",
+              "type": "Optional[str]",
+              "desc": "Dataset name for categorization.",
+              "default": "None"
+            },
+            {
+              "name": "harm_categories",
+              "type": "Optional[Sequence[str]]",
+              "desc": "List of harm categories.",
+              "default": "None"
+            },
+            {
+              "name": "description",
+              "type": "Optional[str]",
+              "desc": "Description of the dataset.",
+              "default": "None"
+            },
+            {
+              "name": "authors",
+              "type": "Optional[Sequence[str]]",
+              "desc": "List of authors.",
+              "default": "None"
+            },
+            {
+              "name": "groups",
+              "type": "Optional[Sequence[str]]",
+              "desc": "List of groups.",
+              "default": "None"
+            },
+            {
+              "name": "source",
+              "type": "Optional[str]",
+              "desc": "Source of the dataset.",
+              "default": "None"
+            },
+            {
+              "name": "date_added",
+              "type": "Optional[datetime]",
+              "desc": "Date when the dataset was added.",
+              "default": "None"
+            },
+            {
+              "name": "added_by",
+              "type": "Optional[str]",
+              "desc": "User who added the dataset.",
+              "default": "None"
+            },
+            {
+              "name": "seed_type",
+              "type": "Optional[SeedType]",
+              "desc": "The type of seeds in this dataset (\"prompt\", \"objective\", or \"simulated_conversation\").",
+              "default": "None"
+            },
+            {
+              "name": "is_objective",
+              "type": "bool",
+              "desc": "Deprecated in 0.13.0. Use seed_type=\"objective\" instead.",
+              "default": "False"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If seeds are missing or contain invalid/contradictory seed definitions."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SeedGroup",
+      "kind": "class",
+      "docstring": {
+        "text": "A container for grouping prompts that need to be sent together.\n\nThis class handles:\n- Grouping of SeedPrompt, SeedObjective, and SeedSimulatedConversation\n- Consistent group IDs and roles across seeds\n- Prepended conversation and next message extraction\n- Validation of sequence overlaps between SeedPrompts and SeedSimulatedConversation\n\nAll prompts in the group share the same `prompt_group_id`."
+      },
+      "bases": [
+        "YamlLoadable"
+      ],
+      "methods": [
+        {
+          "name": "is_single_part_single_text_request",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Check if this is a single text prompt.",
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True when there is exactly one prompt and it is text."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "is_single_request",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Check if all prompts are in a single sequence.",
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True when all prompts share one sequence number."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "is_single_turn",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Check if this is a single-turn group (single request without objective).",
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True when the group is a single request and has no objective."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "render_template_value",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Render seed values as templates with provided parameters.",
+            "params": [
+              {
+                "name": "kwargs",
+                "type": "Any",
+                "desc": "Key-value pairs to replace in seed values.",
+                "default": "{}"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "validate",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Validate the seed group state.\n\nThis method can be called after external modifications to seeds\nto ensure the group remains in a valid state. It is automatically\ncalled during initialization.",
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If validation fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "harm_categories",
+          "type": "list[str]",
+          "docstring": "Returns a deduplicated list of all harm categories from all seeds.\n\nReturns:\n    List of harm categories with duplicates removed."
+        },
+        {
+          "name": "has_simulated_conversation",
+          "type": "bool",
+          "docstring": "Check if this group uses simulated conversation generation."
+        },
+        {
+          "name": "next_message",
+          "type": "Optional[Message]",
+          "docstring": "Returns a Message containing only the last turn's prompts if it's a user message.\n\nReturns:\n    Message for the current/last turn if user role, or None otherwise."
+        },
+        {
+          "name": "objective",
+          "type": "Optional[SeedObjective]",
+          "docstring": "Get the objective for this group."
+        },
+        {
+          "name": "prepended_conversation",
+          "type": "Optional[list[Message]]",
+          "docstring": "Returns Messages that should be prepended as conversation history.\n\nReturns all messages except the last user sequence.\n\nReturns:\n    Messages for conversation history, or None if empty."
+        },
+        {
+          "name": "prompts",
+          "type": "Sequence[SeedPrompt]",
+          "docstring": "Get all SeedPrompt instances from this group."
+        },
+        {
+          "name": "seeds",
+          "type": "list[Seed]"
+        },
+        {
+          "name": "simulated_conversation_config",
+          "type": "Optional[SeedSimulatedConversation]",
+          "docstring": "Get the simulated conversation configuration if set."
+        },
+        {
+          "name": "user_messages",
+          "type": "list[Message]",
+          "docstring": "Returns all prompts as user Messages, one per sequence.\n\nReturns:\n    All user messages in sequence order, or empty list if no prompts."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "seeds",
+            "type": "Sequence[Union[Seed, dict[str, Any]]]",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a SeedGroup.",
+          "params": [
+            {
+              "name": "seeds",
+              "type": "Sequence[Union[Seed, dict[str, Any]]]",
+              "desc": "Sequence of seeds. Can include:\n- SeedObjective (or dict with seed_type=\"objective\")\n- SeedSimulatedConversation (or dict with seed_type=\"simulated_conversation\")\n- SeedPrompt for prompts (or dict with seed_type=\"prompt\" or no seed_type)\nNote: is_objective and is_simulated_conversation are deprecated since 0.13.0.",
+              "default": ""
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If seeds is empty."
+            },
+            {
+              "type": "ValueError",
+              "desc": "If multiple objectives are provided."
+            },
+            {
+              "type": "ValueError",
+              "desc": "If SeedPrompt sequences overlap with SeedSimulatedConversation range."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SeedObjective",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents a seed objective with various attributes and metadata."
+      },
+      "bases": [
+        "Seed"
+      ],
+      "methods": [
+        {
+          "name": "from_yaml_with_required_parameters",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "template_path",
+              "type": "Union[str, Path]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "required_parameters",
+              "type": "list[str]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "error_message",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Load a Seed from a YAML file. Because SeedObjectives do not have any parameters, the required_parameters\nand error_message arguments are unused.",
+            "params": [
+              {
+                "name": "template_path",
+                "type": "Union[str, Path]",
+                "desc": "Path to the YAML file containing the template.",
+                "default": ""
+              },
+              {
+                "name": "required_parameters",
+                "type": "list[str]",
+                "desc": "List of parameter names that must exist in the template.",
+                "default": ""
+              },
+              {
+                "name": "error_message",
+                "type": "Optional[str]",
+                "desc": "Custom error message if validation fails. If None, a default message is used.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "SeedObjective",
+                "desc": "The loaded and validated seed of the specific subclass type."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "SeedObjective"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "is_general_technique",
+          "type": "bool"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "value",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "value_sha256",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "id",
+            "type": "Optional[uuid.UUID]",
+            "default": "(lambda: uuid.uuid4())()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "dataset_name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "harm_categories",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "description",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "authors",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "groups",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "source",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "date_added",
+            "type": "Optional[datetime]",
+            "default": "(lambda: datetime.now(tz=(timezone.utc)))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "added_by",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "metadata",
+            "type": "Optional[dict[str, Union[str, int]]]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_group_id",
+            "type": "Optional[uuid.UUID]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_group_alias",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "is_general_technique",
+            "type": "bool",
+            "default": "False",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "SeedPrompt",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents a seed prompt with various attributes and metadata."
+      },
+      "bases": [
+        "Seed"
+      ],
+      "methods": [
+        {
+          "name": "from_messages",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "starting_sequence",
+              "type": "int",
+              "default": "0",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prompt_group_id",
+              "type": "Optional[uuid.UUID]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Convert a list of Messages to a list of SeedPrompts.\n\nEach MessagePiece becomes a SeedPrompt. All pieces from the same message\nshare the same sequence number, preserving the grouping.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "List of Messages to convert.",
+                "default": ""
+              },
+              {
+                "name": "starting_sequence",
+                "type": "int",
+                "desc": "The starting sequence number. Defaults to 0.",
+                "default": "0"
+              },
+              {
+                "name": "prompt_group_id",
+                "type": "Optional[uuid.UUID]",
+                "desc": "Optional group ID to assign to all prompts. Defaults to None.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[SeedPrompt]",
+                "desc": "List of SeedPrompts with incrementing sequence numbers per message."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[SeedPrompt]"
+        },
+        {
+          "name": "from_yaml_with_required_parameters",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "template_path",
+              "type": "Union[str, Path]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "required_parameters",
+              "type": "list[str]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "error_message",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Load a Seed from a YAML file and validate that it contains specific parameters.",
+            "params": [
+              {
+                "name": "template_path",
+                "type": "Union[str, Path]",
+                "desc": "Path to the YAML file containing the template.",
+                "default": ""
+              },
+              {
+                "name": "required_parameters",
+                "type": "list[str]",
+                "desc": "List of parameter names that must exist in the template.",
+                "default": ""
+              },
+              {
+                "name": "error_message",
+                "type": "Optional[str]",
+                "desc": "Custom error message if validation fails. If None, a default message is used.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "SeedPrompt",
+                "desc": "The loaded and validated SeedPrompt of the specific subclass type."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the template doesn't contain all required parameters."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "SeedPrompt"
+        },
+        {
+          "name": "set_encoding_metadata",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Set encoding metadata for the prompt within metadata dictionary. For images, this is just the\nfile format. For audio and video, this also includes bitrate (kBits/s as int), samplerate (samples/second\nas int), bitdepth (as int), filesize (bytes as int), and duration (seconds as int) if the file type is\nsupported by TinyTag. Example supported file types include: MP3, MP4, M4A, and WAV."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "data_type",
+          "type": "Optional[PromptDataType]"
+        },
+        {
+          "name": "parameters",
+          "type": "Optional[Sequence[str]]"
+        },
+        {
+          "name": "role",
+          "type": "Optional[ChatMessageRole]"
+        },
+        {
+          "name": "sequence",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "value",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "value_sha256",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "id",
+            "type": "Optional[uuid.UUID]",
+            "default": "(lambda: uuid.uuid4())()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "dataset_name",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "harm_categories",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "description",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "authors",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "groups",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "source",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "date_added",
+            "type": "Optional[datetime]",
+            "default": "(lambda: datetime.now(tz=(timezone.utc)))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "added_by",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "metadata",
+            "type": "Optional[dict[str, Union[str, int]]]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_group_id",
+            "type": "Optional[uuid.UUID]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_group_alias",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "is_general_technique",
+            "type": "bool",
+            "default": "False",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "data_type",
+            "type": "Optional[PromptDataType]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "role",
+            "type": "Optional[ChatMessageRole]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "sequence",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "parameters",
+            "type": "Optional[Sequence[str]]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "SeedSimulatedConversation",
+      "kind": "class",
+      "docstring": {
+        "text": "Configuration for generating a simulated conversation dynamically.\n\nThis class holds the paths and parameters needed to generate prepended conversation\ncontent by running an adversarial chat against a simulated (compliant) target.\n\nThis is a pure configuration class. The actual generation is performed by\n`generate_simulated_conversation_async` in the executor layer, which accepts\nthis config along with runtime dependencies (adversarial_chat target, scorer).\n\nThe `value` property returns a JSON serialization of the config for database\nstorage and deduplication."
+      },
+      "bases": [
+        "Seed"
+      ],
+      "methods": [
+        {
+          "name": "compute_hash",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Compute a deterministic hash of this configuration.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A SHA256 hash string representing the configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "from_dict",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "data",
+              "type": "dict[str, Any]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create a SeedSimulatedConversation from a dictionary, typically from YAML.",
+            "params": [
+              {
+                "name": "data",
+                "type": "dict[str, Any]",
+                "desc": "Dictionary containing the configuration.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "SeedSimulatedConversation",
+                "desc": "A new SeedSimulatedConversation instance."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If required configuration fields are missing."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "SeedSimulatedConversation"
+        },
+        {
+          "name": "from_yaml_with_required_parameters",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "template_path",
+              "type": "Union[str, Path]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "required_parameters",
+              "type": "list[str]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "error_message",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Load a SeedSimulatedConversation from a YAML file and validate required parameters.",
+            "params": [
+              {
+                "name": "template_path",
+                "type": "Union[str, Path]",
+                "desc": "Path to the YAML file containing the config.",
+                "default": ""
+              },
+              {
+                "name": "required_parameters",
+                "type": "list[str]",
+                "desc": "List of parameter names that must exist.",
+                "default": ""
+              },
+              {
+                "name": "error_message",
+                "type": "Optional[str]",
+                "desc": "Custom error message if validation fails.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "SeedSimulatedConversation",
+                "desc": "The loaded and validated SeedSimulatedConversation."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If required parameters are missing."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "SeedSimulatedConversation"
+        },
+        {
+          "name": "get_identifier",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get an identifier dict capturing this configuration for comparison/storage.",
+            "returns": [
+              {
+                "type": "dict[str, Any]",
+                "desc": "Dictionary with configuration details."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, Any]"
+        },
+        {
+          "name": "load_simulated_target_system_prompt",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "objective",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "num_turns",
+              "type": "int",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "simulated_target_system_prompt_path",
+              "type": "Optional[Union[str, Path]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Load and render the simulated target system prompt.\n\nIf no path is provided, returns None (no system prompt).\nValidates that the template has required `objective` and `num_turns` parameters.",
+            "params": [
+              {
+                "name": "objective",
+                "type": "str",
+                "desc": "The objective to render into the template.",
+                "default": ""
+              },
+              {
+                "name": "num_turns",
+                "type": "int",
+                "desc": "The number of turns to render into the template.",
+                "default": ""
+              },
+              {
+                "name": "simulated_target_system_prompt_path",
+                "type": "Optional[Union[str, Path]]",
+                "desc": "Optional path to the prompt YAML file.\nIf None, no system prompt is used.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Optional[str]",
+                "desc": "The rendered system prompt string, or None if no path is provided."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the template doesn't have required parameters."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[str]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "adversarial_chat_system_prompt_path"
+        },
+        {
+          "name": "next_message_system_prompt_path"
+        },
+        {
+          "name": "num_turns"
+        },
+        {
+          "name": "pyrit_version"
+        },
+        {
+          "name": "sequence"
+        },
+        {
+          "name": "sequence_range",
+          "type": "range",
+          "docstring": "Get the range of sequence numbers this simulated conversation will occupy.\n\nEach turn generates 2 messages (user + assistant), so num_turns generates\nnum_turns * 2 messages. If next_message_system_prompt_path is set, an additional\nuser message is added at the end.\n\nReturns:\n    A range object representing the sequence numbers."
+        },
+        {
+          "name": "simulated_target_system_prompt_path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "adversarial_chat_system_prompt_path",
+            "type": "Union[str, Path]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "simulated_target_system_prompt_path",
+            "type": "Optional[Union[str, Path]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "next_message_system_prompt_path",
+            "type": "Optional[Union[str, Path]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "num_turns",
+            "type": "int",
+            "default": "3",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "sequence",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "pyrit_version",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "kwargs",
+            "type": "Any",
+            "default": "{}",
+            "kind": "variadic keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a SeedSimulatedConversation.",
+          "params": [
+            {
+              "name": "adversarial_chat_system_prompt_path",
+              "type": "Union[str, Path]",
+              "desc": "Path to YAML file containing the adversarial\nchat system prompt.",
+              "default": ""
+            },
+            {
+              "name": "simulated_target_system_prompt_path",
+              "type": "Optional[Union[str, Path]]",
+              "desc": "Optional path to YAML file containing\nthe simulated target system prompt. Defaults to the compliant prompt.",
+              "default": "None"
+            },
+            {
+              "name": "next_message_system_prompt_path",
+              "type": "Optional[Union[str, Path]]",
+              "desc": "Optional path to YAML file containing the system\nprompt for generating a final user message. If provided, after the simulated\nconversation is generated, a single LLM call generates a user message that\nattempts to get the target to fulfill the objective. Defaults to None\n(no next message generation).",
+              "default": "None"
+            },
+            {
+              "name": "num_turns",
+              "type": "int",
+              "desc": "Number of conversation turns to generate. Defaults to 3.",
+              "default": "3"
+            },
+            {
+              "name": "sequence",
+              "type": "int",
+              "desc": "The starting sequence number for generated turns. When combined with\nstatic SeedPrompts, this determines where the simulated turns are inserted.\nDefaults to 0.",
+              "default": "0"
+            },
+            {
+              "name": "pyrit_version",
+              "type": "Optional[str]",
+              "desc": "PyRIT version for reproducibility tracking. Defaults to current version.",
+              "default": "None"
+            },
+            {
+              "name": "**kwargs",
+              "type": "Any",
+              "desc": "Additional arguments passed to the Seed base class.",
+              "default": "{}"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If num_turns is not positive or sequence is negative."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "SimulatedTargetSystemPromptPaths",
+      "kind": "class",
+      "docstring": {
+        "text": "Enum for predefined simulated target system prompt paths."
+      },
+      "bases": [
+        "enum.Enum"
+      ],
+      "attributes": [
+        {
+          "name": "COMPLIANT"
+        }
+      ]
+    }
+  ]
+}

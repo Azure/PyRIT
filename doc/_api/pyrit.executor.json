@@ -1,0 +1,8 @@
+{
+  "name": "pyrit.executor",
+  "kind": "module",
+  "docstring": {
+    "text": "Attack executor module."
+  },
+  "members": []
+}

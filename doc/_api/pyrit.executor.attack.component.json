@@ -1,0 +1,762 @@
+{
+  "name": "pyrit.executor.attack.component",
+  "kind": "module",
+  "docstring": {
+    "text": "Attack components module."
+  },
+  "members": [
+    {
+      "name": "ConversationManager",
+      "kind": "class",
+      "docstring": {
+        "text": "Manages conversations for attacks, handling message history,\nsystem prompts, and conversation state.\n\nThis class provides methods to:\n- Initialize attack context with prepended conversations\n- Retrieve conversation history\n- Set system prompts for chat targets"
+      },
+      "methods": [
+        {
+          "name": "add_prepended_conversation_to_memory_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "prepended_conversation",
+              "type": "list[Message]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "request_converters",
+              "type": "Optional[list[PromptConverterConfiguration]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfig]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "max_turns",
+              "type": "Optional[int]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Add prepended conversation messages to memory for a chat target.\n\nThis is a lower-level method that handles adding messages to memory without\nmodifying any attack context state. It can be called directly by attacks\nthat manage their own state (like TAP nodes) or internally by\ninitialize_context_async for standard attacks.\n\nMessages are added with:\n- Duplicated message objects (preserves originals)\n- simulated_assistant role for assistant messages (for traceability)\n- Converters applied based on config",
+            "params": [
+              {
+                "name": "prepended_conversation",
+                "type": "list[Message]",
+                "desc": "Messages to add to memory.",
+                "default": ""
+              },
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "Conversation ID to assign to all messages.",
+                "default": ""
+              },
+              {
+                "name": "request_converters",
+                "type": "Optional[list[PromptConverterConfiguration]]",
+                "desc": "Optional converters to apply to messages.",
+                "default": "None"
+              },
+              {
+                "name": "prepended_conversation_config",
+                "type": "Optional[PrependedConversationConfig]",
+                "desc": "Optional configuration for converter roles.",
+                "default": "None"
+              },
+              {
+                "name": "max_turns",
+                "type": "Optional[int]",
+                "desc": "If provided, validates that turn count doesn't exceed this limit.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "int",
+                "desc": "The number of turns (assistant messages) added."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If max_turns is exceeded by the prepended conversation."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "int"
+        },
+        {
+          "name": "get_conversation",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a conversation by its ID.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The ID of the conversation to retrieve.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[Message]",
+                "desc": "A list of messages in the conversation, ordered by creation time."
+              },
+              {
+                "type": "list[Message]",
+                "desc": "Returns empty list if no messages exist."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[Message]"
+        },
+        {
+          "name": "get_last_message",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "role",
+              "type": "Optional[ChatMessageRole]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve the most recent message from a conversation.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The ID of the conversation to retrieve from.",
+                "default": ""
+              },
+              {
+                "name": "role",
+                "type": "Optional[ChatMessageRole]",
+                "desc": "If provided, return only the last message matching this role.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Optional[MessagePiece]",
+                "desc": "The last message piece, or None if no messages exist."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[MessagePiece]"
+        },
+        {
+          "name": "initialize_context_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "context",
+              "type": "AttackContext[Any]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "target",
+              "type": "PromptTarget",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "request_converters",
+              "type": "Optional[list[PromptConverterConfiguration]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfig]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "max_turns",
+              "type": "Optional[int]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "memory_labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Initialize attack context with prepended conversation and merged labels.\n\nThis is the primary method for setting up an attack context. It:\n1. Merges memory_labels from attack strategy with context labels\n2. Processes prepended_conversation based on target type and config\n3. Updates context.executed_turns for multi-turn attacks\n4. Sets context.next_message if there's an unanswered user message",
+            "params": [
+              {
+                "name": "context",
+                "type": "AttackContext[Any]",
+                "desc": "The attack context to initialize.",
+                "default": ""
+              },
+              {
+                "name": "target",
+                "type": "PromptTarget",
+                "desc": "The objective target for the conversation.",
+                "default": ""
+              },
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "Unique identifier for the conversation.",
+                "default": ""
+              },
+              {
+                "name": "request_converters",
+                "type": "Optional[list[PromptConverterConfiguration]]",
+                "desc": "Converters to apply to messages.",
+                "default": "None"
+              },
+              {
+                "name": "prepended_conversation_config",
+                "type": "Optional[PrependedConversationConfig]",
+                "desc": "Configuration for handling prepended conversation.",
+                "default": "None"
+              },
+              {
+                "name": "max_turns",
+                "type": "Optional[int]",
+                "desc": "Maximum turns allowed (for validation and state tracking).",
+                "default": "None"
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "Labels from the attack strategy to merge with context labels.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "ConversationState",
+                "desc": "ConversationState with turn_count and last_assistant_message_scores."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If conversation_id is empty, or if prepended_conversation\nrequires a PromptChatTarget but target is not one."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ConversationState"
+        },
+        {
+          "name": "set_system_prompt",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "target",
+              "type": "PromptChatTarget",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "system_prompt",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Set or update the system prompt for a conversation.",
+            "params": [
+              {
+                "name": "target",
+                "type": "PromptChatTarget",
+                "desc": "The chat target to set the system prompt on.",
+                "default": ""
+              },
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "Unique identifier for the conversation.",
+                "default": ""
+              },
+              {
+                "name": "system_prompt",
+                "type": "str",
+                "desc": "The system prompt text.",
+                "default": ""
+              },
+              {
+                "name": "labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "Optional labels to associate with the system prompt.",
+                "default": "None"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_identifier",
+            "type": "ComponentIdentifier",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the conversation manager.",
+          "params": [
+            {
+              "name": "attack_identifier",
+              "type": "ComponentIdentifier",
+              "desc": "The identifier of the attack this manager belongs to.",
+              "default": ""
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Optional prompt normalizer for converting prompts.\nIf not provided, a default PromptNormalizer instance will be created.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ConversationState",
+      "kind": "class",
+      "docstring": {
+        "text": "Container for conversation state data returned from context initialization."
+      },
+      "attributes": [
+        {
+          "name": "last_assistant_message_scores",
+          "type": "list[Score]"
+        },
+        {
+          "name": "turn_count",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "turn_count",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_assistant_message_scores",
+            "type": "list[Score]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "PrependedConversationConfig",
+      "kind": "class",
+      "docstring": {
+        "text": "Configuration for controlling how prepended conversations are processed before\nbeing sent to the objective target.\n\nThis class provides control over:\n- Which message roles should have request converters applied\n- How to normalize conversation history for non-chat objective targets\n- What to do when the objective target is not a PromptChatTarget"
+      },
+      "methods": [
+        {
+          "name": "default",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create a default configuration with converters applied to all roles.",
+            "returns": [
+              {
+                "type": "PrependedConversationConfig",
+                "desc": "A configuration that applies converters to all prepended messages,"
+              },
+              {
+                "type": "PrependedConversationConfig",
+                "desc": "raising an error for non-chat targets."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "PrependedConversationConfig"
+        },
+        {
+          "name": "for_non_chat_target",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "message_normalizer",
+              "type": "Optional[MessageStringNormalizer]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "apply_converters_to_roles",
+              "type": "Optional[list[ChatMessageRole]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Create a configuration for use with non-chat targets.\n\nThis configuration normalizes the prepended conversation into a text block\nthat will be prepended to the first message sent to the target.",
+            "params": [
+              {
+                "name": "message_normalizer",
+                "type": "Optional[MessageStringNormalizer]",
+                "desc": "Normalizer for formatting the prepended conversation into a string.\nDefaults to ConversationContextNormalizer if not provided.",
+                "default": "None"
+              },
+              {
+                "name": "apply_converters_to_roles",
+                "type": "Optional[list[ChatMessageRole]]",
+                "desc": "Roles to apply converters to before normalization.\nDefaults to all roles.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "PrependedConversationConfig",
+                "desc": "A configuration that normalizes the prepended conversation for non-chat targets."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "PrependedConversationConfig"
+        },
+        {
+          "name": "get_message_normalizer",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the normalizer for objective target context, with a default fallback.",
+            "returns": [
+              {
+                "type": "MessageStringNormalizer",
+                "desc": "The configured objective_target_context_normalizer, or a default"
+              },
+              {
+                "type": "MessageStringNormalizer",
+                "desc": "ConversationContextNormalizer if none was configured."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "MessageStringNormalizer"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "apply_converters_to_roles",
+          "type": "list[ChatMessageRole]"
+        },
+        {
+          "name": "message_normalizer",
+          "type": "Optional[MessageStringNormalizer]"
+        },
+        {
+          "name": "non_chat_target_behavior",
+          "type": "Literal['normalize_first_turn', 'raise']"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "apply_converters_to_roles",
+            "type": "list[ChatMessageRole]",
+            "default": "(lambda: list(get_args(ChatMessageRole)))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "message_normalizer",
+            "type": "Optional[MessageStringNormalizer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "non_chat_target_behavior",
+            "type": "Literal['normalize_first_turn', 'raise']",
+            "default": "'normalize_first_turn'",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "build_conversation_context_string_async",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "messages",
+          "type": "list[Message]",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Build a formatted context string from a list of messages.\n\nThis is a convenience function that uses ConversationContextNormalizer\nto format messages into a \"Turn N: User/Assistant\" format suitable for\nuse in system prompts.",
+        "params": [
+          {
+            "name": "messages",
+            "type": "list[Message]",
+            "desc": "The conversation messages to format.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "A formatted string representing the conversation context."
+          },
+          {
+            "type": "str",
+            "desc": "Returns empty string if no messages provided."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    },
+    {
+      "name": "get_adversarial_chat_messages",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "prepended_conversation",
+          "type": "list[Message]",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "adversarial_chat_conversation_id",
+          "type": "str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "attack_identifier",
+          "type": "ComponentIdentifier",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "adversarial_chat_target_identifier",
+          "type": "ComponentIdentifier",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "labels",
+          "type": "Optional[dict[str, str]]",
+          "default": "None",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Transform prepended conversation messages for adversarial chat with swapped roles.\n\nThis function creates new Message objects with swapped roles for use in adversarial\nchat conversations. From the adversarial chat's perspective:\n- \"user\" messages become \"assistant\" (prompts it generated)\n- \"assistant\" messages become \"user\" (responses it received)\n- System messages are skipped (adversarial chat has its own system prompt)\n\nAll messages receive new UUIDs to distinguish them from the originals.",
+        "params": [
+          {
+            "name": "prepended_conversation",
+            "type": "list[Message]",
+            "desc": "The original conversation messages to transform.",
+            "default": ""
+          },
+          {
+            "name": "adversarial_chat_conversation_id",
+            "type": "str",
+            "desc": "Conversation ID for the adversarial chat.",
+            "default": ""
+          },
+          {
+            "name": "attack_identifier",
+            "type": "ComponentIdentifier",
+            "desc": "Attack identifier to associate with messages.",
+            "default": ""
+          },
+          {
+            "name": "adversarial_chat_target_identifier",
+            "type": "ComponentIdentifier",
+            "desc": "Target identifier for the adversarial chat.",
+            "default": ""
+          },
+          {
+            "name": "labels",
+            "type": "Optional[dict[str, str]]",
+            "desc": "Optional labels to associate with the messages.",
+            "default": "None"
+          }
+        ],
+        "returns": [
+          {
+            "type": "list[Message]",
+            "desc": "List of transformed messages with swapped roles and new IDs."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "list[Message]"
+    },
+    {
+      "name": "get_prepended_turn_count",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "prepended_conversation",
+          "type": "Optional[list[Message]]",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Count the number of turns (assistant responses) in a prepended conversation.\n\nThis is used to offset iteration counts so that executed_turns reflects\nthe total conversation depth including prepended messages.",
+        "params": [
+          {
+            "name": "prepended_conversation",
+            "type": "Optional[list[Message]]",
+            "desc": "The prepended conversation messages, or None.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "int",
+            "desc": "The number of assistant messages in the prepended conversation.\nReturns 0 if prepended_conversation is None or empty."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "int"
+    },
+    {
+      "name": "mark_messages_as_simulated",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "messages",
+          "type": "Sequence[Message]",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Mark assistant messages as simulated_assistant for traceability.\n\nThis function converts all assistant roles to simulated_assistant in the\nprovided messages. This is useful when loading conversations from YAML files\nor other sources where the responses are not from actual targets.",
+        "params": [
+          {
+            "name": "messages",
+            "type": "Sequence[Message]",
+            "desc": "The messages to mark as simulated.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "list[Message]",
+            "desc": "List[Message]: The same messages with assistant roles converted to simulated_assistant.\nModifies the messages in place and also returns them for convenience."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "list[Message]"
+    }
+  ]
+}

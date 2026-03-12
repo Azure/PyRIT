@@ -1,0 +1,552 @@
+{
+  "name": "pyrit.message_normalizer",
+  "kind": "module",
+  "docstring": {
+    "text": "Functionality to normalize messages into compatible formats for targets."
+  },
+  "members": [
+    {
+      "name": "ChatMessageNormalizer",
+      "kind": "class",
+      "docstring": {
+        "text": "Normalizer that converts a list of Messages to a list of ChatMessages.\n\nThis normalizer handles both single-part and multipart messages:\n- Single piece messages: content is a simple string\n- Multiple piece messages: content is a list of dicts with type/text or type/image_url",
+        "params": [
+          {
+            "name": "use_developer_role",
+            "type": "bool",
+            "desc": "If True, translates \"system\" role to \"developer\" role\nfor compatibility with newer OpenAI models (o1, o3, gpt-4.1+).\nDefaults to False for backward compatibility.",
+            "default": "False"
+          },
+          {
+            "name": "system_message_behavior",
+            "type": "SystemMessageBehavior",
+            "desc": "How to handle system messages before conversion.\n- \"keep\": Keep system messages as-is (default)\n- \"squash\": Merge system message into first user message\n- \"ignore\": Drop system messages entirely",
+            "default": "'keep'"
+          }
+        ]
+      },
+      "bases": [
+        "MessageListNormalizer[ChatMessage]",
+        "MessageStringNormalizer"
+      ],
+      "methods": [
+        {
+          "name": "normalize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Convert a list of Messages to a list of ChatMessages.\n\nFor single-piece text messages, content is a string.\nFor multi-piece or non-text messages, content is a list of content dicts.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "The list of Message objects to normalize.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[ChatMessage]",
+                "desc": "A list of ChatMessage objects."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the messages list is empty."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[ChatMessage]"
+        },
+        {
+          "name": "normalize_string_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Convert a list of Messages to a JSON string representation.\n\nThis serializes the list of ChatMessages to JSON format.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "The list of Message objects to normalize.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A JSON string representation of the ChatMessages."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "system_message_behavior"
+        },
+        {
+          "name": "use_developer_role"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "use_developer_role",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "system_message_behavior",
+            "type": "SystemMessageBehavior",
+            "default": "'keep'",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the ChatMessageNormalizer.",
+          "params": [
+            {
+              "name": "use_developer_role",
+              "type": "bool",
+              "desc": "If True, translates \"system\" role to \"developer\" role.",
+              "default": "False"
+            },
+            {
+              "name": "system_message_behavior",
+              "type": "SystemMessageBehavior",
+              "desc": "How to handle system messages. Defaults to \"keep\".",
+              "default": "'keep'"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ConversationContextNormalizer",
+      "kind": "class",
+      "docstring": {
+        "text": "Normalizer that formats conversation history as turn-based text.\n\nThis is the standard format used by attacks like Crescendo and TAP\nfor including conversation context in adversarial chat prompts.\nThe output format is:\n\n    Turn 1:\n    User: <content>\n    Assistant: <content>\n\n    Turn 2:\n    User: <content>\n    ..."
+      },
+      "bases": [
+        "MessageStringNormalizer"
+      ],
+      "methods": [
+        {
+          "name": "normalize_string_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Normalize a list of messages into a turn-based context string.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "The list of Message objects to normalize.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A formatted string with turn numbers and role prefixes."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the messages list is empty."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ]
+    },
+    {
+      "name": "GenericSystemSquashNormalizer",
+      "kind": "class",
+      "docstring": {
+        "text": "Normalizer that combines the first system message with the first user message using generic instruction tags."
+      },
+      "bases": [
+        "MessageListNormalizer[Message]"
+      ],
+      "methods": [
+        {
+          "name": "normalize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return messages with the first system message combined into the first user message.\n\nThe format uses generic instruction tags:\n### Instructions ###\n{system_content}\n######\n{user_content}",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "The list of messages to normalize.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[Message]",
+                "desc": "A Message with the system message squashed into the first user message."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the messages list is empty."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[Message]"
+        }
+      ]
+    },
+    {
+      "name": "MessageListNormalizer",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for normalizers that return a list of items.\n\nSubclasses specify the type T (e.g., Message, ChatMessage) that the list contains.\nT must implement the DictConvertible protocol (have a to_dict() method)."
+      },
+      "bases": [
+        "abc.ABC",
+        "Generic[T]"
+      ],
+      "methods": [
+        {
+          "name": "normalize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Normalize the list of messages into a list of items.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "The list of Message objects to normalize.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[T]",
+                "desc": "A list of normalized items of type T."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[T]"
+        },
+        {
+          "name": "normalize_to_dicts_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Normalize the list of messages into a list of dictionaries.\n\nThis method uses normalize_async and calls to_dict() on each item.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "The list of Message objects to normalize.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[dict[str, Any]]",
+                "desc": "A list of dictionaries representing the normalized messages."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[dict[str, Any]]"
+        }
+      ]
+    },
+    {
+      "name": "MessageStringNormalizer",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for normalizers that return a string representation.\n\nUse this for formatting messages into text for non-chat targets or context strings."
+      },
+      "bases": [
+        "abc.ABC"
+      ],
+      "methods": [
+        {
+          "name": "normalize_string_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Normalize the list of messages into a string representation.",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "The list of Message objects to normalize.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A string representation of the messages."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ]
+    },
+    {
+      "name": "TokenizerTemplateNormalizer",
+      "kind": "class",
+      "docstring": {
+        "text": "Enable application of the chat template stored in a Hugging Face tokenizer\nto a list of messages. For more details, see\nhttps://huggingface.co/docs/transformers/main/en/chat_templating."
+      },
+      "bases": [
+        "MessageStringNormalizer"
+      ],
+      "methods": [
+        {
+          "name": "from_model",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "model_name_or_alias",
+              "type": "str",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "token",
+              "type": "Optional[str]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "system_message_behavior",
+              "type": "Optional[TokenizerSystemBehavior]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Create a normalizer from a model name or alias.\n\nThis factory method simplifies creating a normalizer by handling tokenizer\nloading automatically. Use aliases for common models or provide a full\nHuggingFace model path.",
+            "params": [
+              {
+                "name": "model_name_or_alias",
+                "type": "str",
+                "desc": "Either a full HuggingFace model name or an alias\n(e.g., 'chatml', 'phi3', 'llama3'). See MODEL_ALIASES for available aliases.",
+                "default": ""
+              },
+              {
+                "name": "token",
+                "type": "Optional[str]",
+                "desc": "Optional HuggingFace token for gated models. If not provided,\nfalls back to HUGGINGFACE_TOKEN environment variable.",
+                "default": "None"
+              },
+              {
+                "name": "system_message_behavior",
+                "type": "Optional[TokenizerSystemBehavior]",
+                "desc": "Override how to handle system messages.\nIf not provided, uses the model's default config.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "TokenizerTemplateNormalizer",
+                "desc": "TokenizerTemplateNormalizer configured with the model's tokenizer."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the tokenizer doesn't have a chat_template."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "TokenizerTemplateNormalizer"
+        },
+        {
+          "name": "normalize_string_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Message]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Apply the chat template stored in the tokenizer to a list of messages.\n\nHandles system messages based on the configured system_message_behavior:\n- \"keep\": Pass system messages as-is\n- \"squash\": Merge system into first user message\n- \"ignore\": Drop system messages entirely\n- \"developer\": Change system role to developer role",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list[Message]",
+                "desc": "A list of Message objects.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The formatted chat messages as a string."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "MODEL_ALIASES",
+          "type": "dict[str, TokenizerModelConfig]"
+        },
+        {
+          "name": "system_message_behavior"
+        },
+        {
+          "name": "tokenizer"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tokenizer",
+            "type": "PreTrainedTokenizerBase",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "system_message_behavior",
+            "type": "TokenizerSystemBehavior",
+            "default": "'keep'",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize an instance of the TokenizerTemplateNormalizer class.",
+          "params": [
+            {
+              "name": "tokenizer",
+              "type": "PreTrainedTokenizerBase",
+              "desc": "A Hugging Face tokenizer with a chat template.",
+              "default": ""
+            },
+            {
+              "name": "system_message_behavior",
+              "type": "TokenizerSystemBehavior",
+              "desc": "How to handle system messages. Options:\n- \"keep\": Keep system messages as-is (default)\n- \"squash\": Merge system into first user message\n- \"ignore\": Drop system messages entirely\n- \"developer\": Change system role to developer role",
+              "default": "'keep'"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1299 @@
+{
+  "name": "pyrit.scenario.core",
+  "kind": "module",
+  "docstring": {
+    "text": "Core scenario classes for running attack configurations."
+  },
+  "members": [
+    {
+      "name": "AtomicAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents a single atomic attack test combining an attack strategy and dataset.\n\nAn AtomicAttack is an executable unit that executes a configured attack against\nall objectives in a dataset. Multiple AtomicAttacks can be grouped together into\nlarger test scenarios for comprehensive security testing and evaluation.\n\nThe AtomicAttack uses SeedAttackGroups as the single source of truth for objectives,\nprepended conversations, and next messages. Each SeedAttackGroup must have an objective set."
+      },
+      "methods": [
+        {
+          "name": "filter_seed_groups_by_objectives",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "remaining_objectives",
+              "type": "list[str]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Filter seed groups to only those with objectives in the remaining list.\n\nThis is used for scenario resumption to skip already completed objectives.",
+            "params": [
+              {
+                "name": "remaining_objectives",
+                "type": "List[str]",
+                "desc": "List of objectives that still need to be executed.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "run_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "max_concurrency",
+              "type": "int",
+              "default": "1",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "return_partial_on_failure",
+              "type": "bool",
+              "default": "True",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "attack_params",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the atomic attack against all seed groups.\n\nThis method uses AttackExecutor to run the configured attack against\nall seed groups.\n\nWhen return_partial_on_failure=True (default), this method will return\nan AttackExecutorResult containing both completed results and incomplete\nobjectives (those that didn't finish execution due to exceptions). This allows\nscenarios to save progress and retry only the incomplete objectives.\n\nNote: \"completed\" means the execution finished, not that the attack objective\nwas achieved. \"incomplete\" means execution didn't finish (threw an exception).",
+            "params": [
+              {
+                "name": "max_concurrency",
+                "type": "int",
+                "desc": "Maximum number of concurrent attack executions.\nDefaults to 1 for sequential execution.",
+                "default": "1"
+              },
+              {
+                "name": "return_partial_on_failure",
+                "type": "bool",
+                "desc": "If True, returns partial results even when\nsome objectives don't complete execution. If False, raises an exception on\nany execution failure. Defaults to True.",
+                "default": "True"
+              },
+              {
+                "name": "**attack_params",
+                "type": "Any",
+                "desc": "Additional parameters to pass to the attack strategy.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackExecutorResult[AttackResult]",
+                "desc": "AttackExecutorResult[AttackResult]: Result containing completed attack results and\nincomplete objectives (those that didn't finish execution)."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the attack execution fails completely and return_partial_on_failure=False."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackExecutorResult[AttackResult]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "atomic_attack_name"
+        },
+        {
+          "name": "objectives",
+          "type": "list[str]",
+          "docstring": "Get the objectives from the seed groups.\n\nReturns:\n    List[str]: List of objectives from all seed groups."
+        },
+        {
+          "name": "seed_groups",
+          "type": "list[SeedAttackGroup]",
+          "docstring": "Get a copy of the seed groups list for this atomic attack.\n\nReturns:\n    List[SeedAttackGroup]: A copy of the seed groups list."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "atomic_attack_name",
+            "type": "str",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack",
+            "type": "AttackStrategy[Any, Any]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "seed_groups",
+            "type": "list[SeedAttackGroup]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "Optional[PromptChatTarget]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "memory_labels",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_execute_params",
+            "type": "Any",
+            "default": "{}",
+            "kind": "variadic keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize an atomic attack with an attack strategy and seed groups.",
+          "params": [
+            {
+              "name": "atomic_attack_name",
+              "type": "str",
+              "desc": "Used to group an AtomicAttack with related attacks for a\nstrategy.",
+              "default": ""
+            },
+            {
+              "name": "attack",
+              "type": "AttackStrategy",
+              "desc": "The configured attack strategy to execute.",
+              "default": ""
+            },
+            {
+              "name": "seed_groups",
+              "type": "List[SeedAttackGroup]",
+              "desc": "List of seed attack groups. Each seed group must\nhave an objective set. The seed groups serve as the single source of truth for\nobjectives, prepended conversations, and next messages.",
+              "default": ""
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "desc": "Optional chat target for generating\nadversarial prompts or simulated conversations. Required when seed groups contain\nSeedSimulatedConversation configurations.",
+              "default": "None"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "desc": "Optional scorer for evaluating simulated\nconversations. Required when seed groups contain SeedSimulatedConversation\nconfigurations.",
+              "default": "None"
+            },
+            {
+              "name": "memory_labels",
+              "type": "Optional[Dict[str, str]]",
+              "desc": "Additional labels to apply to prompts.\nThese labels help track and categorize the atomic attack in memory.",
+              "default": "None"
+            },
+            {
+              "name": "**attack_execute_params",
+              "type": "Any",
+              "desc": "Additional parameters to pass to the attack\nexecution method (e.g., batch_size).",
+              "default": "{}"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If seed_groups list is empty or any seed group is missing an objective."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "DatasetConfiguration",
+      "kind": "class",
+      "docstring": {
+        "text": "Configuration for scenario datasets.\n\nThis class provides a unified way to specify the dataset source for scenarios.\nOnly ONE of `seed_groups` or `dataset_names` can be set.",
+        "params": [
+          {
+            "name": "seed_groups",
+            "type": "Optional[List[SeedGroup]]",
+            "desc": "Explicit list of SeedGroup to use.",
+            "default": "None"
+          },
+          {
+            "name": "dataset_names",
+            "type": "Optional[List[str]]",
+            "desc": "Names of datasets to load from memory.",
+            "default": "None"
+          },
+          {
+            "name": "max_dataset_size",
+            "type": "Optional[int]",
+            "desc": "If set, randomly samples up to this many SeedGroups\nfrom the configured dataset source (without replacement, so no duplicates).",
+            "default": "None"
+          },
+          {
+            "name": "scenario_composites",
+            "type": "Optional[Sequence[ScenarioCompositeStrategy]]",
+            "desc": "The scenario\nstrategies being executed. Subclasses can use this to filter or customize\nwhich seed groups are loaded based on the selected strategies.",
+            "default": "None"
+          }
+        ]
+      },
+      "methods": [
+        {
+          "name": "get_all_seed_attack_groups",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Resolve and return all seed groups as SeedAttackGroups in a flat list.\n\nThis is a convenience method that calls get_seed_attack_groups() and flattens\nthe results into a single list. Use this for attack scenarios that need\nSeedAttackGroup functionality.",
+            "returns": [
+              {
+                "type": "list[SeedAttackGroup]",
+                "desc": "List[SeedAttackGroup]: All resolved seed attack groups from all datasets."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no seed groups could be resolved from the configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[SeedAttackGroup]"
+        },
+        {
+          "name": "get_all_seed_groups",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Resolve and return all seed groups as a flat list.\n\nThis is a convenience method that calls get_seed_groups() and flattens\nthe results into a single list. Use this when you don't need to track\nwhich dataset each seed group came from.",
+            "returns": [
+              {
+                "type": "list[SeedGroup]",
+                "desc": "List[SeedGroup]: All resolved seed groups from all datasets,\nwith max_dataset_size applied per dataset."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no seed groups could be resolved from the configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[SeedGroup]"
+        },
+        {
+          "name": "get_all_seeds",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Load all seed prompts from memory for all configured datasets.\n\nThis is a convenience method that retrieves SeedPrompt objects directly\nfrom memory for all configured datasets. If max_dataset_size is set, randomly\nsamples up to that many prompts per dataset (without replacement).",
+            "returns": [
+              {
+                "type": "list[Seed]",
+                "desc": "List[SeedPrompt]: List of SeedPrompt objects from all configured datasets.\nReturns an empty list if no prompts are found."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no dataset names are configured."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[Seed]"
+        },
+        {
+          "name": "get_default_dataset_names",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the list of default dataset names for this configuration.\n\nThis is used by the CLI to display what datasets the scenario uses by default.",
+            "returns": [
+              {
+                "type": "list[str]",
+                "desc": "List[str]: List of dataset names, or empty list if using explicit seed_groups."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[str]"
+        },
+        {
+          "name": "get_seed_attack_groups",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Resolve and return seed groups as SeedAttackGroups, grouped by dataset.\n\nThis wraps get_seed_groups() and converts each SeedGroup to a SeedAttackGroup.\nUse this when you need attack-specific functionality like objectives,\nprepended conversations, or simulated conversation configuration.",
+            "returns": [
+              {
+                "type": "dict[str, list[SeedAttackGroup]]",
+                "desc": "Dict[str, List[SeedAttackGroup]]: Dictionary mapping dataset names to their\nseed attack groups."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no seed groups could be resolved from the configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, list[SeedAttackGroup]]"
+        },
+        {
+          "name": "get_seed_groups",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Resolve and return seed groups based on the configuration.\n\nThis method handles all resolution logic:\n1. If seed_groups is set, use those directly (under key '_explicit_seed_groups')\n2. If dataset_names is set, load from memory using those names\n\nIn all cases, max_dataset_size is applied **per dataset** if set.\n\nSubclasses can override this to filter or customize which seed groups\nare loaded based on the stored scenario_composites.",
+            "returns": [
+              {
+                "type": "dict[str, list[SeedGroup]]",
+                "desc": "Dict[str, List[SeedGroup]]: Dictionary mapping dataset names to their\nseed groups. When explicit seed_groups are provided, the key is\n'_explicit_seed_groups'. Each dataset's seed groups are potentially\nsampled down to max_dataset_size."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no seed groups could be resolved from the configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, list[SeedGroup]]"
+        },
+        {
+          "name": "has_data_source",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Check if this configuration has a data source configured.",
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if seed_groups or dataset_names is configured."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "max_dataset_size"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "seed_groups",
+            "type": "Optional[list[SeedGroup]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "dataset_names",
+            "type": "Optional[list[str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_dataset_size",
+            "type": "Optional[int]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_composites",
+            "type": "Optional[Sequence[ScenarioCompositeStrategy]]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a DatasetConfiguration.",
+          "params": [
+            {
+              "name": "seed_groups",
+              "type": "Optional[List[SeedGroup]]",
+              "desc": "Explicit list of SeedGroup to use.",
+              "default": "None"
+            },
+            {
+              "name": "dataset_names",
+              "type": "Optional[List[str]]",
+              "desc": "Names of datasets to load from memory.",
+              "default": "None"
+            },
+            {
+              "name": "max_dataset_size",
+              "type": "Optional[int]",
+              "desc": "If set, randomly samples up to this many SeedGroups\n(without replacement).",
+              "default": "None"
+            },
+            {
+              "name": "scenario_composites",
+              "type": "Optional[Sequence[ScenarioCompositeStrategy]]",
+              "desc": "The scenario\nstrategies being executed. Subclasses can use this to filter or customize\nwhich seed groups are loaded.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If both seed_groups and dataset_names are set."
+            },
+            {
+              "type": "ValueError",
+              "desc": "If max_dataset_size is less than 1."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "Scenario",
+      "kind": "class",
+      "docstring": {
+        "text": "Groups and executes multiple AtomicAttack instances sequentially.\n\nA Scenario represents a comprehensive testing campaign composed of multiple\natomic attack tests (AtomicAttacks). It executes each AtomicAttack in sequence and\naggregates the results into a ScenarioResult."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "default_dataset_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Return the default dataset configuration for this scenario.\n\nThis abstract method must be implemented by all scenario subclasses to return\na DatasetConfiguration specifying the default datasets to use when no\ndataset_config is provided by the user.",
+            "returns": [
+              {
+                "type": "DatasetConfiguration",
+                "desc": "The default dataset configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "DatasetConfiguration"
+        },
+        {
+          "name": "get_default_strategy",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the default strategy used when no strategies are specified.\n\nThis abstract method must be implemented by all scenario subclasses to return\nthe default aggregate strategy (like EASY, ALL) used when scenario_strategies\nparameter is None.",
+            "returns": [
+              {
+                "type": "ScenarioStrategy",
+                "desc": "The default aggregate strategy (e.g., FoundryStrategy.EASY, EncodingStrategy.ALL)."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioStrategy"
+        },
+        {
+          "name": "get_strategy_class",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the strategy enum class for this scenario.\n\nThis abstract method must be implemented by all scenario subclasses to return\nthe ScenarioStrategy enum class that defines the available attack strategies\nfor the scenario.",
+            "returns": [
+              {
+                "type": "type[ScenarioStrategy]",
+                "desc": "Type[ScenarioStrategy]: The strategy enum class (e.g., FoundryStrategy, EncodingStrategy)."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[ScenarioStrategy]"
+        },
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "default": "REQUIRED_VALUE",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "scenario_strategies",
+              "type": "Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "dataset_config",
+              "type": "Optional[DatasetConfiguration]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "max_concurrency",
+              "type": "int",
+              "default": "10",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "max_retries",
+              "type": "int",
+              "default": "0",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "memory_labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Initialize the scenario by populating self._atomic_attacks and creating the ScenarioResult.\n\nThis method allows scenarios to be initialized with atomic attacks after construction,\nwhich is useful when atomic attacks require async operations to be built.\n\nIf a scenario_result_id was provided in __init__, this method will check if it exists\nin memory and validate that the stored scenario matches the current configuration.\nIf it matches, the scenario will resume from prior progress. If it doesn't match or\ndoesn't exist, a new scenario result will be created.",
+            "params": [
+              {
+                "name": "objective_target",
+                "type": "PromptTarget",
+                "desc": "The target system to attack.",
+                "default": "REQUIRED_VALUE"
+              },
+              {
+                "name": "scenario_strategies",
+                "type": "Optional[Sequence[ScenarioStrategy | ScenarioCompositeStrategy]]",
+                "desc": "\nThe strategies to execute. Can be a list of bare ScenarioStrategy enums or\nScenarioCompositeStrategy instances for advanced composition. Bare enums are\nautomatically wrapped into composites. If None, uses the default aggregate\nfrom the scenario's configuration.",
+                "default": "None"
+              },
+              {
+                "name": "dataset_config",
+                "type": "Optional[DatasetConfiguration]",
+                "desc": "Configuration for the dataset source.\nUse this to specify dataset names or maximum dataset size from the CLI.\nIf not provided, scenarios use their default_dataset_config().",
+                "default": "None"
+              },
+              {
+                "name": "max_concurrency",
+                "type": "int",
+                "desc": "Maximum number of concurrent attack executions. Defaults to 1.",
+                "default": "10"
+              },
+              {
+                "name": "max_retries",
+                "type": "int",
+                "desc": "Maximum number of automatic retries if the scenario raises an exception.\nSet to 0 (default) for no automatic retries. If set to a positive number,\nthe scenario will automatically retry up to this many times after an exception.\nFor example, max_retries=3 allows up to 4 total attempts (1 initial + 3 retries).",
+                "default": "0"
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[Dict[str, str]]",
+                "desc": "Additional labels to apply to all\nattack runs in the scenario. These help track and categorize the scenario.",
+                "default": "None"
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If no objective_target is provided."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "run_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute all atomic attacks in the scenario sequentially.\n\nEach AtomicAttack is executed in order, and all results are aggregated\ninto a ScenarioResult containing the scenario metadata and all attack results.\nThis method supports resumption - if the scenario raises an exception partway through,\ncalling run_async again will skip already-completed objectives.\n\nIf max_retries is set, the scenario will automatically retry after an exception up to\nthe specified number of times. Each retry will resume from where it left off,\nskipping completed objectives.",
+            "returns": [
+              {
+                "type": "ScenarioResult",
+                "desc": "Contains scenario identifier and aggregated list of all\nattack results from all atomic attacks."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the scenario has no atomic attacks configured. If your scenario\nrequires initialization, call await scenario.initialize() first."
+              },
+              {
+                "type": "ValueError",
+                "desc": "If the scenario raises an exception after exhausting all retry attempts."
+              },
+              {
+                "type": "RuntimeError",
+                "desc": "If the scenario fails for any other reason while executing."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ScenarioResult"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "atomic_attack_count",
+          "type": "int",
+          "docstring": "Get the number of atomic attacks in this scenario."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of the scenario."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "name",
+            "type": "str",
+            "default": "''",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "version",
+            "type": "int",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "strategy_class",
+            "type": "type[ScenarioStrategy]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Scorer",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "include_default_baseline",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "scenario_result_id",
+            "type": "Optional[Union[uuid.UUID, str]]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a scenario.",
+          "params": [
+            {
+              "name": "name",
+              "type": "str",
+              "desc": "Descriptive name for the scenario.",
+              "default": "''"
+            },
+            {
+              "name": "version",
+              "type": "int",
+              "desc": "Version number of the scenario.",
+              "default": ""
+            },
+            {
+              "name": "strategy_class",
+              "type": "Type[ScenarioStrategy]",
+              "desc": "The strategy enum class for this scenario.",
+              "default": ""
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Scorer",
+              "desc": "The objective scorer used to evaluate attack results.",
+              "default": ""
+            },
+            {
+              "name": "include_default_baseline",
+              "type": "bool",
+              "desc": "Whether to include a baseline atomic attack that sends all objectives\nwithout modifications. Most scenarios should have some kind of baseline so users can understand\nthe impact of strategies, but subclasses can optionally write their own custom baselines.\nDefaults to True.",
+              "default": "True"
+            },
+            {
+              "name": "scenario_result_id",
+              "type": "Optional[Union[uuid.UUID, str]]",
+              "desc": "Optional ID of an existing scenario result to resume.\nCan be either a UUID object or a string representation of a UUID.\nIf provided and found in memory, the scenario will resume from prior progress.\nAll other parameters must still match the stored scenario configuration.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ScenarioCompositeStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents a composition of one or more attack strategies.\n\nThis class encapsulates a collection of ScenarioStrategy instances along with\nan auto-generated descriptive name, making it easy to represent both single strategies\nand composed multi-strategy attacks.\n\nThe name is automatically derived from the strategies:\n- Single strategy: Uses the strategy's value (e.g., \"base64\")\n- Multiple strategies: Generates \"ComposedStrategy(base64, rot13)\""
+      },
+      "methods": [
+        {
+          "name": "extract_single_strategy_values",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "composites",
+              "type": "Sequence[ScenarioCompositeStrategy]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "strategy_type",
+              "type": "type[T]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Extract strategy values from single-strategy composites.\n\nThis is a helper method for scenarios that don't support composition and need\nto filter or map strategies by their values. It flattens the composites into\na simple set of strategy values.\n\nThis method enforces that all composites contain only a single strategy. If any\ncomposite contains multiple strategies, a ValueError is raised.",
+            "params": [
+              {
+                "name": "composites",
+                "type": "Sequence[ScenarioCompositeStrategy]",
+                "desc": "List of composite strategies.\nEach composite must contain only a single strategy.",
+                "default": ""
+              },
+              {
+                "name": "strategy_type",
+                "type": "type[T]",
+                "desc": "The strategy enum type to filter by.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "set[str]",
+                "desc": "Set[str]: Set of strategy values (e.g., {\"base64\", \"rot13\", \"morse_code\"})."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If any composite contains multiple strategies."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "set[str]"
+        },
+        {
+          "name": "get_composite_name",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "strategies",
+              "type": "Sequence[ScenarioStrategy]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Generate a descriptive name for a composition of strategies.\n\nFor single strategies, returns the strategy's value.\nFor multiple strategies, generates a name like \"ComposedStrategy(base64, rot13)\".",
+            "params": [
+              {
+                "name": "strategies",
+                "type": "Sequence[ScenarioStrategy]",
+                "desc": "The strategies to generate a name for.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The generated composite name."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If strategies is empty."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "normalize_compositions",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "compositions",
+              "type": "list[ScenarioCompositeStrategy]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "strategy_type",
+              "type": "type[T]",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Example::\n\n    # Aggregate expands to individual strategies\n    [ScenarioCompositeStrategy(strategies=[EASY])]\n    -> [ScenarioCompositeStrategy(strategies=[Base64]),\n        ScenarioCompositeStrategy(strategies=[ROT13]), ...]\n\n    # Concrete composition preserved\n    [ScenarioCompositeStrategy(strategies=[Base64, Atbash])]\n    -> [ScenarioCompositeStrategy(strategies=[Base64, Atbash])]\n\n    # Error: Cannot mix aggregate with concrete in same composition\n    [ScenarioCompositeStrategy(strategies=[EASY, Base64])] -> ValueError",
+            "params": [
+              {
+                "name": "compositions",
+                "type": "List[ScenarioCompositeStrategy]",
+                "desc": "List of composite strategies to normalize.",
+                "default": ""
+              },
+              {
+                "name": "strategy_type",
+                "type": "type[T]",
+                "desc": "The strategy enum type to use for normalization and validation.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[ScenarioCompositeStrategy]",
+                "desc": "List[ScenarioCompositeStrategy]: Normalized list of composite strategies with aggregates expanded."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If compositions is empty, contains empty compositions,\nmixes aggregates with concrete strategies in the same composition,\nhas multiple aggregates in one composition, or violates validate_composition() rules."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[ScenarioCompositeStrategy]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "is_single_strategy",
+          "type": "bool",
+          "docstring": "Check if this composition contains only a single strategy."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of the composite strategy."
+        },
+        {
+          "name": "strategies",
+          "type": "list[ScenarioStrategy]",
+          "docstring": "Get the list of strategies in this composition."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "strategies",
+            "type": "Sequence[ScenarioStrategy]",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize a ScenarioCompositeStrategy.\n\nThe name is automatically generated based on the strategies.",
+          "params": [
+            {
+              "name": "strategies",
+              "type": "Sequence[ScenarioStrategy]",
+              "desc": "The sequence of strategies in this composition.\nMust contain at least one strategy.",
+              "default": ""
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If strategies list is empty."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ScenarioStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Base class for attack strategies with tag-based categorization and aggregation.\n\nThis class provides a pattern for defining attack strategies as enums where each\nstrategy has a set of tags for flexible categorization. It supports aggregate tags\n(like \"easy\", \"moderate\", \"difficult\" or \"fast\", \"medium\") that automatically expand\nto include all strategies with that tag.\n\n**Tags**: Flexible categorization system where strategies can have multiple tags\n(e.g., {\"easy\", \"converter\"}, {\"difficult\", \"multi_turn\"})\n\nSubclasses should define their enum members with (value, tags) tuples and\noverride the get_aggregate_tags() classmethod to specify which tags\nrepresent aggregates that should expand.\n\n**Convention**: All subclasses should include `ALL = (\"all\", {\"all\"})` as the first\naggregate member. The base class automatically handles expanding \"all\" to\ninclude all non-aggregate strategies.\n\nThe normalization process automatically:\n1. Expands aggregate tags into their constituent strategies\n2. Excludes the aggregate tag enum members themselves from the final set\n3. Handles the special \"all\" tag by expanding to all non-aggregate strategies"
+      },
+      "bases": [
+        "Enum"
+      ],
+      "methods": [
+        {
+          "name": "get_aggregate_strategies",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get all aggregate strategies for this strategy enum.\n\nThis method returns only the aggregate markers (like ALL, EASY, MODERATE, DIFFICULT)\nthat are used to group concrete strategies by tags.",
+            "returns": [
+              {
+                "type": "list[T]",
+                "desc": "list[T]: List of all aggregate strategies."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[T]"
+        },
+        {
+          "name": "get_aggregate_tags",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the set of tags that represent aggregate categories.\n\nSubclasses should override this method to specify which tags\nare aggregate markers (e.g., {\"easy\", \"moderate\", \"difficult\"} for complexity-based\nscenarios or {\"fast\", \"medium\"} for speed-based scenarios).\n\nThe base class automatically includes \"all\" as an aggregate tag that expands\nto all non-aggregate strategies.",
+            "returns": [
+              {
+                "type": "set[str]",
+                "desc": "Set[str]: Set of tags that represent aggregates."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "set[str]"
+        },
+        {
+          "name": "get_all_strategies",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get all non-aggregate strategies for this strategy enum.\n\nThis method returns all concrete attack strategies, excluding aggregate markers\n(like ALL, EASY, MODERATE, DIFFICULT) that are used for grouping.",
+            "returns": [
+              {
+                "type": "list[T]",
+                "desc": "list[T]: List of all non-aggregate strategies."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[T]"
+        },
+        {
+          "name": "get_strategies_by_tag",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "tag",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get all attack strategies that have a specific tag.\n\nThis method returns concrete attack strategies (not aggregate markers)\nthat include the specified tag.",
+            "params": [
+              {
+                "name": "tag",
+                "type": "str",
+                "desc": "The tag to filter by (e.g., \"easy\", \"converter\", \"multi_turn\").",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "set[T]",
+                "desc": "Set[T]: Set of strategies that include the specified tag, excluding\n    any aggregate markers."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "set[T]"
+        },
+        {
+          "name": "normalize_strategies",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "strategies",
+              "type": "set[T]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Normalize a set of attack strategies by expanding aggregate tags.\n\nThis method processes a set of strategies and expands any aggregate tags\n(like EASY, MODERATE, DIFFICULT or FAST, MEDIUM) into their constituent concrete strategies.\nThe aggregate tag markers themselves are removed from the result.\n\nThe special \"all\" tag is automatically supported and expands to all non-aggregate strategies.",
+            "params": [
+              {
+                "name": "strategies",
+                "type": "Set[T]",
+                "desc": "The initial set of attack strategies, which may include\n                aggregate tags.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "set[T]",
+                "desc": "Set[T]: The normalized set of concrete attack strategies with aggregate tags\n   expanded and removed."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "set[T]"
+        },
+        {
+          "name": "prepare_scenario_strategies",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "strategies",
+              "type": "Sequence[T | ScenarioCompositeStrategy] | None",
+              "default": "None",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "default_aggregate",
+              "type": "T | None",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Prepare and normalize scenario strategies for use in a scenario.\n\nThis helper method simplifies scenario initialization by:\n1. Handling None input with sensible defaults\n2. Auto-wrapping bare ScenarioStrategy instances into ScenarioCompositeStrategy\n3. Expanding aggregate tags (like EASY, ALL) into concrete strategies\n4. Validating compositions according to the strategy's rules\n\nThis eliminates boilerplate code in scenario __init__ methods.",
+            "params": [
+              {
+                "name": "strategies",
+                "type": "Sequence[T | ScenarioCompositeStrategy] | None",
+                "desc": "The strategies to prepare.\nCan be a mix of bare strategy enums and composite strategies.\nIf None, uses default_aggregate to determine defaults.\nIf an empty sequence, returns an empty list (useful for baseline-only execution).",
+                "default": "None"
+              },
+              {
+                "name": "default_aggregate",
+                "type": "T | None",
+                "desc": "The aggregate strategy to use when strategies is None.\nCommon values: MyStrategy.ALL, MyStrategy.EASY. If None when strategies is None,\nraises ValueError.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[ScenarioCompositeStrategy]",
+                "desc": "List[ScenarioCompositeStrategy]: Normalized list of composite strategies ready for use.\nMay be empty if an empty sequence was explicitly provided."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If strategies is None and default_aggregate is None, or if compositions\n       are invalid according to validate_composition()."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[ScenarioCompositeStrategy]"
+        },
+        {
+          "name": "supports_composition",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Indicate whether this strategy type supports composition.\n\nBy default, strategies do NOT support composition (only single strategies allowed).\nSubclasses that support composition (e.g., FoundryStrategy) should override this\nto return True and implement validate_composition() to enforce their specific rules.",
+            "returns": [
+              {
+                "type": "bool",
+                "desc": "True if composition is supported, False otherwise."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "bool"
+        },
+        {
+          "name": "validate_composition",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "strategies",
+              "type": "Sequence[T]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Validate whether the given strategies can be composed together.\n\nThe base implementation checks supports_composition() and raises an error if\ncomposition is not supported and multiple strategies are provided.\n\nSubclasses that support composition should override this method to define their\nspecific composition rules (e.g., \"no more than one attack strategy\").",
+            "params": [
+              {
+                "name": "strategies",
+                "type": "Sequence[T]",
+                "desc": "The strategies to validate for composition.",
+                "default": ""
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If the composition is invalid according to the subclass's rules.\n        The error message should clearly explain what rule was violated."
+              }
+            ],
+            "examples": [
+              {
+                "kind": "text",
+                "value": "# EncodingStrategy doesn't support composition (uses default)"
+              },
+              {
+                "kind": "examples",
+                "value": ">>> EncodingStrategy.validate_composition([EncodingStrategy.Base64, EncodingStrategy.ROT13])\nValueError: EncodingStrategy does not support composition. Each strategy must be used individually."
+              },
+              {
+                "kind": "text",
+                "value": "# FoundryStrategy allows composition but with rules"
+              },
+              {
+                "kind": "examples",
+                "value": ">>> FoundryStrategy.validate_composition([FoundryStrategy.Crescendo, FoundryStrategy.MultiTurn])\nValueError: Cannot compose multiple attack strategies: ['crescendo', 'multi_turn']"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "tags",
+          "type": "set[str]",
+          "docstring": "Get the tags for this attack strategy.\n\nTags provide a flexible categorization system, allowing strategies\nto be classified along multiple dimensions (e.g., by complexity, type, or technique).\n\nReturns:\n    set[str]: The tags (e.g., {\"easy\", \"converter\", \"encoding\"})."
+        }
+      ]
+    }
+  ]
+}

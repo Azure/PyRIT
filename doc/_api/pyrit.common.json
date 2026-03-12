@@ -1,0 +1,1083 @@
+{
+  "name": "pyrit.common",
+  "kind": "module",
+  "docstring": {
+    "text": "Common utilities and helpers for PyRIT."
+  },
+  "members": [
+    {
+      "name": "DefaultValueScope",
+      "kind": "class",
+      "docstring": {
+        "text": "Represents a scope for default values with class type, parameter name, and inheritance rules.\n\nThis class defines the scope where a default value applies, including whether it should\nbe inherited by subclasses."
+      },
+      "attributes": [
+        {
+          "name": "class_type",
+          "type": "type[object]"
+        },
+        {
+          "name": "include_subclasses",
+          "type": "bool"
+        },
+        {
+          "name": "parameter_name",
+          "type": "str"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "class_type",
+            "type": "type[object]",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "parameter_name",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "include_subclasses",
+            "type": "bool",
+            "default": "True",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "Singleton",
+      "kind": "class",
+      "docstring": {
+        "text": "A metaclass for creating singleton classes. A singleton class can only have one instance.\nIf an instance of the class exists, it returns that instance; if not, it creates and returns a new one."
+      },
+      "bases": [
+        "abc.ABCMeta"
+      ]
+    },
+    {
+      "name": "YamlLoadable",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for objects that can be loaded from YAML files."
+      },
+      "bases": [
+        "abc.ABC"
+      ],
+      "methods": [
+        {
+          "name": "from_yaml_file",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[T]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "file",
+              "type": "Union[Path | str]",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create a new object from a YAML file.",
+            "params": [
+              {
+                "name": "file",
+                "type": "Union[Path | str]",
+                "desc": "The input file path.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "T",
+                "desc": "A new object of type T."
+              }
+            ],
+            "raises": [
+              {
+                "type": "FileNotFoundError",
+                "desc": "If the input YAML file path does not exist."
+              },
+              {
+                "type": "ValueError",
+                "desc": "If the YAML file is invalid."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "T"
+        }
+      ]
+    },
+    {
+      "name": "apply_defaults_to_method",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "method",
+          "type": "Callable[..., T]",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Apply default values to a method's parameters.\n\nThis decorator looks up default values for the method's class and applies them\nto parameters that are None or not provided.",
+        "params": [
+          {
+            "name": "method",
+            "type": "Callable[..., T]",
+            "desc": "The method to decorate (typically __init__).",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "Callable[..., T]",
+            "desc": "The decorated method."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "Callable[..., T]"
+    },
+    {
+      "name": "combine_dict",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "existing_dict",
+          "type": "Optional[dict[str, Any]]",
+          "default": "None",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "new_dict",
+          "type": "Optional[dict[str, Any]]",
+          "default": "None",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Combine two dictionaries containing string keys and values into one.",
+        "params": [
+          {
+            "name": "existing_dict",
+            "type": "Optional[dict[str, Any]]",
+            "desc": "Dictionary with existing values",
+            "default": "None"
+          },
+          {
+            "name": "new_dict",
+            "type": "Optional[dict[str, Any]]",
+            "desc": "Dictionary with new values to be added to the existing dictionary.\nNote if there's a key clash, the value in new_dict will be used.",
+            "default": "None"
+          }
+        ],
+        "returns": [
+          {
+            "type": "dict[str, Any]",
+            "desc": "combined dictionary"
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "dict[str, Any]"
+    },
+    {
+      "name": "combine_list",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "list1",
+          "type": "Union[str, list[str]]",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "list2",
+          "type": "Union[str, list[str]]",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Combine two lists or strings into a single list with unique values.",
+        "params": [
+          {
+            "name": "list1",
+            "type": "Union[str, List[str]]",
+            "desc": "First list or string to combine.",
+            "default": ""
+          },
+          {
+            "name": "list2",
+            "type": "Union[str, List[str]]",
+            "desc": "Second list or string to combine.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "list[str]",
+            "desc": "Combined list containing unique values from both inputs."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "list[str]"
+    },
+    {
+      "name": "convert_local_image_to_data_url",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "image_path",
+          "type": "str",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Convert a local image file to a data URL encoded in base64.",
+        "params": [
+          {
+            "name": "image_path",
+            "type": "str",
+            "desc": "The file system path to the image file.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "A string containing the MIME type and the base64-encoded data of the image, formatted as a data URL."
+          }
+        ],
+        "raises": [
+          {
+            "type": "FileNotFoundError",
+            "desc": "If no file is found at the specified `image_path`."
+          },
+          {
+            "type": "ValueError",
+            "desc": "If the image file's extension is not in the supported formats list."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    },
+    {
+      "name": "display_image_response",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "response_piece",
+          "type": "MessagePiece",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Display response images if running in notebook environment.",
+        "params": [
+          {
+            "name": "response_piece",
+            "type": "MessagePiece",
+            "desc": "The response piece to display.",
+            "default": ""
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    },
+    {
+      "name": "download_chunk",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "url",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "headers",
+          "type": "dict[str, str]",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "start",
+          "type": "int",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "end",
+          "type": "int",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "client",
+          "type": "httpx.AsyncClient",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Download a chunk of the file with a specified byte range.",
+        "returns": [
+          {
+            "type": "bytes",
+            "desc": "The content of the downloaded chunk."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "bytes"
+    },
+    {
+      "name": "download_file",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "url",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "token",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "download_dir",
+          "type": "Path",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "num_splits",
+          "type": "int",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Download a file in multiple segments (splits) using byte-range requests."
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    },
+    {
+      "name": "download_files",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "urls",
+          "type": "list[str]",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "token",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "download_dir",
+          "type": "Path",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "num_splits",
+          "type": "int",
+          "default": "3",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "parallel_downloads",
+          "type": "int",
+          "default": "4",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Download multiple files with parallel downloads and segmented downloading."
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    },
+    {
+      "name": "download_specific_files",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "model_id",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "file_patterns",
+          "type": "list[str] | None",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "token",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "cache_dir",
+          "type": "Path",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Download specific files from a Hugging Face model repository.\nIf file_patterns is None, downloads all files."
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    },
+    {
+      "name": "get_available_files",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "model_id",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "token",
+          "type": "str",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Fetch available files for a model from the Hugging Face repository.",
+        "returns": [
+          {
+            "type": "list[str]",
+            "desc": "List of available file names."
+          }
+        ],
+        "raises": [
+          {
+            "type": "ValueError",
+            "desc": "If no files are found for the model."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "list[str]"
+    },
+    {
+      "name": "get_global_default_values",
+      "kind": "function",
+      "signature": [],
+      "docstring": {
+        "text": "Get the global default values registry.",
+        "returns": [
+          {
+            "type": "GlobalDefaultValues",
+            "desc": "The global default values registry instance."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "GlobalDefaultValues"
+    },
+    {
+      "name": "get_httpx_client",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "use_async",
+          "type": "bool",
+          "default": "False",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "debug",
+          "type": "bool",
+          "default": "False",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "httpx_client_kwargs",
+          "type": "Optional[Any]",
+          "default": "{}",
+          "kind": "variadic keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Get the httpx client for making requests.",
+        "returns": [
+          {
+            "type": "httpx.Client | httpx.AsyncClient",
+            "desc": "httpx.Client or httpx.AsyncClient: The configured httpx client."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "httpx.Client | httpx.AsyncClient"
+    },
+    {
+      "name": "get_kwarg_param",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "kwargs",
+          "type": "dict[str, Any]",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "param_name",
+          "type": "str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "expected_type",
+          "type": "type[_T]",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "required",
+          "type": "bool",
+          "default": "True",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "default_value",
+          "type": "Optional[_T]",
+          "default": "None",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Validate and extract a parameter from kwargs.",
+        "params": [
+          {
+            "name": "kwargs",
+            "type": "Dict[str, Any]",
+            "desc": "The dictionary containing parameters.",
+            "default": ""
+          },
+          {
+            "name": "param_name",
+            "type": "str",
+            "desc": "The name of the parameter to validate.",
+            "default": ""
+          },
+          {
+            "name": "expected_type",
+            "type": "Type[_T]",
+            "desc": "The expected type of the parameter.",
+            "default": ""
+          },
+          {
+            "name": "required",
+            "type": "bool",
+            "desc": "Whether the parameter is required. If True, raises ValueError if missing.",
+            "default": "True"
+          },
+          {
+            "name": "default_value",
+            "type": "Optional[_T]",
+            "desc": "Default value to return if the parameter is not required and not present.",
+            "default": "None"
+          },
+          {
+            "name": "kwargs",
+            "type": "Dict[str, Any]",
+            "desc": "The dictionary containing parameters.",
+            "default": ""
+          },
+          {
+            "name": "param_name",
+            "type": "str",
+            "desc": "The name of the parameter to validate.",
+            "default": ""
+          },
+          {
+            "name": "expected_type",
+            "type": "Type[_T]",
+            "desc": "The expected type of the parameter.",
+            "default": ""
+          },
+          {
+            "name": "required",
+            "type": "bool",
+            "desc": "Whether the parameter is required. If True, raises ValueError if missing.",
+            "default": "True"
+          },
+          {
+            "name": "default_value",
+            "type": "Optional[_T]",
+            "desc": "Default value to return if the parameter is not required and not present.",
+            "default": "None"
+          }
+        ],
+        "returns": [
+          {
+            "type": "Optional[_T]",
+            "desc": "Optional[_T]: The validated parameter value if present and valid, otherwise None."
+          },
+          {
+            "type": "Optional[_T]",
+            "desc": "Optional[_T]: The validated parameter value if present and valid, otherwise None."
+          }
+        ],
+        "raises": [
+          {
+            "type": "ValueError",
+            "desc": "If the parameter is missing or None."
+          },
+          {
+            "type": "TypeError",
+            "desc": "If the parameter is not of the expected type."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "Optional[_T]"
+    },
+    {
+      "name": "get_non_required_value",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "env_var_name",
+          "type": "str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "passed_value",
+          "type": "Optional[str]",
+          "default": "None",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Get a non-required value from an environment variable or a passed value,\npreferring the passed value.",
+        "params": [
+          {
+            "name": "env_var_name",
+            "type": "str",
+            "desc": "The name of the environment variable to check.",
+            "default": ""
+          },
+          {
+            "name": "passed_value",
+            "type": "str",
+            "desc": "The value passed to the function.",
+            "default": "None"
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "The passed value if provided, otherwise the value from the environment variable.\n If no value is found, returns an empty string."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    },
+    {
+      "name": "get_random_indices",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "start",
+          "type": "int",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "size",
+          "type": "int",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "proportion",
+          "type": "float",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Generate a list of random indices based on the specified proportion of a given size.\nThe indices are selected from the range [start, start + size).",
+        "params": [
+          {
+            "name": "start",
+            "type": "int",
+            "desc": "Starting index (inclusive). It's the first index that could possibly be selected.",
+            "default": ""
+          },
+          {
+            "name": "size",
+            "type": "int",
+            "desc": "Size of the collection to select from. This is the total number of indices available.\nFor example, if `start` is 0 and `size` is 10, the available indices are [0, 1, 2, ..., 9].",
+            "default": ""
+          },
+          {
+            "name": "proportion",
+            "type": "float",
+            "desc": "The proportion of indices to select from the total size. Must be between 0 and 1.\nFor example, if `proportion` is 0.5 and `size` is 10, 5 randomly selected indices will be returned.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "list[int]",
+            "desc": "List[int]: A list of randomly selected indices based on the specified proportion."
+          }
+        ],
+        "raises": [
+          {
+            "type": "ValueError",
+            "desc": "If `start` is negative, `size` is not positive, or `proportion` is not between 0 and 1."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "list[int]"
+    },
+    {
+      "name": "get_required_value",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "env_var_name",
+          "type": "str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "passed_value",
+          "type": "Any",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Get a required value from an environment variable or a passed value,\npreferring the passed value.\n\nIf no value is found, raises a KeyError",
+        "params": [
+          {
+            "name": "env_var_name",
+            "type": "str",
+            "desc": "The name of the environment variable to check",
+            "default": ""
+          },
+          {
+            "name": "passed_value",
+            "type": "Any",
+            "desc": "The value passed to the function. Can be a string or a callable that returns a string.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "Any",
+            "desc": "The passed value if provided (preserving type for callables), otherwise the value from the environment variable."
+          }
+        ],
+        "raises": [
+          {
+            "type": "ValueError",
+            "desc": "If neither the passed value nor the environment variable is provided."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "Any"
+    },
+    {
+      "name": "is_in_ipython_session",
+      "kind": "function",
+      "signature": [],
+      "docstring": {
+        "text": "Determine if the code is running in an IPython session.\n\nThis may be useful if the behavior of the code should change when running in an IPython session.\nFor example, the code may display additional information or plots when running in an IPython session.",
+        "returns": [
+          {
+            "type": "bool",
+            "desc": "True if the code is running in an IPython session, False otherwise."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "bool"
+    },
+    {
+      "name": "make_request_and_raise_if_error_async",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "endpoint_uri",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "method",
+          "type": "str",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "post_type",
+          "type": "PostType",
+          "default": "'json'",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "debug",
+          "type": "bool",
+          "default": "False",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "extra_url_parameters",
+          "type": "Optional[dict[str, str]]",
+          "default": "None",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "request_body",
+          "type": "Optional[dict[str, object]]",
+          "default": "None",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "files",
+          "type": "Optional[dict[str, tuple[str, bytes, str]]]",
+          "default": "None",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "headers",
+          "type": "Optional[dict[str, str]]",
+          "default": "None",
+          "kind": "positional or keyword"
+        },
+        {
+          "name": "httpx_client_kwargs",
+          "type": "Optional[Any]",
+          "default": "{}",
+          "kind": "variadic keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Make a request and raise an exception if it fails.\n\nQuery parameters can be specified either:\n1. In the endpoint_uri (e.g., \"https://api.com/endpoint?api-version=2024-10-21\")\n2. Via the extra_url_parameters dict\n3. Both (extra_url_parameters will be merged with URL query parameters, with extra_url_parameters taking precedence)",
+        "returns": [
+          {
+            "type": "httpx.Response",
+            "desc": "httpx.Response: The response from the request."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "httpx.Response"
+    },
+    {
+      "name": "print_deprecation_message",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "old_item",
+          "type": "type | Callable[..., Any] | str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "new_item",
+          "type": "type | Callable[..., Any] | str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "removed_in",
+          "type": "str",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Emit a deprecation warning.",
+        "params": [
+          {
+            "name": "old_item",
+            "type": "type | Callable[..., Any] | str",
+            "desc": "The deprecated class, function, or its string name",
+            "default": ""
+          },
+          {
+            "name": "new_item",
+            "type": "type | Callable[..., Any] | str",
+            "desc": "The replacement class, function, or its string name",
+            "default": ""
+          },
+          {
+            "name": "removed_in",
+            "type": "str",
+            "desc": "The version in which the deprecated item will be removed",
+            "default": ""
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    },
+    {
+      "name": "reset_default_values",
+      "kind": "function",
+      "signature": [],
+      "docstring": {
+        "text": "Reset all default values in the global registry."
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    },
+    {
+      "name": "set_default_value",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "class_type",
+          "type": "type[object]",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "parameter_name",
+          "type": "str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "value",
+          "type": "Any",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "include_subclasses",
+          "type": "bool",
+          "default": "True",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Set a default value for a specific class and parameter.\n\nThis is a convenience function that delegates to the global default values registry.",
+        "params": [
+          {
+            "name": "class_type",
+            "type": "type[object]",
+            "desc": "The class type for which to set the default.",
+            "default": ""
+          },
+          {
+            "name": "parameter_name",
+            "type": "str",
+            "desc": "The name of the parameter to set the default for.",
+            "default": ""
+          },
+          {
+            "name": "value",
+            "type": "Any",
+            "desc": "The default value to set.",
+            "default": ""
+          },
+          {
+            "name": "include_subclasses",
+            "type": "bool",
+            "desc": "Whether this default should apply to subclasses as well.",
+            "default": "True"
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    },
+    {
+      "name": "verify_and_resolve_path",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "path",
+          "type": "Union[str, Path]",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Verify that a path is valid and resolve it to an absolute path.\n\nThis utility function can be used anywhere path validation is needed,\nsuch as in scorers, converters, or other components that accept file paths.",
+        "params": [
+          {
+            "name": "path",
+            "type": "Union[str, Path]",
+            "desc": "A path as a string or Path object.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "Path",
+            "desc": "The resolved absolute Path object."
+          }
+        ],
+        "raises": [
+          {
+            "type": "ValueError",
+            "desc": "If the path is not a string or Path object."
+          },
+          {
+            "type": "FileNotFoundError",
+            "desc": "If the path does not exist."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "Path"
+    },
+    {
+      "name": "warn_if_set",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "config",
+          "type": "Any",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "unused_fields",
+          "type": "list[str]",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "log",
+          "type": "Union[logging.Logger, logging.LoggerAdapter[logging.Logger]]",
+          "default": "logger",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Warn about unused parameters in configurations.\n\nThis method checks if specified fields in a configuration object are set\n(not None and not empty for collections) and logs a warning message for each\nfield that will be ignored by the current attack strategy.",
+        "params": [
+          {
+            "name": "config",
+            "type": "Any",
+            "desc": "The configuration object to check for unused fields.",
+            "default": ""
+          },
+          {
+            "name": "unused_fields",
+            "type": "List[str]",
+            "desc": "List of field names to check in the config object.",
+            "default": ""
+          },
+          {
+            "name": "log",
+            "type": "Union[logging.Logger, logging.LoggerAdapter]",
+            "desc": "Logger to use for warning messages.",
+            "default": "logger"
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "None"
+    }
+  ]
+}

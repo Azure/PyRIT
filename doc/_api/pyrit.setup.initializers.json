@@ -1,0 +1,581 @@
+{
+  "name": "pyrit.setup.initializers",
+  "kind": "module",
+  "docstring": {
+    "text": "PyRIT initializers package."
+  },
+  "members": [
+    {
+      "name": "AIRTInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "AIRT (AI Red Team) configuration initializer.\n\nThis initializer provides a unified setup for all AIRT components including:\n- Converter targets with Azure OpenAI configuration\n- Composite harm and objective scorers\n- Adversarial target configurations for attacks\n\nRequired Environment Variables:\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT: Azure OpenAI endpoint for converters and targets\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL: Azure OpenAI model name for converters and targets\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_ENDPOINT2: Azure OpenAI endpoint for scoring\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_MODEL2: Azure OpenAI model name for scoring\n\nOptional Environment Variables:\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY: API key for converter endpoint. If not set, Entra ID auth is used.\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_KEY2: API key for scorer endpoint. If not set, Entra ID auth is used.\n- AZURE_CONTENT_SAFETY_API_KEY: API key for content safety. If not set, Entra ID auth is used.\n\nThis configuration is designed for full AI Red Team operations with:\n- Separate endpoints for attack execution vs scoring (security isolation)\n- Advanced composite scoring with harm detection and content filtering\n- Production-ready Azure OpenAI integration"
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the complete AIRT initialization.\n\nSets up:\n1. Converter targets with Azure OpenAI\n2. Composite harm and objective scorers\n3. Adversarial target configurations\n4. Default values for all attack types"
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Get the description of this initializer."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the AIRT initializer."
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "LoadDefaultDatasets",
+      "kind": "class",
+      "docstring": {
+        "text": "Load default datasets for all registered scenarios."
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Load default datasets from all registered scenarios."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Return a description of this initializer."
+        },
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Should be executed after most initializers."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Return the name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Return the list of required environment variables."
+        }
+      ]
+    },
+    {
+      "name": "PyRITInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for PyRIT configuration initializers.\n\nPyRIT initializers provide a structured way to configure default values\nand global settings during PyRIT initialization. They replace the need for\ninitialization scripts with type-safe, validated, and discoverable classes.\n\nAll initializers must implement the `name`, `description`, and `initialize`\nproperties/methods. The `validate` method can be overridden if custom\nvalidation logic is needed."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "get_dynamic_default_values_info_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get information about what default values and global variables this initializer sets.\nThis is useful for debugging what default_values are set by an initializer.\n\nPerforms a sandbox run in isolation to discover what would be configured,\nthen restores the original state. This works regardless of whether the\ninitializer has been run before or which instance is queried.",
+            "returns": [
+              {
+                "type": "dict[str, Any]",
+                "desc": "Dict[str, Any]: Information about what defaults and globals are set."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, Any]"
+        },
+        {
+          "name": "get_info_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get information about this initializer class.\n\nThis is a class method so it can be called without instantiating the class:\nawait SimpleInitializer.get_info_async() instead of SimpleInitializer().get_info_async()",
+            "returns": [
+              {
+                "type": "dict[str, Any]",
+                "desc": "Dict[str, Any]: Dictionary containing name, description, class information, and default values."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, Any]"
+        },
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the initialization logic asynchronously.\n\nThis method should contain all the configuration logic, including\ncalls to set_default_value() and set_global_variable() as needed.\nAll initializers must implement this as an async method."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "initialize_with_tracking_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute initialization while tracking what changes are made.\n\nThis method runs initialize_async() and captures information about what\ndefault values and global variables were set. The tracking information\nis not cached - it's captured during the actual initialization run."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "validate",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Validate the initializer configuration before execution.\n\nThis method checks that all required environment variables are set.\nSubclasses should not override this method.",
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If required environment variables are not set."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Get a description of what this initializer configures.\n\nOverride this property to provide a custom description.\nDefaults to returning the name of the initializer.\n\nReturns:\n    str: A description of the configuration changes this initializer makes."
+        },
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Get the execution order for this initializer.\n\nInitializers are executed in ascending order (lower numbers first).\nThis allows control over dependency ordering - for example, basic\nconfiguration can run before more specialized setup.\n\nReturns:\n    int: The execution order. Defaults to 1. Lower numbers execute first.\n\nExample:\n    - execution_order = 0: Very early setup (environment, logging)\n    - execution_order = 1: Standard configuration (default)\n    - execution_order = 2: Advanced/specialized setup\n    - execution_order = 10: Final cleanup or overrides"
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the human-readable name for this initializer.\n\nReturns:\n    str: A clear, descriptive name for this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables for this initializer.\n\nOverride this property to specify which environment variables must be\nset for this initializer to work correctly.\n\nReturns:\n    List[str]: List of required environment variable names. Defaults to empty list."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the PyRIT initializer with no parameters."
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ScenarioObjectiveListInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Configure default seed groups for use in PyRIT scenarios."
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Set default objectives for scenarios that accept them (deprecated)."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Return the execution order, ensuring this initializer runs after most others."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Return the display name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Return an empty list because this initializer requires no environment variables."
+        }
+      ]
+    },
+    {
+      "name": "ScenarioObjectiveTargetInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Configure a simple objective target for use in PyRIT scenarios."
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Set default objective target for scenarios that accept them."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Describe the objective target configuration of this initializer."
+        },
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Should be executed after most initializers."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Return the display name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables."
+        }
+      ]
+    },
+    {
+      "name": "ScorerInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Scorer Initializer for registering pre-configured scorers.\n\nThis initializer registers all evaluation scorers into the ScorerRegistry.\nTargets are pulled from the TargetRegistry (populated by TargetInitializer),\nso this initializer must run after the target initializer (enforced via execution_order).\nScorers that fail to initialize (e.g., due to missing targets) are skipped with a warning."
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Register available scorers using targets from the TargetRegistry.",
+            "raises": [
+              {
+                "type": "RuntimeError",
+                "desc": "If the TargetRegistry is empty or hasn't been initialized."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Get the description of this initializer."
+        },
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Get the execution order for this initializer.\n\nReturns 2 to ensure this runs after TargetInitializer (order=1),\nwhich populates the TargetRegistry that scorers depend on."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables.\n\nReturns empty list since this initializer handles missing targets\ngracefully by skipping individual scorers with a warning."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tags",
+            "type": "list[ScorerTag] | None",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Scorer Initializer.",
+          "params": [
+            {
+              "name": "tags",
+              "type": "list[ScorerTag] | None",
+              "desc": "Tags for future filtering. Defaults to [\"default\"].",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "SimpleInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Complete simple configuration initializer.\n\nThis initializer provides a unified setup for basic PyRIT usage including:\n- Converter targets with basic OpenAI configuration\n- Simple objective scorer (no harm detection)\n- Adversarial target configurations for attacks\n\nRequired Environment Variables:\n- OPENAI_CHAT_ENDPOINT and OPENAI_CHAT_MODEL\n\nOptional Environment Variables:\n- OPENAI_CHAT_KEY: API key. If not set, Entra ID auth is used for Azure endpoints.\n\nThis configuration is designed for simple use cases with:\n- Basic OpenAI API integration\n- Simplified scoring without harm detection or content filtering\n- Minimal configuration requirements"
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the complete simple initialization.\n\nSets up:\n1. Converter targets with basic OpenAI configuration\n2. Simple objective scorer (no harm detection)\n3. Adversarial target configurations\n4. Default values for attack types"
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Get the description of this initializer."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the simple unified initializer."
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "TargetInitializer",
+      "kind": "class",
+      "docstring": {
+        "text": "Supported Endpoints by Category:\n\n**OpenAI Chat Targets (OpenAIChatTarget):**\n- PLATFORM_OPENAI_CHAT_* - Platform OpenAI Chat API\n- AZURE_OPENAI_GPT4O_* - Azure OpenAI GPT-4o\n- AZURE_OPENAI_INTEGRATION_TEST_* - Integration test endpoint\n- AZURE_OPENAI_GPT3_5_CHAT_* - Azure OpenAI GPT-3.5\n- AZURE_OPENAI_GPT4_CHAT_* - Azure OpenAI GPT-4\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_* - Azure OpenAI GPT-4o unsafe\n- AZURE_OPENAI_GPT4O_UNSAFE_CHAT_*2 - Azure OpenAI GPT-4o unsafe secondary\n- AZURE_FOUNDRY_DEEPSEEK_* - Azure AI Foundry DeepSeek\n- AZURE_FOUNDRY_PHI4_* - Azure AI Foundry Phi-4\n- AZURE_FOUNDRY_MISTRAL_LARGE_* - Azure AI Foundry Mistral Large\n- GROQ_* - Groq API\n- OPEN_ROUTER_* - OpenRouter API\n- OLLAMA_* - Ollama local\n- GOOGLE_GEMINI_* - Google Gemini (OpenAI-compatible)\n\n**OpenAI Responses Targets (OpenAIResponseTarget):**\n- AZURE_OPENAI_GPT5_RESPONSES_* - Azure OpenAI GPT-5 Responses\n- AZURE_OPENAI_GPT5_RESPONSES_* (high reasoning) - Azure OpenAI GPT-5 Responses with high reasoning effort\n- PLATFORM_OPENAI_RESPONSES_* - Platform OpenAI Responses\n- AZURE_OPENAI_RESPONSES_* - Azure OpenAI Responses\n\n**Realtime Targets (RealtimeTarget):**\n- PLATFORM_OPENAI_REALTIME_* - Platform OpenAI Realtime\n- AZURE_OPENAI_REALTIME_* - Azure OpenAI Realtime\n\n**Image Targets (OpenAIImageTarget):**\n- OPENAI_IMAGE_*1 - Azure OpenAI Image\n- OPENAI_IMAGE_*2 - Platform OpenAI Image\n\n**TTS Targets (OpenAITTSTarget):**\n- OPENAI_TTS_*1 - Azure OpenAI TTS\n- OPENAI_TTS_*2 - Platform OpenAI TTS\n\n**Video Targets (OpenAIVideoTarget):**\n- AZURE_OPENAI_VIDEO_* - Azure OpenAI Video\n\n**Completion Targets (OpenAICompletionTarget):**\n- OPENAI_COMPLETION_* - OpenAI Completion\n\n**Azure ML Targets (AzureMLChatTarget):**\n- AZURE_ML_PHI_* - Azure ML Phi\n\n**Safety Targets (PromptShieldTarget):**\n- AZURE_CONTENT_SAFETY_* - Azure Content Safety",
+        "params": [
+          {
+            "name": "tags",
+            "type": "list[TargetTag] | None",
+            "desc": "List of tags to filter which targets to register.\n\"default\" registers the base environment targets.\n\"scorer\" registers scorer-specific temperature variant targets.\nPass multiple tags to register targets matching any tag.\nIf not provided, only \"default\" targets are registered.",
+            "default": "None"
+          }
+        ]
+      },
+      "bases": [
+        "PyRITInitializer"
+      ],
+      "methods": [
+        {
+          "name": "initialize_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Register available targets based on environment variables.\n\nScans for known endpoint environment variables and registers the\ncorresponding targets into the TargetRegistry. Only targets with\ntags matching the configured tags are registered."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "description",
+          "type": "str",
+          "docstring": "Get the description of this initializer."
+        },
+        {
+          "name": "execution_order",
+          "type": "int",
+          "docstring": "Get the execution order. Runs before ScorerInitializer (order=2)."
+        },
+        {
+          "name": "name",
+          "type": "str",
+          "docstring": "Get the name of this initializer."
+        },
+        {
+          "name": "required_env_vars",
+          "type": "list[str]",
+          "docstring": "Get list of required environment variables.\n\nReturns empty list since this initializer is optional - it registers\nwhatever endpoints are available without requiring any."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tags",
+            "type": "list[TargetTag] | None",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Target Initializer.",
+          "params": [
+            {
+              "name": "tags",
+              "type": "list[TargetTag] | None",
+              "desc": "Tags to filter which targets to register.\nIf None, only \"default\" targets are registered.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    }
+  ]
+}

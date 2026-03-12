@@ -1,0 +1,5328 @@
+{
+  "name": "pyrit.executor.attack",
+  "kind": "module",
+  "docstring": {
+    "text": "Attack executor module."
+  },
+  "members": [
+    {
+      "name": "AttackAdversarialConfig",
+      "kind": "class",
+      "docstring": {
+        "text": "Adversarial configuration for attacks that involve adversarial chat targets.\n\nThis class defines the configuration for attacks that utilize an adversarial chat target,\nincluding the target chat model, system prompt, and seed prompt for the attack."
+      },
+      "attributes": [
+        {
+          "name": "seed_prompt",
+          "type": "Union[str, SeedPrompt]"
+        },
+        {
+          "name": "system_prompt_path",
+          "type": "Optional[Union[str, Path]]"
+        },
+        {
+          "name": "target",
+          "type": "PromptChatTarget"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "target",
+            "type": "PromptChatTarget",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "system_prompt_path",
+            "type": "Optional[Union[str, Path]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "seed_prompt",
+            "type": "Union[str, SeedPrompt]",
+            "default": "'Generate your first message to achieve: {{ objective }}'",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AttackContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Base class for all attack contexts.\n\nThis class holds both the immutable attack parameters and the mutable\nexecution state. The params field contains caller-provided inputs,\nwhile other fields track execution progress.\n\nAttacks that generate certain values internally (e.g., RolePlayAttack generates\nnext_message and prepended_conversation) can set the mutable override fields\n(_next_message_override, _prepended_conversation_override) during _setup_async."
+      },
+      "bases": [
+        "StrategyContext",
+        "ABC",
+        "Generic[AttackParamsT]"
+      ],
+      "attributes": [
+        {
+          "name": "memory_labels",
+          "type": "dict[str, str]",
+          "docstring": "Additional labels that can be applied to the prompts throughout the attack."
+        },
+        {
+          "name": "next_message",
+          "type": "Optional[Message]",
+          "docstring": "Optional message to send to the objective target."
+        },
+        {
+          "name": "objective",
+          "type": "str",
+          "docstring": "Natural-language description of what the attack tries to achieve."
+        },
+        {
+          "name": "params",
+          "type": "AttackParamsT"
+        },
+        {
+          "name": "prepended_conversation",
+          "type": "list[Message]",
+          "docstring": "Conversation that is automatically prepended to the target model."
+        },
+        {
+          "name": "related_conversations",
+          "type": "set[ConversationReference]"
+        },
+        {
+          "name": "start_time",
+          "type": "float"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "AttackParamsT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "start_time",
+            "type": "float",
+            "default": "0.0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_next_message_override",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_prepended_conversation_override",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_memory_labels_override",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AttackConverterConfig",
+      "kind": "class",
+      "docstring": {
+        "text": "Configuration for prompt converters used in attacks.\n\nThis class defines the converter configurations that transform prompts\nduring the attack process, both for requests and responses."
+      },
+      "bases": [
+        "StrategyConverterConfig"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "request_converters",
+            "type": "list[PromptConverterConfiguration]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "response_converters",
+            "type": "list[PromptConverterConfiguration]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AttackExecutor",
+      "kind": "class",
+      "docstring": {
+        "text": "Manages the execution of attack strategies with support for parallel execution.\n\nThe AttackExecutor provides controlled execution of attack strategies with\nconcurrency limiting. It uses the attack's params_type to create parameters\nfrom seed groups."
+      },
+      "methods": [
+        {
+          "name": "execute_attack_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack",
+              "type": "AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objectives",
+              "type": "Sequence[str]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "field_overrides",
+              "type": "Optional[Sequence[dict[str, Any]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "return_partial_on_failure",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "broadcast_fields",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute attacks in parallel for each objective.\n\nCreates AttackParameters directly from objectives and field values.",
+            "params": [
+              {
+                "name": "attack",
+                "type": "AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]",
+                "desc": "The attack strategy to execute.",
+                "default": ""
+              },
+              {
+                "name": "objectives",
+                "type": "Sequence[str]",
+                "desc": "List of attack objectives.",
+                "default": ""
+              },
+              {
+                "name": "field_overrides",
+                "type": "Optional[Sequence[dict[str, Any]]]",
+                "desc": "Optional per-objective field overrides. If provided,\nmust match the length of objectives.",
+                "default": "None"
+              },
+              {
+                "name": "return_partial_on_failure",
+                "type": "bool",
+                "desc": "If True, returns partial results when some\nobjectives fail. If False (default), raises the first exception.",
+                "default": "False"
+              },
+              {
+                "name": "**broadcast_fields",
+                "type": "Any",
+                "desc": "Fields applied to all objectives (e.g., memory_labels).\nPer-objective field_overrides take precedence.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackExecutorResult[AttackStrategyResultT]",
+                "desc": "AttackExecutorResult with completed results and any incomplete objectives."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If objectives is empty or field_overrides length doesn't match."
+              },
+              {
+                "type": "BaseException",
+                "desc": "If return_partial_on_failure=False and any objective fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackExecutorResult[AttackStrategyResultT]"
+        },
+        {
+          "name": "execute_attack_from_seed_groups_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack",
+              "type": "AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "seed_groups",
+              "type": "Sequence[SeedAttackGroup]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "field_overrides",
+              "type": "Optional[Sequence[dict[str, Any]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "return_partial_on_failure",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "broadcast_fields",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute attacks in parallel, extracting parameters from SeedAttackGroups.\n\nUses the attack's params_type.from_seed_group() to extract parameters,\nautomatically handling which fields the attack accepts.",
+            "params": [
+              {
+                "name": "attack",
+                "type": "AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]",
+                "desc": "The attack strategy to execute.",
+                "default": ""
+              },
+              {
+                "name": "seed_groups",
+                "type": "Sequence[SeedAttackGroup]",
+                "desc": "SeedAttackGroups containing objectives and optional prompts.",
+                "default": ""
+              },
+              {
+                "name": "adversarial_chat",
+                "type": "Optional[PromptChatTarget]",
+                "desc": "Optional chat target for generating adversarial prompts\nor simulated conversations. Required when seed groups contain\nSeedSimulatedConversation configurations.",
+                "default": "None"
+              },
+              {
+                "name": "objective_scorer",
+                "type": "Optional[TrueFalseScorer]",
+                "desc": "Optional scorer for evaluating simulated conversations.\nRequired when seed groups contain SeedSimulatedConversation configurations.",
+                "default": "None"
+              },
+              {
+                "name": "field_overrides",
+                "type": "Optional[Sequence[dict[str, Any]]]",
+                "desc": "Optional per-seed-group field overrides. If provided,\nmust match the length of seed_groups. Each dict is passed to\nfrom_seed_group() as overrides.",
+                "default": "None"
+              },
+              {
+                "name": "return_partial_on_failure",
+                "type": "bool",
+                "desc": "If True, returns partial results when some\nobjectives fail. If False (default), raises the first exception.",
+                "default": "False"
+              },
+              {
+                "name": "**broadcast_fields",
+                "type": "Any",
+                "desc": "Fields applied to all seed groups (e.g., memory_labels).\nPer-seed-group field_overrides take precedence.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackExecutorResult[AttackStrategyResultT]",
+                "desc": "AttackExecutorResult with completed results and any incomplete objectives."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If seed_groups is empty or field_overrides length doesn't match."
+              },
+              {
+                "type": "BaseException",
+                "desc": "If return_partial_on_failure=False and any objective fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackExecutorResult[AttackStrategyResultT]"
+        },
+        {
+          "name": "execute_multi_objective_attack_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack",
+              "type": "AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objectives",
+              "type": "list[str]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prepended_conversation",
+              "type": "Optional[list[Message]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "memory_labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "return_partial_on_failure",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "attack_params",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the same attack strategy with multiple objectives against the same target in parallel.\n\n.. deprecated::\n    Use :meth:`execute_attack_async` instead. This method will be removed in a future version.",
+            "params": [
+              {
+                "name": "attack",
+                "type": "AttackStrategy[AttackStrategyContextT, AttackStrategyResultT]",
+                "desc": "The attack strategy to use for all objectives.",
+                "default": ""
+              },
+              {
+                "name": "objectives",
+                "type": "list[str]",
+                "desc": "List of attack objectives to test.",
+                "default": ""
+              },
+              {
+                "name": "prepended_conversation",
+                "type": "Optional[list[Message]]",
+                "desc": "Conversation to prepend to the target model.",
+                "default": "None"
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "Additional labels that can be applied to the prompts.",
+                "default": "None"
+              },
+              {
+                "name": "return_partial_on_failure",
+                "type": "bool",
+                "desc": "If True, returns partial results on failure.",
+                "default": "False"
+              },
+              {
+                "name": "**attack_params",
+                "type": "Any",
+                "desc": "Additional parameters specific to the attack strategy.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackExecutorResult[AttackStrategyResultT]",
+                "desc": "AttackExecutorResult with completed results and any incomplete objectives."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackExecutorResult[AttackStrategyResultT]"
+        },
+        {
+          "name": "execute_multi_turn_attacks_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack",
+              "type": "AttackStrategy[_MultiTurnContextT, AttackStrategyResultT]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objectives",
+              "type": "list[str]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "messages",
+              "type": "Optional[list[Message]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prepended_conversations",
+              "type": "Optional[list[list[Message]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "memory_labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "return_partial_on_failure",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "attack_params",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute a batch of multi-turn attacks with multiple objectives.\n\n.. deprecated::\n    Use :meth:`execute_attack_async` instead. This method will be removed in a future version.",
+            "params": [
+              {
+                "name": "attack",
+                "type": "AttackStrategy[_MultiTurnContextT, AttackStrategyResultT]",
+                "desc": "The multi-turn attack strategy to use.",
+                "default": ""
+              },
+              {
+                "name": "objectives",
+                "type": "list[str]",
+                "desc": "List of attack objectives to test.",
+                "default": ""
+              },
+              {
+                "name": "messages",
+                "type": "Optional[list[Message]]",
+                "desc": "List of messages to use for this execution (per-objective).",
+                "default": "None"
+              },
+              {
+                "name": "prepended_conversations",
+                "type": "Optional[list[list[Message]]]",
+                "desc": "Conversations to prepend to each objective (per-objective).",
+                "default": "None"
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "Additional labels that can be applied to the prompts.",
+                "default": "None"
+              },
+              {
+                "name": "return_partial_on_failure",
+                "type": "bool",
+                "desc": "If True, returns partial results on failure.",
+                "default": "False"
+              },
+              {
+                "name": "**attack_params",
+                "type": "Any",
+                "desc": "Additional parameters specific to the attack strategy.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackExecutorResult[AttackStrategyResultT]",
+                "desc": "AttackExecutorResult with completed results and any incomplete objectives."
+              }
+            ],
+            "raises": [
+              {
+                "type": "TypeError",
+                "desc": "If the attack does not use MultiTurnAttackContext."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackExecutorResult[AttackStrategyResultT]"
+        },
+        {
+          "name": "execute_single_turn_attacks_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "attack",
+              "type": "AttackStrategy[_SingleTurnContextT, AttackStrategyResultT]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objectives",
+              "type": "list[str]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "messages",
+              "type": "Optional[list[Message]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prepended_conversations",
+              "type": "Optional[list[list[Message]]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "memory_labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "return_partial_on_failure",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "attack_params",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute a batch of single-turn attacks with multiple objectives.\n\n.. deprecated::\n    Use :meth:`execute_attack_async` instead. This method will be removed in a future version.",
+            "params": [
+              {
+                "name": "attack",
+                "type": "AttackStrategy[_SingleTurnContextT, AttackStrategyResultT]",
+                "desc": "The single-turn attack strategy to use.",
+                "default": ""
+              },
+              {
+                "name": "objectives",
+                "type": "list[str]",
+                "desc": "List of attack objectives to test.",
+                "default": ""
+              },
+              {
+                "name": "messages",
+                "type": "Optional[list[Message]]",
+                "desc": "List of messages to use for this execution (per-objective).",
+                "default": "None"
+              },
+              {
+                "name": "prepended_conversations",
+                "type": "Optional[list[list[Message]]]",
+                "desc": "Conversations to prepend to each objective (per-objective).",
+                "default": "None"
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "Additional labels that can be applied to the prompts.",
+                "default": "None"
+              },
+              {
+                "name": "return_partial_on_failure",
+                "type": "bool",
+                "desc": "If True, returns partial results on failure.",
+                "default": "False"
+              },
+              {
+                "name": "**attack_params",
+                "type": "Any",
+                "desc": "Additional parameters specific to the attack strategy.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackExecutorResult[AttackStrategyResultT]",
+                "desc": "AttackExecutorResult with completed results and any incomplete objectives."
+              }
+            ],
+            "raises": [
+              {
+                "type": "TypeError",
+                "desc": "If the attack does not use SingleTurnAttackContext."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackExecutorResult[AttackStrategyResultT]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "max_concurrency",
+            "type": "int",
+            "default": "1",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the attack executor with configurable concurrency control.",
+          "params": [
+            {
+              "name": "max_concurrency",
+              "type": "int",
+              "desc": "Maximum number of concurrent attack executions (default: 1).",
+              "default": "1"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If max_concurrency is not a positive integer."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "AttackExecutorResult",
+      "kind": "class",
+      "docstring": {
+        "text": "Result container for attack execution, supporting both full and partial completion.\n\nThis class holds results from parallel attack execution. It is iterable and\nbehaves like a list in the common case where all objectives complete successfully.\n\nWhen some objectives don't complete (throw exceptions), access incomplete_objectives\nto retrieve the failures, or use raise_if_incomplete() to raise the first exception.\n\nNote: \"completed\" means the execution finished, not that the attack objective was achieved."
+      },
+      "bases": [
+        "Generic[AttackResultT]"
+      ],
+      "methods": [
+        {
+          "name": "get_results",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get completed results, raising if any incomplete.",
+            "returns": [
+              {
+                "type": "list[AttackResultT]",
+                "desc": "List of completed attack results."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[AttackResultT]"
+        },
+        {
+          "name": "raise_if_incomplete",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Raise the first exception if any objectives are incomplete."
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "all_completed",
+          "type": "bool",
+          "docstring": "Check if all objectives completed execution."
+        },
+        {
+          "name": "completed_results",
+          "type": "list[AttackResultT]"
+        },
+        {
+          "name": "exceptions",
+          "type": "list[BaseException]",
+          "docstring": "Get all exceptions from incomplete objectives."
+        },
+        {
+          "name": "has_incomplete",
+          "type": "bool",
+          "docstring": "Check if any objectives didn't complete execution."
+        },
+        {
+          "name": "incomplete_objectives",
+          "type": "list[tuple[str, BaseException]]"
+        },
+        {
+          "name": "input_indices",
+          "type": "list[int]",
+          "docstring": "Maps each completed result to its position in the original input sequence.\n\n``input_indices[i]`` is the index in the original objectives/seed_groups/params\nlist that produced ``completed_results[i]``.  When some inputs fail, this lets\ncallers correlate results back to the specific input that produced them."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "completed_results",
+            "type": "list[AttackResultT]",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "incomplete_objectives",
+            "type": "list[tuple[str, BaseException]]",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "input_indices",
+            "type": "list[int]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AttackParameters",
+      "kind": "class",
+      "docstring": {
+        "text": "Immutable parameters for attack execution.\n\nThis class defines the standard contract for attack parameters. All attacks\nat a given level of the hierarchy share the same parameter signature.\n\nAttacks that don't accept certain parameters should use the `excluding()` factory\nto create a derived params type without those fields. Attacks that need additional\nparameters should extend this class with new fields."
+      },
+      "methods": [
+        {
+          "name": "excluding",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "field_names",
+              "type": "str",
+              "default": "()",
+              "kind": "variadic positional"
+            }
+          ],
+          "docstring": {
+            "text": "Create a new AttackParameters subclass that excludes the specified fields.\n\nThis factory method creates a frozen dataclass without the specified fields.\nThe resulting class inherits the `from_seed_group()` behavior and will raise\nif excluded fields are passed as overrides.",
+            "params": [
+              {
+                "name": "*field_names",
+                "type": "str",
+                "desc": "Names of fields to exclude from the new params type.",
+                "default": "()"
+              }
+            ],
+            "returns": [
+              {
+                "type": "type[AttackParameters]",
+                "desc": "A new AttackParameters subclass without the specified fields."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If any field_name is not a valid field of this class."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "type[AttackParameters]"
+        },
+        {
+          "name": "from_seed_group_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[AttackParamsT]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "seed_group",
+              "type": "SeedAttackGroup",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "overrides",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create an AttackParameters instance from a SeedAttackGroup.\n\nExtracts standard fields from the seed group and applies any overrides.\nIf the seed_group has a simulated conversation config,\ngenerates the simulated conversation using the provided adversarial_chat and scorer.",
+            "params": [
+              {
+                "name": "seed_group",
+                "type": "SeedAttackGroup",
+                "desc": "The seed attack group to extract parameters from.",
+                "default": ""
+              },
+              {
+                "name": "adversarial_chat",
+                "type": "Optional[PromptChatTarget]",
+                "desc": "The adversarial chat target for generating simulated conversations.\nRequired if seed_group has a simulated conversation config.",
+                "default": "None"
+              },
+              {
+                "name": "objective_scorer",
+                "type": "Optional[TrueFalseScorer]",
+                "desc": "The scorer for evaluating simulated conversations.\nRequired if seed_group has a simulated conversation config.",
+                "default": "None"
+              },
+              {
+                "name": "**overrides",
+                "type": "Any",
+                "desc": "Field overrides to apply. Must be valid fields for this params type.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackParamsT",
+                "desc": "An instance of this AttackParameters type."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If seed_group has no objective or if overrides contain invalid fields."
+              },
+              {
+                "type": "ValueError",
+                "desc": "If seed_group has simulated conversation but adversarial_chat/scorer not provided."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackParamsT"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "memory_labels",
+          "type": "Optional[dict[str, str]]"
+        },
+        {
+          "name": "next_message",
+          "type": "Optional[Message]"
+        },
+        {
+          "name": "objective",
+          "type": "str"
+        },
+        {
+          "name": "prepended_conversation",
+          "type": "Optional[list[Message]]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "next_message",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prepended_conversation",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "memory_labels",
+            "type": "Optional[dict[str, str]]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AttackResultPrinter",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for printing attack results.\n\nThis interface defines the contract for printing attack results in various formats.\nImplementations can render results to console, logs, files, or other outputs."
+      },
+      "bases": [
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "print_conversation_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_scores",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print only the conversation history.",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result containing the conversation to print",
+                "default": ""
+              },
+              {
+                "name": "include_scores",
+                "type": "bool",
+                "desc": "Whether to include scores in the output.\nDefaults to False.",
+                "default": "False"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_result_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_auxiliary_scores",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_pruned_conversations",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_adversarial_conversation",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print the complete attack result.",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result to print",
+                "default": ""
+              },
+              {
+                "name": "include_auxiliary_scores",
+                "type": "bool",
+                "desc": "Whether to include auxiliary scores in the output.\nDefaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_pruned_conversations",
+                "type": "bool",
+                "desc": "Whether to include pruned conversations.\nFor each pruned conversation, only the last message and its score are shown.\nDefaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_adversarial_conversation",
+                "type": "bool",
+                "desc": "Whether to include the adversarial\nconversation (the red teaming LLM's reasoning). Only shown for successful\nattacks to avoid overwhelming output. Defaults to False.",
+                "default": "False"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_summary_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Print a summary of the attack result without the full conversation.",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result to summarize",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ]
+    },
+    {
+      "name": "AttackScoringConfig",
+      "kind": "class",
+      "docstring": {
+        "text": "Scoring configuration for evaluating attack effectiveness.\n\nThis class defines the scoring components used to evaluate attack effectiveness,\ndetect refusals, and perform auxiliary scoring operations."
+      },
+      "attributes": [
+        {
+          "name": "auxiliary_scorers",
+          "type": "list[Scorer]"
+        },
+        {
+          "name": "objective_scorer",
+          "type": "Optional[TrueFalseScorer]"
+        },
+        {
+          "name": "refusal_scorer",
+          "type": "Optional[TrueFalseScorer]"
+        },
+        {
+          "name": "use_score_as_feedback",
+          "type": "bool"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "refusal_scorer",
+            "type": "Optional[TrueFalseScorer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "auxiliary_scorers",
+            "type": "list[Scorer]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "use_score_as_feedback",
+            "type": "bool",
+            "default": "True",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AttackStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for attack strategies.\nDefines the interface for executing attacks and handling results."
+      },
+      "bases": [
+        "Strategy[AttackStrategyContextT, AttackStrategyResultT]",
+        "Identifiable",
+        "ABC"
+      ],
+      "methods": [
+        {
+          "name": "execute_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the attack strategy asynchronously with the provided parameters.\n\nThis method provides a stable contract for all attacks. The signature includes\nall standard parameters (objective, next_message, prepended_conversation, memory_labels).\nAttacks that don't accept certain parameters will raise ValueError if those\nparameters are provided.",
+            "params": [
+              {
+                "name": "objective",
+                "type": "str",
+                "desc": "The objective of the attack.",
+                "default": ""
+              },
+              {
+                "name": "next_message",
+                "type": "Optional[Message]",
+                "desc": "Message to send to the target.",
+                "default": ""
+              },
+              {
+                "name": "prepended_conversation",
+                "type": "Optional[List[Message]]",
+                "desc": "Conversation to prepend.",
+                "default": ""
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[Dict[str, str]]",
+                "desc": "Memory labels for the attack context.",
+                "default": ""
+              },
+              {
+                "name": "**kwargs",
+                "type": "Any",
+                "desc": "Additional context-specific parameters (conversation_id, system_prompt, etc.).",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AttackStrategyResultT",
+                "desc": "The result of the attack execution."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If required parameters are missing or if unsupported parameters are provided."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackStrategyResultT"
+        },
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "Optional[AttackScoringConfig]: The scoring configuration, or None if not applicable."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        },
+        {
+          "name": "get_objective_target",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the objective target for this attack strategy.",
+            "returns": [
+              {
+                "type": "PromptTarget",
+                "desc": "The target system being attacked."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "PromptTarget"
+        },
+        {
+          "name": "get_request_converters",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get request converter configurations used by this strategy.",
+            "returns": [
+              {
+                "type": "list[Any]",
+                "desc": "list[Any]: The list of request PromptConverterConfiguration objects."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[Any]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "params_type",
+          "type": "type[AttackParameters]",
+          "docstring": "Get the parameters type for this attack strategy.\n\nReturns:\n    Type[AttackParameters]: The parameters type this strategy accepts."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "context_type",
+            "type": "type[AttackStrategyContextT]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "params_type",
+            "type": "type[AttackParamsT]",
+            "default": "AttackParameters",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "logger",
+            "type": "logging.Logger",
+            "default": "logger",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the attack strategy with a specific context type and logger.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": ""
+            },
+            {
+              "name": "context_type",
+              "type": "type[AttackStrategyContextT]",
+              "desc": "The type of context this strategy operates on.",
+              "default": ""
+            },
+            {
+              "name": "params_type",
+              "type": "Type[AttackParamsT]",
+              "desc": "The type of parameters this strategy accepts.\nDefaults to AttackParameters. Use AttackParameters.excluding() to create\na params type that rejects certain fields.",
+              "default": "AttackParameters"
+            },
+            {
+              "name": "logger",
+              "type": "logging.Logger",
+              "desc": "Logger instance for logging events.",
+              "default": "logger"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ChunkedRequestAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of chunked extraction attack strategy.\n\nThis class orchestrates a multi-turn attack where protected information is\nrequested in chunks/segments across multiple turns. This technique bypasses\nlength-based filters or output truncation by asking for specific character\nranges of a secret value.\n\nThis technique was discovered during CTF red teaming exercises where targets\nwould reveal portions of secrets when asked for specific segments, even when\nthey refused to reveal the complete value.\n\nThe attack flow consists of:\n\n1. Generating chunk request prompts based on the configured strategy.\n2. Sending each chunk request to the target system sequentially.\n3. Collecting responses from each chunk request.\n4. Combining all chunk responses to reconstruct the full value.\n5. Evaluating the combined result with scorers if configured.\n6. Returning the attack result with achievement status.\n\nThe strategy supports customization through converters and scorers for\ncomprehensive evaluation."
+      },
+      "bases": [
+        "MultiTurnAttackStrategy[ChunkedRequestAttackContext, AttackResult]"
+      ],
+      "methods": [
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "Optional[AttackScoringConfig]: The scoring configuration with objective and auxiliary scorers."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_TEMPLATE"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "chunk_size",
+            "type": "int",
+            "default": "50",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "total_length",
+            "type": "int",
+            "default": "200",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "chunk_type",
+            "type": "str",
+            "default": "'characters'",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "request_template",
+            "type": "str",
+            "default": "DEFAULT_TEMPLATE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the chunked request attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "chunk_size",
+              "type": "int",
+              "desc": "Size of each chunk to request (default: 50).",
+              "default": "50"
+            },
+            {
+              "name": "total_length",
+              "type": "int",
+              "desc": "Estimated total length of the target value (default: 200).",
+              "default": "200"
+            },
+            {
+              "name": "chunk_type",
+              "type": "str",
+              "desc": "Type of chunk to request (e.g., \"characters\", \"bytes\", \"words\").",
+              "default": "'characters'"
+            },
+            {
+              "name": "request_template",
+              "type": "str",
+              "desc": "Template for generating chunk requests\n(default: \"Give me {chunk_type} {start}-{end} of '{objective}'\").",
+              "default": "DEFAULT_TEMPLATE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If chunk_size or total_length are invalid."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ChunkedRequestAttackContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Context for the ChunkedRequest attack strategy."
+      },
+      "bases": [
+        "MultiTurnAttackContext[Any]"
+      ],
+      "attributes": [
+        {
+          "name": "chunk_responses",
+          "type": "list[str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "AttackParamsT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "start_time",
+            "type": "float",
+            "default": "0.0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_next_message_override",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_prepended_conversation_override",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_memory_labels_override",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "session",
+            "type": "ConversationSession",
+            "default": "(lambda: ConversationSession())()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "executed_turns",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_response",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_score",
+            "type": "Optional[Score]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "chunk_responses",
+            "type": "list[str]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ConsoleAttackResultPrinter",
+      "kind": "class",
+      "docstring": {
+        "text": "Console printer for attack results with enhanced formatting.\n\nThis printer formats attack results for console display with optional color coding,\nproper indentation, text wrapping, and visual separators. Colors can be disabled\nfor consoles that don't support ANSI characters."
+      },
+      "bases": [
+        "AttackResultPrinter"
+      ],
+      "methods": [
+        {
+          "name": "print_conversation_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_scores",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_reasoning_trace",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print the conversation history to console with enhanced formatting.\n\nDisplays the full conversation between user and assistant, including:\n- Turn numbers\n- Role indicators (USER/ASSISTANT)\n- Original and converted values when different\n- Images if present\n- Scores for each response",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result containing the conversation_id.\nMust have a valid conversation_id attribute.",
+                "default": ""
+              },
+              {
+                "name": "include_scores",
+                "type": "bool",
+                "desc": "Whether to include scores in the output.\nDefaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_reasoning_trace",
+                "type": "bool",
+                "desc": "Whether to include model reasoning trace in the output\nfor applicable models. Defaults to False.",
+                "default": "False"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_messages_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "messages",
+              "type": "list[Any]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_scores",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_reasoning_trace",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print a list of messages to console with enhanced formatting.\n\nThis method can be called directly with a list of Message objects,\nwithout needing an AttackResult. Useful for printing prepended_conversation\nor any other list of messages.\n\nDisplays:\n- Turn numbers\n- Role indicators (USER/ASSISTANT/SYSTEM)\n- Original and converted values when different\n- Images if present\n- Scores for each response (if include_scores=True)",
+            "params": [
+              {
+                "name": "messages",
+                "type": "list",
+                "desc": "List of Message objects to print.",
+                "default": ""
+              },
+              {
+                "name": "include_scores",
+                "type": "bool",
+                "desc": "Whether to include scores in the output.\nDefaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_reasoning_trace",
+                "type": "bool",
+                "desc": "Whether to include model reasoning trace in the output\nfor applicable models. Defaults to False.",
+                "default": "False"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_result_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_auxiliary_scores",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_pruned_conversations",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_adversarial_conversation",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print the complete attack result to console.\n\nThis method orchestrates the printing of all components of an attack result,\nincluding header, summary, conversation history, metadata, and footer.",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result to print. Must not be None.",
+                "default": ""
+              },
+              {
+                "name": "include_auxiliary_scores",
+                "type": "bool",
+                "desc": "Whether to include auxiliary scores in the output.\nDefaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_pruned_conversations",
+                "type": "bool",
+                "desc": "Whether to include pruned conversations.\nFor each pruned conversation, only the last message and its score are shown.\nDefaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_adversarial_conversation",
+                "type": "bool",
+                "desc": "Whether to include the adversarial\nconversation (the red teaming LLM's reasoning). Only shown for successful\nattacks to avoid overwhelming output. Defaults to False.",
+                "default": "False"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_summary_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Print a summary of the attack result with enhanced formatting.\n\nDisplays:\n- Basic information (objective, attack type, conversation ID)\n- Execution metrics (turns executed, execution time)\n- Outcome information (status, reason)\n- Final score if available",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result to summarize. Must contain\nobjective, attack_identifier, conversation_id, executed_turns,\nexecution_time_ms, outcome, and optionally outcome_reason and\nlast_score attributes.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "width",
+            "type": "int",
+            "default": "100",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "indent_size",
+            "type": "int",
+            "default": "2",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "enable_colors",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the console printer.",
+          "params": [
+            {
+              "name": "width",
+              "type": "int",
+              "desc": "Maximum width for text wrapping. Must be positive.\nDefaults to 100.",
+              "default": "100"
+            },
+            {
+              "name": "indent_size",
+              "type": "int",
+              "desc": "Number of spaces for indentation. Must be non-negative.\nDefaults to 2.",
+              "default": "2"
+            },
+            {
+              "name": "enable_colors",
+              "type": "bool",
+              "desc": "Whether to enable ANSI color output. When False,\nall output will be plain text without colors. Defaults to True.",
+              "default": "True"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If width <= 0 or indent_size < 0."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ContextComplianceAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of the context compliance attack strategy.\n\nThis attack attempts to bypass safety measures by rephrasing the objective into a more benign context.\nIt uses an adversarial chat target to:\n1. Rephrase the objective as a more benign question\n2. Generate a response to the benign question\n3. Rephrase the original objective as a follow-up question\n\nThis creates a context that makes it harder for the target to detect the true intent."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_AFFIRMATIVE_RESPONSE",
+          "type": "str"
+        },
+        {
+          "name": "DEFAULT_CONTEXT_DESCRIPTION_PATH",
+          "type": "Path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptChatTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_adversarial_config",
+            "type": "AttackAdversarialConfig",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "context_description_instructions_path",
+            "type": "Optional[Path]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "affirmative_response",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the context compliance attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptChatTarget",
+              "desc": "The target system to attack. Must be a PromptChatTarget.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_adversarial_config",
+              "type": "AttackAdversarialConfig",
+              "desc": "Configuration for the adversarial component,\nincluding the adversarial chat target used for rephrasing.",
+              "default": ""
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for attack converters,\nincluding request and response converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for attack scoring.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "The prompt normalizer to use for sending prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            },
+            {
+              "name": "context_description_instructions_path",
+              "type": "Optional[Path]",
+              "desc": "Path to the context description\ninstructions YAML file. If not provided, uses the default path.",
+              "default": "None"
+            },
+            {
+              "name": "affirmative_response",
+              "type": "Optional[str]",
+              "desc": "The affirmative response to be used in the conversation history.\nIf not provided, uses the default \"yes.\".",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the context description instructions file is invalid."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ConversationManager",
+      "kind": "class",
+      "docstring": {
+        "text": "Manages conversations for attacks, handling message history,\nsystem prompts, and conversation state.\n\nThis class provides methods to:\n- Initialize attack context with prepended conversations\n- Retrieve conversation history\n- Set system prompts for chat targets"
+      },
+      "methods": [
+        {
+          "name": "add_prepended_conversation_to_memory_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "prepended_conversation",
+              "type": "list[Message]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "request_converters",
+              "type": "Optional[list[PromptConverterConfiguration]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfig]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "max_turns",
+              "type": "Optional[int]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Add prepended conversation messages to memory for a chat target.\n\nThis is a lower-level method that handles adding messages to memory without\nmodifying any attack context state. It can be called directly by attacks\nthat manage their own state (like TAP nodes) or internally by\ninitialize_context_async for standard attacks.\n\nMessages are added with:\n- Duplicated message objects (preserves originals)\n- simulated_assistant role for assistant messages (for traceability)\n- Converters applied based on config",
+            "params": [
+              {
+                "name": "prepended_conversation",
+                "type": "list[Message]",
+                "desc": "Messages to add to memory.",
+                "default": ""
+              },
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "Conversation ID to assign to all messages.",
+                "default": ""
+              },
+              {
+                "name": "request_converters",
+                "type": "Optional[list[PromptConverterConfiguration]]",
+                "desc": "Optional converters to apply to messages.",
+                "default": "None"
+              },
+              {
+                "name": "prepended_conversation_config",
+                "type": "Optional[PrependedConversationConfig]",
+                "desc": "Optional configuration for converter roles.",
+                "default": "None"
+              },
+              {
+                "name": "max_turns",
+                "type": "Optional[int]",
+                "desc": "If provided, validates that turn count doesn't exceed this limit.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "int",
+                "desc": "The number of turns (assistant messages) added."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If max_turns is exceeded by the prepended conversation."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "int"
+        },
+        {
+          "name": "get_conversation",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a conversation by its ID.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The ID of the conversation to retrieve.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "list[Message]",
+                "desc": "A list of messages in the conversation, ordered by creation time."
+              },
+              {
+                "type": "list[Message]",
+                "desc": "Returns empty list if no messages exist."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "list[Message]"
+        },
+        {
+          "name": "get_last_message",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "role",
+              "type": "Optional[ChatMessageRole]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve the most recent message from a conversation.",
+            "params": [
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "The ID of the conversation to retrieve from.",
+                "default": ""
+              },
+              {
+                "name": "role",
+                "type": "Optional[ChatMessageRole]",
+                "desc": "If provided, return only the last message matching this role.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "Optional[MessagePiece]",
+                "desc": "The last message piece, or None if no messages exist."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[MessagePiece]"
+        },
+        {
+          "name": "initialize_context_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "context",
+              "type": "AttackContext[Any]",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "target",
+              "type": "PromptTarget",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "request_converters",
+              "type": "Optional[list[PromptConverterConfiguration]]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfig]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "max_turns",
+              "type": "Optional[int]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "memory_labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Initialize attack context with prepended conversation and merged labels.\n\nThis is the primary method for setting up an attack context. It:\n1. Merges memory_labels from attack strategy with context labels\n2. Processes prepended_conversation based on target type and config\n3. Updates context.executed_turns for multi-turn attacks\n4. Sets context.next_message if there's an unanswered user message",
+            "params": [
+              {
+                "name": "context",
+                "type": "AttackContext[Any]",
+                "desc": "The attack context to initialize.",
+                "default": ""
+              },
+              {
+                "name": "target",
+                "type": "PromptTarget",
+                "desc": "The objective target for the conversation.",
+                "default": ""
+              },
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "Unique identifier for the conversation.",
+                "default": ""
+              },
+              {
+                "name": "request_converters",
+                "type": "Optional[list[PromptConverterConfiguration]]",
+                "desc": "Converters to apply to messages.",
+                "default": "None"
+              },
+              {
+                "name": "prepended_conversation_config",
+                "type": "Optional[PrependedConversationConfig]",
+                "desc": "Configuration for handling prepended conversation.",
+                "default": "None"
+              },
+              {
+                "name": "max_turns",
+                "type": "Optional[int]",
+                "desc": "Maximum turns allowed (for validation and state tracking).",
+                "default": "None"
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "Labels from the attack strategy to merge with context labels.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "ConversationState",
+                "desc": "ConversationState with turn_count and last_assistant_message_scores."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If conversation_id is empty, or if prepended_conversation\nrequires a PromptChatTarget but target is not one."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "ConversationState"
+        },
+        {
+          "name": "set_system_prompt",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "target",
+              "type": "PromptChatTarget",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "conversation_id",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "system_prompt",
+              "type": "str",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "labels",
+              "type": "Optional[dict[str, str]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Set or update the system prompt for a conversation.",
+            "params": [
+              {
+                "name": "target",
+                "type": "PromptChatTarget",
+                "desc": "The chat target to set the system prompt on.",
+                "default": ""
+              },
+              {
+                "name": "conversation_id",
+                "type": "str",
+                "desc": "Unique identifier for the conversation.",
+                "default": ""
+              },
+              {
+                "name": "system_prompt",
+                "type": "str",
+                "desc": "The system prompt text.",
+                "default": ""
+              },
+              {
+                "name": "labels",
+                "type": "Optional[dict[str, str]]",
+                "desc": "Optional labels to associate with the system prompt.",
+                "default": "None"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_identifier",
+            "type": "ComponentIdentifier",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the conversation manager.",
+          "params": [
+            {
+              "name": "attack_identifier",
+              "type": "ComponentIdentifier",
+              "desc": "The identifier of the attack this manager belongs to.",
+              "default": ""
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Optional prompt normalizer for converting prompts.\nIf not provided, a default PromptNormalizer instance will be created.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ConversationSession",
+      "kind": "class",
+      "docstring": {
+        "text": "Session for conversations."
+      },
+      "attributes": [
+        {
+          "name": "adversarial_chat_conversation_id",
+          "type": "str"
+        },
+        {
+          "name": "conversation_id",
+          "type": "str"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "default": "(lambda: str(uuid.uuid4()))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "adversarial_chat_conversation_id",
+            "type": "str",
+            "default": "(lambda: str(uuid.uuid4()))()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ConversationState",
+      "kind": "class",
+      "docstring": {
+        "text": "Container for conversation state data returned from context initialization."
+      },
+      "attributes": [
+        {
+          "name": "last_assistant_message_scores",
+          "type": "list[Score]"
+        },
+        {
+          "name": "turn_count",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "turn_count",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_assistant_message_scores",
+            "type": "list[Score]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "CrescendoAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of the Crescendo attack strategy.\n\nThe Crescendo Attack is a multi-turn strategy that progressively guides the model to generate harmful\ncontent through small, benign steps. It leverages the model's recency bias, pattern-following tendency,\nand trust in self-generated text.\n\nThe attack flow consists of:\n1. Generating progressively harmful prompts using an adversarial chat model.\n2. Sending prompts to the target and evaluating responses for refusal.\n3. Backtracking when the target refuses to respond.\n4. Scoring responses to determine if the objective has been achieved.\n5. Continuing until the objective is met or maximum turns/backtracks are reached.\n\nYou can learn more about the Crescendo attack at:\nhttps://crescendo-the-multiturn-jailbreak.github.io/"
+      },
+      "bases": [
+        "MultiTurnAttackStrategy[CrescendoAttackContext, CrescendoAttackResult]"
+      ],
+      "methods": [
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "Optional[AttackScoringConfig]: The scoring configuration with objective scorer,\nauxiliary scorers, and refusal scorer."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_ADVERSARIAL_CHAT_SYSTEM_PROMPT_TEMPLATE_PATH",
+          "type": "Path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptChatTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_adversarial_config",
+            "type": "AttackAdversarialConfig",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_backtracks",
+            "type": "int",
+            "default": "10",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_turns",
+            "type": "int",
+            "default": "10",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prepended_conversation_config",
+            "type": "Optional[PrependedConversationConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Crescendo attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptChatTarget",
+              "desc": "The target system to attack. Must be a PromptChatTarget.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_adversarial_config",
+              "type": "AttackAdversarialConfig",
+              "desc": "Configuration for the adversarial component,\nincluding the adversarial chat target and optional system prompt path.",
+              "default": ""
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for attack converters,\nincluding request and response converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring responses.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_backtracks",
+              "type": "int",
+              "desc": "Maximum number of backtracks allowed.",
+              "default": "10"
+            },
+            {
+              "name": "max_turns",
+              "type": "int",
+              "desc": "Maximum number of turns allowed.",
+              "default": "10"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfiguration]",
+              "desc": "\nConfiguration for how to process prepended conversations. Controls converter\napplication by role, message normalization, and non-chat target behavior.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If objective_target is not a PromptChatTarget."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "CrescendoAttackContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Context for the Crescendo attack strategy."
+      },
+      "bases": [
+        "MultiTurnAttackContext[Any]"
+      ],
+      "attributes": [
+        {
+          "name": "backtrack_count",
+          "type": "int"
+        },
+        {
+          "name": "refused_text",
+          "type": "Optional[str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "AttackParamsT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "start_time",
+            "type": "float",
+            "default": "0.0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_next_message_override",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_prepended_conversation_override",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_memory_labels_override",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "session",
+            "type": "ConversationSession",
+            "default": "(lambda: ConversationSession())()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "executed_turns",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_response",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_score",
+            "type": "Optional[Score]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "refused_text",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "backtrack_count",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "CrescendoAttackResult",
+      "kind": "class",
+      "docstring": {
+        "text": "Result of the Crescendo attack strategy execution."
+      },
+      "bases": [
+        "AttackResult"
+      ],
+      "attributes": [
+        {
+          "name": "backtrack_count",
+          "type": "int",
+          "docstring": "Get the number of backtracks performed during the attack.\n\nReturns:\n    int: The number of backtracks."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_result_id",
+            "type": "str",
+            "default": "(lambda: str(uuid.uuid4()))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "atomic_attack_identifier",
+            "type": "Optional[ComponentIdentifier]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_response",
+            "type": "Optional[MessagePiece]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_score",
+            "type": "Optional[Score]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "executed_turns",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "execution_time_ms",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "outcome",
+            "type": "AttackOutcome",
+            "default": "AttackOutcome.UNDETERMINED",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "outcome_reason",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "metadata",
+            "type": "dict[str, Any]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "FlipAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implement the FlipAttack method found here:\nhttps://arxiv.org/html/2410.02832v1.\n\nEssentially, it adds a system prompt to the beginning of the conversation to flip each word in the prompt."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptChatTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptChatTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "(AttackConverterConfig, Optional)",
+              "desc": "Configuration for the prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "(AttackScoringConfig, Optional)",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "(PromptNormalizer, Optional)",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "(int, Optional)",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ManyShotJailbreakAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implement the Many Shot Jailbreak method as discussed in research found here:\nhttps://www.anthropic.com/research/many-shot-jailbreaking.\n\nPrepends the seed prompt with a faux dialogue between a human and an AI, using examples from a dataset\nto demonstrate successful jailbreaking attempts. This method leverages the model's ability to learn from\nexamples to bypass safety measures."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "example_count",
+            "type": "int",
+            "default": "100",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "many_shot_examples",
+            "type": "Optional[list[dict[str, str]]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "(AttackConverterConfig, Optional)",
+              "desc": "Configuration for the prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "(AttackScoringConfig, Optional)",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "(PromptNormalizer, Optional)",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "(int, Optional)",
+              "desc": "Maximum number of attempts to retry on failure. Defaults to 0.",
+              "default": "0"
+            },
+            {
+              "name": "example_count",
+              "type": "int",
+              "desc": "The number of examples to include from many_shot_examples or the Many\nShot Jailbreaking dataset. Defaults to the first 100.",
+              "default": "100"
+            },
+            {
+              "name": "many_shot_examples",
+              "type": "(list[dict[str, str]], Optional)",
+              "desc": "The many shot jailbreaking examples to use.\nIf not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If many_shot_examples is empty."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "MarkdownAttackResultPrinter",
+      "kind": "class",
+      "docstring": {
+        "text": "Markdown printer for attack results optimized for Jupyter notebooks.\n\nThis printer formats attack results as markdown, making them ideal for display\nin Jupyter notebooks where LLM responses often contain code blocks and other\nmarkdown formatting that should be properly rendered."
+      },
+      "bases": [
+        "AttackResultPrinter"
+      ],
+      "methods": [
+        {
+          "name": "print_conversation_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_scores",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print only the conversation history as formatted markdown.\n\nExtracts and displays the conversation messages from the attack result\nwithout the summary or metadata sections. Useful for focusing on the\nactual interaction flow.",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result containing the conversation\nto display.",
+                "default": ""
+              },
+              {
+                "name": "include_scores",
+                "type": "bool",
+                "desc": "Whether to include scores\nfor each message. Defaults to False.",
+                "default": "False"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_result_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "include_auxiliary_scores",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_pruned_conversations",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "include_adversarial_conversation",
+              "type": "bool",
+              "default": "False",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Print the complete attack result as formatted markdown.\n\nGenerates a comprehensive markdown report including attack summary,\nconversation history, scores, and metadata. The output is optimized\nfor display in Jupyter notebooks.",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result to print.",
+                "default": ""
+              },
+              {
+                "name": "include_auxiliary_scores",
+                "type": "bool",
+                "desc": "Whether to include auxiliary scores\nin the conversation display. Defaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_pruned_conversations",
+                "type": "bool",
+                "desc": "Whether to include pruned conversations.\nFor each pruned conversation, only the last message and its score are shown.\nDefaults to False.",
+                "default": "False"
+              },
+              {
+                "name": "include_adversarial_conversation",
+                "type": "bool",
+                "desc": "Whether to include the adversarial\nconversation (the red teaming LLM's reasoning). Only shown for successful\nattacks to avoid overwhelming output. Defaults to False.",
+                "default": "False"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        },
+        {
+          "name": "print_summary_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "result",
+              "type": "AttackResult",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Print a summary of the attack result as formatted markdown.\n\nDisplays key information about the attack including objective, outcome,\nexecution metrics, and final score without the full conversation history.\nUseful for getting a quick overview of the attack results.",
+            "params": [
+              {
+                "name": "result",
+                "type": "AttackResult",
+                "desc": "The attack result to summarize.",
+                "default": ""
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "None"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "display_inline",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the markdown printer.",
+          "params": [
+            {
+              "name": "display_inline",
+              "type": "bool",
+              "desc": "If True, uses IPython.display to render markdown\ninline in Jupyter notebooks. If False, prints markdown strings.\nDefaults to True.",
+              "default": "True"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "MultiPromptSendingAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of multi-prompt sending attack strategy.\n\nThis class orchestrates a multi-turn attack where a series of predefined malicious\nprompts are sent sequentially to try to achieve a specific objective against a target\nsystem. The strategy evaluates the final target response using optional scorers to\ndetermine if the objective has been met.\n\nThe attack flow consists of:\n1. Sending each predefined prompt to the target system in sequence.\n2. Continuing until all predefined prompts are sent.\n3. Evaluating the final response with scorers if configured.\n4. Returning the attack result with achievement status.\n\nNote: This attack always runs all predefined prompts regardless of whether the\nobjective is achieved early in the sequence.\n\nThe strategy supports customization through prepended conversations, converters,\nand multiple scorer types for comprehensive evaluation."
+      },
+      "bases": [
+        "MultiTurnAttackStrategy[MultiTurnAttackContext[Any], AttackResult]"
+      ],
+      "methods": [
+        {
+          "name": "execute_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the attack strategy asynchronously with the provided parameters.",
+            "returns": [
+              {
+                "type": "AttackResult",
+                "desc": "The result of the attack execution."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AttackResult"
+        },
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "Optional[AttackScoringConfig]: The scoring configuration with objective and auxiliary scorers."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the multi-prompt sending attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the objective scorer is not a true/false scorer."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "MultiPromptSendingAttackParameters",
+      "kind": "class",
+      "docstring": {
+        "text": "Parameters for MultiPromptSendingAttack.\n\nExtends AttackParameters to include user_messages field for multi-turn attacks.\nOnly accepts objective and user_messages fields."
+      },
+      "bases": [
+        "AttackParameters"
+      ],
+      "methods": [
+        {
+          "name": "from_seed_group_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "type": "type[MultiPromptSendingAttackParameters]",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "seed_group",
+              "type": "SeedAttackGroup",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "Optional[PromptChatTarget]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "objective_scorer",
+              "type": "Optional[TrueFalseScorer]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "overrides",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create parameters from a SeedGroup, extracting user messages.",
+            "params": [
+              {
+                "name": "seed_group",
+                "type": "SeedAttackGroup",
+                "desc": "The seed group to extract parameters from.",
+                "default": ""
+              },
+              {
+                "name": "adversarial_chat",
+                "type": "Optional[PromptChatTarget]",
+                "desc": "Not used by this attack type.",
+                "default": "None"
+              },
+              {
+                "name": "objective_scorer",
+                "type": "Optional[TrueFalseScorer]",
+                "desc": "Not used by this attack type.",
+                "default": "None"
+              },
+              {
+                "name": "**overrides",
+                "type": "Any",
+                "desc": "Field overrides to apply.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "MultiPromptSendingAttackParameters",
+                "desc": "MultiPromptSendingAttackParameters instance."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If seed_group has no objective, no user messages, or if overrides contain invalid fields."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "MultiPromptSendingAttackParameters"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "user_messages",
+          "type": "Optional[list[Message]]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "next_message",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prepended_conversation",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "memory_labels",
+            "type": "Optional[dict[str, str]]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "user_messages",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "MultiTurnAttackContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Context for multi-turn attacks.\n\nHolds execution state for multi-turn attacks. The immutable attack parameters\n(objective, next_message, prepended_conversation, memory_labels) are stored in\nthe params field inherited from AttackContext."
+      },
+      "bases": [
+        "AttackContext[AttackParamsT]"
+      ],
+      "attributes": [
+        {
+          "name": "executed_turns",
+          "type": "int"
+        },
+        {
+          "name": "last_response",
+          "type": "Optional[Message]"
+        },
+        {
+          "name": "last_score",
+          "type": "Optional[Score]"
+        },
+        {
+          "name": "session",
+          "type": "ConversationSession"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "AttackParamsT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "start_time",
+            "type": "float",
+            "default": "0.0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_next_message_override",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_prepended_conversation_override",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_memory_labels_override",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "session",
+            "type": "ConversationSession",
+            "default": "(lambda: ConversationSession())()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "executed_turns",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_response",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_score",
+            "type": "Optional[Score]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "MultiTurnAttackStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Strategy for executing multi-turn attacks.\nThis strategy is designed to handle attacks that consist of multiple turns\nof interaction with the target model."
+      },
+      "bases": [
+        "AttackStrategy[MultiTurnAttackStrategyContextT, AttackStrategyResultT]",
+        "ABC"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "context_type",
+            "type": "type[MultiTurnAttackStrategyContextT]",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "params_type",
+            "type": "type[AttackParamsT]",
+            "default": "AttackParameters",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "logger",
+            "type": "logging.Logger",
+            "default": "logger",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Implement the base class for multi-turn attack strategies.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": ""
+            },
+            {
+              "name": "context_type",
+              "type": "type[MultiTurnAttackContext]",
+              "desc": "The type of context this strategy will use.",
+              "default": ""
+            },
+            {
+              "name": "params_type",
+              "type": "Type[AttackParamsT]",
+              "desc": "The type of parameters this strategy accepts.",
+              "default": "AttackParameters"
+            },
+            {
+              "name": "logger",
+              "type": "logging.Logger",
+              "desc": "Logger instance for logging events and messages.",
+              "default": "logger"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "PrependedConversationConfig",
+      "kind": "class",
+      "docstring": {
+        "text": "Configuration for controlling how prepended conversations are processed before\nbeing sent to the objective target.\n\nThis class provides control over:\n- Which message roles should have request converters applied\n- How to normalize conversation history for non-chat objective targets\n- What to do when the objective target is not a PromptChatTarget"
+      },
+      "methods": [
+        {
+          "name": "default",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Create a default configuration with converters applied to all roles.",
+            "returns": [
+              {
+                "type": "PrependedConversationConfig",
+                "desc": "A configuration that applies converters to all prepended messages,"
+              },
+              {
+                "type": "PrependedConversationConfig",
+                "desc": "raising an error for non-chat targets."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "PrependedConversationConfig"
+        },
+        {
+          "name": "for_non_chat_target",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "cls",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "message_normalizer",
+              "type": "Optional[MessageStringNormalizer]",
+              "default": "None",
+              "kind": "keyword-only"
+            },
+            {
+              "name": "apply_converters_to_roles",
+              "type": "Optional[list[ChatMessageRole]]",
+              "default": "None",
+              "kind": "keyword-only"
+            }
+          ],
+          "docstring": {
+            "text": "Create a configuration for use with non-chat targets.\n\nThis configuration normalizes the prepended conversation into a text block\nthat will be prepended to the first message sent to the target.",
+            "params": [
+              {
+                "name": "message_normalizer",
+                "type": "Optional[MessageStringNormalizer]",
+                "desc": "Normalizer for formatting the prepended conversation into a string.\nDefaults to ConversationContextNormalizer if not provided.",
+                "default": "None"
+              },
+              {
+                "name": "apply_converters_to_roles",
+                "type": "Optional[list[ChatMessageRole]]",
+                "desc": "Roles to apply converters to before normalization.\nDefaults to all roles.",
+                "default": "None"
+              }
+            ],
+            "returns": [
+              {
+                "type": "PrependedConversationConfig",
+                "desc": "A configuration that normalizes the prepended conversation for non-chat targets."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "PrependedConversationConfig"
+        },
+        {
+          "name": "get_message_normalizer",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the normalizer for objective target context, with a default fallback.",
+            "returns": [
+              {
+                "type": "MessageStringNormalizer",
+                "desc": "The configured objective_target_context_normalizer, or a default"
+              },
+              {
+                "type": "MessageStringNormalizer",
+                "desc": "ConversationContextNormalizer if none was configured."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "MessageStringNormalizer"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "apply_converters_to_roles",
+          "type": "list[ChatMessageRole]"
+        },
+        {
+          "name": "message_normalizer",
+          "type": "Optional[MessageStringNormalizer]"
+        },
+        {
+          "name": "non_chat_target_behavior",
+          "type": "Literal['normalize_first_turn', 'raise']"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "apply_converters_to_roles",
+            "type": "list[ChatMessageRole]",
+            "default": "(lambda: list(get_args(ChatMessageRole)))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "message_normalizer",
+            "type": "Optional[MessageStringNormalizer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "non_chat_target_behavior",
+            "type": "Literal['normalize_first_turn', 'raise']",
+            "default": "'normalize_first_turn'",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "PromptSendingAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of single-turn prompt sending attack strategy.\n\nThis class orchestrates a single-turn attack where malicious prompts are injected\nto try to achieve a specific objective against a target system. The strategy evaluates\nthe target response using optional scorers to determine if the objective has been met.\n\nThe attack flow consists of:\n1. Preparing the prompt based on the objective.\n2. Sending the prompt to the target system through optional converters.\n3. Evaluating the response with scorers if configured.\n4. Retrying on failure up to the configured number of retries.\n5. Returning the attack result with achievement status.\n\nThe strategy supports customization through prepended conversations, converters,\nand multiple scorer types for comprehensive evaluation."
+      },
+      "bases": [
+        "SingleTurnAttackStrategy"
+      ],
+      "methods": [
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "Optional[AttackScoringConfig]: The scoring configuration with objective and auxiliary scorers."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "params_type",
+            "type": "type[AttackParamsT]",
+            "default": "AttackParameters",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prepended_conversation_config",
+            "type": "Optional[PrependedConversationConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the prompt injection attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            },
+            {
+              "name": "params_type",
+              "type": "Type[AttackParamsT]",
+              "desc": "The type of parameters this strategy accepts.\nDefaults to AttackParameters. Use AttackParameters.excluding() to create\na params type that rejects certain fields.",
+              "default": "AttackParameters"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfiguration]",
+              "desc": "\nConfiguration for how to process prepended conversations. Controls converter\napplication by role, message normalization, and non-chat target behavior.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the objective scorer is not a true/false scorer."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "RTASystemPromptPaths",
+      "kind": "class",
+      "docstring": {
+        "text": "Enum for predefined red teaming attack system prompt paths."
+      },
+      "bases": [
+        "enum.Enum"
+      ],
+      "attributes": [
+        {
+          "name": "CRUCIBLE"
+        },
+        {
+          "name": "IMAGE_GENERATION"
+        },
+        {
+          "name": "NAIVE_CRESCENDO"
+        },
+        {
+          "name": "TEXT_GENERATION"
+        },
+        {
+          "name": "VIOLENT_DURIAN"
+        }
+      ]
+    },
+    {
+      "name": "RedTeamingAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of multi-turn red teaming attack strategy.\n\nThis class orchestrates an iterative attack process where an adversarial chat model generates\nprompts to send to a target system, attempting to achieve a specified objective. The strategy\nevaluates each target response using a scorer to determine if the objective has been met.\n\nThe attack flow consists of:\n1. Generating adversarial prompts based on previous responses and scoring feedback.\n2. Sending prompts to the target system through optional converters.\n3. Scoring target responses to assess objective achievement.\n4. Using scoring feedback to guide subsequent prompt generation.\n5. Continuing until the objective is achieved or maximum turns are reached.\n\nThe strategy supports customization through system prompts, seed prompts, and prompt converters,\nallowing for various attack techniques and scenarios."
+      },
+      "bases": [
+        "MultiTurnAttackStrategy[MultiTurnAttackContext[Any], AttackResult]"
+      ],
+      "methods": [
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "Optional[AttackScoringConfig]: The scoring configuration with objective scorer\nand use_score_as_feedback."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_ADVERSARIAL_PROMPT_IF_OBJECTIVE_TARGET_IS_BLOCKED"
+        },
+        {
+          "name": "DEFAULT_ERR_MSG_IF_OBJECTIVE_TARGET_HAS_NON_TEXT_RESPONSE"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_adversarial_config",
+            "type": "AttackAdversarialConfig",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_turns",
+            "type": "int",
+            "default": "10",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "score_last_turn_only",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the red teaming attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_adversarial_config",
+              "type": "AttackAdversarialConfig",
+              "desc": "Configuration for the adversarial component.",
+              "default": ""
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for attack converters. Defaults to None.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for attack scoring. Defaults to None.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "The prompt normalizer to use for sending prompts. Defaults to None.",
+              "default": "None"
+            },
+            {
+              "name": "max_turns",
+              "type": "int",
+              "desc": "Maximum number of turns for the attack. Defaults to 10.",
+              "default": "10"
+            },
+            {
+              "name": "score_last_turn_only",
+              "type": "bool",
+              "desc": "If True, only score the final turn instead of every turn.\nThis reduces LLM calls when intermediate scores are not needed (e.g., for\ngenerating simulated conversations). The attack will run for exactly max_turns\nwhen this is enabled. Defaults to False.",
+              "default": "False"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If objective_scorer is not provided in attack_scoring_config."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "RolePlayAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of single-turn role-play attack strategy.\n\nThis class orchestrates a role-play attack where malicious objectives are rephrased\ninto role-playing contexts to make them appear more benign and bypass content filters.\nThe strategy uses an adversarial chat target to transform the objective into a role-play\nscenario before sending it to the target system.\n\nThe attack flow consists of:\n1. Loading role-play scenarios from a YAML file.\n2. Using an adversarial chat target to rephrase the objective into the role-play context.\n3. Sending the rephrased objective to the target system.\n4. Evaluating the response with scorers if configured.\n5. Retrying on failure up to the configured number of retries.\n6. Returning the attack result\n\nThe strategy supports customization through prepended conversations, converters,\nand multiple scorer types."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "PromptChatTarget",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "role_play_definition_path",
+            "type": "pathlib.Path",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the role-play attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "PromptChatTarget",
+              "desc": "The adversarial chat target used to rephrase\nobjectives into role-play scenarios.",
+              "default": ""
+            },
+            {
+              "name": "role_play_definition_path",
+              "type": "pathlib.Path",
+              "desc": "Path to the YAML file containing role-play\ndefinitions (rephrase instructions, user start turn, assistant start turn).",
+              "default": ""
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry the attack",
+              "default": "0"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the objective scorer is not a true/false scorer."
+            },
+            {
+              "type": "FileNotFoundError",
+              "desc": "If the role_play_definition_path does not exist."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "RolePlayPaths",
+      "kind": "class",
+      "docstring": {
+        "text": "Enum for predefined role-play scenario paths."
+      },
+      "bases": [
+        "enum.Enum"
+      ],
+      "attributes": [
+        {
+          "name": "MOVIE_SCRIPT"
+        },
+        {
+          "name": "PERSUASION_SCRIPT"
+        },
+        {
+          "name": "PERSUASION_SCRIPT_WRITTEN"
+        },
+        {
+          "name": "TRIVIA_GAME"
+        },
+        {
+          "name": "VIDEO_GAME"
+        }
+      ]
+    },
+    {
+      "name": "SingleTurnAttackContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Context for single-turn attacks.\n\nHolds execution state for single-turn attacks. The immutable attack parameters\n(objective, next_message, prepended_conversation, memory_labels) are stored in\nthe params field inherited from AttackContext."
+      },
+      "bases": [
+        "AttackContext[AttackParamsT]"
+      ],
+      "attributes": [
+        {
+          "name": "conversation_id",
+          "type": "str"
+        },
+        {
+          "name": "metadata",
+          "type": "Optional[dict[str, Union[str, int]]]"
+        },
+        {
+          "name": "system_prompt",
+          "type": "Optional[str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "AttackParamsT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "start_time",
+            "type": "float",
+            "default": "0.0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_next_message_override",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_prepended_conversation_override",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_memory_labels_override",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "default": "(lambda: str(uuid.uuid4()))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "system_prompt",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "metadata",
+            "type": "Optional[dict[str, Union[str, int]]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "SingleTurnAttackStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Strategy for executing single-turn attacks.\nThis strategy is designed to handle attacks that consist of a single turn\nof interaction with the target model."
+      },
+      "bases": [
+        "AttackStrategy[SingleTurnAttackContext[Any], AttackResult]",
+        "ABC"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "context_type",
+            "type": "type[SingleTurnAttackContext[Any]]",
+            "default": "SingleTurnAttackContext",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "params_type",
+            "type": "type[AttackParamsT]",
+            "default": "AttackParameters",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "logger",
+            "type": "logging.Logger",
+            "default": "logger",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Define a base class for single-turn attack strategies.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": ""
+            },
+            {
+              "name": "context_type",
+              "type": "type[SingleTurnAttackContext]",
+              "desc": "The type of context this strategy will use.",
+              "default": "SingleTurnAttackContext"
+            },
+            {
+              "name": "params_type",
+              "type": "Type[AttackParamsT]",
+              "desc": "The type of parameters this strategy accepts.",
+              "default": "AttackParameters"
+            },
+            {
+              "name": "logger",
+              "type": "logging.Logger",
+              "desc": "Logger instance for logging events and messages.",
+              "default": "logger"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SkeletonKeyAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of the skeleton key jailbreak attack strategy.\n\nThis attack sends an initial skeleton key prompt to the target, and then follows\nup with a separate attack prompt. If successful, the first prompt makes the target\ncomply even with malicious follow-up prompts.\n\nThe attack flow consists of:\n1. Sending a skeleton key prompt to bypass the target's safety mechanisms.\n2. Sending the actual objective prompt to the primed target.\n3. Evaluating the response using configured scorers to determine success.\n\nLearn more about attack at the link below:\nhttps://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/"
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_SKELETON_KEY_PROMPT_PATH",
+          "type": "Path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "skeleton_key_prompt",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the skeleton key attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "skeleton_key_prompt",
+              "type": "Optional[str]",
+              "desc": "The skeleton key prompt to use.\nIf not provided, uses the default skeleton key prompt.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "TAPAttackContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Context for the Tree of Attacks with Pruning (TAP) attack strategy.\n\nThis context contains all execution-specific state for a TAP attack instance,\nensuring thread safety by isolating state per execution."
+      },
+      "bases": [
+        "MultiTurnAttackContext[Any]"
+      ],
+      "attributes": [
+        {
+          "name": "best_adversarial_conversation_id",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "best_conversation_id",
+          "type": "Optional[str]"
+        },
+        {
+          "name": "best_objective_score",
+          "type": "Optional[Score]"
+        },
+        {
+          "name": "nodes",
+          "type": "list[_TreeOfAttacksNode]"
+        },
+        {
+          "name": "tree_visualization",
+          "type": "Tree"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "AttackParamsT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "start_time",
+            "type": "float",
+            "default": "0.0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_next_message_override",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_prepended_conversation_override",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_memory_labels_override",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "session",
+            "type": "ConversationSession",
+            "default": "(lambda: ConversationSession())()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "executed_turns",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_response",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_score",
+            "type": "Optional[Score]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tree_visualization",
+            "type": "Tree",
+            "default": "Tree()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "nodes",
+            "type": "list[_TreeOfAttacksNode]",
+            "default": "list()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "best_conversation_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "best_objective_score",
+            "type": "Optional[Score]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "best_adversarial_conversation_id",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "TAPAttackResult",
+      "kind": "class",
+      "docstring": {
+        "text": "Result of the Tree of Attacks with Pruning (TAP) attack strategy execution.\n\nThis result includes the standard attack result information with\nattack-specific data stored in the metadata dictionary."
+      },
+      "bases": [
+        "AttackResult"
+      ],
+      "attributes": [
+        {
+          "name": "auxiliary_scores_summary",
+          "type": "dict[str, float]",
+          "docstring": "Get a summary of auxiliary scores from the best node."
+        },
+        {
+          "name": "best_adversarial_conversation_id",
+          "type": "Optional[str]",
+          "docstring": "Get the adversarial conversation ID for the best-scoring branch."
+        },
+        {
+          "name": "max_depth_reached",
+          "type": "int",
+          "docstring": "Get the maximum depth reached in the attack tree."
+        },
+        {
+          "name": "nodes_explored",
+          "type": "int",
+          "docstring": "Get the total number of nodes explored during the attack."
+        },
+        {
+          "name": "nodes_pruned",
+          "type": "int",
+          "docstring": "Get the number of nodes pruned during the attack."
+        },
+        {
+          "name": "tree_visualization",
+          "type": "Optional[Tree]",
+          "docstring": "Get the tree visualization from metadata."
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_result_id",
+            "type": "str",
+            "default": "(lambda: str(uuid.uuid4()))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "atomic_attack_identifier",
+            "type": "Optional[ComponentIdentifier]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_response",
+            "type": "Optional[MessagePiece]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "last_score",
+            "type": "Optional[Score]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "executed_turns",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "execution_time_ms",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "outcome",
+            "type": "AttackOutcome",
+            "default": "AttackOutcome.UNDETERMINED",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "outcome_reason",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "metadata",
+            "type": "dict[str, Any]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "TreeOfAttacksWithPruningAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implement the Tree of Attacks with Pruning (TAP) attack strategy.\n\nThe TAP attack strategy systematically explores multiple adversarial prompt paths in parallel\nusing a tree structure. It employs breadth-first search with pruning to efficiently find\neffective jailbreaks while managing computational resources.\n\nHow it works:\n1. **Initialization**: Creates multiple initial attack branches (width) to explore different approaches\n2. **Tree Expansion**: For each iteration (depth), branches are expanded by a branching factor\n3. **Prompt Generation**: Each node generates adversarial prompts via an LLM red-teaming assistant\n4. **Evaluation**: Responses are evaluated for objective achievement and on-topic relevance\n5. **Pruning**: Low-scoring or off-topic branches are pruned to maintain the width constraint\n6. **Iteration**: The process continues until the objective is achieved or max depth is reached\n\nThe strategy balances exploration (trying diverse approaches) with exploitation (focusing on\npromising paths) through its pruning mechanism.",
+        "returns": [
+          {
+            "type": "",
+            "desc": "The result of the TAP attack execution."
+          }
+        ]
+      },
+      "bases": [
+        "AttackStrategy[TAPAttackContext, TAPAttackResult]"
+      ],
+      "methods": [
+        {
+          "name": "execute_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the multi-turn attack strategy asynchronously with the provided parameters.",
+            "params": [
+              {
+                "name": "objective",
+                "type": "str",
+                "desc": "The objective of the attack.",
+                "default": ""
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[Dict[str, str]]",
+                "desc": "Memory labels for the attack context.",
+                "default": ""
+              },
+              {
+                "name": "**kwargs",
+                "type": "Any",
+                "desc": "Additional parameters for the attack.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "TAPAttackResult",
+                "desc": "The result of the attack execution."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "TAPAttackResult"
+        },
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "The TAP-specific scoring configuration."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_ADVERSARIAL_PROMPT_TEMPLATE_PATH",
+          "type": "Path"
+        },
+        {
+          "name": "DEFAULT_ADVERSARIAL_SEED_PROMPT_PATH",
+          "type": "Path"
+        },
+        {
+          "name": "DEFAULT_ADVERSARIAL_SYSTEM_PROMPT_PATH",
+          "type": "Path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptChatTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_adversarial_config",
+            "type": "AttackAdversarialConfig",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "tree_width",
+            "type": "int",
+            "default": "3",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "tree_depth",
+            "type": "int",
+            "default": "5",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "branching_factor",
+            "type": "int",
+            "default": "2",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "on_topic_checking_enabled",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "desired_response_prefix",
+            "type": "str",
+            "default": "'Sure, here is'",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "batch_size",
+            "type": "int",
+            "default": "10",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prepended_conversation_config",
+            "type": "Optional[PrependedConversationConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Tree of Attacks with Pruning attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptChatTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_adversarial_config",
+              "type": "AttackAdversarialConfig",
+              "desc": "Configuration for the adversarial chat component.",
+              "default": ""
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for attack converters.\nDefaults to None.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Scoring configuration for TAP.\nThe objective_scorer must be a FloatScaleThresholdScorer, which provides both\ngranular float scores for node comparison and a threshold for determining success.\nCan be either AttackScoringConfig or TAPAttackScoringConfig. If not provided,\na default configuration with SelfAskScaleScorer and threshold 0.7 is created.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "The prompt normalizer to use. Defaults to None.",
+              "default": "None"
+            },
+            {
+              "name": "tree_width",
+              "type": "int",
+              "desc": "Number of branches to explore in parallel at each level. Defaults to 3.",
+              "default": "3"
+            },
+            {
+              "name": "tree_depth",
+              "type": "int",
+              "desc": "Maximum number of iterations to perform. Defaults to 5.",
+              "default": "5"
+            },
+            {
+              "name": "branching_factor",
+              "type": "int",
+              "desc": "Number of child branches to create from each parent. Defaults to 2.",
+              "default": "2"
+            },
+            {
+              "name": "on_topic_checking_enabled",
+              "type": "bool",
+              "desc": "Whether to check if prompts are on-topic. Defaults to True.",
+              "default": "True"
+            },
+            {
+              "name": "desired_response_prefix",
+              "type": "str",
+              "desc": "Expected prefix for successful responses. Defaults to \"Sure, here is\".",
+              "default": "'Sure, here is'"
+            },
+            {
+              "name": "batch_size",
+              "type": "int",
+              "desc": "Number of nodes to process in parallel per batch. Defaults to 10.",
+              "default": "10"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfiguration]",
+              "desc": "\nConfiguration for how to process prepended conversations. Controls converter\napplication by role, message normalization, and non-chat target behavior.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If attack_scoring_config uses a non-FloatScaleThresholdScorer objective scorer,\nif target is not PromptChatTarget, or if parameters are invalid."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "generate_simulated_conversation_async",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "objective",
+          "type": "str",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "adversarial_chat",
+          "type": "PromptChatTarget",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "objective_scorer",
+          "type": "TrueFalseScorer",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "num_turns",
+          "type": "int",
+          "default": "3",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "starting_sequence",
+          "type": "int",
+          "default": "0",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "adversarial_chat_system_prompt_path",
+          "type": "Union[str, Path]",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "simulated_target_system_prompt_path",
+          "type": "Optional[Union[str, Path]]",
+          "default": "None",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "next_message_system_prompt_path",
+          "type": "Optional[Union[str, Path]]",
+          "default": "None",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "attack_converter_config",
+          "type": "Optional[AttackConverterConfig]",
+          "default": "None",
+          "kind": "keyword-only"
+        },
+        {
+          "name": "memory_labels",
+          "type": "Optional[dict[str, str]]",
+          "default": "None",
+          "kind": "keyword-only"
+        }
+      ],
+      "docstring": {
+        "text": "Generate a simulated conversation between an adversarial chat and a target.\n\nThis utility runs a RedTeamingAttack with `score_last_turn_only=True` against a simulated\ntarget (the same LLM as adversarial_chat, optionally configured with a system prompt).\nThe resulting conversation is returned as a list of SeedPrompts that can be merged with\nother SeedPrompts in a SeedGroup for use as `prepended_conversation` and `next_message`.\n\nUse cases:\n- Creating role-play scenarios dynamically (e.g., movie script, video game)\n- Establishing conversational context before attacking a real target\n- Generating multi-turn jailbreak setups without hardcoded responses",
+        "params": [
+          {
+            "name": "objective",
+            "type": "str",
+            "desc": "The objective for the adversarial chat to work toward.",
+            "default": ""
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "PromptChatTarget",
+            "desc": "The adversarial LLM that generates attack prompts.\nThis same LLM is also used as the simulated target.",
+            "default": ""
+          },
+          {
+            "name": "objective_scorer",
+            "type": "TrueFalseScorer",
+            "desc": "Scorer to evaluate the final turn.",
+            "default": ""
+          },
+          {
+            "name": "num_turns",
+            "type": "int",
+            "desc": "Number of conversation turns to generate. Defaults to 3.",
+            "default": "3"
+          },
+          {
+            "name": "starting_sequence",
+            "type": "int",
+            "desc": "The starting sequence number for the generated SeedPrompts.\nEach message gets an incrementing sequence number. Defaults to 0.",
+            "default": "0"
+          },
+          {
+            "name": "adversarial_chat_system_prompt_path",
+            "type": "Union[str, Path]",
+            "desc": "Path to the system prompt for the adversarial chat.",
+            "default": ""
+          },
+          {
+            "name": "simulated_target_system_prompt_path",
+            "type": "Optional[Union[str, Path]]",
+            "desc": "Path to the system prompt for the simulated target.\nIf None, no system prompt is used for the simulated target.",
+            "default": "None"
+          },
+          {
+            "name": "next_message_system_prompt_path",
+            "type": "Optional[Union[str, Path]]",
+            "desc": "Optional path to a system prompt for generating\na final user message. If provided, after the simulated conversation, a single\nLLM call generates a user message that attempts to get the target to fulfill\nthe objective in their next response. The prompt template receives `objective`\nand `conversation_so_far` parameters.",
+            "default": "None"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "desc": "Converter configuration for the attack. Defaults to None.",
+            "default": "None"
+          },
+          {
+            "name": "memory_labels",
+            "type": "Optional[dict[str, str]]",
+            "desc": "Labels to associate with the conversation in memory. Defaults to None.",
+            "default": "None"
+          }
+        ],
+        "returns": [
+          {
+            "type": "list[SeedPrompt]",
+            "desc": "List of SeedPrompts representing the generated conversation, with sequence numbers"
+          },
+          {
+            "type": "list[SeedPrompt]",
+            "desc": "starting from `starting_sequence` and incrementing by 1 for each message."
+          },
+          {
+            "type": "list[SeedPrompt]",
+            "desc": "User messages have role=\"user\", assistant messages have role=\"assistant\"."
+          },
+          {
+            "type": "list[SeedPrompt]",
+            "desc": "If next_message_system_prompt_path is provided, the last message will be a user message"
+          },
+          {
+            "type": "list[SeedPrompt]",
+            "desc": "generated to elicit the objective fulfillment."
+          }
+        ],
+        "raises": [
+          {
+            "type": "ValueError",
+            "desc": "If num_turns is not a positive integer."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "list[SeedPrompt]"
+    }
+  ]
+}

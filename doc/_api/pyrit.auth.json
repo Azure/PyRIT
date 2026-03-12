@@ -1,0 +1,846 @@
+{
+  "name": "pyrit.auth",
+  "kind": "module",
+  "docstring": {
+    "text": "Authentication functionality for a variety of services."
+  },
+  "members": [
+    {
+      "name": "Authenticator",
+      "kind": "class",
+      "docstring": {
+        "text": "Abstract base class for authenticators."
+      },
+      "bases": [
+        "abc.ABC"
+      ],
+      "methods": [
+        {
+          "name": "get_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the current authentication token synchronously.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The current authentication token."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "get_token_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the current authentication token asynchronously.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The current authentication token."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "refresh_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Refresh the authentication token synchronously.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The refreshed authentication token."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "refresh_token_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Refresh the authentication token asynchronously.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The refreshed authentication token."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "token",
+          "type": "str"
+        }
+      ]
+    },
+    {
+      "name": "AzureAuth",
+      "kind": "class",
+      "docstring": {
+        "text": "Azure CLI Authentication."
+      },
+      "bases": [
+        "Authenticator"
+      ],
+      "methods": [
+        {
+          "name": "get_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the current token.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "current token"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "refresh_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Refresh the access token if it is expired.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A token"
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "access_token",
+          "type": "AccessToken"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "token_scope",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "tenant_id",
+            "type": "str",
+            "default": "''",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize Azure authentication.",
+          "params": [
+            {
+              "name": "token_scope",
+              "type": "str",
+              "desc": "The token scope for authentication.",
+              "default": ""
+            },
+            {
+              "name": "tenant_id",
+              "type": "str",
+              "desc": "The tenant ID. Defaults to \"\".",
+              "default": "''"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "AzureStorageAuth",
+      "kind": "class",
+      "docstring": {
+        "text": "A utility class for Azure Storage authentication, providing methods to generate SAS tokens\nusing user delegation keys."
+      },
+      "methods": [
+        {
+          "name": "get_sas_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "container_url",
+              "type": "str",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Generate a SAS token for the specified blob using a user delegation key.",
+            "params": [
+              {
+                "name": "container_url",
+                "type": "str",
+                "desc": "The URL of the Azure Blob Storage container.",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The generated SAS token."
+              }
+            ],
+            "raises": [
+              {
+                "type": "ValueError",
+                "desc": "If container_url is empty or invalid."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "get_user_delegation_key",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "blob_service_client",
+              "type": "BlobServiceClient",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Retrieve a user delegation key valid for one day.",
+            "params": [
+              {
+                "name": "blob_service_client",
+                "type": "BlobServiceClient",
+                "desc": "An instance of BlobServiceClient to interact",
+                "default": ""
+              }
+            ],
+            "returns": [
+              {
+                "type": "UserDelegationKey",
+                "desc": "A user delegation key valid for one day."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "UserDelegationKey"
+        }
+      ]
+    },
+    {
+      "name": "CopilotAuthenticator",
+      "kind": "class",
+      "docstring": {
+        "text": "Playwright-based authenticator for Microsoft Copilot. Used by WebSocketCopilotTarget.\n\nThis authenticator automates browser login to obtain and refresh access tokens that are necessary\nfor accessing Microsoft Copilot via WebSocket connections. It uses Playwright to simulate user\ninteractions for authentication, and msal-extensions for encrypted token persistence.\n\nAn access token acquired by this authenticator is usually valid for about 60 minutes."
+      },
+      "bases": [
+        "Authenticator"
+      ],
+      "methods": [
+        {
+          "name": "get_claims",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the JWT claims from the current authentication token.",
+            "returns": [
+              {
+                "type": "dict[str, Any]",
+                "desc": "dict[str, Any]: The JWT claims decoded from the access token."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, Any]"
+        },
+        {
+          "name": "get_token_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the current authentication token.\n\nThis checks the cache first and only launches the browser if no valid token is found.\nIf multiple calls are made concurrently, they will be serialized via an asyncio lock\nto prevent launching multiple browser instances.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "A valid Bearer token for Microsoft Copilot."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "refresh_token_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Refresh the authentication token asynchronously.\n\nThis will clear the existing token cache and fetch a new token with automated browser login.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The refreshed authentication token."
+              }
+            ],
+            "raises": [
+              {
+                "type": "RuntimeError",
+                "desc": "If token refresh fails."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "CACHE_FILE_NAME",
+          "type": "str"
+        },
+        {
+          "name": "DEFAULT_ELEMENT_TIMEOUT_SECONDS",
+          "type": "int"
+        },
+        {
+          "name": "DEFAULT_NETWORK_RETRIES",
+          "type": "int"
+        },
+        {
+          "name": "DEFAULT_TOKEN_CAPTURE_TIMEOUT",
+          "type": "int"
+        },
+        {
+          "name": "EXPIRY_BUFFER_SECONDS",
+          "type": "int"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "headless",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "maximized",
+            "type": "bool",
+            "default": "True",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "timeout_for_elements_seconds",
+            "type": "int",
+            "default": "DEFAULT_ELEMENT_TIMEOUT_SECONDS",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "token_capture_timeout_seconds",
+            "type": "int",
+            "default": "DEFAULT_TOKEN_CAPTURE_TIMEOUT",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "network_retries",
+            "type": "int",
+            "default": "DEFAULT_NETWORK_RETRIES",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "fallback_to_plaintext",
+            "type": "bool",
+            "default": "False",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the CopilotAuthenticator.",
+          "params": [
+            {
+              "name": "headless",
+              "type": "bool",
+              "desc": "Whether to run the browser in headless mode. Default is False.",
+              "default": "False"
+            },
+            {
+              "name": "maximized",
+              "type": "bool",
+              "desc": "Whether to start the browser maximized. Default is True.",
+              "default": "True"
+            },
+            {
+              "name": "timeout_for_elements_seconds",
+              "type": "int",
+              "desc": "Timeout used when waiting for page elements, in seconds.",
+              "default": "DEFAULT_ELEMENT_TIMEOUT_SECONDS"
+            },
+            {
+              "name": "token_capture_timeout_seconds",
+              "type": "int",
+              "desc": "Maximum time to wait for token capture via network monitoring.",
+              "default": "DEFAULT_TOKEN_CAPTURE_TIMEOUT"
+            },
+            {
+              "name": "network_retries",
+              "type": "int",
+              "desc": "Number of retry attempts for network operations. Default is 3.",
+              "default": "DEFAULT_NETWORK_RETRIES"
+            },
+            {
+              "name": "fallback_to_plaintext",
+              "type": "bool",
+              "desc": "Whether to fallback to plaintext storage if encryption is unavailable.\nIf set to False (default), an exception will be raised if encryption cannot be used.\nWARNING: Setting to True stores tokens in plaintext.",
+              "default": "False"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the required environment variables are not set."
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "ManualCopilotAuthenticator",
+      "kind": "class",
+      "docstring": {
+        "text": "Simple authenticator that uses a manually-provided access token for Microsoft Copilot.\n\nThis authenticator is useful for testing or environments where browser automation is not\npossible. Users can obtain the access token from browser DevTools and provide it directly."
+      },
+      "bases": [
+        "Authenticator"
+      ],
+      "methods": [
+        {
+          "name": "get_claims",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the JWT claims from the access token.",
+            "returns": [
+              {
+                "type": "dict[str, Any]",
+                "desc": "dict[str, Any]: The JWT claims decoded from the access token."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "dict[str, Any]"
+        },
+        {
+          "name": "get_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the current authentication token synchronously.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The access token provided during initialization."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "get_token_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the current authentication token.",
+            "returns": [
+              {
+                "type": "str",
+                "desc": "The access token provided during initialization."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "refresh_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Not supported by this authenticator.",
+            "raises": [
+              {
+                "type": "RuntimeError",
+                "desc": "Always raised as manual tokens cannot be refreshed automatically."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        },
+        {
+          "name": "refresh_token_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Not supported by this authenticator.",
+            "raises": [
+              {
+                "type": "RuntimeError",
+                "desc": "Always raised as manual tokens cannot be refreshed automatically."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "str"
+        }
+      ],
+      "attributes": [
+        {
+          "name": "ACCESS_TOKEN_ENV_VAR",
+          "type": "str"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "access_token",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the ManualCopilotAuthenticator with a pre-obtained access token.",
+          "params": [
+            {
+              "name": "access_token",
+              "type": "Optional[str]",
+              "desc": "A valid JWT access token for Microsoft Copilot.\nThis token can be obtained from browser DevTools when connected to Copilot.\nIf None, the token will be read from the ``COPILOT_ACCESS_TOKEN`` environment variable.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If no access token is provided either directly or via the environment variable."
+            },
+            {
+              "type": "ValueError",
+              "desc": "If the provided access token cannot be decoded as a JWT or is missing required claims."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "TokenProviderCredential",
+      "kind": "class",
+      "docstring": {
+        "text": "Wrapper to convert a token provider callable into an Azure TokenCredential.\n\nThis class bridges the gap between token provider functions (like those returned by\nget_azure_token_provider) and Azure SDK clients that require a TokenCredential object."
+      },
+      "methods": [
+        {
+          "name": "get_token",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "scopes",
+              "type": "str",
+              "default": "()",
+              "kind": "variadic positional"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get an access token.",
+            "params": [
+              {
+                "name": "scopes",
+                "type": "str",
+                "desc": "Token scopes (ignored as the scope is already configured in the token provider).",
+                "default": "()"
+              },
+              {
+                "name": "kwargs",
+                "type": "Any",
+                "desc": "Additional arguments (ignored).",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AccessToken",
+                "desc": "The access token with expiration time."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AccessToken"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "token_provider",
+            "type": "Callable[[], Union[str, Callable[..., Any]]]",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize TokenProviderCredential.",
+          "params": [
+            {
+              "name": "token_provider",
+              "type": "Callable[[], Union[str, Callable[..., Any]]]",
+              "desc": "A callable that returns either a token string or an awaitable that returns a token string.",
+              "default": ""
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "get_azure_async_token_provider",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "scope",
+          "type": "str",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Get an asynchronous Azure token provider using AsyncDefaultAzureCredential.\n\nReturns an async callable suitable for use with async clients like OpenAI's AsyncOpenAI.\nThe callable handles automatic token refresh.",
+        "params": [
+          {
+            "name": "scope",
+            "type": "str",
+            "desc": "The Azure token scope (e.g., 'https://cognitiveservices.azure.com/.default').",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "",
+            "desc": "Async callable that returns bearer tokens."
+          }
+        ]
+      },
+      "is_async": false
+    },
+    {
+      "name": "get_azure_openai_auth",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "endpoint",
+          "type": "str",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Get an async Azure token provider for OpenAI endpoints.\n\nAutomatically determines the correct scope based on the endpoint URL and returns\nan async token provider suitable for use with AsyncOpenAI clients.",
+        "params": [
+          {
+            "name": "endpoint",
+            "type": "str",
+            "desc": "The Azure OpenAI endpoint URL.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "",
+            "desc": "Async callable that returns bearer tokens."
+          }
+        ]
+      },
+      "is_async": false
+    },
+    {
+      "name": "get_azure_token_provider",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "scope",
+          "type": "str",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Get a synchronous Azure token provider using DefaultAzureCredential.\n\nReturns a callable that returns a bearer token string. The callable handles\nautomatic token refresh.",
+        "params": [
+          {
+            "name": "scope",
+            "type": "str",
+            "desc": "The Azure token scope (e.g., 'https://cognitiveservices.azure.com/.default').",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "Callable[[], str]",
+            "desc": "Callable[[], str]: A token provider function that returns bearer tokens."
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "Callable[[], str]"
+    },
+    {
+      "name": "get_default_azure_scope",
+      "kind": "function",
+      "signature": [
+        {
+          "name": "endpoint",
+          "type": "str",
+          "kind": "positional or keyword"
+        }
+      ],
+      "docstring": {
+        "text": "Determine the appropriate Azure token scope based on the endpoint URL.",
+        "params": [
+          {
+            "name": "endpoint",
+            "type": "str",
+            "desc": "The Azure endpoint URL.",
+            "default": ""
+          }
+        ],
+        "returns": [
+          {
+            "type": "str",
+            "desc": "The appropriate token scope for the endpoint.\n- 'https://ml.azure.com/.default' for AI Foundry endpoints (*.ai.azure.com)\n- 'https://cognitiveservices.azure.com/.default' for other Azure endpoints"
+          }
+        ]
+      },
+      "is_async": false,
+      "returns_annotation": "str"
+    }
+  ]
+}

@@ -1,0 +1,369 @@
+{
+  "name": "pyrit.executor.promptgen",
+  "kind": "module",
+  "docstring": {
+    "text": "Prompt generator strategy imports."
+  },
+  "members": [
+    {
+      "name": "AnecdoctorContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Context specific to Anecdoctor prompt generation.\n\nContains all parameters needed for executing Anecdoctor prompt generation,\nincluding the evaluation data, language settings, and conversation ID."
+      },
+      "bases": [
+        "PromptGeneratorStrategyContext"
+      ],
+      "attributes": [
+        {
+          "name": "content_type",
+          "type": "str"
+        },
+        {
+          "name": "conversation_id",
+          "type": "str"
+        },
+        {
+          "name": "evaluation_data",
+          "type": "list[str]"
+        },
+        {
+          "name": "language",
+          "type": "str"
+        },
+        {
+          "name": "memory_labels",
+          "type": "dict[str, str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "evaluation_data",
+            "type": "list[str]",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "language",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "content_type",
+            "type": "str",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "default": "(lambda: str(uuid.uuid4()))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "memory_labels",
+            "type": "dict[str, str]",
+            "default": "dict()",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AnecdoctorGenerator",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of the Anecdoctor prompt generation strategy.\n\nThe Anecdoctor generator creates misinformation content by either:\n1. Using few-shot examples directly (default mode when processing_model is not provided)\n2. First extracting a knowledge graph from examples, then using it (when processing_model is provided)\n\nThis generator is designed to test a model's susceptibility to generating false or\nmisleading content when provided with examples in ClaimsReview format. The generator\ncan optionally use a processing model to extract a knowledge graph representation\nof the examples before generating the final content.\n\nThe generation flow consists of:\n1. (Optional) Extract knowledge graph from evaluation data using processing model\n2. Format a system prompt based on language and content type\n3. Send formatted examples (or knowledge graph) to target model\n4. Return the generated content as the result"
+      },
+      "bases": [
+        "PromptGeneratorStrategy[AnecdoctorContext, AnecdoctorResult]",
+        "Identifiable"
+      ],
+      "methods": [
+        {
+          "name": "execute_async",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            },
+            {
+              "name": "kwargs",
+              "type": "Any",
+              "default": "{}",
+              "kind": "variadic keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Execute the prompt generation strategy asynchronously with the provided parameters.",
+            "params": [
+              {
+                "name": "content_type",
+                "type": "str",
+                "desc": "The type of content to generate (e.g., \"viral tweet\", \"news article\").",
+                "default": ""
+              },
+              {
+                "name": "language",
+                "type": "str",
+                "desc": "The language of the content to generate (e.g., \"english\", \"spanish\").",
+                "default": ""
+              },
+              {
+                "name": "evaluation_data",
+                "type": "List[str]",
+                "desc": "The data in ClaimsReview format to use in constructing the prompt.",
+                "default": ""
+              },
+              {
+                "name": "memory_labels",
+                "type": "Optional[Dict[str, str]]",
+                "desc": "Memory labels for the generation context.",
+                "default": ""
+              },
+              {
+                "name": "**kwargs",
+                "type": "Any",
+                "desc": "Additional parameters for the generation.",
+                "default": "{}"
+              }
+            ],
+            "returns": [
+              {
+                "type": "AnecdoctorResult",
+                "desc": "The result of the anecdoctor generation."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "AnecdoctorResult"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptChatTarget",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "processing_model",
+            "type": "Optional[PromptChatTarget]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "converter_config",
+            "type": "Optional[StrategyConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the Anecdoctor prompt generation strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptChatTarget",
+              "desc": "The chat model to be used for prompt generation.",
+              "default": ""
+            },
+            {
+              "name": "processing_model",
+              "type": "Optional[PromptChatTarget]",
+              "desc": "The model used for knowledge graph extraction.\nIf provided, the generator will extract a knowledge graph from the examples before generation.\nIf None, the generator will use few-shot examples directly.",
+              "default": "None"
+            },
+            {
+              "name": "converter_config",
+              "type": "Optional[StrategyConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "AnecdoctorResult",
+      "kind": "class",
+      "docstring": {
+        "text": "Result of Anecdoctor prompt generation.\n\nContains the generated content from the misinformation prompt generation.",
+        "params": [
+          {
+            "name": "generated_content",
+            "type": "Message",
+            "desc": "The generated content from the prompt generation.",
+            "default": ""
+          }
+        ]
+      },
+      "bases": [
+        "PromptGeneratorStrategyResult"
+      ],
+      "attributes": [
+        {
+          "name": "generated_content",
+          "type": "Message"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "generated_content",
+            "type": "Message",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "PromptGeneratorStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Base class for all prompt generator strategies.\nProvides a structure for implementing specific prompt generation strategies."
+      },
+      "bases": [
+        "Strategy[PromptGeneratorStrategyContextT, PromptGeneratorStrategyResultT]",
+        "ABC"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "context_type",
+            "type": "type[PromptGeneratorStrategyContextT]",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "logger",
+            "type": "logging.Logger",
+            "default": "logger",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "event_handler",
+            "type": "Optional[StrategyEventHandler[PromptGeneratorStrategyContextT, PromptGeneratorStrategyResultT]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the prompt generator strategy.",
+          "params": [
+            {
+              "name": "context_type",
+              "type": "type",
+              "desc": "Type of the context used by the strategy.",
+              "default": ""
+            },
+            {
+              "name": "logger",
+              "type": "logging.Logger",
+              "desc": "Logger instance for logging events.",
+              "default": "logger"
+            },
+            {
+              "name": "event_handler",
+              "type": "StrategyEventHandler",
+              "desc": "Event handler for handling strategy events.",
+              "default": "None"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "PromptGeneratorStrategyContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Base class for all prompt generator strategy contexts."
+      },
+      "bases": [
+        "StrategyContext",
+        "ABC"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "PromptGeneratorStrategyResult",
+      "kind": "class",
+      "docstring": {
+        "text": "Base class for all prompt generator strategy results."
+      },
+      "bases": [
+        "StrategyResult",
+        "ABC"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    }
+  ]
+}

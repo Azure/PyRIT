@@ -1,0 +1,904 @@
+{
+  "name": "pyrit.executor.attack.single_turn",
+  "kind": "module",
+  "docstring": {
+    "text": "Singe turn attack strategies module."
+  },
+  "members": [
+    {
+      "name": "ContextComplianceAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of the context compliance attack strategy.\n\nThis attack attempts to bypass safety measures by rephrasing the objective into a more benign context.\nIt uses an adversarial chat target to:\n1. Rephrase the objective as a more benign question\n2. Generate a response to the benign question\n3. Rephrase the original objective as a follow-up question\n\nThis creates a context that makes it harder for the target to detect the true intent."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_AFFIRMATIVE_RESPONSE",
+          "type": "str"
+        },
+        {
+          "name": "DEFAULT_CONTEXT_DESCRIPTION_PATH",
+          "type": "Path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptChatTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_adversarial_config",
+            "type": "AttackAdversarialConfig",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "context_description_instructions_path",
+            "type": "Optional[Path]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "affirmative_response",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the context compliance attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptChatTarget",
+              "desc": "The target system to attack. Must be a PromptChatTarget.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_adversarial_config",
+              "type": "AttackAdversarialConfig",
+              "desc": "Configuration for the adversarial component,\nincluding the adversarial chat target used for rephrasing.",
+              "default": ""
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for attack converters,\nincluding request and response converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for attack scoring.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "The prompt normalizer to use for sending prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            },
+            {
+              "name": "context_description_instructions_path",
+              "type": "Optional[Path]",
+              "desc": "Path to the context description\ninstructions YAML file. If not provided, uses the default path.",
+              "default": "None"
+            },
+            {
+              "name": "affirmative_response",
+              "type": "Optional[str]",
+              "desc": "The affirmative response to be used in the conversation history.\nIf not provided, uses the default \"yes.\".",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the context description instructions file is invalid."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "FlipAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implement the FlipAttack method found here:\nhttps://arxiv.org/html/2410.02832v1.\n\nEssentially, it adds a system prompt to the beginning of the conversation to flip each word in the prompt."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptChatTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptChatTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "(AttackConverterConfig, Optional)",
+              "desc": "Configuration for the prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "(AttackScoringConfig, Optional)",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "(PromptNormalizer, Optional)",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "(int, Optional)",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "ManyShotJailbreakAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implement the Many Shot Jailbreak method as discussed in research found here:\nhttps://www.anthropic.com/research/many-shot-jailbreaking.\n\nPrepends the seed prompt with a faux dialogue between a human and an AI, using examples from a dataset\nto demonstrate successful jailbreaking attempts. This method leverages the model's ability to learn from\nexamples to bypass safety measures."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "example_count",
+            "type": "int",
+            "default": "100",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "many_shot_examples",
+            "type": "Optional[list[dict[str, str]]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": {
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "(AttackConverterConfig, Optional)",
+              "desc": "Configuration for the prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "(AttackScoringConfig, Optional)",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "(PromptNormalizer, Optional)",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "(int, Optional)",
+              "desc": "Maximum number of attempts to retry on failure. Defaults to 0.",
+              "default": "0"
+            },
+            {
+              "name": "example_count",
+              "type": "int",
+              "desc": "The number of examples to include from many_shot_examples or the Many\nShot Jailbreaking dataset. Defaults to the first 100.",
+              "default": "100"
+            },
+            {
+              "name": "many_shot_examples",
+              "type": "(list[dict[str, str]], Optional)",
+              "desc": "The many shot jailbreaking examples to use.\nIf not provided, takes the first `example_count` examples from Many Shot Jailbreaking dataset.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If many_shot_examples is empty."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "PromptSendingAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of single-turn prompt sending attack strategy.\n\nThis class orchestrates a single-turn attack where malicious prompts are injected\nto try to achieve a specific objective against a target system. The strategy evaluates\nthe target response using optional scorers to determine if the objective has been met.\n\nThe attack flow consists of:\n1. Preparing the prompt based on the objective.\n2. Sending the prompt to the target system through optional converters.\n3. Evaluating the response with scorers if configured.\n4. Retrying on failure up to the configured number of retries.\n5. Returning the attack result with achievement status.\n\nThe strategy supports customization through prepended conversations, converters,\nand multiple scorer types for comprehensive evaluation."
+      },
+      "bases": [
+        "SingleTurnAttackStrategy"
+      ],
+      "methods": [
+        {
+          "name": "get_attack_scoring_config",
+          "kind": "function",
+          "signature": [
+            {
+              "name": "self",
+              "kind": "positional or keyword"
+            }
+          ],
+          "docstring": {
+            "text": "Get the attack scoring configuration used by this strategy.",
+            "returns": [
+              {
+                "type": "Optional[AttackScoringConfig]",
+                "desc": "Optional[AttackScoringConfig]: The scoring configuration with objective and auxiliary scorers."
+              }
+            ]
+          },
+          "is_async": false,
+          "returns_annotation": "Optional[AttackScoringConfig]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "params_type",
+            "type": "type[AttackParamsT]",
+            "default": "AttackParameters",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prepended_conversation_config",
+            "type": "Optional[PrependedConversationConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the prompt injection attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            },
+            {
+              "name": "params_type",
+              "type": "Type[AttackParamsT]",
+              "desc": "The type of parameters this strategy accepts.\nDefaults to AttackParameters. Use AttackParameters.excluding() to create\na params type that rejects certain fields.",
+              "default": "AttackParameters"
+            },
+            {
+              "name": "prepended_conversation_config",
+              "type": "Optional[PrependedConversationConfiguration]",
+              "desc": "\nConfiguration for how to process prepended conversations. Controls converter\napplication by role, message normalization, and non-chat target behavior.",
+              "default": "None"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the objective scorer is not a true/false scorer."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "RolePlayAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of single-turn role-play attack strategy.\n\nThis class orchestrates a role-play attack where malicious objectives are rephrased\ninto role-playing contexts to make them appear more benign and bypass content filters.\nThe strategy uses an adversarial chat target to transform the objective into a role-play\nscenario before sending it to the target system.\n\nThe attack flow consists of:\n1. Loading role-play scenarios from a YAML file.\n2. Using an adversarial chat target to rephrase the objective into the role-play context.\n3. Sending the rephrased objective to the target system.\n4. Evaluating the response with scorers if configured.\n5. Retrying on failure up to the configured number of retries.\n6. Returning the attack result\n\nThe strategy supports customization through prepended conversations, converters,\nand multiple scorer types."
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "adversarial_chat",
+            "type": "PromptChatTarget",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "role_play_definition_path",
+            "type": "pathlib.Path",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the role-play attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "adversarial_chat",
+              "type": "PromptChatTarget",
+              "desc": "The adversarial chat target used to rephrase\nobjectives into role-play scenarios.",
+              "default": ""
+            },
+            {
+              "name": "role_play_definition_path",
+              "type": "pathlib.Path",
+              "desc": "Path to the YAML file containing role-play\ndefinitions (rephrase instructions, user start turn, assistant start turn).",
+              "default": ""
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry the attack",
+              "default": "0"
+            }
+          ],
+          "raises": [
+            {
+              "type": "ValueError",
+              "desc": "If the objective scorer is not a true/false scorer."
+            },
+            {
+              "type": "FileNotFoundError",
+              "desc": "If the role_play_definition_path does not exist."
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "RolePlayPaths",
+      "kind": "class",
+      "docstring": {
+        "text": "Enum for predefined role-play scenario paths."
+      },
+      "bases": [
+        "enum.Enum"
+      ],
+      "attributes": [
+        {
+          "name": "MOVIE_SCRIPT"
+        },
+        {
+          "name": "PERSUASION_SCRIPT"
+        },
+        {
+          "name": "PERSUASION_SCRIPT_WRITTEN"
+        },
+        {
+          "name": "TRIVIA_GAME"
+        },
+        {
+          "name": "VIDEO_GAME"
+        }
+      ]
+    },
+    {
+      "name": "SingleTurnAttackContext",
+      "kind": "class",
+      "docstring": {
+        "text": "Context for single-turn attacks.\n\nHolds execution state for single-turn attacks. The immutable attack parameters\n(objective, next_message, prepended_conversation, memory_labels) are stored in\nthe params field inherited from AttackContext."
+      },
+      "bases": [
+        "AttackContext[AttackParamsT]"
+      ],
+      "attributes": [
+        {
+          "name": "conversation_id",
+          "type": "str"
+        },
+        {
+          "name": "metadata",
+          "type": "Optional[dict[str, Union[str, int]]]"
+        },
+        {
+          "name": "system_prompt",
+          "type": "Optional[str]"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "params",
+            "type": "AttackParamsT",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "start_time",
+            "type": "float",
+            "default": "0.0",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "related_conversations",
+            "type": "set[ConversationReference]",
+            "default": "set()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_next_message_override",
+            "type": "Optional[Message]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_prepended_conversation_override",
+            "type": "Optional[list[Message]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "_memory_labels_override",
+            "type": "Optional[dict[str, str]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "conversation_id",
+            "type": "str",
+            "default": "(lambda: str(uuid.uuid4()))()",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "system_prompt",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "metadata",
+            "type": "Optional[dict[str, Union[str, int]]]",
+            "default": "None",
+            "kind": "positional or keyword"
+          }
+        ],
+        "docstring": null,
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    },
+    {
+      "name": "SingleTurnAttackStrategy",
+      "kind": "class",
+      "docstring": {
+        "text": "Strategy for executing single-turn attacks.\nThis strategy is designed to handle attacks that consist of a single turn\nof interaction with the target model."
+      },
+      "bases": [
+        "AttackStrategy[SingleTurnAttackContext[Any], AttackResult]",
+        "ABC"
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "context_type",
+            "type": "type[SingleTurnAttackContext[Any]]",
+            "default": "SingleTurnAttackContext",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "params_type",
+            "type": "type[AttackParamsT]",
+            "default": "AttackParameters",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "logger",
+            "type": "logging.Logger",
+            "default": "logger",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Define a base class for single-turn attack strategies.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": ""
+            },
+            {
+              "name": "context_type",
+              "type": "type[SingleTurnAttackContext]",
+              "desc": "The type of context this strategy will use.",
+              "default": "SingleTurnAttackContext"
+            },
+            {
+              "name": "params_type",
+              "type": "Type[AttackParamsT]",
+              "desc": "The type of parameters this strategy accepts.",
+              "default": "AttackParameters"
+            },
+            {
+              "name": "logger",
+              "type": "logging.Logger",
+              "desc": "Logger instance for logging events and messages.",
+              "default": "logger"
+            }
+          ]
+        },
+        "is_async": false
+      }
+    },
+    {
+      "name": "SkeletonKeyAttack",
+      "kind": "class",
+      "docstring": {
+        "text": "Implementation of the skeleton key jailbreak attack strategy.\n\nThis attack sends an initial skeleton key prompt to the target, and then follows\nup with a separate attack prompt. If successful, the first prompt makes the target\ncomply even with malicious follow-up prompts.\n\nThe attack flow consists of:\n1. Sending a skeleton key prompt to bypass the target's safety mechanisms.\n2. Sending the actual objective prompt to the primed target.\n3. Evaluating the response using configured scorers to determine success.\n\nLearn more about attack at the link below:\nhttps://www.microsoft.com/en-us/security/blog/2024/06/26/mitigating-skeleton-key-a-new-type-of-generative-ai-jailbreak-technique/"
+      },
+      "bases": [
+        "PromptSendingAttack"
+      ],
+      "attributes": [
+        {
+          "name": "DEFAULT_SKELETON_KEY_PROMPT_PATH",
+          "type": "Path"
+        }
+      ],
+      "init": {
+        "name": "__init__",
+        "kind": "function",
+        "signature": [
+          {
+            "name": "self",
+            "kind": "positional or keyword"
+          },
+          {
+            "name": "objective_target",
+            "type": "PromptTarget",
+            "default": "REQUIRED_VALUE",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_converter_config",
+            "type": "Optional[AttackConverterConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "attack_scoring_config",
+            "type": "Optional[AttackScoringConfig]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "prompt_normalizer",
+            "type": "Optional[PromptNormalizer]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "skeleton_key_prompt",
+            "type": "Optional[str]",
+            "default": "None",
+            "kind": "keyword-only"
+          },
+          {
+            "name": "max_attempts_on_failure",
+            "type": "int",
+            "default": "0",
+            "kind": "keyword-only"
+          }
+        ],
+        "docstring": {
+          "text": "Initialize the skeleton key attack strategy.",
+          "params": [
+            {
+              "name": "objective_target",
+              "type": "PromptTarget",
+              "desc": "The target system to attack.",
+              "default": "REQUIRED_VALUE"
+            },
+            {
+              "name": "attack_converter_config",
+              "type": "Optional[AttackConverterConfig]",
+              "desc": "Configuration for prompt converters.",
+              "default": "None"
+            },
+            {
+              "name": "attack_scoring_config",
+              "type": "Optional[AttackScoringConfig]",
+              "desc": "Configuration for scoring components.",
+              "default": "None"
+            },
+            {
+              "name": "prompt_normalizer",
+              "type": "Optional[PromptNormalizer]",
+              "desc": "Normalizer for handling prompts.",
+              "default": "None"
+            },
+            {
+              "name": "skeleton_key_prompt",
+              "type": "Optional[str]",
+              "desc": "The skeleton key prompt to use.\nIf not provided, uses the default skeleton key prompt.",
+              "default": "None"
+            },
+            {
+              "name": "max_attempts_on_failure",
+              "type": "int",
+              "desc": "Maximum number of attempts to retry on failure.",
+              "default": "0"
+            }
+          ]
+        },
+        "is_async": false,
+        "returns_annotation": "None"
+      }
+    }
+  ]
+}
