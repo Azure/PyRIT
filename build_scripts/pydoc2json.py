@@ -3,9 +3,14 @@
 
 """Generate API reference JSON from Python source using griffe.
 
+WORKAROUND: Jupyter Book 2 (MyST engine) does not yet have native support for
+auto-generating API documentation from Python source code. This script and
+gen_api_md.py are a workaround that generates API reference pages from source.
+Once JB2/MyST adds native API doc support, these scripts can be replaced.
+Tracking issue: https://github.com/jupyter-book/mystmd/issues/1259
+
 Walks the pyrit package, parses Google-style docstrings, and outputs
-structured JSON that a MyST plugin can render as API documentation
-in Jupyter Book 2.
+structured JSON that gen_api_md.py converts to MyST markdown pages.
 
 Usage:
     python scripts/pydoc2json.py pyrit -o doc/_api/pyrit.json

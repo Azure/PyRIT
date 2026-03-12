@@ -3,11 +3,17 @@
 
 """Generate MyST markdown API reference pages from griffe JSON.
 
+WORKAROUND: Jupyter Book 2 (MyST engine) does not yet have native support for
+auto-generating API documentation from Python source code. This script and
+pydoc2json.py are a workaround that generates API reference pages from source.
+Once JB2/MyST adds native API doc support, these scripts can be replaced.
+Tracking issue: https://github.com/jupyter-book/mystmd/issues/1259
+
 Reads the JSON files produced by pydoc2json.py and generates clean
 MyST markdown pages suitable for Jupyter Book 2.
 
 Usage:
-    python scripts/gen_api_md.py
+    python build_scripts/gen_api_md.py
 """
 
 import json
