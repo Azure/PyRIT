@@ -79,10 +79,10 @@ repos:
         entry: python ./build_scripts/sanitize_notebook_paths.py
         language: python
         files: ^doc.*\.(ipynb)$
-      - id: validate-myst-config
-        name: Validate myst.yml
-        entry: python -c "import yaml; yaml.safe_load(open('doc/myst.yml'))"
+      - id: validate-docs
+        name: Validate Documentation Structure
+        entry: python ./build_scripts/validate_docs.py
         language: python
-        files: ^doc/myst\.yml$
+        files: ^(doc/.*\.(py|ipynb|md)|doc/myst\.yml)$
         pass_filenames: false
         additional_dependencies: ['pyyaml']
