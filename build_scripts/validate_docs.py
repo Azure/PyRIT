@@ -35,8 +35,14 @@ def parse_toc_files(toc_entries: list, files: set | None = None) -> set[str]:
 
 def validate_toc_files(toc_files: set[str], doc_root: Path) -> list[str]:
     """Check that all files referenced in the TOC exist."""
+    # Directories with auto-generated content (gitignored, created during build)
+    generated_dirs = {"api/", "api\\"}
+
     errors = []
     for file_ref in toc_files:
+        # Skip files in auto-generated directories
+        if any(file_ref.startswith(d) for d in generated_dirs):
+            continue
         file_path = doc_root / file_ref
         if not file_path.exists():
             errors.append(f"File referenced in myst.yml TOC not found: '{file_ref}'")
