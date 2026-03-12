@@ -8,11 +8,22 @@ Dataset fetching and loading utilities for various red teaming and safety evalua
 from pyrit.datasets.jailbreak.text_jailbreak import TextJailBreak
 from pyrit.datasets.seed_datasets import local, remote  # noqa: F401
 from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
-from pyrit.datasets.seed_datasets.seed_metadata import DatasetMetadata, DatasetFilters
+from pyrit.datasets.seed_datasets.seed_metadata import (
+    SeedDatasetFilter,
+    SeedDatasetLoadingRank,
+    SeedDatasetMetadata,
+    SeedDatasetModality,
+    SeedDatasetSize,
+    SeedDatasetSourceType,
+)
 
 __all__ = [
-    "DatasetMetadata",
-    "DatasetFilters",
+    "SeedDatasetFilter",
+    "SeedDatasetMetadata",
+    "SeedDatasetLoadingRank",
+    "SeedDatasetModality",
+    "SeedDatasetSize",
+    "SeedDatasetSourceType",
     "SeedDatasetProvider",
     "TextJailBreak",
 ]

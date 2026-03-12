@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
 
 """
 TODO Finish docstring
@@ -19,55 +20,83 @@ CentralMemory.
 """
 
 
-class DatasetLoadingRank(Enum):
+class SeedDatasetSize(Enum):
+    """Ordinal size (by bucket) of the dataset."""
+
+    TINY = "tiny"  # < 10
+    SMALL = "small"  # >= 10, < 100
+    MEDIUM = "medium"  # >= 100, < 500
+    LARGE = "large"  # >= 500, < 5000
+    HUGE = "huge"  # >= 5000
+
+
+class SeedDatasetLoadingRank(Enum):
     """Represents the general difficulty of loading in a dataset."""
+
     DEFAULT = "default"
     EXTENDED = "extended"
     SLOW = "slow"
 
 
-class DatasetModalities(Enum):
+class SeedDatasetModality(Enum):
+    """
+    ...
+    """
+
     TEXT = "text"
     IMAGE = "image"
     VIDEO = "video"
     AUDIO = "audio"
 
 
-class DatasetSourceType(Enum):
+class SeedDatasetSourceType(Enum):
+    """
+    ...
+    """
+
     GENERIC_URL = "generic_url"
     LOCAL = "local"
     HUGGING_FACE = "hugging_face"
 
 
 @dataclass
-class DatasetMetadata:
-    # TODO: separate dynamic fields from static fields and mark dynamic fields as None
-    size: int
-    modalities: list[DatasetModalities]
-    source: DatasetSourceType
-    rank: DatasetLoadingRank
-
-
-class DatasetFilters(Enum):
-    # TODO: This is a bad way of extracting the fields from DatasetMetadata.
-    # A metaclass or even just calling getattr might be better.
-    SIZE = "size"
-    MODALITIES = "modalities"
-    SOURCE = "source"
-    RANK = "rank"
-
-# TODO These stubs should be moved somewhere, maybe as static methods to the metadata dataclass?
-
-
-def _validate_filter_value(v):
-    """Check if the filter value given is valid."""
-
-
-def _metadata_builder():
+class SeedDatasetFilter:
     """
-    Force build metadata for all datasets.
-    Download/load into local memory.
-    Add a timestamp.
-    Add all derived attributes.
-    Make sure every dataset subclass has it.
+    ...
     """
+
+    tags: Optional[set[str]]
+    sizes: Optional[list[SeedDatasetSize]]
+    modalities: Optional[list[SeedDatasetModality]]
+    sources: Optional[list[SeedDatasetSourceType]]
+    ranks: Optional[list[SeedDatasetLoadingRank]]
+    harm_categories: Optional[list[str]]
+
+
+@dataclass(frozen=True)
+class SeedDatasetMetadata:
+    """
+    ...
+    """
+
+    tags: Optional[set[str]]
+    size: Optional[SeedDatasetSize]
+    modalities: Optional[list[SeedDatasetModality]]
+    source: Optional[SeedDatasetSourceType]
+    rank: Optional[SeedDatasetLoadingRank]
+    harm_categories: Optional[list[str]]
+
+
+class SeedDatasetMetadataUtilities:
+    """
+    Collected utilities for managing and updating SeedDatasetMetadata.
+    """
+
+    @staticmethod
+    def populate_metadata() -> None:
+        """
+        WARNING: Because this function updates the metadata for each SeedDatasetProvider,
+        it changes the provider's corresopnding source file. Run with caution!
+
+        Update the metadata per SeedDatasetProvider.
+        """

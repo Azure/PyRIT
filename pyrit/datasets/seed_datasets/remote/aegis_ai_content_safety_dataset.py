@@ -11,8 +11,6 @@ from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
 )
 from pyrit.models import SeedDataset, SeedPrompt
 
-from pyrit.datasets.seed_datasets.seed_metadata import SeedMetadata
-
 logger = logging.getLogger(__name__)
 
 
@@ -109,8 +107,7 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
 
         # Validate harm categories if provided
         if harm_categories:
-            invalid_categories = {
-                cat for cat in harm_categories if cat not in self.HARM_CATEGORIES}
+            invalid_categories = {cat for cat in harm_categories if cat not in self.HARM_CATEGORIES}
             if invalid_categories:
                 raise ValueError(
                     f"Invalid harm categories: {invalid_categories}. Valid categories are: {self.HARM_CATEGORIES}"
@@ -160,8 +157,7 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
                 prompt_harm_categories = []
                 if violated_categories:
                     # The violated_categories field contains comma-separated category names
-                    categories = [
-                        cat.strip() for cat in violated_categories.split(",") if cat.strip()]
+                    categories = [cat.strip() for cat in violated_categories.split(",") if cat.strip()]
                     prompt_harm_categories = categories
 
                 # Filter by harm_categories if specified
@@ -190,8 +186,3 @@ class _AegisContentSafetyDataset(_RemoteDatasetLoader):
         )
 
         return SeedDataset(seeds=seed_prompts, dataset_name=self.dataset_name)
-
-    def metadata_factory(self) -> SeedMetadata:
-        return SeedMetadata(
-            size=
-        )

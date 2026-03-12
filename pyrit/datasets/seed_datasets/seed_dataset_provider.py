@@ -9,8 +9,8 @@ from typing import Any, Optional
 
 from tqdm import tqdm
 
+from pyrit.datasets.seed_datasets.seed_metadata import SeedDatasetFilter, SeedDatasetMetadata
 from pyrit.models.seeds import SeedDataset
-from pyrit.datasets.seed_datasets.seed_metadata import SeedMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +45,9 @@ class SeedDatasetProvider(ABC):
         if not inspect.isabstract(cls) and getattr(cls, "should_register", True):
             SeedDatasetProvider._registry[cls.__name__] = cls
             logger.debug(f"Registered dataset provider: {cls.__name__}")
-            # Providing metadata is optional
-            if getattr(cls, "_metadata", False):
-                logger.debug(
-                    f"Dataset provider {cls.__name__} provided metadata.")
+            # Providing metadata is optional.
+            if getattr(cls, "_metadata", True):
+                logger.debug(f"Dataset provider {cls.__name__} provided metadata.")
 
     @property
     @abstractmethod
@@ -87,12 +86,12 @@ class SeedDatasetProvider(ABC):
         return cls._registry.copy()
 
     @classmethod
-    def get_all_dataset_names(cls, filters: Optional[dict[str, str]] = None) -> list[str]:
+    def get_all_dataset_names(cls, filters: Optional[SeedDatasetFilter] = None) -> list[str]:
         """
         Get the names of all registered datasets.
 
         Args:
-            filters (Optional[Dict[str, str]]): List of filters to apply.
+            filters (Optional[SeedDatasetFilter]): List of filters to apply.
 
         Returns:
             List[str]: List of dataset names from all registered providers.
@@ -105,43 +104,71 @@ class SeedDatasetProvider(ABC):
             >>> print(f"Available datasets: {', '.join(names)}")
         """
         dataset_names = set()
-        # 1 Remove invalid filters by checking ground truth in seed_metadata
-        if filters:
-            valid_filters = [f.value for f in SeedMetadata.DatasetFilters]
-            # Prefer doing this to a list or set comprehension so we can raise ValueError on
-            # specific unsupported filters
-            for filter, _ in filters.items():
-                if filter not in valid_filters:
-                    raise ValueError(
-                        f"Tried to pass invalid filter `{filter}` to SeedDatasetProvider.get_all_dataset_names!")
-
         for provider_class in cls._registry.values():
             try:
                 # Instantiate to get dataset name
                 provider = provider_class()
 
-                if filters:
-                    # 1 Check if it has metadata
-                    # should this be none or false
-                    if getattr(provider, "_metadata", False):
-                        # Skip a dataset without metadata if we have filters enabled
-                        continue
+                # Extract metadata, default to False if not found
+                metadata = getattr(provider, "_metadata", False)
+                if filters and not metadata:
+                    continue
 
-                    # 2 Remove invalid filter values by invoking helpers (e.g. size: <100 is fine, size: foobar is not)
+                # Type safety for metadata object given getattr return type
+                if isinstance(metadata, bool):
+                    raise ValueError
 
-                    # 3 Only execute the following line if the filter key is valid and so is the value, AND the dataset meets the condition
+                # Filters detected but no match -> don't add this dataset
+                if filters and not cls._match_filter(metadata=metadata, filters=filters):
+                    continue
 
-                    # Problem: We don't know size at this point because we're just collecting the name. Size and source are tricky for remote datasets
-                    # since we can't check them statically
-
-                    # Solution: If filter is dynamic, then just download or load into central memory early to retrieve it
-                    # and present a warning to the user that this is occuring
-
+                # This triggers when filters match (and filters exist)
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
-                raise ValueError(
-                    f"Could not get dataset name from {provider_class.__name__}: {e}") from e
+                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}") from e
         return sorted(dataset_names)
+
+    @classmethod
+    def _match_filter(cls, metadata: SeedDatasetMetadata, filters: SeedDatasetFilter) -> bool:
+        """
+
+        Match the filter(s) with the metadata provided by the SeedDatasetProvider subclass.
+        By default, filters across dimensions (e.g. size, harm categories) are treated as AND
+        requirements. Filters within a dimension (e.g. SeedDatasetSize.SMALL,
+        SeedDatasetSize.LARGE) are treated as OR requirements.
+
+        Args:
+            metadata (SeedDatasetMetadata): The metadata object extracted from the SeedDatasetProvider
+                subclass.
+            filters (SeedDatasetFilter): The filter object provided by the user to get_all_dataset_names.
+
+        Returns:
+            bool: Whether or not the filters match or not.
+        """
+        # Tags
+        if metadata.tags and "all" in metadata.tags:
+            # This is the only condition that returns true, because we want the "all"
+            # tag to override everything else in the filter.
+            return True
+
+        # These lines all disable SIM103 because metadata and filters tags can be optional, so
+        # directly checking for membership breaks type checking.
+        if metadata.tags and filters.tags and not (filters.tags & metadata.tags):  # noqa: SIM103
+            return False
+
+        # Size
+        if metadata.size and filters.sizes and metadata.size not in filters.sizes:  # noqa: SIM103
+            return False
+
+        # Harm Categories
+
+        # Source Type
+
+        # Modalities
+
+        # Rank
+
+        return True
 
     @classmethod
     async def fetch_datasets_async(
@@ -183,11 +210,9 @@ class SeedDatasetProvider(ABC):
         # Validate dataset names if specified
         if dataset_names is not None:
             available_names = cls.get_all_dataset_names()
-            invalid_names = [
-                name for name in dataset_names if name not in available_names]
+            invalid_names = [name for name in dataset_names if name not in available_names]
             if invalid_names:
-                raise ValueError(
-                    f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
+                raise ValueError(f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
 
         async def fetch_single_dataset(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -213,8 +238,7 @@ class SeedDatasetProvider(ABC):
 
         # Progress tracking
         total_count = len(cls._registry)
-        pbar = tqdm(total=total_count,
-                    desc="Loading datasets - this can take a few minutes", unit="dataset")
+        pbar = tqdm(total=total_count, desc="Loading datasets - this can take a few minutes", unit="dataset")
 
         async def fetch_with_semaphore(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -252,12 +276,10 @@ class SeedDatasetProvider(ABC):
                 logger.info(f"Merging multiple sources for {dataset_name}.")
 
                 existing_dataset = datasets[dataset_name]
-                combined_seeds = list(
-                    existing_dataset.seeds) + list(dataset.seeds)
+                combined_seeds = list(existing_dataset.seeds) + list(dataset.seeds)
                 existing_dataset.seeds = combined_seeds
             else:
                 datasets[dataset_name] = dataset
 
-        logger.info(
-            f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
+        logger.info(f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
         return list(datasets.values())
