@@ -1,81 +1,67 @@
-import { Component } from 'react'
-import type { ErrorInfo, ReactNode } from 'react'
+import { useState } from 'react'
+import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary'
+import type { FallbackProps } from 'react-error-boundary'
+import type { ReactNode } from 'react'
 import { Button, MessageBar, MessageBarBody, tokens } from '@fluentui/react-components'
 
-interface Props {
-  children: ReactNode
-}
+function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  const [crashCount, setCrashCount] = useState(1)
 
-interface State {
-  hasError: boolean
-  error: Error | null
-  crashCount: number
-}
-
-/**
- * React Error Boundary that catches render errors in its subtree.
- *
- * - On first crash: shows "Try again" which resets the error state.
- * - If the app crashes again after "Try again": shows "Reload page" as a
- *   nuclear option (full page reload).
- */
-export class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null, crashCount: 0 }
-
-  static getDerivedStateFromError(error: Error): Partial<State> {
-    return { hasError: true, error }
+  const handleRetry = () => {
+    setCrashCount((c) => c + 1)
+    resetErrorBoundary()
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error('[ErrorBoundary] Caught render error:', error, info.componentStack)
-    this.setState((prev) => ({ crashCount: prev.crashCount + 1 }))
-  }
-
-  handleReset = () => {
-    this.setState({ hasError: false, error: null })
-  }
-
-  handleReload = () => {
+  const handleReload = () => {
     window.location.reload()
   }
 
-  render() {
-    if (!this.state.hasError) {
-      return this.props.children
-    }
+  return (
+    <div
+      data-testid="error-boundary-fallback"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        gap: tokens.spacingVerticalL,
+        padding: tokens.spacingHorizontalXXL,
+      }}
+    >
+      <MessageBar intent="error">
+        <MessageBarBody>
+          Something went wrong: {error instanceof Error ? error.message : 'Unknown error'}
+        </MessageBarBody>
+      </MessageBar>
 
-    const showReload = this.state.crashCount > 1
-
-    return (
-      <div
-        data-testid="error-boundary-fallback"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          gap: tokens.spacingVerticalL,
-          padding: tokens.spacingHorizontalXXL,
-        }}
-      >
-        <MessageBar intent="error">
-          <MessageBarBody>
-            Something went wrong: {this.state.error?.message || 'Unknown error'}
-          </MessageBarBody>
-        </MessageBar>
-
-        <div style={{ display: 'flex', gap: tokens.spacingHorizontalM }}>
-          <Button appearance="primary" onClick={this.handleReset}>
-            Try again
+      <div style={{ display: 'flex', gap: tokens.spacingHorizontalM }}>
+        <Button appearance="primary" onClick={handleRetry}>
+          Try again
+        </Button>
+        {crashCount > 1 && (
+          <Button appearance="secondary" onClick={handleReload}>
+            Reload page
           </Button>
-          {showReload && (
-            <Button appearance="secondary" onClick={this.handleReload}>
-              Reload page
-            </Button>
-          )}
-        </div>
+        )}
       </div>
-    )
-  }
+    </div>
+  )
+}
+
+interface ErrorBoundaryProps {
+  children: ReactNode
+}
+
+export function ErrorBoundary({ children }: ErrorBoundaryProps) {
+  return (
+    <ReactErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onError={(error, info) => {
+        console.error('[ErrorBoundary] Caught render error:', error, info.componentStack)
+      }}
+    >
+      {children}
+    </ReactErrorBoundary>
+  )
 }
