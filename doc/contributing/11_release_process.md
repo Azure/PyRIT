@@ -13,7 +13,6 @@ Before starting the release process, verify the codebase is in a healthy state.
 
 - **Check for pending changes.** Ask other PyRIT maintainers whether they have any in-flight changes that should land before the release.
 - **Verify build pipelines.** Confirm that all integration tests and end-to-end tests are passing in the CI pipelines. If any tests are failing, fix them before proceeding.
-- **Verify pyrit-internal is up to date.** Follow the instructions at [aka.ms/internal-release](https://aka.ms/internal-release) to ensure the internal package is current.
 - **Update scorer metrics.** Run `python .\build_scripts\evaluate_scorers.py` and commit the results so that scorer evaluation metrics are up to date.
 
 ## 2. Decide the Next Version
@@ -137,8 +136,8 @@ This should print
 ## 7. Test Built Package
 
 This step is crucial to ensure that the new package works out of the box.
-Create a new environment with `uv venv --python 3.11`
-and install the built wheel file `uv pip install dist/pyrit-x.y.z-py3-none-any.whl[all,dev]`.
+
+Create a new environment with the equivalent of `uv venv --python 3.11`. You do not need to test with multiple versions of python or environments, but this manual process can detect issues with the package. Install the built wheel file `uv pip install dist/pyrit-x.y.z-py3-none-any.whl[all,dev]`.
 
 Once the package is successfully installed in the new environment, run `uv pip show pyrit`. Ensure that the version matches the release `vx.y.z` and that the package is found under the site-packages directory of the environment, like `..\venv\Lib\site-packages`.
 
@@ -172,6 +171,9 @@ git tag -a vx.y.z -m "vx.y.z release" --force # to update the tag to the correct
 ```
 
 Note: You may need to build the package again if those changes modify any dependencies, and consider retesting the notebooks if the changes affect them. If you reuse the same environment, it is best to `uv pip uninstall pyrit` to force the reinstall.
+
+Lastly, **Verify pyrit-internal is up to date.** Follow the instructions at [aka.ms/internal-release](https://aka.ms/internal-release) to ensure the internal package is current.
+
 
 ## 8. Publish to PyPI
 
