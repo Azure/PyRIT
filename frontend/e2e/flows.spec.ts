@@ -152,12 +152,24 @@ async function createConversation(
   return body.conversation_id;
 }
 
+/** Activate a target via the Configuration view so the chat UI is unlocked. */
+async function activateTarget(page: Page, targetType: string): Promise<void> {
+  await page.getByTitle("Configuration").click();
+  await expect(page.getByText("Target Configuration")).toBeVisible({ timeout: 10_000 });
+  // The table displays target_type (not registry name), so match by type.
+  // Use .first() because multiple targets of the same type may exist.
+  const row = page.locator("tr", { has: page.getByText(targetType, { exact: true }) }).first();
+  await row.getByRole("button", { name: /set active/i }).click();
+  await page.getByTitle("Chat").click();
+  await expect(page.getByText("PyRIT Attack")).toBeVisible({ timeout: 5_000 });
+}
+
 /** Navigate to an attack by opening the History view and clicking its row. */
 async function openAttackInHistory(
   page: Page,
   attackResultId: string,
 ): Promise<void> {
-  await page.getByTitle("History").click();
+  await page.getByTitle("Attack History").click();
   await expect(page.getByTestId("attacks-table")).toBeVisible({
     timeout: 10_000,
   });
@@ -422,12 +434,15 @@ async function assertSeededAssistant(
     await expect(imgs.first()).toBeVisible({ timeout: 10_000 });
   }
   if (exp.hasVideo) {
-    await expect(page.locator("video").first()).toBeVisible({
+    // Seeded test data uses invalid base64, so the <video> element fires an error.
+    // MediaWithFallback renders a "Video failed to load" fallback with data-testid="video-error".
+    await expect(page.getByTestId("video-error").first()).toBeVisible({
       timeout: 10_000,
     });
   }
   if (exp.hasAudio) {
-    await expect(page.locator("audio").first()).toBeVisible({
+    // Same fallback pattern for audio.
+    await expect(page.getByTestId("audio-error").first()).toBeVisible({
       timeout: 10_000,
     });
   }
@@ -521,6 +536,7 @@ for (const variant of TARGET_VARIANTS) {
 
     test.beforeEach(async ({ page }) => {
       await page.goto("/");
+      await activateTarget(page, variant.targetType);
     });
 
     test("should display seeded messages @seeded", async ({
@@ -580,7 +596,7 @@ for (const variant of TARGET_VARIANTS) {
       const items = page.locator('[data-testid^="conversation-item-"]');
       await expect(items).toHaveCount(1, { timeout: 5_000 });
 
-      await page.getByTestId("new-conversation-btn").click();
+      await page.getByTestId("conversation-panel").getByTestId("new-conversation-btn").click();
       await expect(items).toHaveCount(2, { timeout: 5_000 });
       await items.nth(1).click();
 
@@ -711,7 +727,7 @@ for (const variant of TARGET_VARIANTS) {
         await page.waitForTimeout(3_000);
       }
 
-      const branchBtn = page.getByTestId("branch-btn-1");
+      const branchBtn = page.getByTestId("branch-conv-btn-1");
       await expect(branchBtn).toBeVisible({ timeout: 5_000 });
       await branchBtn.click();
 
@@ -801,7 +817,7 @@ for (const variant of TARGET_VARIANTS) {
         await page.waitForTimeout(3_000);
       }
 
-      const branchBtn = page.getByTestId("branch-btn-1");
+      const branchBtn = page.getByTestId("branch-conv-btn-1");
       await expect(branchBtn).toBeVisible({ timeout: 5_000 });
       await branchBtn.click();
 
@@ -931,8 +947,7 @@ for (const variant of TARGET_VARIANTS) {
       await openAttackInHistory(page, attackResultId);
       await assertLiveAssistant(page, variant.expectAssistantLive);
 
-      // Branch at first assistant message (index 1)
-      const branchBtn = page.getByTestId("branch-btn-1");
+      const branchBtn = page.getByTestId("branch-conv-btn-1");
       await expect(branchBtn).toBeVisible({ timeout: 10_000 });
       await branchBtn.click();
 
@@ -989,8 +1004,7 @@ for (const variant of TARGET_VARIANTS) {
       await openAttackInHistory(page, attackResultId);
       await assertLiveAssistant(page, variant.expectAssistantLive);
 
-      // 4. Branch
-      const branchBtn = page.getByTestId("branch-btn-1");
+      const branchBtn = page.getByTestId("branch-conv-btn-1");
       await expect(branchBtn).toBeVisible({ timeout: 10_000 });
       await branchBtn.click();
 
