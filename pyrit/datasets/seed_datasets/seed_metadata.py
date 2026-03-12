@@ -61,3 +61,13 @@ class DatasetFilters(Enum):
 
 def _validate_filter_value(v):
     """Check if the filter value given is valid."""
+
+
+def _metadata_builder():
+    """
+    Force build metadata for all datasets.
+    Download/load into local memory.
+    Add a timestamp.
+    Add all derived attributes.
+    Make sure every dataset subclass has it.
+    """
