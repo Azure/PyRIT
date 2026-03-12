@@ -33,7 +33,6 @@ export default defineConfig({
     // Improve HMR performance for devcontainer
     hmr: {
       overlay: false,
-      clientPort: 3000,
     },
     // Reduce request overhead
     cors: true,

@@ -14,6 +14,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
+from pyrit.prompt_converter.length_mode import LengthMode, build_length_mode_instruction
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
@@ -35,6 +36,7 @@ class LLMGenericTextConverter(PromptConverter):
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         system_prompt_template: Optional[SeedPrompt] = None,
         user_prompt_template_with_objective: Optional[SeedPrompt] = None,
+        length_mode: LengthMode = "normal",
         **kwargs: Any,
     ) -> None:
         """
@@ -54,6 +56,7 @@ class LLMGenericTextConverter(PromptConverter):
         self._converter_target = converter_target
         self._system_prompt_template = system_prompt_template
         self._prompt_kwargs = kwargs
+        self._length_mode = length_mode
 
         if user_prompt_template_with_objective and (
             user_prompt_template_with_objective.parameters is None
@@ -87,6 +90,7 @@ class LLMGenericTextConverter(PromptConverter):
             params={
                 "system_prompt_template_hash": system_prompt_hash,
                 "user_prompt_template_hash": user_prompt_hash,
+                "length_mode": self._length_mode,
             },
             children={"converter_target": self._converter_target.get_identifier()},
         )
@@ -109,9 +113,22 @@ class LLMGenericTextConverter(PromptConverter):
 
         kwargs = self._prompt_kwargs.copy()
 
+        system_prompt = ""
         if self._system_prompt_template:
             system_prompt = self._system_prompt_template.render_template_value(**kwargs)
 
+        length_instruction = build_length_mode_instruction(
+            length_mode=self._length_mode,
+            focus=(
+                "If the prompt is for a video generator, add more useful visual, motion, scene, style, "
+                "and environmental detail only when it naturally fits the request."
+            ),
+        )
+
+        if length_instruction:
+            system_prompt = f"{system_prompt}\n\n{length_instruction}".strip()
+
+        if system_prompt:
             self._converter_target.set_system_prompt(
                 system_prompt=system_prompt,
                 conversation_id=conversation_id,

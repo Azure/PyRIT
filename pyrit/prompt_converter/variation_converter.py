@@ -22,6 +22,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
+from pyrit.prompt_converter.length_mode import LengthMode, build_length_mode_instruction
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
@@ -42,6 +43,7 @@ class VariationConverter(PromptConverter):
         *,
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         prompt_template: Optional[SeedPrompt] = None,
+        length_mode: LengthMode = "normal",
     ):
         """
         Initialize the converter with the specified target and prompt template.
@@ -65,8 +67,18 @@ class VariationConverter(PromptConverter):
         )
 
         self.number_variations = 1
+        self._length_mode = length_mode
 
         self.system_prompt = str(prompt_template.render_template_value(number_iterations=str(self.number_variations)))
+        length_instruction = build_length_mode_instruction(
+            length_mode=length_mode,
+            focus=(
+                "Use the extra space to make the variation richer, more specific, and better suited to a long-form "
+                "video prompt while keeping it a true variation of the source."
+            ),
+        )
+        if length_instruction:
+            self.system_prompt = f"{self.system_prompt}\n\n{length_instruction}"
 
     def _build_identifier(self) -> ComponentIdentifier:
         """
@@ -76,6 +88,7 @@ class VariationConverter(PromptConverter):
             ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
+            params={"length_mode": self._length_mode},
             children={"converter_target": self.converter_target.get_identifier()},
         )
 

@@ -46,7 +46,7 @@ export default function Navigation({ onToggleTheme, isDarkMode }: NavigationProp
         className={styles.iconButton}
         appearance="subtle"
         icon={<ChatRegular />}
-        title="Chat"
+        title="Prompt Builder"
         disabled
       />
 

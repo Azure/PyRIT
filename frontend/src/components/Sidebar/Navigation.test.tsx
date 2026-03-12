@@ -12,14 +12,14 @@ const renderWithProvider = (ui: React.ReactElement) => {
 };
 
 describe("Navigation", () => {
-  it("renders the chat button (disabled)", () => {
+  it("renders the prompt builder button (disabled)", () => {
     renderWithProvider(
       <Navigation onToggleTheme={jest.fn()} isDarkMode={false} />
     );
 
-    const chatButton = screen.getByTitle("Chat");
-    expect(chatButton).toBeInTheDocument();
-    expect(chatButton).toBeDisabled();
+    const builderButton = screen.getByTitle("Prompt Builder");
+    expect(builderButton).toBeInTheDocument();
+    expect(builderButton).toBeDisabled();
   });
 
   it("renders theme toggle button with light mode title when in dark mode", () => {

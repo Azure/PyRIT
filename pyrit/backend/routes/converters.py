@@ -16,6 +16,8 @@ from pyrit.backend.models.converters import (
     ConverterInstanceListResponse,
     ConverterPreviewRequest,
     ConverterPreviewResponse,
+    ConverterTypeListResponse,
+    ConverterTypePreviewRequest,
     CreateConverterRequest,
     CreateConverterResponse,
 )
@@ -39,6 +41,21 @@ async def list_converters() -> ConverterInstanceListResponse:
     """
     service = get_converter_service()
     return await service.list_converters_async()
+
+
+@router.get(
+    "/types",
+    response_model=ConverterTypeListResponse,
+)
+async def list_converter_types() -> ConverterTypeListResponse:
+    """
+    List all available converter classes with lightweight UI metadata.
+
+    Returns:
+        ConverterTypeListResponse: List of available converter types.
+    """
+    service = get_converter_service()
+    return await service.list_converter_types_async()
 
 
 @router.post(
@@ -122,6 +139,36 @@ async def preview_conversion(request: ConverterPreviewRequest) -> ConverterPrevi
 
     try:
         return await service.preview_conversion_async(request=request)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Converter preview failed: {str(e)}",
+        ) from e
+
+
+@router.post(
+    "/preview-type",
+    response_model=ConverterPreviewResponse,
+    responses={
+        400: {"model": ProblemDetail, "description": "Invalid converter configuration"},
+    },
+)
+async def preview_converter_type(request: ConverterTypePreviewRequest) -> ConverterPreviewResponse:
+    """
+    Preview a converter directly from its type and params without registering it.
+
+    Returns:
+        ConverterPreviewResponse: Original and converted values for this converter.
+    """
+    service = get_converter_service()
+
+    try:
+        return await service.preview_converter_type_async(request=request)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

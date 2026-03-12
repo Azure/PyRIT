@@ -5,11 +5,11 @@ import json
 import logging
 import pathlib
 import uuid
+from typing import Optional
 
 from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.exceptions import (
-    InvalidJsonException,
     pyrit_json_retry,
     remove_markdown_json,
 )
@@ -20,6 +20,7 @@ from pyrit.models import (
     PromptDataType,
     SeedPrompt,
 )
+from pyrit.prompt_converter.length_mode import LengthMode, build_length_mode_instruction
 from pyrit.prompt_converter.prompt_converter import ConverterResult, PromptConverter
 from pyrit.prompt_target import PromptChatTarget
 
@@ -54,6 +55,7 @@ class PersuasionConverter(PromptConverter):
         *,
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         persuasion_technique: str,
+        length_mode: LengthMode = "normal",
     ):
         """
         Initialize the converter with the specified target and prompt template.
@@ -81,6 +83,17 @@ class PersuasionConverter(PromptConverter):
             ) from None
         self.system_prompt = str(prompt_template.value)
         self._persuasion_technique = persuasion_technique
+        self._length_mode = length_mode
+
+        length_instruction = build_length_mode_instruction(
+            length_mode=length_mode,
+            focus=(
+                "Spend the extra space on persuasive framing, rationale, urgency, authority, social proof, "
+                "and reinforcement rather than generic scene description."
+            ),
+        )
+        if length_instruction:
+            self.system_prompt = f"{self.system_prompt}\n\n{length_instruction}"
 
     def _build_identifier(self) -> ComponentIdentifier:
         """
@@ -92,6 +105,7 @@ class PersuasionConverter(PromptConverter):
         return self._create_identifier(
             params={
                 "persuasion_technique": self._persuasion_technique,
+                "length_mode": self._length_mode,
             },
             children={"converter_target": self.converter_target.get_identifier()},
         )
@@ -157,16 +171,21 @@ class PersuasionConverter(PromptConverter):
         """
         response = await self.converter_target.send_prompt_async(message=request)
 
-        response_msg = response[0].get_value()
-        response_msg = remove_markdown_json(response_msg)
+        raw_response_msg = response[0].get_value().strip()
+        response_msg = remove_markdown_json(raw_response_msg)
 
         try:
             parsed_response = json.loads(response_msg)
             if "mutated_text" not in parsed_response:
-                raise InvalidJsonException(
-                    message=f"Invalid JSON encountered; missing 'mutated_text' key: {response_msg}"
+                logger.warning(
+                    "PersuasionConverter expected a 'mutated_text' field but got plain JSON instead. "
+                    "Falling back to the raw model response."
                 )
+                return raw_response_msg
             return str(parsed_response["mutated_text"])
 
         except json.JSONDecodeError:
-            raise InvalidJsonException(message=f"Invalid JSON encountered: {response_msg}") from None
+            logger.warning(
+                "PersuasionConverter expected JSON but got plain text. Falling back to the raw model response."
+            )
+            return raw_response_msg

@@ -7,7 +7,7 @@ Converter-related request and response models.
 This module defines the Instance models and preview functionality.
 """
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -16,10 +16,14 @@ from pyrit.models import PromptDataType
 __all__ = [
     "ConverterInstance",
     "ConverterInstanceListResponse",
+    "ConverterParameterMetadata",
+    "ConverterTypeMetadata",
+    "ConverterTypeListResponse",
     "CreateConverterRequest",
     "CreateConverterResponse",
     "ConverterPreviewRequest",
     "ConverterPreviewResponse",
+    "ConverterTypePreviewRequest",
     "PreviewStep",
 ]
 
@@ -53,6 +57,41 @@ class ConverterInstanceListResponse(BaseModel):
     """Response for listing converter instances."""
 
     items: list[ConverterInstance] = Field(..., description="List of converter instances")
+
+
+class ConverterParameterMetadata(BaseModel):
+    """Lightweight metadata for a converter constructor parameter."""
+
+    name: str = Field(..., description="Parameter name")
+    display_name: str = Field(..., description="Friendly parameter label")
+    type_label: str = Field(..., description="Readable type label")
+    required: bool = Field(..., description="Whether the parameter must be provided")
+    default_value: Optional[str] = Field(None, description="String form of the default value")
+    input_kind: Literal["text", "number", "boolean", "select", "list", "unsupported"] = Field(
+        ..., description="Suggested UI control type"
+    )
+    options: Optional[list[str]] = Field(None, description="Allowed values for select-style parameters")
+
+
+class ConverterTypeMetadata(BaseModel):
+    """Metadata describing an available converter type."""
+
+    converter_type: str = Field(..., description="Converter class name (e.g., 'Base64Converter')")
+    display_name: str = Field(..., description="Friendly converter name")
+    description: str = Field(..., description="Plain-language summary of the converter")
+    supported_input_types: list[str] = Field(..., description="Supported input data types")
+    supported_output_types: list[str] = Field(..., description="Supported output data types")
+    parameters: list[ConverterParameterMetadata] = Field(..., description="Constructor parameters")
+    preview_supported: bool = Field(..., description="Whether the UI can preview this converter directly")
+    preview_unavailable_reason: Optional[str] = Field(
+        None, description="Why direct preview is not available for this converter"
+    )
+
+
+class ConverterTypeListResponse(BaseModel):
+    """Response listing all available converter types."""
+
+    items: list[ConverterTypeMetadata] = Field(..., description="List of available converter types")
 
 
 class CreateConverterRequest(BaseModel):
@@ -96,6 +135,15 @@ class ConverterPreviewRequest(BaseModel):
     original_value: str = Field(..., description="Text to convert")
     original_value_data_type: PromptDataType = Field(default="text", description="Data type of original value")
     converter_ids: list[str] = Field(..., description="Converter instance IDs to apply")
+
+
+class ConverterTypePreviewRequest(BaseModel):
+    """Request to preview a converter directly from its type and params."""
+
+    type: str = Field(..., description="Converter type (e.g., 'Base64Converter')")
+    params: dict[str, Any] = Field(default_factory=dict, description="Converter constructor parameters")
+    original_value: str = Field(..., description="Text to convert")
+    original_value_data_type: PromptDataType = Field(default="text", description="Data type of original value")
 
 
 class ConverterPreviewResponse(BaseModel):

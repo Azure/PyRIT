@@ -9,6 +9,7 @@ from pyrit.common.apply_defaults import REQUIRED_VALUE, apply_defaults
 from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import SeedPrompt
+from pyrit.prompt_converter.length_mode import LengthMode
 from pyrit.prompt_converter.llm_generic_text_converter import LLMGenericTextConverter
 from pyrit.prompt_target import PromptChatTarget
 
@@ -29,6 +30,7 @@ class TenseConverter(LLMGenericTextConverter):
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         tense: str,
         prompt_template: Optional[SeedPrompt] = None,
+        length_mode: LengthMode = "normal",
     ):
         """
         Initialize the converter with the target chat support, tense, and optional prompt template.
@@ -49,9 +51,11 @@ class TenseConverter(LLMGenericTextConverter):
         super().__init__(
             converter_target=converter_target,
             system_prompt_template=prompt_template,
+            length_mode=length_mode,
             tense=tense,
         )
         self._tense = tense
+        self._length_mode = length_mode
 
     def _build_identifier(self) -> ComponentIdentifier:
         """
@@ -63,6 +67,7 @@ class TenseConverter(LLMGenericTextConverter):
         return self._create_identifier(
             params={
                 "tense": self._tense,
+                "length_mode": self._length_mode,
             },
             children={"converter_target": self._converter_target.get_identifier()},
         )

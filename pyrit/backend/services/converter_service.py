@@ -12,21 +12,28 @@ Converters can be:
 - Retrieved from registry (pre-registered at startup or created earlier)
 """
 
+import inspect
+import pathlib
 import uuid
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, Optional, get_args, get_origin, Literal
 
 from pyrit import prompt_converter
 from pyrit.backend.mappers.converter_mappers import converter_object_to_instance
 from pyrit.backend.models.converters import (
     ConverterInstance,
     ConverterInstanceListResponse,
+    ConverterParameterMetadata,
     ConverterPreviewRequest,
     ConverterPreviewResponse,
+    ConverterTypeListResponse,
+    ConverterTypeMetadata,
+    ConverterTypePreviewRequest,
     CreateConverterRequest,
     CreateConverterResponse,
     PreviewStep,
 )
+from pyrit.common.path import CONVERTER_SEED_PROMPT_PATH
 from pyrit.models import PromptDataType
 from pyrit.prompt_converter import PromptConverter
 from pyrit.registry.instance_registries import ConverterRegistry
@@ -51,6 +58,138 @@ def _build_converter_class_registry() -> dict[str, type]:
 
 # Module-level class registry (built once on import)
 _CONVERTER_CLASS_REGISTRY: dict[str, type] = _build_converter_class_registry()
+
+
+def _dataset_select_options(converter_type: str, parameter_name: str) -> Optional[list[str]]:
+    """Expose known string parameters as dropdowns when choices live in the dataset folders."""
+    if converter_type == "PersuasionConverter" and parameter_name == "persuasion_technique":
+        persuasion_path = pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "persuasion"
+        return sorted(file.stem for file in persuasion_path.glob("*.yaml"))
+
+    return None
+
+
+def _friendly_name(name: str) -> str:
+    """Convert class names into short readable labels."""
+    base_name = name.removesuffix("Converter")
+    words = []
+    current = ""
+    for char in base_name:
+        if char.isupper() and current and not current[-1].isupper():
+            words.append(current)
+            current = char
+        else:
+            current += char
+    if current:
+        words.append(current)
+    return " ".join(words) or name
+
+
+def _first_sentence(text: Optional[str], *, fallback: str) -> str:
+    """Extract a short summary line from a docstring."""
+    if not text:
+        return fallback
+    cleaned = " ".join(line.strip() for line in text.strip().splitlines() if line.strip())
+    if not cleaned:
+        return fallback
+    first_line = cleaned.split(". ")[0].strip()
+    return first_line if first_line.endswith(".") else f"{first_line}."
+
+
+def _stringify_default(value: Any) -> Optional[str]:
+    """Convert default values into small readable strings for the UI."""
+    if value is inspect.Signature.empty:
+        return None
+    if value is None:
+        return "None"
+    if isinstance(value, (str, int, float, bool)):
+        return str(value)
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(item) for item in value)
+    return repr(value)
+
+
+def _annotation_to_label(annotation: Any) -> str:
+    """Convert type annotations into short readable labels."""
+    if annotation is inspect.Signature.empty:
+        return "Any"
+
+    origin = get_origin(annotation)
+    args = get_args(annotation)
+
+    if origin is Literal:
+        return "one of: " + ", ".join(str(arg) for arg in args)
+
+    if origin in {list, tuple} and args:
+        return f"list of {_annotation_to_label(args[0]).lower()}"
+
+    if origin is dict:
+        return "object"
+
+    if origin is not None and type(None) in args:
+        inner = [arg for arg in args if arg is not type(None)]
+        if len(inner) == 1:
+            return f"optional {_annotation_to_label(inner[0]).lower()}"
+        return "optional value"
+
+    if annotation in {str, int, float, bool}:
+        return annotation.__name__
+
+    if hasattr(annotation, "__name__"):
+        return annotation.__name__
+
+    return str(annotation).replace("typing.", "")
+
+
+def _annotation_to_input_kind(annotation: Any) -> tuple[str, Optional[list[str]]]:
+    """Suggest a simple UI control for a parameter annotation."""
+    if annotation is inspect.Signature.empty:
+        return "text", None
+
+    origin = get_origin(annotation)
+    args = get_args(annotation)
+
+    if origin is Literal:
+        return "select", [str(arg) for arg in args]
+
+    if origin is not None and type(None) in args:
+        inner = [arg for arg in args if arg is not type(None)]
+        if len(inner) == 1:
+            return _annotation_to_input_kind(inner[0])
+
+    if annotation is bool:
+        return "boolean", None
+    if annotation in {int, float}:
+        return "number", None
+    if annotation is str:
+        return "text", None
+
+    if origin in {list, tuple}:
+        inner = args[0] if args else str
+        if inner in {str, int, float}:
+            return "list", None
+        return "unsupported", None
+
+    return "unsupported", None
+
+
+def _parameter_metadata(*, converter_type: str, parameter: inspect.Parameter) -> ConverterParameterMetadata:
+    """Build UI metadata for a constructor parameter."""
+    input_kind, options = _annotation_to_input_kind(parameter.annotation)
+    dataset_options = _dataset_select_options(converter_type, parameter.name)
+    if dataset_options:
+        input_kind = "select"
+        options = dataset_options
+
+    return ConverterParameterMetadata(
+        name=parameter.name,
+        display_name=parameter.name.replace("_", " ").title(),
+        type_label=_annotation_to_label(parameter.annotation),
+        required=parameter.default is inspect.Signature.empty,
+        default_value=_stringify_default(parameter.default),
+        input_kind=input_kind,
+        options=options,
+    )
 
 
 class ConverterService:
@@ -92,6 +231,49 @@ class ConverterService:
             for name, obj in self._registry.get_all_instances().items()
         ]
         return ConverterInstanceListResponse(items=items)
+
+    async def list_converter_types_async(self) -> ConverterTypeListResponse:
+        """
+        List all available converter classes with lightweight UI metadata.
+
+        Returns:
+            ConverterTypeListResponse containing all available converter types.
+        """
+        items: list[ConverterTypeMetadata] = []
+
+        for converter_type, converter_class in sorted(_CONVERTER_CLASS_REGISTRY.items()):
+            if inspect.isabstract(converter_class):
+                continue
+
+            signature = inspect.signature(converter_class.__init__)
+            parameters = [
+                _parameter_metadata(converter_type=converter_type, parameter=parameter)
+                for name, parameter in signature.parameters.items()
+                if name != "self" and parameter.kind not in {inspect.Parameter.VAR_KEYWORD, inspect.Parameter.VAR_POSITIONAL}
+            ]
+            required_unsupported = [param.display_name for param in parameters if param.required and param.input_kind == "unsupported"]
+
+            items.append(
+                ConverterTypeMetadata(
+                    converter_type=converter_type,
+                    display_name=_friendly_name(converter_type),
+                    description=_first_sentence(
+                        inspect.getdoc(converter_class),
+                        fallback="Transforms the prompt before it is sent to the target.",
+                    ),
+                    supported_input_types=[str(value) for value in getattr(converter_class, "SUPPORTED_INPUT_TYPES", ())],
+                    supported_output_types=[str(value) for value in getattr(converter_class, "SUPPORTED_OUTPUT_TYPES", ())],
+                    parameters=parameters,
+                    preview_supported=not required_unsupported,
+                    preview_unavailable_reason=(
+                        "Needs extra setup for: " + ", ".join(required_unsupported)
+                        if required_unsupported
+                        else None
+                    ),
+                )
+            )
+
+        return ConverterTypeListResponse(items=items)
 
     async def get_converter_async(self, *, converter_id: str) -> Optional[ConverterInstance]:
         """
@@ -162,6 +344,38 @@ class ConverterService:
             converted_value=final_value,
             converted_value_data_type=final_type,
             steps=steps,
+        )
+
+    async def preview_converter_type_async(self, *, request: ConverterTypePreviewRequest) -> ConverterPreviewResponse:
+        """
+        Preview a converter directly from its type and params without registering it.
+
+        Returns:
+            ConverterPreviewResponse containing a single-step preview.
+        """
+        params = self._resolve_converter_params(params=request.params)
+        converter_class = self._get_converter_class(converter_type=request.type)
+        converter_obj = converter_class(**params)
+        result = await converter_obj.convert_async(
+            prompt=request.original_value,
+            input_type=request.original_value_data_type,
+        )
+
+        step = PreviewStep(
+            converter_id=request.type,
+            converter_type=request.type,
+            input_value=request.original_value,
+            input_data_type=request.original_value_data_type,
+            output_value=result.output_text,
+            output_data_type=result.output_type,
+        )
+
+        return ConverterPreviewResponse(
+            original_value=request.original_value,
+            original_value_data_type=request.original_value_data_type,
+            converted_value=result.output_text,
+            converted_value_data_type=result.output_type,
+            steps=[step],
         )
 
     def get_converter_objects_for_ids(self, *, converter_ids: list[str]) -> list[Any]:

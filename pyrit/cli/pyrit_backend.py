@@ -162,7 +162,7 @@ async def initialize_and_run_async(*, parsed_args: Namespace) -> int:
     print("🔧 Initializing PyRIT...")
     await context.initialize_async()
 
-    # Run initializers up-front (backend runs them once at startup, not per-scenario)
+    # Run initialization hooks up-front (backend runs them once at startup, not per-scenario)
     initializer_instances = None
     if context._initializer_names:
         print(f"Running {len(context._initializer_names)} initializer(s)...")
@@ -171,7 +171,11 @@ async def initialize_and_run_async(*, parsed_args: Namespace) -> int:
             initializer_class = context.initializer_registry.get_class(name)
             initializer_instances.append(initializer_class())
 
-        # Re-initialize with initializers applied
+    if context._initialization_scripts or initializer_instances:
+        if context._initialization_scripts:
+            print(f"Running {len(context._initialization_scripts)} initialization script(s)...")
+
+        # Re-initialize with all startup hooks applied
         await initialize_pyrit_async(
             memory_db_type=context._database,
             initialization_scripts=context._initialization_scripts,
