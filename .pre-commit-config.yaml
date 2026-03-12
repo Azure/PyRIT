@@ -69,6 +69,16 @@ repos:
 
   - repo: local
     hooks:
+      - id: remove-notebook-headers
+        name: Remove Notebook Headers
+        entry: python ./build_scripts/remove_notebook_headers.py
+        language: python
+        files: ^doc.*\.(ipynb)$
+      - id: sanitize-notebook-paths
+        name: Sanitize Notebook Paths
+        entry: python ./build_scripts/sanitize_notebook_paths.py
+        language: python
+        files: ^doc.*\.(ipynb)$
       - id: validate-myst-config
         name: Validate myst.yml
         entry: python -c "import yaml; yaml.safe_load(open('doc/myst.yml'))"
