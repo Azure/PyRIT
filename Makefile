@@ -17,13 +17,10 @@ mypy:
 	$(CMD) mypy $(PYMODULE) $(UNIT_TESTS)
 
 docs-build:
-	uv run python scripts/pydoc2json.py pyrit --submodules -o doc/_api/pyrit_all.json || true
-	cd doc && uv run jupyter-book build --all
-	uv run ./build_scripts/generate_rss.py
-
-docs-api:
 	uv run python scripts/pydoc2json.py pyrit --submodules -o doc/_api/pyrit_all.json
 	uv run python scripts/gen_api_md.py
+	cd doc && uv run jupyter-book build --all
+	uv run ./build_scripts/generate_rss.py
 
 # Because of import time, "auto" seemed to actually go slower than just using 4 processes
 unit-test:

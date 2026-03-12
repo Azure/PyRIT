@@ -52,13 +52,9 @@ jobs:
       run: uv sync --extra dev --extra all
 
     # Build the book
-    - name: Generate API reference
-      run: |
-        uv run python scripts/pydoc2json.py pyrit --submodules -o doc/_api/pyrit_all.json
-        uv run python scripts/gen_api_md.py
     - name: Build the book
       run: |
-        cd doc && uv run jupyter-book build --all
+        make docs-build
     # Upload the book's HTML as an artifact
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
