@@ -180,7 +180,7 @@ export default function ChatWindow({
     // the send handler will update messages when it completes.
     if (sendingConvIdsRef.current.has(activeConversationId)) { return }
     loadConversation(attackResultId, activeConversationId)
-  }, [activeConversationId, attackResultId])
+  }, [activeConversationId, attackResultId, loadConversation])
 
   // Synchronous loading derivation: if activeConversationId differs from the
   // conversation whose messages we've loaded, we're in a transition gap.
