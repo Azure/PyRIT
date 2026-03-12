@@ -12,7 +12,9 @@ jest.mock("../../services/api", () => ({
     addMessage: jest.fn(),
     getMessages: jest.fn(),
     getRelatedConversations: jest.fn(),
+    getConversations: jest.fn(),
     createConversation: jest.fn(),
+    changeMainConversation: jest.fn(),
   },
   labelsApi: {
     getLabels: jest.fn().mockImplementation(() => new Promise(() => {})),
@@ -238,6 +240,11 @@ describe("ChatWindow Integration", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: panel API returns empty conversations
+    mockedAttacksApi.getConversations.mockResolvedValue({
+      conversations: [],
+      main_conversation_id: null,
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -285,7 +292,7 @@ describe("ChatWindow Integration", () => {
       </TestWrapper>
     );
 
-    // Banner in InputBox area
+    // Banner in ChatInputArea area
     expect(screen.getByTestId("no-target-banner")).toBeInTheDocument();
     expect(screen.getByTestId("configure-target-input-btn")).toBeInTheDocument();
   });
@@ -322,7 +329,7 @@ describe("ChatWindow Integration", () => {
       </TestWrapper>
     );
 
-    // InputBox shows a red warning banner instead of the text input
+    // ChatInputArea shows a red warning banner instead of the text input
     expect(screen.getByTestId("no-target-banner")).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
@@ -1265,7 +1272,7 @@ describe("ChatWindow Integration", () => {
       </TestWrapper>
     );
 
-    // InputBox shows banner instead of textbox
+    // ChatInputArea shows banner instead of textbox
     expect(screen.getByTestId("no-target-banner")).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
@@ -1546,6 +1553,695 @@ describe("ChatWindow Integration", () => {
     // Panel should now be open
     await waitFor(() => {
       expect(screen.getByTestId("conversation-panel")).toBeInTheDocument();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // handleNewConversation
+  // -----------------------------------------------------------------------
+
+  it("should create a new conversation and select it via handleNewConversation", async () => {
+    const onSelectConversation = jest.fn();
+    mockedAttacksApi.createConversation.mockResolvedValue({
+      conversation_id: "new-conv-from-new",
+    });
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue([]);
+
+    const singleTurnTarget: TargetInstance = {
+      target_registry_name: "openai_image_1",
+      target_type: "OpenAIImageTarget",
+      supports_multi_turn: false,
+    };
+
+    const messagesWithUser: Message[] = [
+      { role: "user", content: "Generate an image", timestamp: "2026-01-01T00:00:00Z" },
+      { role: "assistant", content: "Here is the image", timestamp: "2026-01-01T00:00:01Z" },
+    ];
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          activeTarget={singleTurnTarget}
+          messages={messagesWithUser}
+          attackResultId="ar-new-conv"
+          conversationId="conv-existing"
+          activeConversationId="conv-existing"
+          onSelectConversation={onSelectConversation}
+        />
+      </TestWrapper>
+    );
+
+    // For single-turn targets with existing messages, there's a New Conversation button
+    await waitFor(() => {
+      expect(screen.getByTestId("new-conversation-btn")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByTestId("new-conversation-btn"));
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.createConversation).toHaveBeenCalledWith("ar-new-conv", {});
+      expect(onSelectConversation).toHaveBeenCalledWith("new-conv-from-new");
+    });
+  });
+
+  it("should not create conversation when attackResultId is null", async () => {
+    const onSelectConversation = jest.fn();
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          attackResultId={null}
+          conversationId={null}
+          activeConversationId={null}
+          onSelectConversation={onSelectConversation}
+        />
+      </TestWrapper>
+    );
+
+    // No new-conversation button should be available without an attackResultId
+    expect(screen.queryByTestId("new-conversation-btn")).not.toBeInTheDocument();
+    expect(mockedAttacksApi.createConversation).not.toHaveBeenCalled();
+  });
+
+  // -----------------------------------------------------------------------
+  // handleCopyToInput
+  // -----------------------------------------------------------------------
+
+  it("should copy message content to input box via copy-to-input button", async () => {
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "This is the response text" },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-copy-input"
+          conversationId="conv-copy-input"
+          activeConversationId="conv-copy-input"
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    // Click copy-to-input on assistant message (index 1)
+    const copyBtn = screen.getByTestId("copy-to-input-btn-1");
+    await userEvent.click(copyBtn);
+
+    // The text should appear in the input area
+    await waitFor(() => {
+      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
+      expect(textarea.value).toBe("This is the response text");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // handleCopyToNewConversation
+  // -----------------------------------------------------------------------
+
+  it("should create a new conversation and copy message when copy-to-new-conv is clicked", async () => {
+    const onSelectConversation = jest.fn();
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "reply text to copy" },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+    mockedAttacksApi.createConversation.mockResolvedValue({
+      conversation_id: "new-conv-copy",
+    });
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-copy-new"
+          conversationId="conv-copy-new"
+          activeConversationId="conv-copy-new"
+          onSelectConversation={onSelectConversation}
+          relatedConversationCount={0}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    const copyBtn = screen.getByTestId("copy-to-new-conv-btn-1");
+    await userEvent.click(copyBtn);
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.createConversation).toHaveBeenCalledWith("ar-copy-new", {});
+      expect(onSelectConversation).toHaveBeenCalledWith("new-conv-copy");
+    });
+  });
+
+  it("should fall back when createConversation fails in copy-to-new-conversation", async () => {
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "fallback text" },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+    mockedAttacksApi.createConversation.mockRejectedValue(new Error("Failed"));
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-fail-copy"
+          conversationId="conv-fail-copy"
+          activeConversationId="conv-fail-copy"
+          relatedConversationCount={0}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    const copyBtn = screen.getByTestId("copy-to-new-conv-btn-1");
+    await userEvent.click(copyBtn);
+
+    // Should fall back to setting text in current input
+    await waitFor(() => {
+      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
+      expect(textarea.value).toBe("fallback text");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // handleBranchConversation
+  // -----------------------------------------------------------------------
+
+  it("should branch conversation and load cloned messages", async () => {
+    const onSelectConversation = jest.fn();
+    const onSetMessages = jest.fn();
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "response" },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+    mockedAttacksApi.createConversation.mockResolvedValue({
+      conversation_id: "branched-conv",
+    });
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-branch-test"
+          conversationId="conv-branch-test"
+          activeConversationId="conv-branch-test"
+          onSelectConversation={onSelectConversation}
+          onSetMessages={onSetMessages}
+          relatedConversationCount={0}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    const branchBtn = screen.getByTestId("branch-conv-btn-1");
+    await userEvent.click(branchBtn);
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.createConversation).toHaveBeenCalledWith("ar-branch-test", {
+        source_conversation_id: "conv-branch-test",
+        cutoff_index: 1,
+      });
+      expect(onSelectConversation).toHaveBeenCalledWith("branched-conv");
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // handleBranchAttack
+  // -----------------------------------------------------------------------
+
+  it("should branch into a new attack and load cloned messages", async () => {
+    const onConversationCreated = jest.fn();
+    const onSetMessages = jest.fn();
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "response" },
+    ];
+    const clonedMessages: Message[] = [
+      { role: "user", content: "hello", timestamp: "2026-01-01T00:00:00Z" },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-branch-attack"
+          conversationId="conv-branch-attack"
+          activeConversationId="conv-branch-attack"
+          onConversationCreated={onConversationCreated}
+          onSetMessages={onSetMessages}
+          relatedConversationCount={0}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    // Set up mocks for the branch attack flow
+    mockedAttacksApi.createAttack.mockResolvedValue({
+      attack_result_id: "ar-new-branch",
+      conversation_id: "conv-new-branch",
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(clonedMessages);
+
+    const branchBtn = screen.getByTestId("branch-attack-btn-1");
+    await userEvent.click(branchBtn);
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.createAttack).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target_registry_name: "openai_chat_1",
+          source_conversation_id: "conv-branch-attack",
+          cutoff_index: 1,
+        })
+      );
+      expect(onConversationCreated).toHaveBeenCalledWith("ar-new-branch", "conv-new-branch");
+      expect(onSetMessages).toHaveBeenCalledWith(clonedMessages);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // handleChangeMainConversation
+  // -----------------------------------------------------------------------
+
+  it("should call changeMainConversation API via conversation panel", async () => {
+    mockedAttacksApi.getConversations.mockResolvedValue({
+      conversations: [
+        { conversation_id: "conv-main", is_main: true, message_count: 2, created_at: "2026-01-01T00:00:00Z" },
+        { conversation_id: "conv-alt", is_main: false, message_count: 1, created_at: "2026-01-01T00:01:00Z" },
+      ],
+      main_conversation_id: "conv-main",
+    });
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue([]);
+    mockedAttacksApi.changeMainConversation.mockResolvedValue({});
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          attackResultId="ar-main-change"
+          conversationId="conv-main"
+          activeConversationId="conv-main"
+          relatedConversationCount={2}
+        />
+      </TestWrapper>
+    );
+
+    // Panel should auto-open due to relatedConversationCount > 0
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-panel")).toBeInTheDocument();
+    });
+
+    // Wait for conversations to load in panel
+    await waitFor(() => {
+      expect(screen.getByTestId("star-btn-conv-alt")).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByTestId("star-btn-conv-alt"));
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.changeMainConversation).toHaveBeenCalledWith(
+        "ar-main-change",
+        "conv-alt"
+      );
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // handleUseAsTemplate
+  // -----------------------------------------------------------------------
+
+  it("should create new attack from template when use-as-template button is clicked", async () => {
+    const onConversationCreated = jest.fn();
+    const onSetMessages = jest.fn();
+    const existingMessages: Message[] = [
+      { role: "user", content: "hello", timestamp: "2026-01-01T00:00:00Z" },
+      { role: "assistant", content: "response", timestamp: "2026-01-01T00:00:01Z" },
+    ];
+
+    const differentTarget: TargetInfo = {
+      target_type: "AzureOpenAIChatTarget",
+      endpoint: "https://azure.openai.com",
+      model_name: "gpt-4o",
+    };
+
+    const templateMessages: Message[] = [
+      { role: "user", content: "hello", timestamp: "2026-01-01T00:00:00Z" },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(existingMessages);
+    mockedAttacksApi.createAttack.mockResolvedValue({
+      attack_result_id: "ar-template",
+      conversation_id: "conv-template",
+      created_at: "2026-01-01T00:00:00Z",
+    });
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={existingMessages}
+          attackResultId="ar-cross-template"
+          conversationId="conv-cross-template"
+          activeConversationId="conv-cross-template"
+          attackTarget={differentTarget}
+          onConversationCreated={onConversationCreated}
+          onSetMessages={onSetMessages}
+        />
+      </TestWrapper>
+    );
+
+    // Cross-target banner should appear
+    await waitFor(() => {
+      expect(screen.getByTestId("cross-target-banner")).toBeInTheDocument();
+    });
+
+    // Reconfigure mocks for the template creation
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(templateMessages);
+
+    const useTemplateBtn = screen.getByTestId("use-as-template-btn");
+    await userEvent.click(useTemplateBtn);
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.createAttack).toHaveBeenCalledWith(
+        expect.objectContaining({
+          target_registry_name: "openai_chat_1",
+          source_conversation_id: "conv-cross-template",
+          cutoff_index: 1,
+        })
+      );
+      expect(onConversationCreated).toHaveBeenCalledWith("ar-template", "conv-template");
+    });
+  });
+
+  it("should show operator locked banner and use-as-template when operator differs", async () => {
+    const existingMessages: Message[] = [
+      { role: "user", content: "hello", timestamp: "2026-01-01T00:00:00Z" },
+      { role: "assistant", content: "response", timestamp: "2026-01-01T00:00:01Z" },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(existingMessages);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={existingMessages}
+          attackResultId="ar-locked"
+          conversationId="conv-locked"
+          activeConversationId="conv-locked"
+          labels={{ operator: "alice", operation: "test_op" }}
+          attackLabels={{ operator: "bob", operation: "test_op" }}
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("operator-locked-banner")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("use-as-template-btn")).toBeInTheDocument();
+  });
+
+  // -----------------------------------------------------------------------
+  // Cross-target locking rendering details
+  // -----------------------------------------------------------------------
+
+  it("should render conversation panel as locked when cross-target locked", async () => {
+    const differentTarget: TargetInfo = {
+      target_type: "AzureOpenAIChatTarget",
+      endpoint: "https://azure.openai.com",
+      model_name: "gpt-4o",
+    };
+
+    mockedAttacksApi.getRelatedConversations.mockResolvedValue({
+      conversations: [
+        { conversation_id: "conv-cross-panel", is_main: true, message_count: 2, created_at: "2026-01-01T00:00:00Z" },
+      ],
+    });
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue([]);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          attackResultId="ar-cross-lock"
+          conversationId="conv-cross-panel"
+          activeConversationId="conv-cross-panel"
+          attackTarget={differentTarget}
+          relatedConversationCount={1}
+        />
+      </TestWrapper>
+    );
+
+    // Panel should auto-open and the cross-target banner should appear
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-panel")).toBeInTheDocument();
+      expect(screen.getByTestId("cross-target-banner")).toBeInTheDocument();
+    });
+  });
+
+  it("should not show cross-target banner when attackTarget is null", () => {
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          attackResultId="ar-no-cross"
+          conversationId="conv-no-cross"
+          attackTarget={null}
+        />
+      </TestWrapper>
+    );
+
+    expect(screen.queryByTestId("cross-target-banner")).not.toBeInTheDocument();
+  });
+
+  // -----------------------------------------------------------------------
+  // Network error in handleSend
+  // -----------------------------------------------------------------------
+
+  it("should show network error when addMessage fails with network error", async () => {
+    const user = userEvent.setup();
+    const onReceiveMessage = jest.fn();
+
+    mockedMapper.buildMessagePieces.mockResolvedValue([
+      { data_type: "text", original_value: "test" },
+    ]);
+
+    const networkError = new Error("Network Error") as Error & {
+      isAxiosError: boolean;
+      response: undefined;
+      code: undefined;
+    };
+    networkError.isAxiosError = true;
+    (networkError as Record<string, unknown>).response = undefined;
+    mockedAttacksApi.addMessage.mockRejectedValue(networkError);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          conversationId="conv-net-err"
+          attackResultId="ar-net-err"
+          onReceiveMessage={onReceiveMessage}
+        />
+      </TestWrapper>
+    );
+
+    const input = screen.getByRole("textbox");
+    await user.type(input, "test");
+    await user.click(screen.getByRole("button", { name: /send/i }));
+
+    await waitFor(() => {
+      expect(onReceiveMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({
+            type: "network",
+            description: expect.stringContaining("Network error"),
+          }),
+        })
+      );
+    });
+  });
+
+  it("should show timeout error when addMessage fails with timeout", async () => {
+    const user = userEvent.setup();
+    const onReceiveMessage = jest.fn();
+
+    mockedMapper.buildMessagePieces.mockResolvedValue([
+      { data_type: "text", original_value: "test" },
+    ]);
+
+    const timeoutError = new Error("timeout") as Error & {
+      isAxiosError: boolean;
+      code: string;
+    };
+    timeoutError.isAxiosError = true;
+    (timeoutError as Record<string, unknown>).code = "ECONNABORTED";
+    mockedAttacksApi.addMessage.mockRejectedValue(timeoutError);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          conversationId="conv-timeout"
+          attackResultId="ar-timeout"
+          onReceiveMessage={onReceiveMessage}
+        />
+      </TestWrapper>
+    );
+
+    const input = screen.getByRole("textbox");
+    await user.type(input, "test");
+    await user.click(screen.getByRole("button", { name: /send/i }));
+
+    await waitFor(() => {
+      expect(onReceiveMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.objectContaining({
+            type: "timeout",
+            description: expect.stringContaining("timed out"),
+          }),
+        })
+      );
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Toggle panel button
+  // -----------------------------------------------------------------------
+
+  it("should toggle conversation panel when toggle-panel button is clicked", async () => {
+    mockedAttacksApi.getRelatedConversations.mockResolvedValue({
+      conversations: [
+        { conversation_id: "conv-toggle-main", is_main: true, message_count: 1, created_at: "2026-01-01T00:00:00Z" },
+      ],
+    });
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue([]);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          attackResultId="ar-toggle"
+          conversationId="conv-toggle-main"
+          activeConversationId="conv-toggle-main"
+          relatedConversationCount={0}
+        />
+      </TestWrapper>
+    );
+
+    // Panel should not be open initially (relatedConversationCount=0)
+    expect(screen.queryByTestId("conversation-panel")).not.toBeInTheDocument();
+
+    // Click toggle button to open panel
+    const toggleBtn = screen.getByTestId("toggle-panel-btn");
+    await userEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("conversation-panel")).toBeInTheDocument();
+    });
+
+    // Click toggle button again to close panel
+    await userEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("conversation-panel")).not.toBeInTheDocument();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Copy to input with attachments
+  // -----------------------------------------------------------------------
+
+  it("should copy message with attachments to input box", async () => {
+    const mockMessages: Message[] = [
+      { role: "user", content: "hello" },
+      {
+        role: "assistant",
+        content: "Here is an image",
+        attachments: [
+          {
+            type: "image" as const,
+            name: "test.png",
+            url: "data:image/png;base64,iVBORw0KGgo=",
+            mimeType: "image/png",
+            size: 12,
+          },
+        ],
+      },
+    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+
+    render(
+      <TestWrapper>
+        <ChatWindow
+          {...defaultProps}
+          messages={mockMessages}
+          attackResultId="ar-copy-att"
+          conversationId="conv-copy-att"
+          activeConversationId="conv-copy-att"
+        />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("loading-state")).not.toBeInTheDocument();
+    });
+
+    const copyBtn = screen.getByTestId("copy-to-input-btn-1");
+    await userEvent.click(copyBtn);
+
+    // The text should appear in the input area
+    await waitFor(() => {
+      const textarea = screen.getByRole("textbox") as HTMLTextAreaElement;
+      expect(textarea.value).toBe("Here is an image");
     });
   });
 });

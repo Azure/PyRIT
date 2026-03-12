@@ -107,15 +107,29 @@ async function mockAllAPIs(
   });
 
   // Messages (GET = conversation load, POST = send)
+  // Accumulate sent messages so GET returns them
+  const sentMessages: Record<string, unknown>[] = [];
   await page.route(/\/api\/attacks\/[^/]+\/messages/, async (route) => {
     if (route.request().method() === "GET") {
-      // Return whatever was last sent (empty is fine for tests)
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ messages: [] }),
+        body: JSON.stringify({ messages: sentMessages }),
       });
     } else if (route.request().method() === "POST" && addMessageHandler) {
+      // Build success response first to accumulate messages
+      let userText = "message";
+      try {
+        const body = JSON.parse(route.request().postData() ?? "{}");
+        userText =
+          body?.pieces?.find(
+            (p: Record<string, string>) => p.data_type === "text",
+          )?.original_value || "message";
+      } catch {
+        /* ignore */
+      }
+      const successMock = buildSuccessMessageMock(userText);
+      sentMessages.push(...successMock.messages.messages);
       await addMessageHandler(route);
     } else if (route.request().method() === "POST") {
       // Default success
@@ -129,10 +143,12 @@ async function mockAllAPIs(
       } catch {
         /* ignore */
       }
+      const successMock = buildSuccessMessageMock(userText);
+      sentMessages.push(...successMock.messages.messages);
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify(buildSuccessMessageMock(userText)),
+        body: JSON.stringify(successMock),
       });
     } else {
       await route.continue();

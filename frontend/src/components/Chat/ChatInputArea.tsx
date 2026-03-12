@@ -143,12 +143,129 @@ const useStyles = makeStyles({
   },
 })
 
-export interface InputBoxHandle {
+// ---------------------------------------------------------------------------
+// Banner sub-components
+// ---------------------------------------------------------------------------
+
+interface NoTargetBannerProps {
+  className: string
+  textClassName: string
+  onConfigureTarget?: () => void
+}
+
+function NoTargetBanner({ className, textClassName, onConfigureTarget }: NoTargetBannerProps) {
+  return (
+    <div className={className} data-testid="no-target-banner">
+      <WarningRegular fontSize={18} style={{ color: tokens.colorPaletteRedForeground1 }} />
+      <Text className={textClassName} size={300}>
+        No target selected
+      </Text>
+      {onConfigureTarget && (
+        <Button
+          appearance="primary"
+          icon={<SettingsRegular />}
+          onClick={onConfigureTarget}
+          data-testid="configure-target-input-btn"
+        >
+          Configure Target
+        </Button>
+      )}
+    </div>
+  )
+}
+
+interface OperatorLockedBannerProps {
+  className: string
+  textClassName: string
+  attackOperator?: string
+  onUseAsTemplate?: () => void
+}
+
+function OperatorLockedBanner({ className, textClassName, attackOperator, onUseAsTemplate }: OperatorLockedBannerProps) {
+  return (
+    <div className={className} data-testid="operator-locked-banner">
+      <InfoRegular fontSize={18} />
+      <Text className={textClassName} size={300}>
+        This conversation belongs to operator: {attackOperator}.
+      </Text>
+      {onUseAsTemplate && (
+        <Button
+          appearance="primary"
+          icon={<CopyRegular />}
+          onClick={onUseAsTemplate}
+          data-testid="use-as-template-btn"
+        >
+          Continue with your target
+        </Button>
+      )}
+    </div>
+  )
+}
+
+interface CrossTargetBannerProps {
+  className: string
+  textClassName: string
+  onUseAsTemplate?: () => void
+}
+
+function CrossTargetBanner({ className, textClassName, onUseAsTemplate }: CrossTargetBannerProps) {
+  return (
+    <div className={className} data-testid="cross-target-banner">
+      <InfoRegular fontSize={18} />
+      <Text className={textClassName} size={300}>
+        This attack uses a different target. Continue with your target to keep the conversation.
+      </Text>
+      {onUseAsTemplate && (
+        <Button
+          appearance="primary"
+          icon={<CopyRegular />}
+          onClick={onUseAsTemplate}
+          data-testid="use-as-template-btn"
+        >
+          Continue with your target
+        </Button>
+      )}
+    </div>
+  )
+}
+
+interface SingleTurnBannerProps {
+  className: string
+  textClassName: string
+  onNewConversation?: () => void
+}
+
+function SingleTurnBanner({ className, textClassName, onNewConversation }: SingleTurnBannerProps) {
+  return (
+    <div className={className} data-testid="single-turn-banner">
+      <InfoRegular fontSize={18} />
+      <Text className={textClassName} size={300}>
+        This target only supports single-turn conversations.
+      </Text>
+      {onNewConversation && (
+        <Button
+          appearance="primary"
+          icon={<AddRegular />}
+          onClick={onNewConversation}
+          data-testid="new-conversation-btn"
+        >
+          New Conversation
+        </Button>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
+
+export interface ChatInputAreaHandle {
   addAttachment: (att: MessageAttachment) => void
   setText: (text: string) => void
 }
 
-interface InputBoxProps {
+interface ChatInputAreaProps {
   onSend: (originalValue: string, convertedValue: string | undefined, attachments: MessageAttachment[]) => void
   disabled?: boolean
   activeTarget?: TargetInstance | null
@@ -162,7 +279,7 @@ interface InputBoxProps {
   onConfigureTarget?: () => void
 }
 
-const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(function InputBox({ onSend, disabled = false, activeTarget, singleTurnLimitReached = false, onNewConversation, operatorLocked = false, crossTargetLocked = false, onUseAsTemplate, attackOperator, noTargetSelected = false, onConfigureTarget }, ref) {
+const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(function ChatInputArea({ onSend, disabled = false, activeTarget, singleTurnLimitReached = false, onNewConversation, operatorLocked = false, crossTargetLocked = false, onUseAsTemplate, attackOperator, noTargetSelected = false, onConfigureTarget }, ref) {
   const styles = useStyles()
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<MessageAttachment[]>([])
@@ -263,73 +380,30 @@ const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(function InputBox({ o
     <div className={styles.root}>
       <div className={styles.inputContainer}>
         {noTargetSelected ? (
-          <div className={styles.noTargetBanner} data-testid="no-target-banner">
-            <WarningRegular fontSize={18} style={{ color: tokens.colorPaletteRedForeground1 }} />
-            <Text className={styles.noTargetText} size={300}>
-              No target selected
-            </Text>
-            {onConfigureTarget && (
-              <Button
-                appearance="primary"
-                icon={<SettingsRegular />}
-                onClick={onConfigureTarget}
-                data-testid="configure-target-input-btn"
-              >
-                Configure Target
-              </Button>
-            )}
-          </div>
+          <NoTargetBanner
+            className={styles.noTargetBanner}
+            textClassName={styles.noTargetText}
+            onConfigureTarget={onConfigureTarget}
+          />
         ) : operatorLocked ? (
-          <div className={styles.singleTurnBanner} data-testid="operator-locked-banner">
-            <InfoRegular fontSize={18} />
-            <Text className={styles.singleTurnText} size={300}>
-              This conversation belongs to operator: {attackOperator}.
-            </Text>
-            {onUseAsTemplate && (
-              <Button
-                appearance="primary"
-                icon={<CopyRegular />}
-                onClick={onUseAsTemplate}
-                data-testid="use-as-template-btn"
-              >
-                Continue with your target
-              </Button>
-            )}
-          </div>
+          <OperatorLockedBanner
+            className={styles.singleTurnBanner}
+            textClassName={styles.singleTurnText}
+            attackOperator={attackOperator}
+            onUseAsTemplate={onUseAsTemplate}
+          />
         ) : crossTargetLocked ? (
-          <div className={styles.singleTurnBanner} data-testid="cross-target-banner">
-            <InfoRegular fontSize={18} />
-            <Text className={styles.singleTurnText} size={300}>
-              This attack uses a different target. Continue with your target to keep the conversation.
-            </Text>
-            {onUseAsTemplate && (
-              <Button
-                appearance="primary"
-                icon={<CopyRegular />}
-                onClick={onUseAsTemplate}
-                data-testid="use-as-template-btn"
-              >
-                Continue with your target
-              </Button>
-            )}
-          </div>
+          <CrossTargetBanner
+            className={styles.singleTurnBanner}
+            textClassName={styles.singleTurnText}
+            onUseAsTemplate={onUseAsTemplate}
+          />
         ) : singleTurnLimitReached ? (
-          <div className={styles.singleTurnBanner} data-testid="single-turn-banner">
-            <InfoRegular fontSize={18} />
-            <Text className={styles.singleTurnText} size={300}>
-              This target only supports single-turn conversations.
-            </Text>
-            {onNewConversation && (
-              <Button
-                appearance="primary"
-                icon={<AddRegular />}
-                onClick={onNewConversation}
-                data-testid="new-conversation-btn"
-              >
-                New Conversation
-              </Button>
-            )}
-          </div>
+          <SingleTurnBanner
+            className={styles.singleTurnBanner}
+            textClassName={styles.singleTurnText}
+            onNewConversation={onNewConversation}
+          />
         ) : (
         <>
         <div className={styles.inputWrapper}>
@@ -412,4 +486,4 @@ const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(function InputBox({ o
   )
 })
 
-export default InputBox
+export default ChatInputArea

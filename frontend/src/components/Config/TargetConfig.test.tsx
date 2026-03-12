@@ -342,4 +342,26 @@ describe("TargetConfig", () => {
     // No reasoning or other special params should be displayed
     expect(screen.queryByText(/reasoning_effort/)).not.toBeInTheDocument();
   });
+
+  it("should open dialog when Create First Target button is clicked in empty state", async () => {
+    mockedTargetsApi.listTargets.mockResolvedValue({
+      items: [],
+      pagination: { limit: 200, has_more: false },
+    });
+
+    render(
+      <TestWrapper>
+        <TargetConfig {...defaultProps} />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("No Targets Configured")).toBeInTheDocument();
+    });
+
+    // Click the "Create First Target" button (in the empty state)
+    await userEvent.click(screen.getByText("Create First Target"));
+
+    expect(screen.getByTestId("create-dialog")).toBeInTheDocument();
+  });
 });

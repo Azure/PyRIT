@@ -140,7 +140,7 @@ test.describe("Error Handling", () => {
 
     await page.goto("/");
 
-    // UI should be responsive
-    await expect(page.getByRole("textbox")).toBeVisible({ timeout: 10000 });
+    // UI should be responsive even while APIs are delayed
+    await expect(page.getByText("PyRIT Attack")).toBeVisible({ timeout: 10000 });
   });
 });

@@ -957,5 +957,165 @@ describe("messageMapper", () => {
       expect(result.content).toBe("Some response");
       expect(result.originalContent).toBeUndefined();
     });
+
+    it("should include original media attachments when they differ from converted", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "p1",
+            original_value_data_type: "image_path",
+            converted_value_data_type: "image_path",
+            original_value: "originalImageData",
+            converted_value: "convertedImageData",
+            converted_value_mime_type: "image/png",
+            original_value_mime_type: "image/jpeg",
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-25T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+      expect(result.attachments).toBeDefined();
+      expect(result.originalAttachments).toBeDefined();
+    });
+
+    it("should not include originalAttachments when media is identical", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "p1",
+            original_value_data_type: "image_path",
+            converted_value_data_type: "image_path",
+            original_value: "sameData",
+            converted_value: "sameData",
+            converted_value_mime_type: "image/png",
+            original_value_mime_type: "image/png",
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-25T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+      expect(result.attachments).toBeDefined();
+      expect(result.originalAttachments).toBeUndefined();
+    });
+  });
+
+  describe("defaultMimeForDataType edge cases", () => {
+    it("should use audio default mime when no mime provided for audio_path", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "p-audio",
+            original_value_data_type: "text",
+            converted_value_data_type: "audio_path",
+            converted_value: "audioBase64Data",
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-25T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+      expect(result.attachments).toBeDefined();
+      expect(result.attachments![0].mimeType).toBe("audio/wav");
+    });
+
+    it("should use video default mime when no mime provided for video_path", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "p-video",
+            original_value_data_type: "text",
+            converted_value_data_type: "video_path",
+            converted_value: "videoBase64Data",
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-25T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+      expect(result.attachments).toBeDefined();
+      expect(result.attachments![0].mimeType).toBe("video/mp4");
+    });
+  });
+
+  describe("reasoning content fallback", () => {
+    it("should return content field when present but no summaries", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "r1",
+            original_value_data_type: "reasoning",
+            converted_value_data_type: "reasoning",
+            converted_value: JSON.stringify({
+              type: "reasoning",
+              content: "Some readable content here",
+              summary: [],
+            }),
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-15T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+      expect(result.reasoningSummaries).toEqual(["Some readable content here"]);
+    });
+
+    it("should return empty array when reasoning value is empty", () => {
+      const msg: BackendMessage = {
+        turn_number: 1,
+        role: "assistant",
+        pieces: [
+          {
+            piece_id: "r1",
+            original_value_data_type: "reasoning",
+            converted_value_data_type: "reasoning",
+            converted_value: "",
+            scores: [],
+            response_error: "none",
+          },
+        ],
+        created_at: "2026-02-15T00:00:00Z",
+      };
+
+      const result = backendMessageToFrontend(msg);
+      // Empty value → no summaries
+      expect(result.reasoningSummaries).toBeUndefined();
+    });
+  });
+
+  describe("attachment URL handling", () => {
+    it("should use raw URL when attachment has no file and no data URI", async () => {
+      const att: MessageAttachment = {
+        type: "image",
+        name: "remote.png",
+        url: "https://example.com/image.png",
+        mimeType: "image/png",
+        size: 1000,
+      };
+
+      const result = await attachmentToMessagePieceRequest(att);
+      expect(result.original_value).toBe("https://example.com/image.png");
+    });
   });
 });

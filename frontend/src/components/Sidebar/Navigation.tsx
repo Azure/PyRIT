@@ -20,7 +20,7 @@ const useStyles = makeStyles({
     alignItems: 'center',
     gap: tokens.spacingVerticalM,
   },
-  iconButton: {
+  navButton: {
     width: '44px',
     height: '44px',
     minWidth: '44px',
@@ -28,17 +28,10 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  activeButton: {
-    width: '44px',
-    height: '44px',
-    minWidth: '44px',
-    padding: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tokens.colorBrandBackground2,
-    borderRadius: tokens.borderRadiusMedium,
+    '&[data-active="true"]': {
+      backgroundColor: tokens.colorBrandBackground2,
+      borderRadius: tokens.borderRadiusMedium,
+    },
   },
   spacer: {
     flex: 1,
@@ -60,7 +53,8 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
   return (
     <div className={styles.root}>
       <Button
-        className={currentView === 'chat' ? styles.activeButton : styles.iconButton}
+        className={styles.navButton}
+        data-active={currentView === 'chat'}
         appearance="subtle"
         icon={<ChatRegular />}
         title="Chat"
@@ -69,7 +63,8 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
       />
 
       <Button
-        className={currentView === 'history' ? styles.activeButton : styles.iconButton}
+        className={styles.navButton}
+        data-active={currentView === 'history'}
         appearance="subtle"
         icon={<HistoryRegular />}
         title="Attack History"
@@ -78,7 +73,8 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
       />
 
       <Button
-        className={currentView === 'config' ? styles.activeButton : styles.iconButton}
+        className={styles.navButton}
+        data-active={currentView === 'config'}
         appearance="subtle"
         icon={<SettingsRegular />}
         title="Configuration"
@@ -89,7 +85,7 @@ export default function Navigation({ currentView, onNavigate, onToggleTheme, isD
       <div className={styles.spacer} />
 
       <Button
-        className={styles.iconButton}
+        className={styles.navButton}
         appearance="subtle"
         icon={isDarkMode ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
         onClick={onToggleTheme}

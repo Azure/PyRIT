@@ -208,10 +208,9 @@ export function backendMessageToFrontend(msg: BackendMessage): Message {
     }
   }
 
-  const role = msg.role === 'simulated_assistant' ? 'simulated_assistant'
-    : msg.role === 'assistant' ? 'assistant'
-    : msg.role === 'system' || msg.role === 'developer' ? 'system'
-    : 'user'
+  const role = ['simulated_assistant', 'assistant', 'system'].includes(msg.role)
+    ? msg.role
+    : msg.role === 'developer' ? 'system' : 'user'
 
   const convertedContent = textParts.join('\n')
   const originalContent = originalTextParts.join('\n')

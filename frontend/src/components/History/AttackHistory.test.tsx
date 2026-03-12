@@ -655,4 +655,310 @@ describe('AttackHistory', () => {
 
     expect(screen.queryByTestId('reset-filters-btn')).not.toBeInTheDocument()
   })
+
+  it('should call onFiltersChange with attackClass when attack type filter is selected', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({
+      attack_types: ['CrescendoAttack', 'ManualAttack'],
+    })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({
+      converter_types: [],
+    })
+    mockedLabelsApi.getLabels.mockResolvedValue({
+      source: 'attacks',
+      labels: {},
+    })
+
+    const onFiltersChange = jest.fn()
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.getAttackOptions).toHaveBeenCalled()
+    })
+
+    // Open the attack class dropdown and select an option
+    const attackDropdown = screen.getByTestId('attack-class-filter')
+    fireEvent.click(attackDropdown)
+
+    await waitFor(() => {
+      expect(screen.getByText('CrescendoAttack')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('CrescendoAttack'))
+
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ attackClass: 'CrescendoAttack' })
+    )
+  })
+
+  it('should call onFiltersChange with outcome when outcome filter is selected', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({ attack_types: [] })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({ converter_types: [] })
+    mockedLabelsApi.getLabels.mockResolvedValue({ source: 'attacks', labels: {} })
+
+    const onFiltersChange = jest.fn()
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('outcome-filter')).toBeInTheDocument()
+    })
+
+    const outcomeDropdown = screen.getByTestId('outcome-filter')
+    fireEvent.click(outcomeDropdown)
+
+    await waitFor(() => {
+      expect(screen.getByText('Success')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Success'))
+
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: 'success' })
+    )
+  })
+
+  it('should call onFiltersChange with converter when converter filter is selected', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({ attack_types: [] })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({
+      converter_types: ['Base64Converter', 'ROT13Converter'],
+    })
+    mockedLabelsApi.getLabels.mockResolvedValue({ source: 'attacks', labels: {} })
+
+    const onFiltersChange = jest.fn()
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(mockedAttacksApi.getConverterOptions).toHaveBeenCalled()
+    })
+
+    const converterDropdown = screen.getByTestId('converter-filter')
+    fireEvent.click(converterDropdown)
+
+    await waitFor(() => {
+      expect(screen.getByText('Base64Converter')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('Base64Converter'))
+
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ converter: 'Base64Converter' })
+    )
+  })
+
+  it('should call onFiltersChange with operator when operator filter is selected', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({ attack_types: [] })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({ converter_types: [] })
+    mockedLabelsApi.getLabels.mockResolvedValue({
+      source: 'attacks',
+      labels: {
+        operator: ['alice', 'bob'],
+        operation: ['op_one'],
+      },
+    })
+
+    const onFiltersChange = jest.fn()
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(mockedLabelsApi.getLabels).toHaveBeenCalled()
+    })
+
+    const operatorDropdown = screen.getByTestId('operator-filter')
+    fireEvent.click(operatorDropdown)
+
+    await waitFor(() => {
+      expect(screen.getByText('alice')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('alice'))
+
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ operator: 'alice' })
+    )
+  })
+
+  it('should call onFiltersChange with operation when operation filter is selected', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({ attack_types: [] })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({ converter_types: [] })
+    mockedLabelsApi.getLabels.mockResolvedValue({
+      source: 'attacks',
+      labels: {
+        operator: [],
+        operation: ['op_alpha', 'op_beta'],
+      },
+    })
+
+    const onFiltersChange = jest.fn()
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(mockedLabelsApi.getLabels).toHaveBeenCalled()
+    })
+
+    const operationDropdown = screen.getByTestId('operation-filter')
+    fireEvent.click(operationDropdown)
+
+    await waitFor(() => {
+      expect(screen.getByText('op_alpha')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('op_alpha'))
+
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ operation: 'op_alpha' })
+    )
+  })
+
+  it('should update label search text when typing in label combobox', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({ attack_types: [] })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({ converter_types: [] })
+    mockedLabelsApi.getLabels.mockResolvedValue({
+      source: 'attacks',
+      labels: {
+        team: ['red', 'blue'],
+        env: ['prod'],
+      },
+    })
+
+    const onFiltersChange = jest.fn()
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(mockedLabelsApi.getLabels).toHaveBeenCalled()
+    })
+
+    // Fluent UI Combobox renders input with role="combobox"
+    const inputs = screen.getAllByRole('combobox')
+    // The label filter combobox is the last one
+    const labelInput = inputs[inputs.length - 1]
+    fireEvent.change(labelInput, { target: { value: 'red' } })
+
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ labelSearchText: 'red' })
+    )
+  })
+
+  it('should reset all filters when reset button is clicked with multiple active filters', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: sampleAttacks,
+      pagination: { limit: 25, has_more: false },
+    })
+
+    const onFiltersChange = jest.fn()
+    const activeFilters = {
+      ...DEFAULT_HISTORY_FILTERS,
+      attackClass: 'CrescendoAttack',
+      outcome: 'success',
+      operator: 'alice',
+    }
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} filters={activeFilters} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('reset-filters-btn')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByTestId('reset-filters-btn'))
+    expect(onFiltersChange).toHaveBeenCalledWith(DEFAULT_HISTORY_FILTERS)
+  })
+
+  it('should call onFiltersChange when selecting a label option from combobox', async () => {
+    mockedAttacksApi.listAttacks.mockResolvedValue({
+      items: [],
+      pagination: { limit: 25, has_more: false },
+    })
+    mockedAttacksApi.getAttackOptions.mockResolvedValue({ attack_types: [] })
+    mockedAttacksApi.getConverterOptions.mockResolvedValue({ converter_types: [] })
+    mockedLabelsApi.getLabels.mockResolvedValue({
+      source: 'attacks',
+      labels: {
+        team: ['red', 'blue'],
+        env: ['prod'],
+      },
+    })
+
+    const onFiltersChange = jest.fn()
+
+    render(
+      <TestWrapper>
+        <AttackHistory {...defaultProps} onFiltersChange={onFiltersChange} />
+      </TestWrapper>
+    )
+
+    await waitFor(() => {
+      expect(mockedLabelsApi.getLabels).toHaveBeenCalled()
+    })
+
+    // Click on the label filter combobox to open the dropdown
+    const labelCombobox = screen.getByTestId('label-filter')
+    fireEvent.click(labelCombobox)
+
+    // Wait for options to appear, then select one
+    await waitFor(() => {
+      expect(screen.getByText('team:red')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByText('team:red'))
+
+    expect(onFiltersChange).toHaveBeenCalledWith(
+      expect.objectContaining({ otherLabels: expect.any(Array), labelSearchText: '' })
+    )
+  })
 })

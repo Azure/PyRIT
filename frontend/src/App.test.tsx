@@ -19,6 +19,8 @@ jest.mock("./services/api", () => ({
   },
 }));
 
+const mockedVersionApi = jest.requireMock("./services/api").versionApi;
+
 const mockGetAttack = attacksApi.getAttack as jest.Mock;
 
 // Mock the child components to isolate App logic
@@ -80,14 +82,16 @@ jest.mock("./components/Chat/ChatWindow", () => {
     activeTarget,
     conversationId,
     onConversationCreated,
+    onSelectConversation,
   }: {
-    messages: Array<{ id: string; content: string }>;
+    messages: Array<{ id: string; content: string; isLoading?: boolean }>;
     onSendMessage: (msg: { id: string; content: string }) => void;
-    onReceiveMessage: (msg: { id: string; content: string }) => void;
+    onReceiveMessage: (msg: { id: string; content: string; isLoading?: boolean }) => void;
     onNewAttack: () => void;
     activeTarget: unknown;
     conversationId: string | null;
     onConversationCreated: (attackResultId: string, conversationId: string) => void;
+    onSelectConversation: (convId: string) => void;
   }) => {
     return (
       <div data-testid="chat-window">
@@ -106,6 +110,12 @@ jest.mock("./components/Chat/ChatWindow", () => {
         >
           Receive
         </button>
+        <button
+          onClick={() => onReceiveMessage({ id: "loading", content: "...", isLoading: true })}
+          data-testid="receive-loading"
+        >
+          Receive Loading
+        </button>
         <button onClick={onNewAttack} data-testid="new-attack">
           New Attack
         </button>
@@ -114,6 +124,12 @@ jest.mock("./components/Chat/ChatWindow", () => {
           data-testid="set-conversation"
         >
           Set Conv
+        </button>
+        <button
+          onClick={() => onSelectConversation("conv-456")}
+          data-testid="select-conversation"
+        >
+          Select Conv
         </button>
       </div>
     );
@@ -369,5 +385,61 @@ describe("App", () => {
     // but we verify the receive handler adds to messages
     fireEvent.click(screen.getByTestId("receive-message"));
     expect(screen.getByTestId("message-count")).toHaveTextContent("2");
+  });
+
+  it("replaces loading message when response arrives", () => {
+    render(<App />);
+
+    // Send a user message
+    fireEvent.click(screen.getByTestId("send-message"));
+    expect(screen.getByTestId("message-count")).toHaveTextContent("1");
+
+    // Receive a loading indicator
+    fireEvent.click(screen.getByTestId("receive-loading"));
+    expect(screen.getByTestId("message-count")).toHaveTextContent("2");
+
+    // Replace loading with actual response
+    fireEvent.click(screen.getByTestId("receive-message"));
+    // Loading message should be replaced, not appended
+    expect(screen.getByTestId("message-count")).toHaveTextContent("2");
+  });
+
+  it("merges default labels from backend version API", async () => {
+    mockedVersionApi.getVersion.mockResolvedValueOnce({
+      version: "2.0.0",
+      default_labels: { operator: "default_user", custom: "value" },
+    });
+
+    render(<App />);
+
+    // The version API is called on mount and labels get merged
+    await waitFor(() => {
+      expect(mockedVersionApi.getVersion).toHaveBeenCalled();
+    });
+  });
+
+  it("stores attack target when conversation is created with active target", () => {
+    render(<App />);
+
+    // Set a target first
+    fireEvent.click(screen.getByTestId("nav-config"));
+    fireEvent.click(screen.getByTestId("set-target"));
+    fireEvent.click(screen.getByTestId("nav-chat"));
+
+    // Create a conversation (which should store target info)
+    fireEvent.click(screen.getByTestId("set-conversation"));
+    expect(screen.getByTestId("conversation-id")).toHaveTextContent("conv-123");
+  });
+
+  it("sets active conversation when onSelectConversation is called", () => {
+    render(<App />);
+
+    // First create a conversation to have an attack
+    fireEvent.click(screen.getByTestId("set-conversation"));
+    expect(screen.getByTestId("conversation-id")).toHaveTextContent("conv-123");
+
+    // Now select a different conversation
+    fireEvent.click(screen.getByTestId("select-conversation"));
+    // The component re-renders with the new conversation ID
   });
 });

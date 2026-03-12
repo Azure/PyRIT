@@ -9,10 +9,10 @@ import {
 } from '@fluentui/react-components'
 import { AddRegular, PanelRightRegular } from '@fluentui/react-icons'
 import MessageList from './MessageList'
-import InputBox from './InputBox'
+import ChatInputArea from './ChatInputArea'
 import ConversationPanel from './ConversationPanel'
 import LabelsBar from '../Labels/LabelsBar'
-import type { InputBoxHandle } from './InputBox'
+import type { ChatInputAreaHandle } from './ChatInputArea'
 import { attacksApi } from '../../services/api'
 import { toApiError } from '../../services/errors'
 import { buildMessagePieces, backendMessagesToFrontend } from '../../utils/messageMapper'
@@ -121,10 +121,10 @@ export default function ChatWindow({
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   /** Which conversation's messages are currently loaded (set after fetch completes) */
   const [loadedConversationId, setLoadedConversationId] = useState<string | null>(null)
-  const isSending = activeConversationId ? sendingConversations.has(activeConversationId) : sendingConversations.size > 0
+  const isSending = activeConversationId ? sendingConversations.has(activeConversationId) : Boolean(sendingConversations.size)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [panelRefreshKey, setPanelRefreshKey] = useState(0)
-  const inputBoxRef = useRef<InputBoxHandle>(null)
+  const inputBoxRef = useRef<ChatInputAreaHandle>(null)
 
   // Auto-open conversation sidebar when loading a historical attack with multiple conversations
   useEffect(() => {
@@ -148,7 +148,7 @@ export default function ChatWindow({
     try {
       const response = await attacksApi.getMessages(arId, convId)
       // Discard stale response if user navigated away while loading
-      if (viewedConvRef.current !== convId) return
+      if (viewedConvRef.current !== convId) { return }
       const frontendMessages = backendMessagesToFrontend(response.messages)
       // If this conversation has an in-flight send, append any pending user
       // messages (that the server may not have stored yet) and a loading indicator.
@@ -165,7 +165,7 @@ export default function ChatWindow({
       onSetMessages(frontendMessages)
       setLoadedConversationId(convId)
     } catch {
-      if (viewedConvRef.current !== convId) return
+      if (viewedConvRef.current !== convId) { return }
       onSetMessages([])
       setLoadedConversationId(convId)
     } finally {
@@ -175,13 +175,12 @@ export default function ChatWindow({
 
   // Reload messages when activeConversationId changes
   useEffect(() => {
-    if (!attackResultId || !activeConversationId) return
+    if (!attackResultId || !activeConversationId) { return }
     // Skip loading if a send is already in-flight for this conversation —
     // the send handler will update messages when it completes.
-    if (sendingConvIdsRef.current.has(activeConversationId)) return
+    if (sendingConvIdsRef.current.has(activeConversationId)) { return }
     loadConversation(attackResultId, activeConversationId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConversationId])
+  }, [activeConversationId, attackResultId])
 
   // Synchronous loading derivation: if activeConversationId differs from the
   // conversation whose messages we've loaded, we're in a transition gap.
@@ -201,7 +200,7 @@ export default function ChatWindow({
   }, [attackResultId, activeConversationId, onSelectConversation, loadConversation])
 
   const handleSend = async (originalValue: string, _convertedValue: string | undefined, attachments: MessageAttachment[]) => {
-    if (!activeTarget) return
+    if (!activeTarget) { return }
 
     // Track which conversation this send belongs to (may be updated after attack creation)
     let sendConvId = activeConversationId || '__pending__'
@@ -335,7 +334,7 @@ export default function ChatWindow({
   }
 
   const handleNewConversation = useCallback(async () => {
-    if (!attackResultId) return
+    if (!attackResultId) { return }
 
     try {
       const response = await attacksApi.createConversation(attackResultId, {})
@@ -353,8 +352,8 @@ export default function ChatWindow({
   /** 1. Copy the clicked message's content/attachments into the current conversation's input box */
   const handleCopyToInput = useCallback((messageIndex: number) => {
     const msg = messages[messageIndex]
-    if (!msg) return
-    if (msg.content) inputBoxRef.current?.setText(msg.content)
+    if (!msg) { return }
+    if (msg.content) { inputBoxRef.current?.setText(msg.content) }
     if (msg.attachments) {
       msg.attachments.filter(a => a.type !== 'file').forEach(att => {
         inputBoxRef.current?.addAttachment(att)
@@ -364,9 +363,9 @@ export default function ChatWindow({
 
   /** 2. Create a new conversation in the same attack and copy ONLY this message to its input box */
   const handleCopyToNewConversation = useCallback(async (messageIndex: number) => {
-    if (!attackResultId) return
+    if (!attackResultId) { return }
     const msg = messages[messageIndex]
-    if (!msg) return
+    if (!msg) { return }
 
     try {
       const response = await attacksApi.createConversation(attackResultId, {})
@@ -389,7 +388,7 @@ export default function ChatWindow({
 
   /** 3. Branch into a new conversation within the same attack (clone up to clicked message) */
   const handleBranchConversation = useCallback(async (messageIndex: number) => {
-    if (!attackResultId || !activeConversationId) return
+    if (!attackResultId || !activeConversationId) { return }
 
     try {
       const response = await attacksApi.createConversation(attackResultId, {
@@ -409,7 +408,7 @@ export default function ChatWindow({
 
   /** 4. Branch into a brand-new attack (clone up to clicked message with new labels) */
   const handleBranchAttack = useCallback(async (messageIndex: number) => {
-    if (!activeTarget || !activeConversationId) return
+    if (!activeTarget || !activeConversationId) { return }
 
     try {
       const createResponse = await attacksApi.createAttack({
@@ -430,7 +429,7 @@ export default function ChatWindow({
   }, [activeTarget, activeConversationId, labels, onConversationCreated, onSetMessages])
 
   const handleChangeMainConversation = useCallback(async (convId: string) => {
-    if (!attackResultId) return
+    if (!attackResultId) { return }
 
     try {
       await attacksApi.changeMainConversation(attackResultId, convId)
@@ -462,14 +461,14 @@ export default function ChatWindow({
 
   // "Continue with your target" — clone the current conversation into a new attack
   const handleUseAsTemplate = useCallback(async () => {
-    if (!attackResultId || !activeTarget || !activeConversationId) return
+    if (!attackResultId || !activeTarget || !activeConversationId) { return }
 
     // Find the last non-loading message index to use as cutoff
     const lastIndex = messages.reduce(
       (acc, m, i) => (m.isLoading ? acc : i),
       -1
     )
-    if (lastIndex < 0) return
+    if (lastIndex < 0) { return }
 
     try {
       // Let the backend clone the conversation with new labels
@@ -548,7 +547,7 @@ export default function ChatWindow({
           isCrossTarget={isCrossTargetLocked}
           noTargetSelected={!activeTarget}
         />
-        <InputBox
+        <ChatInputArea
           ref={inputBoxRef}
           onSend={handleSend}
           disabled={isSending || !activeTarget || singleTurnLimitReached || isOperatorLocked || isCrossTargetLocked}

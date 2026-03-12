@@ -211,4 +211,52 @@ describe("CreateTargetDialog", () => {
       screen.getByText(/auto-populated by adding an initializer/)
     ).toBeInTheDocument();
   });
+
+  it("should show field validation errors when submitting form without endpoint", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <TestWrapper>
+        <CreateTargetDialog {...defaultProps} />
+      </TestWrapper>
+    );
+
+    // Select target type but leave endpoint empty
+    await selectTargetType(user, "OpenAIChatTarget");
+
+    // Submit via form (bypass disabled button by submitting the form directly)
+    const form = screen.getByText("Create New Target").closest("form") ??
+      document.querySelector("form");
+    if (form) {
+      fireEvent.submit(form);
+    }
+
+    await waitFor(() => {
+      expect(screen.getByText("Please provide an endpoint URL")).toBeInTheDocument();
+    });
+  });
+
+  it("should show generic error for non-Error exceptions", async () => {
+    const user = userEvent.setup();
+    mockedTargetsApi.createTarget.mockRejectedValue("string error");
+
+    render(
+      <TestWrapper>
+        <CreateTargetDialog {...defaultProps} />
+      </TestWrapper>
+    );
+
+    await selectTargetType(user, "OpenAIChatTarget");
+
+    const endpointInput = screen.getByPlaceholderText(
+      "https://your-resource.openai.azure.com/"
+    );
+    fireEvent.change(endpointInput, { target: { value: "https://example.com" } });
+
+    await user.click(screen.getByText("Create Target"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to create target")).toBeInTheDocument();
+    });
+  });
 });

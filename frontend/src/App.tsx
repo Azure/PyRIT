@@ -8,11 +8,32 @@ import { DEFAULT_HISTORY_FILTERS } from './components/History/historyFilters'
 import type { HistoryFilters } from './components/History/historyFilters'
 import { ConnectionBanner } from './components/ConnectionBanner'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { ConnectionHealthProvider } from './hooks/useConnectionHealth'
+import { ConnectionHealthProvider, useConnectionHealth } from './hooks/useConnectionHealth'
 import { DEFAULT_GLOBAL_LABELS } from './components/Labels/labelDefaults'
 import type { ViewName } from './components/Sidebar/Navigation'
 import type { Message, TargetInstance, TargetInfo } from './types'
 import { attacksApi, versionApi } from './services/api'
+
+const AUTO_DISMISS_MS = 5_000
+
+function ConnectionBannerContainer() {
+  const { status, reconnectCount } = useConnectionHealth()
+  const [showReconnected, setShowReconnected] = useState(false)
+
+  useEffect(() => {
+    if (reconnectCount > 0) {
+      setShowReconnected(true)
+      const timer = setTimeout(() => setShowReconnected(false), AUTO_DISMISS_MS)
+      return () => clearTimeout(timer)
+    }
+  }, [reconnectCount])
+
+  if (status === 'connected' && !showReconnected) {
+    return null
+  }
+
+  return <ConnectionBanner status={status} />
+}
 
 function App() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -82,7 +103,7 @@ function App() {
     })
   }
 
-  const handleNewAttack = () => {
+  const clearAttackState = useCallback(() => {
     setMessages([])
     setAttackResultId(null)
     setConversationId(null)
@@ -90,6 +111,10 @@ function App() {
     setAttackLabels(null)
     setAttackTarget(null)
     setRelatedConversationCount(0)
+  }, [])
+
+  const handleNewAttack = () => {
+    clearAttackState()
   }
 
   const handleConversationCreated = useCallback((arId: string, convId: string) => {
@@ -101,11 +126,8 @@ function App() {
     // Record the target used for this attack so the cross-target guard
     // fires if the user switches targets mid-conversation.
     if (activeTarget) {
-      setAttackTarget({
-        target_type: activeTarget.target_type,
-        endpoint: activeTarget.endpoint,
-        model_name: activeTarget.model_name,
-      })
+      const { target_type, endpoint, model_name } = activeTarget
+      setAttackTarget({ target_type, endpoint, model_name })
     }
   }, [activeTarget])
 
@@ -128,15 +150,11 @@ function App() {
       setAttackTarget(attack.target ?? null)
       setRelatedConversationCount(attack.related_conversation_ids?.length ?? 0)
     } catch {
-      setConversationId(null)
-      setActiveConversationId(null)
-      setAttackLabels(null)
-      setAttackTarget(null)
-      setRelatedConversationCount(0)
+      clearAttackState()
     } finally {
       setIsLoadingAttack(false)
     }
-  }, [])
+  }, [clearAttackState])
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode)
@@ -146,7 +164,7 @@ function App() {
     <ErrorBoundary>
       <ConnectionHealthProvider>
         <FluentProvider theme={isDarkMode ? webDarkTheme : webLightTheme}>
-          <ConnectionBanner />
+          <ConnectionBannerContainer />
           <MainLayout
             currentView={currentView}
             onNavigate={setCurrentView}

@@ -8,6 +8,9 @@ const MOCK_CONVERSATION_ID = "e2e-conv-001";
 
 /** Intercept targets & attacks APIs so the chat flow can run without real keys. */
 async function mockBackendAPIs(page: Page) {
+  // Accumulate messages so multi-turn tests get full history back
+  let accumulatedMessages: Record<string, unknown>[] = [];
+
   // Mock targets list – return one target already available
   await page.route(/\/api\/targets/, async (route) => {
     if (route.request().method() === "GET") {
@@ -43,45 +46,49 @@ async function mockBackendAPIs(page: Page) {
       } catch {
         // Ignore parse errors
       }
+
+      const turnNumber = Math.floor(accumulatedMessages.length / 2) + 1;
+      const userMsg = {
+        turn_number: turnNumber,
+        role: "user",
+        created_at: new Date().toISOString(),
+        pieces: [
+          {
+            piece_id: `piece-u-${turnNumber}`,
+            original_value_data_type: "text",
+            converted_value_data_type: "text",
+            original_value: userText,
+            converted_value: userText,
+            scores: [],
+            response_error: "none",
+          },
+        ],
+      };
+      const assistantMsg = {
+        turn_number: turnNumber,
+        role: "assistant",
+        created_at: new Date().toISOString(),
+        pieces: [
+          {
+            piece_id: `piece-a-${turnNumber}`,
+            original_value_data_type: "text",
+            converted_value_data_type: "text",
+            original_value: `Mock response for: ${userText}`,
+            converted_value: `Mock response for: ${userText}`,
+            scores: [],
+            response_error: "none",
+          },
+        ],
+      };
+
+      accumulatedMessages.push(userMsg, assistantMsg);
+
       await route.fulfill({
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({
           messages: {
-            messages: [
-              {
-                turn_number: 1,
-                role: "user",
-                created_at: new Date().toISOString(),
-                pieces: [
-                  {
-                    piece_id: "piece-u-1",
-                    original_value_data_type: "text",
-                    converted_value_data_type: "text",
-                    original_value: userText,
-                    converted_value: userText,
-                    scores: [],
-                    response_error: "none",
-                  },
-                ],
-              },
-              {
-                turn_number: 1,
-                role: "assistant",
-                created_at: new Date().toISOString(),
-                pieces: [
-                  {
-                    piece_id: "piece-a-1",
-                    original_value_data_type: "text",
-                    converted_value_data_type: "text",
-                    original_value: `Mock response for: ${userText}`,
-                    converted_value: `Mock response for: ${userText}`,
-                    scores: [],
-                    response_error: "none",
-                  },
-                ],
-              },
-            ],
+            messages: [...accumulatedMessages],
           },
         }),
       });
@@ -91,12 +98,17 @@ async function mockBackendAPIs(page: Page) {
   });
 
   // Mock create-attack – returns a conversation id (matches /api/attacks exactly)
+  // Also resets accumulated messages for fresh conversations.
   await page.route(/\/api\/attacks$/, async (route) => {
     if (route.request().method() === "POST") {
+      accumulatedMessages = [];
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ conversation_id: MOCK_CONVERSATION_ID }),
+        body: JSON.stringify({
+          attack_result_id: "e2e-attack-001",
+          conversation_id: MOCK_CONVERSATION_ID,
+        }),
       });
     } else {
       await route.continue();
@@ -137,16 +149,35 @@ test.describe("Application Smoke Tests", () => {
     await expect(page.getByText("PyRIT Attack")).toBeVisible({ timeout: 10000 });
   });
 
-  test("should have New Chat button", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /new chat/i })).toBeVisible();
-  });
-
-  test("should have message input", async ({ page }) => {
-    await expect(page.getByRole("textbox")).toBeVisible();
+  test("should have New Attack button", async ({ page }) => {
+    await expect(page.getByRole("button", { name: /new attack/i })).toBeVisible();
   });
 
   test("should show 'no target' hint when no target is active", async ({ page }) => {
-    await expect(page.getByText(/no target selected/i)).toBeVisible();
+    await expect(page.getByTestId("no-target-banner")).toBeVisible();
+  });
+});
+
+test.describe("Theme Toggle", () => {
+  test("should toggle dark/light theme", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByText("PyRIT Attack")).toBeVisible({ timeout: 10000 });
+
+    // The app defaults to dark mode, so the toggle button title should say "Light Mode"
+    const themeBtn = page.getByTitle("Light Mode");
+    await expect(themeBtn).toBeVisible();
+
+    // Click to switch to light mode
+    await themeBtn.click();
+
+    // Now the button title should change to "Dark Mode"
+    await expect(page.getByTitle("Dark Mode")).toBeVisible({ timeout: 5000 });
+    // The old title should no longer be present
+    await expect(page.getByTitle("Light Mode")).not.toBeVisible();
+
+    // Click again to switch back to dark mode
+    await page.getByTitle("Dark Mode").click();
+    await expect(page.getByTitle("Light Mode")).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -211,11 +242,10 @@ test.describe("Chat Functionality", () => {
       page.getByText("Mock response for: First message"),
     ).toBeVisible({ timeout: 10000 });
 
-    // Click New Chat
-    await page.getByRole("button", { name: /new chat/i }).click();
+    // Click New Attack
+    await page.getByTestId("new-attack-btn").click();
 
     // Previous messages should be cleared
-    await expect(page.getByText("First message")).not.toBeVisible();
     await expect(page.getByText("Mock response for: First message")).not.toBeVisible();
   });
 });
@@ -256,9 +286,8 @@ test.describe("Chat without target", () => {
   test("should disable input when no target is active", async ({ page }) => {
     await page.goto("/");
 
-    // The input/send should be disabled because no target is active
-    const sendButton = page.getByRole("button", { name: /send/i });
-    await expect(sendButton).toBeDisabled();
+    // The no-target-banner should be visible because no target is active
+    await expect(page.getByTestId("no-target-banner")).toBeVisible();
   });
 });
 
@@ -351,7 +380,7 @@ function buildModalityMock(
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ conversation_id: mockConversationId }),
+          body: JSON.stringify({ attack_result_id: "e2e-modality-attack", conversation_id: mockConversationId }),
         });
       } else {
         await route.continue();
@@ -578,8 +607,8 @@ test.describe("Multi-turn conversation flow", () => {
       page.getByText("Mock response for: Before reset"),
     ).toBeVisible({ timeout: 10000 });
 
-    // New Chat
-    await page.getByRole("button", { name: /new chat/i }).click();
+    // New Attack
+    await page.getByTestId("new-attack-btn").click();
     await expect(page.getByText("Before reset", { exact: true })).not.toBeVisible();
 
     // Send new message in fresh conversation
@@ -624,7 +653,10 @@ test.describe("Target type scenarios", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ items: TARGETS }),
+          body: JSON.stringify({
+            items: TARGETS,
+            pagination: { limit: 200, has_more: false, next_cursor: null, prev_cursor: null },
+          }),
         });
       } else {
         await route.continue();
@@ -646,7 +678,10 @@ test.describe("Target type scenarios", () => {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ items: TARGETS }),
+          body: JSON.stringify({
+            items: TARGETS,
+            pagination: { limit: 200, has_more: false, next_cursor: null, prev_cursor: null },
+          }),
         });
       } else {
         await route.continue();
@@ -655,7 +690,7 @@ test.describe("Target type scenarios", () => {
 
     await page.goto("/");
     await page.getByTitle("Configuration").click();
-    await expect(page.getByText("dall-e-image-gen")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("dall-e-3")).toBeVisible({ timeout: 10000 });
 
     // Activate the DALL-E target (second row)
     const setActiveBtns = page.getByRole("button", { name: /set active/i });

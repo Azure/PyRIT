@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react'
 import { MessageBar, MessageBarBody } from '@fluentui/react-components'
-import { useConnectionHealth } from '../hooks/useConnectionHealth'
 import type { ConnectionStatus } from '../hooks/useConnectionHealth'
 
 const intentMap: Record<ConnectionStatus, 'error' | 'warning' | 'success'> = {
@@ -15,26 +13,11 @@ const messageMap: Record<ConnectionStatus, string> = {
   connected: 'Reconnected to the backend.',
 }
 
-const AUTO_DISMISS_MS = 5_000
+interface ConnectionBannerProps {
+  status: ConnectionStatus
+}
 
-export function ConnectionBanner() {
-  const { status, reconnectCount } = useConnectionHealth()
-  const [showReconnected, setShowReconnected] = useState(false)
-
-  // Show "Reconnected" briefly after recovery
-  useEffect(() => {
-    if (reconnectCount > 0) {
-      setShowReconnected(true)
-      const timer = setTimeout(() => setShowReconnected(false), AUTO_DISMISS_MS)
-      return () => clearTimeout(timer)
-    }
-  }, [reconnectCount])
-
-  // Nothing to show when connected and no recent reconnection
-  if (status === 'connected' && !showReconnected) {
-    return null
-  }
-
+export function ConnectionBanner({ status }: ConnectionBannerProps) {
   return (
     <div data-testid="connection-banner" style={{ position: 'sticky', top: 0, zIndex: 1000 }}>
       <MessageBar intent={intentMap[status]}>

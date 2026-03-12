@@ -100,7 +100,7 @@ export default function CreateTargetDialog({ open, onClose, onCreated }: CreateT
         <DialogBody>
           <DialogTitle>Create New Target</DialogTitle>
           <DialogContent>
-            <div className={styles.form}>
+            <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit() }}>
               {error && (
                 <MessageBar intent="error">
                   <MessageBarBody>{error}</MessageBarBody>
@@ -162,7 +162,7 @@ export default function CreateTargetDialog({ open, onClose, onCreated }: CreateT
                   .pyrit_conf_example
                 </a>.
               </Label>
-            </div>
+            </form>
           </DialogContent>
           <DialogActions>
             <Button appearance="secondary" onClick={handleClose} disabled={submitting}>
