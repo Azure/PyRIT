@@ -220,7 +220,7 @@ site:
     - title: Cookbooks
       url: /cookbooks/README
     - title: Setup
-      url: /setup/1a-install-uv
+      url: /setup/a-install-uv
     - title: Contributing
       url: /contributing/README
     - title: User Guide
@@ -228,19 +228,19 @@ site:
         - title: Architecture
           url: /code/architecture
         - title: Datasets
-          url: /code/datasets/0-dataset
+          url: /code/datasets/dataset
         - title: Attacks
-          url: /code/executor/attack/0-attack
+          url: /code/executor/attack/attack
         - title: Targets
-          url: /code/targets/0-prompt-targets
+          url: /code/targets/prompt-targets
         - title: Converters
-          url: /code/converters/0-converters
+          url: /code/converters/converters
         - title: Scoring
-          url: /code/scoring/0-scoring
+          url: /code/scoring/scoring
         - title: Memory
-          url: /code/memory/0-memory
+          url: /code/memory/memory
         - title: Scenarios
-          url: /code/scenarios/0-scenarios
+          url: /code/scenarios/scenarios
     - title: API Reference
       url: /api/index
     - title: Blog
