@@ -22,15 +22,15 @@ mypy:
 # 3. Build the Jupyter Book site
 # 4. Generate RSS feed
 docs-build:
-	uv run python scripts/pydoc2json.py pyrit --submodules -o doc/_api/pyrit_all.json
-	uv run python scripts/gen_api_md.py
+	uv run python build_scripts/pydoc2json.py pyrit --submodules -o doc/_api/pyrit_all.json
+	uv run python build_scripts/gen_api_md.py
 	cd doc && uv run jupyter-book build --all
-	uv run ./build_scripts/generate_rss.py
+	uv run ./build_build_scripts/generate_rss.py
 
 # Regenerate only the API reference pages (without building the full site)
 docs-api:
-	uv run python scripts/pydoc2json.py pyrit --submodules -o doc/_api/pyrit_all.json
-	uv run python scripts/gen_api_md.py
+	uv run python build_scripts/pydoc2json.py pyrit --submodules -o doc/_api/pyrit_all.json
+	uv run python build_scripts/gen_api_md.py
 
 # Because of import time, "auto" seemed to actually go slower than just using 4 processes
 unit-test:
