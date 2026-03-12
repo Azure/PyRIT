@@ -106,6 +106,7 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
         self,
         *,
         text_capable_scorer: Scorer,
+        use_entra_auth: Optional[bool] = None,
     ) -> None:
         """
         Initialize the base audio scorer.
@@ -113,12 +114,15 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
         Args:
             text_capable_scorer (Scorer): A scorer capable of processing text that will be used to score
                 the transcribed audio content.
+            use_entra_auth (bool, Optional): Whether to use Entra ID authentication for Azure Speech.
+                Defaults to True if None.
 
         Raises:
             ValueError: If text_capable_scorer does not support text data type.
         """
         self._validate_text_scorer(text_capable_scorer)
         self.text_scorer = text_capable_scorer
+        self._use_entra_auth = use_entra_auth if use_entra_auth is not None else True
 
     @staticmethod
     def _validate_text_scorer(scorer: Scorer) -> None:
@@ -220,7 +224,7 @@ class AudioTranscriptHelper(ABC):  # noqa: B024
         logger.info(f"Audio transcription: WAV file size = {file_size} bytes")
 
         try:
-            converter = AzureSpeechAudioToTextConverter(use_entra_auth=True)
+            converter = AzureSpeechAudioToTextConverter(use_entra_auth=self._use_entra_auth)
             logger.info("Audio transcription: Starting Azure Speech transcription...")
             result = await converter.convert_async(prompt=wav_path, input_type="audio_path")
             logger.info(f"Audio transcription: Result = '{result.output_text}'")
