@@ -39,9 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Shared tag type with TargetInitializer
-ScorerTag = Literal["default", "all"]
-
-ALL_SCORER_TAGS: list[str] = ["default"]
+ScorerTag = Literal["default"]
 
 # Target registry names used by scorer configurations.
 GPT4O_TARGET: str = "azure_openai_gpt4o"
@@ -81,7 +79,6 @@ class ScorerInitializer(PyRITInitializer):
 
     Supported Parameters:
         tags: Tags for filtering scorers. Defaults to ["default"].
-            "all" registers all scorers regardless of tag.
 
     Example:
         initializer = ScorerInitializer()
@@ -96,7 +93,7 @@ class ScorerInitializer(PyRITInitializer):
         return [
             InitializerParameter(
                 name="tags",
-                description="Tags for filtering (e.g., ['default'] or ['all'])",
+                description="Tags for filtering (e.g., ['default'])",
                 default=["default"],
             ),
         ]
@@ -146,8 +143,6 @@ class ScorerInitializer(PyRITInitializer):
         """
         params = params or {}
         tags = params.get("tags", ["default"])
-        if "all" in tags:
-            tags = ALL_SCORER_TAGS
 
         target_registry = TargetRegistry.get_registry_singleton()
 

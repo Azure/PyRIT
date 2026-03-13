@@ -196,18 +196,6 @@ class TestScorerInitializerInitialize:
         assert registry.get_instance_by_name("refusal_gpt4o") is not None
 
     @pytest.mark.asyncio
-    async def test_all_tag_registers_all_scorers(self) -> None:
-        """Test that tags=['all'] registers all scorers (bypasses tag filtering)."""
-        self._register_all_scorer_targets()
-        os.environ.update(self.CONTENT_SAFETY_ENV_VARS)
-
-        init = ScorerInitializer()
-        await init.initialize_async(params={"tags": ["all"]})
-
-        registry = ScorerRegistry.get_registry_singleton()
-        assert len(registry) == 24
-
-    @pytest.mark.asyncio
     async def test_default_tag_registers_all_current_scorers(self) -> None:
         """Test that tags=['default'] registers all current scorers (all are tagged default)."""
         self._register_all_scorer_targets()
