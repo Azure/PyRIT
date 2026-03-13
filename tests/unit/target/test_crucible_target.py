@@ -40,5 +40,5 @@ async def test_crucible_validate_request_length(crucible_target: CrucibleTarget)
 async def test_crucible_validate_prompt_type(crucible_target: CrucibleTarget):
     message_piece = get_image_message_piece()
     request = Message(message_pieces=[message_piece])
-    with pytest.raises(ValueError, match="This target only supports text prompt input."):
+    with pytest.raises(ValueError, match="This target supports only the following data types"):
         await crucible_target.send_prompt_async(message=request)

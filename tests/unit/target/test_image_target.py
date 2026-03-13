@@ -408,15 +408,6 @@ async def test_send_prompt_async_url_response_downloads_image(
             os.remove(path)
 
 
-def test_is_json_response_supported(patch_central_database):
-    mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = []
-    mock_memory.add_message_to_memory = AsyncMock()
-
-    mock_image_target = OpenAIImageTarget(model_name="test", endpoint="test", api_key="test")
-    assert mock_image_target.is_json_response_supported() is False
-
-
 @pytest.mark.asyncio
 async def test_validate_no_text_piece(image_target: OpenAIImageTarget):
     image_piece = get_image_message_piece()
@@ -498,7 +489,7 @@ async def test_validate_piece_type(image_target: OpenAIImageTarget):
         request = Message(message_pieces=[audio_piece, text_piece])
         with pytest.raises(
             ValueError,
-            match=f"The message contains unsupported piece types.",
+            match="This target supports only the following data types",
         ):
             await image_target.send_prompt_async(message=request)
     finally:
@@ -513,7 +504,7 @@ async def test_validate_previous_conversations(
     message_piece = sample_conversations[0]
 
     mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = sample_conversations
+    mock_memory.get_message_pieces.return_value = sample_conversations
     mock_memory.add_message_to_memory = AsyncMock()
 
     image_target._memory = mock_memory

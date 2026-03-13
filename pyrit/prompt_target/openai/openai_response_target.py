@@ -29,6 +29,7 @@ from pyrit.models import (
 )
 from pyrit.models.json_response_config import _JsonResponseConfig
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute, validate_temperature, validate_top_p
 from pyrit.prompt_target.openai.openai_error_handling import _is_content_filter_error
 from pyrit.prompt_target.openai.openai_target import OpenAITarget
@@ -67,6 +68,18 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
     https://platform.openai.com/docs/api-reference/responses/create
     """
 
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(
+        supports_multi_turn=True,
+        supports_json_response=True,
+        input_modalities=[
+            "text",
+            "image_path",
+            "function_call",
+            "tool_call",
+            "function_call_output",
+            "reasoning",]
+    )
+
     def __init__(
         self,
         *,
@@ -85,12 +98,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
 
         Args:
             custom_functions: Mapping of user-defined function names (e.g., "my_func").
-            model_name (str, Optional): The name of the model (or deployment name in Azure).
-                If no value is provided, the OPENAI_RESPONSES_MODEL environment variable will be used.
-            endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str, Optional): The API key for accessing the Azure OpenAI service.
-                Defaults to the OPENAI_RESPONSES_KEY environment variable.
-            headers (str, Optional): Headers of the endpoint (JSON).
             max_requests_per_minute (int, Optional): Number of requests the target can handle per
                 minute before hitting a rate limit. The number of requests sent to the target
                 will be capped at the value provided.
@@ -108,18 +115,12 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             reasoning_summary (Literal["auto", "concise", "detailed"], Optional): Controls
                 whether a summary of the model's reasoning is included in the response.
                 Defaults to None (no summary).
-            is_json_supported (bool, Optional): If True, the target will support formatting responses as JSON by
-                setting the response_format header. Official OpenAI models all support this, but if you are using
-                this target with different models, is_json_supported should be set correctly to avoid issues when
-                using adversarial infrastructure (e.g. Crescendo scorers will set this flag).
             extra_body_parameters (dict, Optional): Additional parameters to be included in the request body.
             fail_on_missing_function: if True, raise when a function_call references
                 an unknown function or does not output a function; if False, return a structured error so we can
                 wrap it as function_call_output and let the model potentially recover
                 (e.g., pick another tool or ask for clarification).
             **kwargs: Additional keyword arguments passed to the parent OpenAITarget class.
-            httpx_client_kwargs (dict, Optional): Additional kwargs to be passed to the ``httpx.AsyncClient()``
-                constructor. For example, to specify a 3 minute timeout: ``httpx_client_kwargs={"timeout": 180}``
 
         Raises:
             PyritException: If the temperature or top_p values are out of bounds.
@@ -563,15 +564,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
         # Return all responses (normalizer will persist all of them to memory)
         return responses_to_return
 
-    def is_json_response_supported(self) -> bool:
-        """
-        Check if the target supports JSON as a response format.
-
-        Returns:
-            bool: True if JSON response is supported, False otherwise.
-        """
-        return True
-
     def _parse_response_output_section(
         self, *, section: Any, message_piece: MessagePiece, error: Optional[PromptResponseError]
     ) -> MessagePiece | None:
@@ -672,30 +664,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             response_error=error or "none",
         )
 
-    def _validate_request(self, *, message: Message) -> None:
-        """
-        Validate the structure and content of a message for compatibility of this target.
-
-        Args:
-            message (Message): The message object.
-
-        Raises:
-            ValueError: If any of the message pieces have a data type other than supported set.
-        """
-        # Some models may not support all of these; we accept them at the transport layer
-        # so the Responses API can decide. We include reasoning and function_call_output now.
-        allowed_types = {
-            "text",
-            "image_path",
-            "function_call",
-            "tool_call",
-            "function_call_output",
-            "reasoning",
-        }
-        for message_piece in message.message_pieces:
-            if message_piece.converted_value_data_type not in allowed_types:
-                raise ValueError(f"Unsupported data type: {message_piece.converted_value_data_type}")
-        return
 
     # Agentic helpers (module scope)
 

@@ -81,7 +81,7 @@ async def test_azure_blob_storage_validate_prompt_type(
 ):
     mock_upload_async.return_value = None
     request = Message(message_pieces=[get_image_message_piece()])
-    with pytest.raises(ValueError, match="This target only supports text and url prompt input."):
+    with pytest.raises(ValueError, match="This target supports only the following data types"):
         await azure_blob_storage_target.send_prompt_async(message=request)
 
 

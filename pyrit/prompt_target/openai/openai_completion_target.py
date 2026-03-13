@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class OpenAICompletionTarget(OpenAITarget):
     """A prompt target for OpenAI completion endpoints."""
 
-    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_message_pieces=False)
 
     def __init__(
         self,
@@ -167,21 +167,3 @@ class OpenAICompletionTarget(OpenAITarget):
         extracted_response = [choice.text for choice in response.choices]
 
         return construct_response_from_request(request=request, response_text_pieces=extracted_response)
-
-    def _validate_request(self, *, message: Message) -> None:
-        n_pieces = len(message.message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
-
-        piece_type = message.message_pieces[0].converted_value_data_type
-        if piece_type != "text":
-            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
-
-    def is_json_response_supported(self) -> bool:
-        """
-        Check if the target supports JSON as a response format.
-
-        Returns:
-            bool: True if JSON response is supported, False otherwise.
-        """
-        return False

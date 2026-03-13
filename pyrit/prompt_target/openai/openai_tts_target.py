@@ -27,7 +27,10 @@ TTSResponseFormat = Literal["flac", "mp3", "mp4", "mpeg", "mpga", "m4a", "ogg", 
 class OpenAITTSTarget(OpenAITarget):
     """A prompt target for OpenAI Text-to-Speech (TTS) endpoints."""
 
-    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(
+        supports_multi_message_pieces=False,
+        output_modalities=["audio_path"],
+    )
 
     def __init__(
         self,
@@ -167,31 +170,3 @@ class OpenAITTSTarget(OpenAITarget):
         return construct_response_from_request(
             request=request, response_text_pieces=[str(audio_response.value)], response_type="audio_path"
         )
-
-    def _validate_request(self, *, message: Message) -> None:
-        n_pieces = len(message.message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
-
-        piece_type = message.message_pieces[0].converted_value_data_type
-        if piece_type != "text":
-            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
-
-        request = message.message_pieces[0]
-        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
-
-        n_messages = len(messages)
-        if n_messages > 0:
-            raise ValueError(
-                "This target only supports a single turn conversation. "
-                f"Received: {n_messages} messages which indicates a prior turn."
-            )
-
-    def is_json_response_supported(self) -> bool:
-        """
-        Check if the target supports JSON as a response format.
-
-        Returns:
-            bool: True if JSON response is supported, False otherwise.
-        """
-        return False

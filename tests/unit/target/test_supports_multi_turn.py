@@ -94,7 +94,7 @@ class TestSupportsMultiTurn:
             model_name="test-model",
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
-            capabilities=TargetCapabilities(supports_multi_turn=False),
+            custom_capabilities=TargetCapabilities(supports_multi_turn=False),
         )
         assert target.supports_multi_turn is False
 
@@ -113,7 +113,7 @@ class TestSupportsMultiTurn:
             model_name="dall-e-3",
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
-            capabilities=TargetCapabilities(supports_multi_turn=True),
+            custom_capabilities=TargetCapabilities(supports_multi_turn=True),
         )
         assert target.supports_multi_turn is True
 
@@ -138,7 +138,7 @@ class TestSupportsMultiTurn:
             model_name="test-model",
             endpoint="https://mock.azure.com/",
             api_key="mock-api-key",
-            capabilities=TargetCapabilities(supports_multi_turn=False),
+            custom_capabilities=TargetCapabilities(supports_multi_turn=False),
         )
         caps = target.capabilities
         assert isinstance(caps, TargetCapabilities)

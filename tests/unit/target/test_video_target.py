@@ -76,11 +76,6 @@ def test_video_validate_prompt_type_image_only(video_target: OpenAIVideoTarget):
         video_target._validate_request(message=Message([msg]))
 
 
-def test_is_json_response_supported(patch_central_database):
-    target = OpenAIVideoTarget(endpoint="test", api_key="test", model_name="test-model")
-    assert target.is_json_response_supported() is False
-
-
 @pytest.mark.asyncio
 async def test_video_send_prompt_async_success(
     video_target: OpenAIVideoTarget, sample_conversations: MutableSequence[MessagePiece]
@@ -425,7 +420,7 @@ class TestVideoTargetValidation:
             converted_value_data_type="audio_path",
             conversation_id=conversation_id,
         )
-        with pytest.raises(ValueError, match="Unsupported piece types"):
+        with pytest.raises(ValueError, match="This target supports only the following data types"):
             video_target._validate_request(message=Message([msg_text, msg_audio]))
 
     def test_validate_rejects_remix_with_image(self, video_target: OpenAIVideoTarget):
@@ -918,7 +913,7 @@ def test_video_validate_previous_conversations(
     message_piece = sample_conversations[0]
 
     mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = sample_conversations
+    mock_memory.get_message_pieces.return_value = sample_conversations
     mock_memory.add_message_to_memory = AsyncMock()
 
     video_target._memory = mock_memory

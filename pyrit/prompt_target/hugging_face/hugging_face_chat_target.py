@@ -20,6 +20,7 @@ from pyrit.exceptions import EmptyResponseException, pyrit_target_retry
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_chat_target import PromptChatTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,11 @@ class HuggingFaceChatTarget(PromptChatTarget):
     The HuggingFaceChatTarget interacts with HuggingFace models, specifically for conducting red teaming activities.
     Inherits from PromptTarget to comply with the current design standards.
     """
+
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(
+        supports_multi_turn=True,
+        supports_multi_message_pieces=False,
+    )
 
     # Class-level cache for model and tokenizer
     _cached_model = None
@@ -387,25 +393,6 @@ class HuggingFaceChatTarget(PromptChatTarget):
         )
         logger.error(error_message)
         raise ValueError(error_message)
-
-    def _validate_request(self, *, message: Message) -> None:
-        """
-        Validate the provided message.
-
-        Args:
-            message: The message to validate.
-
-        Raises:
-            ValueError: If the message does not contain exactly one text piece.
-            ValueError: If the message piece is not of type text.
-        """
-        n_pieces = len(message.message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
-
-        piece_type = message.message_pieces[0].converted_value_data_type
-        if piece_type != "text":
-            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def is_json_response_supported(self) -> bool:
         """
