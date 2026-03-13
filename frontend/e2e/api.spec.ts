@@ -23,7 +23,7 @@ test.describe("API Health Check", () => {
     throw new Error("Backend did not become healthy within 30 seconds");
   });
 
-  test("should have healthy backend API", async ({ request }) => {
+  test("should have healthy backend API @seeded", async ({ request }) => {
     const response = await request.get("/api/health");
 
     expect(response.ok()).toBe(true);
@@ -31,7 +31,7 @@ test.describe("API Health Check", () => {
     expect(data).toBeDefined();
   });
 
-  test("should get version from API", async ({ request }) => {
+  test("should get version from API @seeded", async ({ request }) => {
     const response = await request.get("/api/version");
 
     expect(response.ok()).toBe(true);
@@ -58,7 +58,7 @@ test.describe("Targets API", () => {
     throw new Error("Backend did not become healthy within 30 seconds");
   });
 
-  test("should list targets", async ({ request }) => {
+  test("should list targets @seeded", async ({ request }) => {
     const response = await request.get("/api/targets?limit=50");
 
     expect(response.ok()).toBe(true);
@@ -67,7 +67,7 @@ test.describe("Targets API", () => {
     expect(Array.isArray(data.items)).toBe(true);
   });
 
-  test("should create and retrieve a target", async ({ request }) => {
+  test("should create and retrieve a target @seeded", async ({ request }) => {
     const createPayload = {
       type: "OpenAIChatTarget",
       params: {
@@ -118,7 +118,7 @@ test.describe("Attacks API", () => {
     throw new Error("Backend did not become healthy within 30 seconds");
   });
 
-  test("should list attacks", async ({ request }) => {
+  test("should list attacks @seeded", async ({ request }) => {
     const response = await request.get("/api/attacks");
     // Backend may return 500 due to stale DB schema or 404 if not implemented.
     // Only assert when the endpoint is actually healthy.
