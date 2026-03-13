@@ -28,7 +28,11 @@ class OpenAIImageTarget(OpenAITarget):
 
     # Maximum number of image inputs supported by the OpenAI image API
     _MAX_INPUT_IMAGES = 16
-    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(
+        supports_multi_turn=False,
+        input_modalities=["text", "image_path"],
+        output_modalities=["image_path"],
+    )
 
     def __init__(
         self,
@@ -45,17 +49,6 @@ class OpenAIImageTarget(OpenAITarget):
         Initialize the image target with specified parameters.
 
         Args:
-            model_name (str, Optional): The name of the model (or deployment name in Azure).
-                If no value is provided, the OPENAI_IMAGE_MODEL environment variable will be used.
-            endpoint (str, Optional): The target URL for the OpenAI service.
-            api_key (str | Callable[[], str], Optional): The API key for accessing the OpenAI service,
-                or a callable that returns an access token. For Azure endpoints with Entra authentication,
-                pass a token provider from pyrit.auth (e.g., get_azure_openai_auth(endpoint)).
-                Defaults to the `OPENAI_IMAGE_API_KEY` environment variable.
-            headers (str, Optional): Headers of the endpoint (JSON).
-            max_requests_per_minute (int, Optional): Number of requests the target can handle per
-                minute before hitting a rate limit. The number of requests sent to the target
-                will be capped at the value provided.
             image_size (Literal, Optional): The size of the generated image.
                 Accepts "256x256", "512x512", "1024x1024", "1536x1024",
                 "1024x1536", "1792x1024", or "1024x1792".
@@ -297,14 +290,10 @@ class OpenAIImageTarget(OpenAITarget):
         raise EmptyResponseException(message="The image generation returned an empty response.")
 
     def _validate_request(self, *, message: Message) -> None:
-        n_pieces = len(message.message_pieces)
-
-        if n_pieces < 1:
-            raise ValueError("The message must contain at least one piece.")
+        super()._validate_request(message=message)
 
         text_pieces = [p for p in message.message_pieces if p.converted_value_data_type == "text"]
         image_pieces = [p for p in message.message_pieces if p.converted_value_data_type == "image_path"]
-        other_pieces = [p for p in message.message_pieces if p.converted_value_data_type not in ("text", "image_path")]
 
         if len(text_pieces) != 1:
             raise ValueError(f"The message must contain exactly one text piece. Received: {len(text_pieces)}.")
@@ -313,26 +302,3 @@ class OpenAIImageTarget(OpenAITarget):
             raise ValueError(
                 f"The message can contain up to {self._MAX_INPUT_IMAGES} image pieces. Received: {len(image_pieces)}."
             )
-
-        if len(other_pieces) > 0:
-            other_types = [p.converted_value_data_type for p in other_pieces]
-            raise ValueError(f"The message contains unsupported piece types. Unsupported types: {other_types}.")
-
-        request = text_pieces[0]
-        messages = self._memory.get_conversation(conversation_id=request.conversation_id)
-
-        n_messages = len(messages)
-        if n_messages > 0:
-            raise ValueError(
-                "This target only supports a single turn conversation. "
-                f"Received: {n_messages} messages which indicates a prior turn."
-            )
-
-    def is_json_response_supported(self) -> bool:
-        """
-        Check if the target supports JSON as a response format.
-
-        Returns:
-            bool: True if JSON response is supported, False otherwise.
-        """
-        return False

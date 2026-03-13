@@ -5,7 +5,7 @@
 import json
 import logging
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Optional
 
 import httpx
@@ -17,6 +17,7 @@ from pyrit.models import (
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,8 @@ class HTTPTarget(PromptTarget):
             These are the customizable functions which determine how to parse the output
         httpx_client_kwargs: (dict): additional keyword arguments to pass to the HTTP client
     """
+
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_message_pieces=False)
 
     def __init__(
         self,
@@ -290,10 +293,3 @@ class HTTPTarget(PromptTarget):
 
         host = headers_dict["host"]
         return f"{http_protocol}{host}{path}"
-
-    def _validate_request(self, *, message: Message) -> None:
-        message_pieces: Sequence[MessagePiece] = message.message_pieces
-
-        n_pieces = len(message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")

@@ -72,7 +72,7 @@ async def test_tts_validate_request_length(tts_target: OpenAITTSTarget):
 @pytest.mark.asyncio
 async def test_tts_validate_prompt_type(tts_target: OpenAITTSTarget):
     request = Message(message_pieces=[get_image_message_piece()])
-    with pytest.raises(ValueError, match="This target only supports text prompt input."):
+    with pytest.raises(ValueError, match="This target supports only the following data types"):
         await tts_target.send_prompt_async(message=request)
 
 
@@ -83,7 +83,7 @@ async def test_tts_validate_previous_conversations(
     message_piece = sample_conversations[0]
 
     mock_memory = MagicMock()
-    mock_memory.get_conversation.return_value = sample_conversations
+    mock_memory.get_message_pieces.return_value = sample_conversations
     mock_memory.add_message_to_memory = AsyncMock()
 
     tts_target._memory = mock_memory
@@ -182,10 +182,6 @@ async def test_tts_send_prompt_async_rate_limit_exception_retries(
 
         with pytest.raises(RateLimitException):
             await tts_target.send_prompt_async(message=request)
-
-
-def test_is_json_response_supported(tts_target: OpenAITTSTarget):
-    assert tts_target.is_json_response_supported() is False
 
 
 @pytest.mark.asyncio

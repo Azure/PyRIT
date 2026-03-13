@@ -105,35 +105,6 @@ def test_init_with_no_additional_request_headers_var_raises():
         OpenAIChatTarget(model_name="gpt-4", endpoint="", api_key="xxxxx", headers="")
 
 
-def test_init_is_json_supported_defaults_to_true(patch_central_database):
-    target = OpenAIChatTarget(
-        model_name="gpt-4",
-        endpoint="https://mock.azure.com/",
-        api_key="mock-api-key",
-    )
-    assert target.is_json_response_supported() is True
-
-
-def test_init_is_json_supported_can_be_set_to_false(patch_central_database):
-    target = OpenAIChatTarget(
-        model_name="gpt-4",
-        endpoint="https://mock.azure.com/",
-        api_key="mock-api-key",
-        is_json_supported=False,
-    )
-    assert target.is_json_response_supported() is False
-
-
-def test_init_is_json_supported_can_be_set_to_true(patch_central_database):
-    target = OpenAIChatTarget(
-        model_name="gpt-4",
-        endpoint="https://mock.azure.com/",
-        api_key="mock-api-key",
-        is_json_supported=True,
-    )
-    assert target.is_json_response_supported() is True
-
-
 @pytest.mark.asyncio()
 async def test_build_chat_messages_for_multi_modal(target: OpenAIChatTarget):
     image_request = get_image_message_piece()
@@ -556,15 +527,11 @@ def test_validate_request_unsupported_data_types(target: OpenAIChatTarget):
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(message=message)
 
-    assert "This target only supports text, image_path, and audio_path." in str(excinfo.value), (
+    assert "This target supports only the following data types" in str(excinfo.value), (
         "Error not raised for unsupported data types"
     )
 
     os.remove(image_piece.original_value)
-
-
-def test_is_json_response_supported(target: OpenAIChatTarget):
-    assert target.is_json_response_supported() is True
 
 
 def test_inheritance_from_prompt_chat_target(target: OpenAIChatTarget):

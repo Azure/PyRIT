@@ -150,9 +150,7 @@ class TestPlaywrightCopilotTarget:
         )
         request = Message(message_pieces=[unsupported_piece])
 
-        with pytest.raises(
-            ValueError, match=r"This target only supports .* prompt input\. Piece 0 has type: audio_path\."
-        ):
+        with pytest.raises(ValueError, match=r"This target supports only the following data types"):
             target._validate_request(message=request)
 
     def test_validate_request_valid_text(self, mock_page, text_request_piece):

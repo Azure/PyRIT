@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import abc
 from typing import Optional
 
 from pyrit.identifiers import ComponentIdentifier
@@ -31,7 +30,7 @@ class PromptChatTarget(PromptTarget):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
-        capabilities: Optional[TargetCapabilities] = None,
+        custom_capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the PromptChatTarget.
@@ -43,7 +42,7 @@ class PromptChatTarget(PromptTarget):
             underlying_model (str, Optional): The underlying model name (e.g., "gpt-4o") for
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. Defaults to None.
-            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+            custom_capabilities (TargetCapabilities, Optional): Override the default capabilities for
                 this target instance. If None, uses the class-level defaults. Defaults to None.
         """
         super().__init__(
@@ -51,7 +50,7 @@ class PromptChatTarget(PromptTarget):
             endpoint=endpoint,
             model_name=model_name,
             underlying_model=underlying_model,
-            capabilities=capabilities,
+            custom_capabilities=custom_capabilities,
         )
 
     def set_system_prompt(
@@ -84,15 +83,6 @@ class PromptChatTarget(PromptTarget):
                 labels=labels,
             ).to_message()
         )
-
-    @abc.abstractmethod
-    def is_json_response_supported(self) -> bool:
-        """
-        Abstract method to determine if JSON response format is supported by the target.
-
-        Returns:
-            bool: True if JSON response is supported, False otherwise.
-        """
 
     def is_response_format_json(self, message_piece: MessagePiece) -> bool:
         """
@@ -127,7 +117,7 @@ class PromptChatTarget(PromptTarget):
         """
         config = _JsonResponseConfig.from_metadata(metadata=message_piece.prompt_metadata)
 
-        if config.enabled and not self.is_json_response_supported():
+        if config.enabled and not self.capabilities.supports_json_response:
             target_name = self.get_identifier().class_name
             raise ValueError(f"This target {target_name} does not support JSON response format.")
 

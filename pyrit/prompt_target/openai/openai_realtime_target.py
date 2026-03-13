@@ -68,7 +68,12 @@ class RealtimeTarget(OpenAITarget, PromptChatTarget):
     and https://platform.openai.com/docs/guides/realtime-websocket
     """
 
-    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=True)
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(
+        supports_multi_turn=True,
+        supports_multi_message_pieces=False,
+        input_modalities=["text", "audio_path"],
+        output_modalities=["text", "audio_path"],
+    )
 
     def __init__(
         self,
@@ -771,32 +776,3 @@ class RealtimeTarget(OpenAITarget, PromptChatTarget):
         This implementation exists to satisfy the abstract base class requirement.
         """
         raise NotImplementedError("RealtimeTarget uses receive_events for message construction")
-
-    def _validate_request(self, *, message: Message) -> None:
-        """
-        Validate the structure and content of a message for compatibility of this target.
-
-        Args:
-            message (Message): The message object.
-
-        Raises:
-            ValueError: If more than two message pieces are provided.
-            ValueError: If any of the message pieces have a data type other than 'text' or 'audio_path'.
-        """
-        # Check the number of message pieces
-        n_pieces = len(message.message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports one message piece. Received: {n_pieces} pieces.")
-
-        piece_type = message.message_pieces[0].converted_value_data_type
-        if piece_type not in ["text", "audio_path"]:
-            raise ValueError(f"This target only supports text and audio_path prompt input. Received: {piece_type}.")
-
-    def is_json_response_supported(self) -> bool:
-        """
-        Check if the target supports JSON as a response format.
-
-        Returns:
-            bool: True if JSON response is supported, False otherwise.
-        """
-        return False

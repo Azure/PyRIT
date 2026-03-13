@@ -60,7 +60,7 @@ async def test_azure_completion_validate_request_length(azure_completion_target:
 @pytest.mark.asyncio
 async def test_azure_completion_validate_prompt_type(azure_completion_target: OpenAICompletionTarget):
     request = Message(message_pieces=[get_image_message_piece()])
-    with pytest.raises(ValueError, match="This target only supports text prompt input."):
+    with pytest.raises(ValueError, match="This target supports only the following data types"):
         await azure_completion_target.send_prompt_async(message=request)
 
 

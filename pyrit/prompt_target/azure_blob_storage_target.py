@@ -15,6 +15,7 @@ from pyrit.common import default_values
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import Message, construct_response_from_request
 from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,12 @@ class AzureBlobStorageTarget(PromptTarget):
 
     AZURE_STORAGE_CONTAINER_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_CONTAINER_URL"
     SAS_TOKEN_ENVIRONMENT_VARIABLE: str = "AZURE_STORAGE_ACCOUNT_SAS_TOKEN"
+
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(
+        input_modalities=["text", "url"],
+        output_modalities=["url"],
+        supports_multi_message_pieces=False,
+    )
 
     def __init__(
         self,
@@ -196,18 +203,3 @@ class AzureBlobStorageTarget(PromptTarget):
         )
 
         return [response]
-
-    def _validate_request(self, *, message: Message) -> None:
-        n_pieces = len(message.message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received {n_pieces} pieces")
-
-        piece_type = message.message_pieces[0].converted_value_data_type
-        if piece_type not in ["text", "url"]:
-            raise ValueError(f"This target only supports text and url prompt input. Received: {piece_type}.")
-
-        request = message.message_pieces[0]
-        messages = self._memory.get_message_pieces(conversation_id=request.conversation_id)
-
-        if len(messages) > 0:
-            raise ValueError("This target only supports a single turn conversation.")

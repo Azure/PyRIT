@@ -38,7 +38,7 @@ class PromptTarget(Identifiable):
         endpoint: str = "",
         model_name: str = "",
         underlying_model: Optional[str] = None,
-        capabilities: Optional[TargetCapabilities] = None,
+        custom_capabilities: Optional[TargetCapabilities] = None,
     ) -> None:
         """
         Initialize the PromptTarget.
@@ -52,7 +52,7 @@ class PromptTarget(Identifiable):
                 identification purposes. This is useful when the deployment name in Azure differs
                 from the actual model. If not provided, `model_name` will be used for the identifier.
                 Defaults to None.
-            capabilities (TargetCapabilities, Optional): Override the default capabilities for
+            custom_capabilities (TargetCapabilities, Optional): Override the default capabilities for
                 this target instance. Useful for targets whose capabilities depend on deployment
                 configuration (e.g., Playwright, HTTP). If None, uses the class-level
                 ``_DEFAULT_CAPABILITIES``. Defaults to None.
@@ -63,7 +63,9 @@ class PromptTarget(Identifiable):
         self._endpoint = endpoint
         self._model_name = model_name
         self._underlying_model = underlying_model
-        self._capabilities = capabilities if capabilities is not None else type(self)._DEFAULT_CAPABILITIES
+        self._capabilities = (
+            custom_capabilities if custom_capabilities is not None else type(self)._DEFAULT_CAPABILITIES
+        )
 
         if self._verbose:
             logging.basicConfig(level=logging.INFO)
@@ -78,14 +80,36 @@ class PromptTarget(Identifiable):
                 but some (like response target with tool calls) may return multiple messages.
         """
 
-    @abc.abstractmethod
     def _validate_request(self, *, message: Message) -> None:
         """
         Validate the provided message.
 
         Args:
             message: The message to validate.
+
+        Raises:
+            ValueError: if the target does not support the provided message pieces or if the message
+                violates any constraints based on the target's capabilities.
+
         """
+        n_pieces = len(message.message_pieces)
+        if not self.capabilities.supports_multi_message_pieces and n_pieces != 1:
+            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
+
+        for piece in message.message_pieces:
+            piece_type = piece.converted_value_data_type
+            if piece_type not in self.capabilities.input_modalities:
+                supported_types = ", ".join(sorted(self.capabilities.input_modalities))
+                raise ValueError(
+                    f"This target supports only the following data types: {supported_types}. Received: {piece_type}."
+                )
+
+        if not self.supports_multi_turn:
+            request = message.message_pieces[0]
+            messages = self._memory.get_message_pieces(conversation_id=request.conversation_id)
+
+            if len(messages) > 0:
+                raise ValueError("This target only supports a single turn conversation.")
 
     def set_model_name(self, *, model_name: str) -> None:
         """
@@ -139,6 +163,15 @@ class PromptTarget(Identifiable):
             all_params.update(params)
 
         return ComponentIdentifier.of(self, params=all_params, children=children)
+
+    def is_json_response_supported(self) -> bool:
+        """
+         Method to determine if JSON response format is supported by the target.
+
+        Returns:
+            bool: True if JSON response is supported, False otherwise.
+        """
+        return self.capabilities.supports_json_response
 
     @property
     def capabilities(self) -> TargetCapabilities:

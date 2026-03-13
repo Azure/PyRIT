@@ -52,7 +52,11 @@ class OpenAIVideoTarget(OpenAITarget):
     SUPPORTED_RESOLUTIONS: list[VideoSize] = ["720x1280", "1280x720", "1024x1792", "1792x1024"]
     SUPPORTED_DURATIONS: list[VideoSeconds] = ["4", "8", "12"]
     SUPPORTED_IMAGE_FORMATS: list[str] = ["image/jpeg", "image/png", "image/webp"]
-    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_turn=False)
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(
+        supports_multi_turn=False,
+        input_modalities=["text", "image_path"],
+        output_modalities=["video_path"],
+    )
 
     def __init__(
         self,
@@ -460,6 +464,8 @@ class OpenAIVideoTarget(OpenAITarget):
         Raises:
             ValueError: If the request is invalid.
         """
+        super()._validate_request(message=message)
+
         text_pieces = message.get_pieces_by_type(data_type="text")
         image_pieces = message.get_pieces_by_type(data_type="image_path")
         video_pieces = message.get_pieces_by_type(data_type="video_path")
@@ -493,24 +499,6 @@ class OpenAIVideoTarget(OpenAITarget):
         # Cannot combine video_path and image_path
         if video_pieces and image_pieces:
             raise ValueError("Cannot combine video_path and image_path pieces.")
-
-        messages = self._memory.get_conversation(conversation_id=text_piece.conversation_id)
-
-        n_messages = len(messages)
-        if n_messages > 0:
-            raise ValueError(
-                "This target only supports a single turn conversation. "
-                f"Received: {n_messages} messages which indicates a prior turn."
-            )
-
-    def is_json_response_supported(self) -> bool:
-        """
-        Check if the target supports JSON response data.
-
-        Returns:
-            bool: False, as video generation doesn't return JSON content.
-        """
-        return False
 
     @staticmethod
     def _validate_video_remix_pieces(*, message: Message) -> None:

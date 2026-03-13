@@ -3,17 +3,17 @@
 
 import json
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Literal, Optional
 
 from pyrit.common import default_values, net_utility
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
-    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
+from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 
 logger = logging.getLogger(__name__)
@@ -48,6 +48,8 @@ class PromptShieldTarget(PromptTarget):
 
     ENDPOINT_URI_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_ENDPOINT"
     API_KEY_ENVIRONMENT_VARIABLE: str = "AZURE_CONTENT_SAFETY_API_KEY"
+
+    _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_message_pieces=False)
 
     _endpoint: str
     _api_key: str | Callable[[], str] | None
@@ -162,17 +164,6 @@ class PromptShieldTarget(PromptTarget):
         )
 
         return [response_entry]
-
-    def _validate_request(self, *, message: Message) -> None:
-        message_pieces: Sequence[MessagePiece] = message.message_pieces
-
-        n_pieces = len(message_pieces)
-        if n_pieces != 1:
-            raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
-
-        piece_type = message_pieces[0].converted_value_data_type
-        if piece_type != "text":
-            raise ValueError(f"This target only supports text prompt input. Received: {piece_type}.")
 
     def _validate_response(self, request_body: dict[str, Any], response_body: dict[str, Any]) -> None:
         """
