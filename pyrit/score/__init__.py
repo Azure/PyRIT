@@ -54,6 +54,12 @@ from pyrit.score.true_false.decoding_scorer import DecodingScorer
 from pyrit.score.true_false.float_scale_threshold_scorer import FloatScaleThresholdScorer
 from pyrit.score.true_false.gandalf_scorer import GandalfScorer
 from pyrit.score.true_false.markdown_injection import MarkdownInjectionScorer
+from pyrit.score.true_false.odin_jef_scorers import (
+    JEFAnthraxKeywordScorer,
+    JEFFentanylKeywordScorer,
+    JEFMethKeywordScorer,
+    JEFNerveAgentKeywordScorer,
+)
 from pyrit.score.true_false.prompt_shield_scorer import PromptShieldScorer
 from pyrit.score.true_false.question_answer_scorer import QuestionAnswerScorer
 from pyrit.score.true_false.self_ask_category_scorer import ContentClassifierPaths, SelfAskCategoryScorer
@@ -74,6 +80,10 @@ from pyrit.score.true_false.video_true_false_scorer import VideoTrueFalseScorer
 
 __all__ = [
     "AudioFloatScaleScorer",
+    "JEFAnthraxKeywordScorer",
+    "JEFFentanylKeywordScorer",
+    "JEFMethKeywordScorer",
+    "JEFNerveAgentKeywordScorer",
     "AudioTrueFalseScorer",
     "AzureContentFilterScorer",
     "BatchScorer",
