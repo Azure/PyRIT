@@ -89,7 +89,7 @@ Get started immediately with a pre-configured environment:
 - ✅ Works on all platforms
 ::::
 
-::::{card} 🐍 Local Pip/uv Installation
+::::{card} ☀️ Local Pip/uv Installation
 :link: setup/1a_install_uv
 **For Users - Custom Setup**
 
@@ -109,7 +109,7 @@ Standardized development environment:
 - ✅ All extensions pre-installed
 ::::
 
-::::{card} 🐍 Local uv Development
+::::{card} ☀️ Local uv Development
 :link: contributing/1a_install_uv
 **For Contributors - Custom Dev Setup**
 
