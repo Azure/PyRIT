@@ -26,14 +26,13 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
     Reference: https://github.com/centerforaisafety/HarmBench
     """
 
-    _metadata = SeedDatasetMetadata(
-        tags={"default, safety"},
-        size=SeedDatasetSize.LARGE,
-        modalities=[SeedDatasetModality.TEXT],
-        source=SeedDatasetSourceType.GENERIC_URL,
-        rank=SeedDatasetLoadingRank.DEFAULT,
-        harm_categories=["cybercrime", "illegal", "harmful", "chemical_biological", "harassment"],
-    )
+    # Metadata
+    harm_categories: list[str] = ["cybercrime", "illegal",
+                                  "harmful", "chemical_biological", "harassment"]
+    modalities: list[SeedDatasetModality] = [SeedDatasetModality.TEXT]
+    size: SeedDatasetSize = SeedDatasetSize.LARGE          # 504 seeds
+    # "default" means included in curated set
+    tags: set[str] = {"default", "safety"}
 
     def __init__(
         self,
@@ -88,7 +87,8 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
             # Check for missing keys in the example
             missing_keys = required_keys - example.keys()
             if missing_keys:
-                raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
+                raise ValueError(
+                    f"Missing keys in example: {', '.join(missing_keys)}")
 
             # Extract data
             category = example["SemanticCategory"]
@@ -104,7 +104,8 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
                     "biological, illegal activities, etc."
                 ),
                 source="https://github.com/centerforaisafety/HarmBench",
-                authors=["Mantas Mazeika", "Long Phan", "Xuwang Yin", "Andy Zou", "Zifan Wang", "Norman Mu"],
+                authors=["Mantas Mazeika", "Long Phan", "Xuwang Yin",
+                         "Andy Zou", "Zifan Wang", "Norman Mu"],
             )
             seeds.append(seed_prompt)
 

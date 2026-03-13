@@ -23,7 +23,7 @@ class _JBBBehaviorsDataset(_RemoteDatasetLoader):
     and may contain offensive content. Users should check with their legal department
     before using these prompts against production LLMs.
     """
-
+    
     def __init__(
         self,
         *,

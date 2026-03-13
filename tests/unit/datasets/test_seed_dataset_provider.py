@@ -78,13 +78,15 @@ class TestSeedDatasetProvider:
         mock_provider1 = MagicMock()
         mock_provider1.return_value.dataset_name = "d1"
         mock_provider1.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
+            return_value=SeedDataset(
+                seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
         )
 
         mock_provider2 = MagicMock()
         mock_provider2.return_value.dataset_name = "d2"
         mock_provider2.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
+            return_value=SeedDataset(
+                seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
         )
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
@@ -97,12 +99,14 @@ class TestSeedDatasetProvider:
         mock_provider1 = MagicMock()
         mock_provider1.return_value.dataset_name = "d1"
         mock_provider1.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
+            return_value=SeedDataset(
+                seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
         )
 
         mock_provider2 = MagicMock()
         mock_provider2.return_value.dataset_name = "d2"
-        mock_provider2.return_value.fetch_dataset = AsyncMock(side_effect=Exception("Should not be called"))
+        mock_provider2.return_value.fetch_dataset = AsyncMock(
+            side_effect=Exception("Should not be called"))
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
             datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["d1"])
@@ -115,13 +119,15 @@ class TestSeedDatasetProvider:
         mock_provider1 = MagicMock()
         mock_provider1.return_value.dataset_name = "d1"
         mock_provider1.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
+            return_value=SeedDataset(
+                seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
         )
 
         mock_provider2 = MagicMock()
         mock_provider2.return_value.dataset_name = "d2"
         mock_provider2.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
+            return_value=SeedDataset(
+                seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
         )
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
@@ -236,3 +242,60 @@ class TestDarkBenchDataset:
             assert call_kwargs["dataset_name"] == "custom/darkbench"
             assert call_kwargs["config"] == "custom_config"
             assert call_kwargs["split"] == "test"
+
+
+class TestMetadataParsingRemote:
+    def test_all_tag(self):
+        pass
+
+    def test_tags(self):
+        pass
+
+    def test_sizes(self):
+        pass
+
+    def test_modalities(self):
+        pass
+
+    def test_sources(self):
+        pass
+
+    def test_ranks(self):
+        pass
+
+    def test_harm_categories(self):
+        pass
+
+    def test_empty_fitler(self):
+        pass
+
+    def test_no_metadata(self):
+        pass
+
+class TestMetadataParsingLocal:
+    def test_all_tag(self):
+        pass
+
+    def test_tags(self):
+        pass
+
+    def test_sizes(self):
+        pass
+
+    def test_modalities(self):
+        pass
+
+    def test_sources(self):
+        pass
+
+    def test_ranks(self):
+        pass
+
+    def test_harm_categories(self):
+        pass
+
+    def test_empty_fitler(self):
+        pass
+
+    def test_no_metadata(self):
+        pass

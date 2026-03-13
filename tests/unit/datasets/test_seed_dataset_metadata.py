@@ -2,31 +2,90 @@
 # Licensed under the MIT license.
 
 """
-TODO
-
-Tests for SeedDatasetMetadata
+Tests for metadata components related to SeedDatasetProvider.
 """
 
 
-class TestMetadataParsing:
-    def test_invalid_filter_key(self):
-        pass
-
-    def test_invalid_filter_value(self):
-        pass
-
-
 class TestMetadataLifecycle:
-    def test_static_values_populated(self):
+    """
+    Test that the metadata object can be created with different
+    subsets of values.
+    """
+
+    def test_has_no_values(self):
         pass
 
-    def test_dynamic_values_populated(self):
+    def test_has_some_values(self):
+        pass
+
+    def test_has_all_values(self):
         pass
 
 
-class TestMetadataPerformance:
-    def test_quick_retrieval_for_static_values(self):
+class TestFilterLifecycle:
+    """
+    Test that the metadata object can be created with different
+    subsets of values.
+    """
+
+    def test_has_no_values(self):
         pass
 
-    def test_acceptable_retrieval_for_dynamic_values(self):
+    def test_has_some_values(self):
+        pass
+
+    def test_has_all_values(self):
+        pass
+
+
+class TestMetadataProperties:
+    """
+    Test that the metadata fields populate correctly.
+    """
+
+    def test_size_value(self):
+        pass
+
+    def test_loading_rank_value(self):
+        pass
+
+    def test_source_value(self):
+        pass
+
+    def test_modality_value(self):
+        pass
+
+    def test_tags_value(self):
+        pass
+
+    def test_harm_categories_value(self):
+        pass
+
+
+class TestFilterProperties:
+    """
+    Test that the filter fields popualte correctly.
+    """
+
+    def test_sizes_values(self):
+        pass
+
+    def test_loading_ranks_values(self):
+        pass
+
+    def test_sources_values(self):
+        pass
+
+    def test_modalities_values(self):
+        pass
+
+    def test_tags_values(self):
+        pass
+
+    def test_harm_categories_values(self):
+        pass
+
+
+class TestMetadataUtilities:
+    def test_population_works(self, tmp_path):
         pass

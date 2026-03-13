@@ -45,9 +45,6 @@ class SeedDatasetProvider(ABC):
         if not inspect.isabstract(cls) and getattr(cls, "should_register", True):
             SeedDatasetProvider._registry[cls.__name__] = cls
             logger.debug(f"Registered dataset provider: {cls.__name__}")
-            # Providing metadata is optional.
-            if getattr(cls, "_metadata", True):
-                logger.debug(f"Dataset provider {cls.__name__} provided metadata.")
 
     @property
     @abstractmethod
@@ -109,23 +106,20 @@ class SeedDatasetProvider(ABC):
                 # Instantiate to get dataset name
                 provider = provider_class()
 
-                # Extract metadata, default to False if not found
-                metadata = getattr(provider, "_metadata", False)
-                if filters and not metadata:
+                # Parser ensures a standard metadata format
+                metadata: SeedDatasetMetadata = cls._parse_metadata()
+                if filters and not metadata and "all" not in filters.tags:
+                    # Datasets without metadata are skipped unless we want "all"
                     continue
-
-                # Type safety for metadata object given getattr return type
-                if isinstance(metadata, bool):
-                    raise ValueError
 
                 # Filters detected but no match -> don't add this dataset
                 if filters and not cls._match_filter(metadata=metadata, filters=filters):
                     continue
 
-                # This triggers when filters match (and filters exist)
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
-                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}") from e
+                raise ValueError(
+                    f"Could not get dataset name from {provider_class.__name__}: {e}") from e
         return sorted(dataset_names)
 
     @classmethod
@@ -153,6 +147,7 @@ class SeedDatasetProvider(ABC):
 
         # These lines all disable SIM103 because metadata and filters tags can be optional, so
         # directly checking for membership breaks type checking.
+
         if metadata.tags and filters.tags and not (filters.tags & metadata.tags):  # noqa: SIM103
             return False
 
@@ -161,12 +156,22 @@ class SeedDatasetProvider(ABC):
             return False
 
         # Harm Categories
+        if metadata.harm_categories and filters.harm_categories and \
+            not set(metadata.harm_categories) & set(filters.harm_categories):  # noqa: SIM103
+            return False
 
         # Source Type
+        if metadata.source and filters.sources and metadata.source not in filters.sources:  # noqa: SIM103
+            return False
 
         # Modalities
+        if metadata.modalities and filters.modalities and \
+            not set(metadata.modalities) & set(filters.modalities):  # noqa: SIM103
+            return False
 
         # Rank
+        if metadata.rank and filters.ranks and metadata.rank not in filters.ranks:  # noqa: SIM103
+            return False
 
         return True
 
@@ -210,9 +215,11 @@ class SeedDatasetProvider(ABC):
         # Validate dataset names if specified
         if dataset_names is not None:
             available_names = cls.get_all_dataset_names()
-            invalid_names = [name for name in dataset_names if name not in available_names]
+            invalid_names = [
+                name for name in dataset_names if name not in available_names]
             if invalid_names:
-                raise ValueError(f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
+                raise ValueError(
+                    f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
 
         async def fetch_single_dataset(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -238,7 +245,8 @@ class SeedDatasetProvider(ABC):
 
         # Progress tracking
         total_count = len(cls._registry)
-        pbar = tqdm(total=total_count, desc="Loading datasets - this can take a few minutes", unit="dataset")
+        pbar = tqdm(total=total_count,
+                    desc="Loading datasets - this can take a few minutes", unit="dataset")
 
         async def fetch_with_semaphore(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -276,10 +284,12 @@ class SeedDatasetProvider(ABC):
                 logger.info(f"Merging multiple sources for {dataset_name}.")
 
                 existing_dataset = datasets[dataset_name]
-                combined_seeds = list(existing_dataset.seeds) + list(dataset.seeds)
+                combined_seeds = list(
+                    existing_dataset.seeds) + list(dataset.seeds)
                 existing_dataset.seeds = combined_seeds
             else:
                 datasets[dataset_name] = dataset
 
-        logger.info(f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
+        logger.info(
+            f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
         return list(datasets.values())

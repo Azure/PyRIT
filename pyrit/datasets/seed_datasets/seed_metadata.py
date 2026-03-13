@@ -5,18 +5,12 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-"""
-TODO Finish docstring
+from pyrit.common.path import DATASETS_PATH
 
+"""
 Contains metadata objects for datasets (i.e. subclasses of SeedDatasetProvider).
 
-We have one DatasetMetadata dataclass that is our ground truth. As we instantiate datasets
-using the subclass call in SeedDatasetProvider, we create DatasetMetadata and assign it to
-a private variable there.
-
-Some fields are dynamic (e.g. loading statistics, timestamp, dataset size) and are left as
-NoneType until the SeedDatasetProvider actually downloads/parses the dataset and puts it in
-CentralMemory.
+The ground truth is SeedDatasetMetadata. This is 
 """
 
 
@@ -31,7 +25,9 @@ class SeedDatasetSize(Enum):
 
 
 class SeedDatasetLoadingRank(Enum):
-    """Represents the general difficulty of loading in a dataset."""
+    """
+    Represents the general difficulty of loading in a dataset.
+    """
 
     DEFAULT = "default"
     EXTENDED = "extended"
@@ -40,7 +36,7 @@ class SeedDatasetLoadingRank(Enum):
 
 class SeedDatasetModality(Enum):
     """
-    ...
+    Type of data contained in the dataset.
     """
 
     TEXT = "text"
@@ -51,18 +47,18 @@ class SeedDatasetModality(Enum):
 
 class SeedDatasetSourceType(Enum):
     """
-    ...
+    Where the dataset is pulled from.
     """
 
-    GENERIC_URL = "generic_url"
+    REMOTE = "remote"
     LOCAL = "local"
-    HUGGING_FACE = "hugging_face"
 
 
 @dataclass
 class SeedDatasetFilter:
     """
-    ...
+    Filter object for datasets. Passed to `get_all_dataset_names` in
+    SeedDatasetProvider.
     """
 
     tags: Optional[set[str]]
@@ -76,7 +72,8 @@ class SeedDatasetFilter:
 @dataclass(frozen=True)
 class SeedDatasetMetadata:
     """
-    ...
+    Metadata object for datasets. Holds the same fields as the filter
+    object.
     """
 
     tags: Optional[set[str]]
@@ -89,7 +86,7 @@ class SeedDatasetMetadata:
 
 class SeedDatasetMetadataUtilities:
     """
-    Collected utilities for managing and updating SeedDatasetMetadata.
+    Collected utilities for managing and updating metadata.
     """
 
     @staticmethod
@@ -98,5 +95,19 @@ class SeedDatasetMetadataUtilities:
         WARNING: Because this function updates the metadata for each SeedDatasetProvider,
         it changes the provider's corresopnding source file. Run with caution!
 
-        Update the metadata per SeedDatasetProvider.
+        Updates the metadata per SeedDatasetProvider.
         """
+
+        # 1 Gather all dataset files
+
+        # 2 For each file, download and store in the database (in-memory)
+
+        # 3 Count the number of entries exactly and identify its threshold
+
+        # 4 If harm categories are found in source, add them
+
+        # 5 Inspect type of prompts to identify modalities present
+
+        # 6 Inspect source file to find where it pulled from
+
+        # 7 Leave rank optional for now

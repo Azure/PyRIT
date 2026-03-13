@@ -2,12 +2,14 @@
 # Licensed under the MIT license.
 
 import logging
+import yaml
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
 from pyrit.models import SeedDataset
+from pyrit.datasets.seed_datasets.seed_metadata import SeedDatasetMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +38,8 @@ class _LocalDatasetLoader(SeedDatasetProvider):
             dataset = SeedDataset.from_yaml_file(file_path)
             # Use the dataset_name from the YAML if available, otherwise use filename
             self._dataset_name = (
-                getattr(dataset, "dataset_name", None) or getattr(dataset, "name", None) or file_path.stem
+                getattr(dataset, "dataset_name", None) or getattr(
+                    dataset, "name", None) or file_path.stem
             )
         except Exception as e:
             logger.warning(f"Could not pre-load dataset from {file_path}: {e}")
@@ -67,8 +70,31 @@ class _LocalDatasetLoader(SeedDatasetProvider):
                 dataset.dataset_name = self.dataset_name
             return dataset
         except Exception as e:
-            logger.error(f"Failed to load local dataset from {self.file_path}: {e}")
+            logger.error(
+                f"Failed to load local dataset from {self.file_path}: {e}")
             raise
+
+    def _parse_metadata(self) -> SeedDatasetMetadata | None:
+        """
+        Extract metadata from class attributes and format into SeedDatasetMetadata schema.
+        
+        Raises:
+            Exception: If the dataset cannot be loaded.
+        """
+        valid_fields = [f.name for f in fields(SeedDatasetMetadata)]
+        try:
+            with open(self.file_path, 'r') as f:
+                dataset = yaml.safe_load(f)
+        except Exception as e:
+            logger.error(
+                f"Failed to load local datset from {self.file_path}: {e}"
+            )
+            raise
+        self_metadata = {k: v for k, v in dataset if k in valid_fields}
+        if not self_metadata:
+            return None
+        return SeedDatasetMetadata(**self_metadata)
+
 
 
 def _register_local_datasets() -> None:
@@ -93,21 +119,26 @@ def _register_local_datasets() -> None:
 
                     def make_init(path: Path) -> Callable[[Any], None]:
                         def __init__(self: Any) -> None:  # noqa: N807
-                            super(self.__class__, self).__init__(file_path=path)
+                            super(self.__class__, self).__init__(
+                                file_path=path)
 
                         return __init__
 
                     type(
                         class_name,
                         (_LocalDatasetLoader,),
-                        {"__init__": make_init(yaml_file), "should_register": True, "__module__": __name__},
+                        {"__init__": make_init(
+                            yaml_file), "should_register": True, "__module__": __name__},
                     )
 
-                    logger.debug(f"Registered local dataset loader: {class_name} for {yaml_file.name}")
+                    logger.debug(
+                        f"Registered local dataset loader: {class_name} for {yaml_file.name}")
                 except Exception as e:
-                    logger.warning(f"Failed to register local dataset {yaml_file}: {e}")
+                    logger.warning(
+                        f"Failed to register local dataset {yaml_file}: {e}")
     else:
-        logger.warning(f"Seed datasets directory not found: {seed_datasets_path}")
+        logger.warning(
+            f"Seed datasets directory not found: {seed_datasets_path}")
 
 
 # Execute registration

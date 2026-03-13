@@ -61,6 +61,6 @@ class TestSeedDatasetProviderIntegration:
 
     @pytest.mark.asyncio
     @pytest.mark.parameterize("name,provider_cls", get_dataset_providers())
-    async def test_fetch_dataset_with_filtering(self, name, provider_cls):
+    async def test_fetch_dataset_integration_with_filtering(self, name, provider_cls):
         # TODO
         pass
