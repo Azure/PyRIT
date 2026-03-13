@@ -586,7 +586,9 @@ def test_validate_request_unsupported_data_types(target: OpenAIResponseTarget):
     with pytest.raises(ValueError) as excinfo:
         target._validate_request(message=message)
 
-    assert "This target supports only the following data types" in str(excinfo.value), "Error not raised for unsupported data types"
+    assert "This target supports only the following data types" in str(excinfo.value), (
+        "Error not raised for unsupported data types"
+    )
 
     os.remove(image_piece.original_value)
 

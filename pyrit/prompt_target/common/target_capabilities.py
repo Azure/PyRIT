@@ -57,5 +57,3 @@ class TargetCapabilities:
                 unmet.append(f.name)
         if unmet:
             raise ValueError(f"Target does not satisfy the following capabilities: {', '.join(unmet)}")
-        
-

@@ -5,7 +5,7 @@
 import json
 import logging
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Optional
 
 import httpx

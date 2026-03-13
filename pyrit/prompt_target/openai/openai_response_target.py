@@ -77,7 +77,8 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             "function_call",
             "tool_call",
             "function_call_output",
-            "reasoning",]
+            "reasoning",
+        ],
     )
 
     def __init__(
@@ -663,7 +664,6 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
             original_value_data_type=piece_type,
             response_error=error or "none",
         )
-
 
     # Agentic helpers (module scope)
 

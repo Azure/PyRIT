@@ -86,15 +86,14 @@ class PromptTarget(Identifiable):
 
         Args:
             message: The message to validate.
-        
+
         Raises:
 
         """
-    
         n_pieces = len(message.message_pieces)
         if not self.capabilities.supports_multi_message_pieces and n_pieces != 1:
             raise ValueError(f"This target only supports a single message piece. Received: {n_pieces} pieces.")
-        
+
         for piece in message.message_pieces:
             piece_type = piece.converted_value_data_type
             if piece_type not in self.capabilities.input_modalities:
@@ -102,14 +101,13 @@ class PromptTarget(Identifiable):
                 raise ValueError(
                     f"This target supports only the following data types: {supported_types}. Received: {piece_type}."
                 )
-            
+
         if not self.supports_multi_turn:
             request = message.message_pieces[0]
             messages = self._memory.get_message_pieces(conversation_id=request.conversation_id)
 
             if len(messages) > 0:
                 raise ValueError("This target only supports a single turn conversation.")
-
 
     def set_model_name(self, *, model_name: str) -> None:
         """
@@ -163,7 +161,7 @@ class PromptTarget(Identifiable):
             all_params.update(params)
 
         return ComponentIdentifier.of(self, params=all_params, children=children)
-    
+
     def is_json_response_supported(self) -> bool:
         """
          Method to determine if JSON response format is supported by the target.

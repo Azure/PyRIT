@@ -67,7 +67,12 @@ def test_http_target_sets_endpoint_and_rate_limit(mock_callback_function, sqlite
 async def test_send_prompt_async(mock_request, mock_http_target, mock_http_response):
     message = MagicMock()
     message.message_pieces = [
-        MagicMock(converted_value="test_prompt", converted_value_data_type="text", prompt_target_identifier=None, attack_identifier=None)
+        MagicMock(
+            converted_value="test_prompt",
+            converted_value_data_type="text",
+            prompt_target_identifier=None,
+            attack_identifier=None,
+        )
     ]
     mock_request.return_value = mock_http_response
     response = await mock_http_target.send_prompt_async(message=message)
@@ -114,7 +119,14 @@ async def test_send_prompt_async_client_kwargs(patch_central_database):
         # Use **httpx_client_kwargs to pass them as keyword arguments
         http_target = HTTPTarget(http_request=sample_request, **httpx_client_kwargs)
         message = MagicMock()
-        message.message_pieces = [MagicMock(converted_value="", converted_value_data_type="text", prompt_target_identifier=None, attack_identifier=None)]
+        message.message_pieces = [
+            MagicMock(
+                converted_value="",
+                converted_value_data_type="text",
+                prompt_target_identifier=None,
+                attack_identifier=None,
+            )
+        ]
         mock_response = MagicMock()
         mock_response.content = b"Response content"
         mock_request.return_value = mock_response
@@ -150,7 +162,12 @@ async def test_send_prompt_regex_parse_async(mock_request, mock_http_target):
 
     message = MagicMock()
     message.message_pieces = [
-        MagicMock(converted_value="test_prompt", converted_value_data_type="text", prompt_target_identifier=None, attack_identifier=None)
+        MagicMock(
+            converted_value="test_prompt",
+            converted_value_data_type="text",
+            prompt_target_identifier=None,
+            attack_identifier=None,
+        )
     ]
 
     mock_response = MagicMock()
@@ -179,7 +196,12 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
     # Send first prompt
     message = MagicMock()
     message.message_pieces = [
-        MagicMock(converted_value="test_prompt", converted_value_data_type="text", prompt_target_identifier=None, attack_identifier=None)
+        MagicMock(
+            converted_value="test_prompt",
+            converted_value_data_type="text",
+            prompt_target_identifier=None,
+            attack_identifier=None,
+        )
     ]
     response = await mock_http_target.send_prompt_async(message=message)
 
@@ -199,7 +221,12 @@ async def test_send_prompt_async_keeps_original_template(mock_request, mock_http
     # Send second prompt
     second_message = MagicMock()
     second_message.message_pieces = [
-        MagicMock(converted_value="second_test_prompt", converted_value_data_type="text", prompt_target_identifier=None, attack_identifier=None)
+        MagicMock(
+            converted_value="second_test_prompt",
+            converted_value_data_type="text",
+            prompt_target_identifier=None,
+            attack_identifier=None,
+        )
     ]
     await mock_http_target.send_prompt_async(message=second_message)
 
@@ -249,7 +276,12 @@ async def test_http_target_with_injected_client(patch_central_database):
 
         message = MagicMock()
         message.message_pieces = [
-            MagicMock(converted_value="test_prompt", converted_value_data_type="text", prompt_target_identifier=None, attack_identifier=None)
+            MagicMock(
+                converted_value="test_prompt",
+                converted_value_data_type="text",
+                prompt_target_identifier=None,
+                attack_identifier=None,
+            )
         ]
 
         response = await target.send_prompt_async(message=message)

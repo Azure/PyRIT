@@ -41,7 +41,6 @@ class GandalfTarget(PromptTarget):
 
     _DEFAULT_CAPABILITIES: TargetCapabilities = TargetCapabilities(supports_multi_message_pieces=False)
 
-
     def __init__(
         self,
         *,

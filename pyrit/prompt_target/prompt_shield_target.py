@@ -3,14 +3,13 @@
 
 import json
 import logging
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Literal, Optional
 
 from pyrit.common import default_values, net_utility
 from pyrit.identifiers import ComponentIdentifier
 from pyrit.models import (
     Message,
-    MessagePiece,
     construct_response_from_request,
 )
 from pyrit.prompt_target.common.prompt_target import PromptTarget
