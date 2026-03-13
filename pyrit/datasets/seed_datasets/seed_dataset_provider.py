@@ -180,7 +180,7 @@ class SeedDatasetProvider(ABC):
             return False
 
         # Source Type
-        if metadata.source and filters.sources and metadata.source not in filters.sources:  # noqa: SIM103
+        if metadata.source_type and filters.source_types and metadata.source_type not in filters.source_types:  # noqa: SIM103
             return False
 
         # Modalities

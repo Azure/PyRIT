@@ -26,7 +26,7 @@ class TestMetadataLifecycle:
         assert metadata.tags is None
         assert metadata.size is None
         assert metadata.modalities is None
-        assert metadata.source is None
+        assert metadata.source_type is None
         assert metadata.rank is None
         assert metadata.harm_categories is None
 
@@ -35,7 +35,7 @@ class TestMetadataLifecycle:
         assert metadata.tags == {"safety"}
         assert metadata.size == SeedDatasetSize.LARGE
         assert metadata.modalities is None
-        assert metadata.source is None
+        assert metadata.source_type is None
         assert metadata.rank is None
         assert metadata.harm_categories is None
 
@@ -44,14 +44,14 @@ class TestMetadataLifecycle:
             tags={"default", "safety"},
             size=SeedDatasetSize.MEDIUM,
             modalities=[SeedDatasetModality.TEXT, SeedDatasetModality.IMAGE],
-            source=SeedDatasetSourceType.REMOTE,
+            source_type=SeedDatasetSourceType.REMOTE,
             rank=SeedDatasetLoadingRank.DEFAULT,
             harm_categories=["violence", "illegal"],
         )
         assert metadata.tags == {"default", "safety"}
         assert metadata.size == SeedDatasetSize.MEDIUM
         assert len(metadata.modalities) == 2
-        assert metadata.source == SeedDatasetSourceType.REMOTE
+        assert metadata.source_type == SeedDatasetSourceType.REMOTE
         assert metadata.rank == SeedDatasetLoadingRank.DEFAULT
         assert metadata.harm_categories == ["violence", "illegal"]
 
@@ -67,7 +67,7 @@ class TestFilterLifecycle:
         assert f.tags is None
         assert f.sizes is None
         assert f.modalities is None
-        assert f.sources is None
+        assert f.source_types is None
         assert f.ranks is None
         assert f.harm_categories is None
 
@@ -82,14 +82,14 @@ class TestFilterLifecycle:
             tags={"default"},
             sizes=[SeedDatasetSize.SMALL, SeedDatasetSize.MEDIUM],
             modalities=[SeedDatasetModality.TEXT],
-            sources=[SeedDatasetSourceType.REMOTE],
+            source_types=[SeedDatasetSourceType.REMOTE],
             ranks=[SeedDatasetLoadingRank.DEFAULT],
             harm_categories=["violence"],
         )
         assert f.tags == {"default"}
         assert len(f.sizes) == 2
         assert f.modalities == [SeedDatasetModality.TEXT]
-        assert f.sources == [SeedDatasetSourceType.REMOTE]
+        assert f.source_types == [SeedDatasetSourceType.REMOTE]
         assert f.ranks == [SeedDatasetLoadingRank.DEFAULT]
         assert f.harm_categories == ["violence"]
 
@@ -110,9 +110,9 @@ class TestMetadataProperties:
             assert metadata.rank == rank
 
     def test_source_value(self):
-        for source in SeedDatasetSourceType:
-            metadata = SeedDatasetMetadata(source=source)
-            assert metadata.source == source
+        for source_type in SeedDatasetSourceType:
+            metadata = SeedDatasetMetadata(source_type=source_type)
+            assert metadata.source_type == source_type
 
     def test_modality_value(self):
         for modality in SeedDatasetModality:
@@ -147,9 +147,9 @@ class TestFilterProperties:
         assert SeedDatasetLoadingRank.SLOW in f.ranks
 
     def test_sources_values(self):
-        f = SeedDatasetFilter(sources=[SeedDatasetSourceType.LOCAL, SeedDatasetSourceType.REMOTE])
-        assert SeedDatasetSourceType.LOCAL in f.sources
-        assert SeedDatasetSourceType.REMOTE in f.sources
+        f = SeedDatasetFilter(source_types=[SeedDatasetSourceType.LOCAL, SeedDatasetSourceType.REMOTE])
+        assert SeedDatasetSourceType.LOCAL in f.source_types
+        assert SeedDatasetSourceType.REMOTE in f.source_types
 
     def test_modalities_values(self):
         f = SeedDatasetFilter(modalities=[SeedDatasetModality.TEXT, SeedDatasetModality.IMAGE])

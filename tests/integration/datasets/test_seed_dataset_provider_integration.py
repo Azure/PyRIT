@@ -323,3 +323,272 @@ class TestLocalFilteringIntegration:
                 filters=SeedDatasetFilter(tags={"safety"}),
             )
             assert filtered == []
+
+
+class TestEndToEndLocalDatasetWorkflow:
+    """
+    End-to-end integration test that simulates a user workflow:
+    1. Write a temporary local dataset to disk
+    2. Register it into the provider registry
+    3. Discover it via filtered get_all_dataset_names
+    4. Fetch the actual dataset by name
+    5. Verify metadata is accessible and correct
+    """
+
+    @staticmethod
+    def _make_local_cls(yaml_path: Path) -> type:
+        """Build a dynamic local provider class for a YAML file."""
+
+        def make_init(path: Path):
+            def init_fn(self):
+                _LocalDatasetLoader.__init__(self, file_path=path)
+
+            return init_fn
+
+        return type(
+            f"LocalTest_{yaml_path.stem}",
+            (_LocalDatasetLoader,),
+            {"__init__": make_init(yaml_path), "should_register": False, "__module__": __name__},
+        )
+
+    @pytest.mark.asyncio
+    async def test_user_discovers_and_fetches_filtered_dataset(self, tmp_path):
+        """
+        Simulate a user who wants small text datasets about cybercrime:
+        1. Filter returns the matching dataset name
+        2. Fetch by that name succeeds and returns correct seeds
+        3. Metadata on the provider is accessible and consistent
+        """
+        # --- Step 0: Write two datasets to disk ---
+        matching_yaml = tmp_path / "cyber_small.prompt"
+        matching_yaml.write_text(
+            textwrap.dedent("""\
+                dataset_name: cyber_prompts
+                harm_categories:
+                  - cybercrime
+                seeds:
+                  - value: Explain phishing techniques
+                    data_type: text
+                  - value: Describe SQL injection
+                    data_type: text
+            """)
+        )
+        unrelated_yaml = tmp_path / "violence_large.prompt"
+        unrelated_yaml.write_text(
+            textwrap.dedent("""\
+                dataset_name: violence_prompts
+                harm_categories:
+                  - violence
+                seeds:
+                  - value: Describe a violent scenario
+                    data_type: text
+            """)
+        )
+
+        matching_cls = self._make_local_cls(matching_yaml)
+        unrelated_cls = self._make_local_cls(unrelated_yaml)
+
+        with patch.dict(
+            SeedDatasetProvider._registry,
+            {"Cyber": matching_cls, "Violence": unrelated_cls},
+            clear=True,
+        ):
+            # --- Step 1: User filters by harm_categories ---
+            names = SeedDatasetProvider.get_all_dataset_names(
+                filters=SeedDatasetFilter(harm_categories=["cybercrime"]),
+            )
+            assert len(names) == 1
+            dataset_name = names[0]
+
+            # --- Step 2: User fetches the dataset by name ---
+            datasets = await SeedDatasetProvider.fetch_datasets_async(
+                dataset_names=[dataset_name],
+            )
+            assert len(datasets) == 1
+            dataset = datasets[0]
+            assert len(dataset.seeds) == 2
+            assert dataset.seeds[0].value == "Explain phishing techniques"
+            assert dataset.seeds[1].value == "Describe SQL injection"
+
+            # --- Step 3: User inspects metadata ---
+            provider = matching_cls()
+            metadata = provider._parse_metadata()
+            assert metadata is not None
+            assert metadata.harm_categories == ["cybercrime"]
+
+    @pytest.mark.asyncio
+    async def test_user_fetches_unfiltered(self, tmp_path):
+        """
+        Without filters, get_all_dataset_names returns everything,
+        and fetch_datasets_async retrieves all of them.
+        """
+        ds1 = tmp_path / "ds_one.prompt"
+        ds1.write_text(
+            textwrap.dedent("""\
+                dataset_name: dataset_one
+                seeds:
+                  - value: prompt one
+                    data_type: text
+            """)
+        )
+        ds2 = tmp_path / "ds_two.prompt"
+        ds2.write_text(
+            textwrap.dedent("""\
+                dataset_name: dataset_two
+                seeds:
+                  - value: prompt two
+                    data_type: text
+            """)
+        )
+
+        cls1 = self._make_local_cls(ds1)
+        cls2 = self._make_local_cls(ds2)
+
+        with patch.dict(
+            SeedDatasetProvider._registry,
+            {"One": cls1, "Two": cls2},
+            clear=True,
+        ):
+            names = SeedDatasetProvider.get_all_dataset_names()
+            assert len(names) == 2
+
+            datasets = await SeedDatasetProvider.fetch_datasets_async()
+            assert len(datasets) == 2
+            fetched_names = sorted(d.dataset_name for d in datasets)
+            assert fetched_names == ["dataset_one", "dataset_two"]
+
+
+class TestAllTagBypassIntegration:
+    """
+    Integration tests for the tags={'all'} bypass pattern.
+
+    The 'all' tag is a special escape hatch that returns every registered
+    dataset regardless of metadata presence or other filter axes.
+    """
+
+    @staticmethod
+    def _make_local_cls(yaml_path: Path) -> type:
+        """Build a dynamic local provider class for a YAML file."""
+
+        def make_init(path: Path):
+            def init_fn(self):
+                _LocalDatasetLoader.__init__(self, file_path=path)
+
+            return init_fn
+
+        return type(
+            f"LocalTest_{yaml_path.stem}",
+            (_LocalDatasetLoader,),
+            {"__init__": make_init(yaml_path), "should_register": False, "__module__": __name__},
+        )
+
+    def test_all_tag_includes_datasets_without_metadata(self, tmp_path):
+        """
+        A dataset whose YAML has no metadata fields at all is normally
+        skipped when filters are present. tags={'all'} overrides that.
+        """
+        bare_yaml = tmp_path / "bare.prompt"
+        bare_yaml.write_text(
+            textwrap.dedent("""\
+                dataset_name: bare_dataset
+                seeds:
+                  - value: bare prompt
+                    data_type: text
+            """)
+        )
+        cls = self._make_local_cls(bare_yaml)
+
+        with patch.dict(
+            SeedDatasetProvider._registry,
+            {"Bare": cls},
+            clear=True,
+        ):
+            # Normal filter skips it
+            filtered = SeedDatasetProvider.get_all_dataset_names(
+                filters=SeedDatasetFilter(tags={"safety"}),
+            )
+            assert filtered == []
+
+            # 'all' includes it
+            all_names = SeedDatasetProvider.get_all_dataset_names(
+                filters=SeedDatasetFilter(tags={"all"}),
+            )
+            assert "bare_dataset" in all_names
+
+    def test_all_tag_ignores_other_filter_axes(self, tmp_path):
+        """
+        tags={'all'} returns everything even when other filter axes
+        would exclude datasets.
+        """
+        small_yaml = tmp_path / "small.prompt"
+        small_yaml.write_text(
+            textwrap.dedent("""\
+                dataset_name: small_dataset
+                size: small
+                harm_categories:
+                  - cybercrime
+                seeds:
+                  - value: small prompt
+                    data_type: text
+            """)
+        )
+        cls = self._make_local_cls(small_yaml)
+
+        with patch.dict(
+            SeedDatasetProvider._registry,
+            {"Small": cls},
+            clear=True,
+        ):
+            # Size filter alone would exclude it
+            size_filtered = SeedDatasetProvider.get_all_dataset_names(
+                filters=SeedDatasetFilter(sizes=[SeedDatasetSize.LARGE]),
+            )
+            assert size_filtered == []
+
+            # 'all' tag overrides the size filter
+            all_names = SeedDatasetProvider.get_all_dataset_names(
+                filters=SeedDatasetFilter(tags={"all"}, sizes=[SeedDatasetSize.LARGE]),
+            )
+            assert "small" in all_names
+
+    def test_all_tag_with_mixed_metadata_and_bare_datasets(self, tmp_path):
+        """
+        With a mix of metadata-rich and metadata-bare datasets,
+        tags={'all'} returns all of them.
+        """
+        rich_yaml = tmp_path / "rich.prompt"
+        rich_yaml.write_text(
+            textwrap.dedent("""\
+                dataset_name: rich_dataset
+                harm_categories:
+                  - violence
+                tags:
+                  - safety
+                seeds:
+                  - value: rich prompt
+                    data_type: text
+            """)
+        )
+        bare_yaml = tmp_path / "bare.prompt"
+        bare_yaml.write_text(
+            textwrap.dedent("""\
+                dataset_name: bare_dataset
+                seeds:
+                  - value: bare prompt
+                    data_type: text
+            """)
+        )
+
+        rich_cls = self._make_local_cls(rich_yaml)
+        bare_cls = self._make_local_cls(bare_yaml)
+
+        with patch.dict(
+            SeedDatasetProvider._registry,
+            {"Rich": rich_cls, "Bare": bare_cls},
+            clear=True,
+        ):
+            all_names = SeedDatasetProvider.get_all_dataset_names(
+                filters=SeedDatasetFilter(tags={"all"}),
+            )
+            assert len(all_names) == 2
+            assert "bare_dataset" in all_names

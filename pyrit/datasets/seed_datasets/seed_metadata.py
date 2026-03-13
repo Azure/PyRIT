@@ -68,7 +68,7 @@ class SeedDatasetFilter:
     tags: Optional[set[str]] = None
     sizes: Optional[list[SeedDatasetSize]] = None
     modalities: Optional[list[SeedDatasetModality]] = None
-    sources: Optional[list[SeedDatasetSourceType]] = None
+    source_types: Optional[list[SeedDatasetSourceType]] = None
     ranks: Optional[list[SeedDatasetLoadingRank]] = None
     harm_categories: Optional[list[str]] = None
 
@@ -83,6 +83,6 @@ class SeedDatasetMetadata:
     tags: Optional[set[str]] = None
     size: Optional[SeedDatasetSize] = None
     modalities: Optional[list[SeedDatasetModality]] = None
-    source: Optional[SeedDatasetSourceType] = None
+    source_type: Optional[SeedDatasetSourceType] = None
     rank: Optional[SeedDatasetLoadingRank] = None
     harm_categories: Optional[list[str]] = None

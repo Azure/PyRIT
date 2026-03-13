@@ -128,12 +128,16 @@ class _LocalDatasetLoader(SeedDatasetProvider):
                 coerced[key] = set(value)
             elif key == "size" and isinstance(value, str):
                 coerced[key] = SeedDatasetSize(value)
-            elif key == "source" and isinstance(value, str):
+            elif key == "source_type" and isinstance(value, str):
                 coerced[key] = SeedDatasetSourceType(value)
             elif key == "rank" and isinstance(value, str):
                 coerced[key] = SeedDatasetLoadingRank(value)
             elif key == "modalities" and isinstance(value, list):
                 coerced[key] = [SeedDatasetModality(v) for v in value]
+            elif key == "harm_categories" and isinstance(value, str):
+                coerced[key] = [value]
+            elif key == "tags" and isinstance(value, str):
+                coerced[key] = {value}
             else:
                 coerced[key] = value
         return coerced
