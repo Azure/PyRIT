@@ -91,6 +91,8 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalL,
     minHeight: 0,
+    overflowY: 'auto',
+    overflowX: 'hidden',
   },
 })
 
