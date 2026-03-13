@@ -70,7 +70,12 @@ def _ensure_async_token_provider(
     )
 
     async def async_token_provider() -> str:
-        """Async wrapper for synchronous token provider."""
+        """
+        Async wrapper for synchronous token provider.
+
+        Returns:
+            str: The token string from the synchronous provider.
+        """
         return api_key()  # type: ignore[return-value]
 
     return async_token_provider

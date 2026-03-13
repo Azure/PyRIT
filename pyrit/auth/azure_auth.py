@@ -107,7 +107,19 @@ class AsyncTokenProviderCredential:
 
     async def close(self) -> None:
         """No-op close for protocol compliance. The callable provider does not hold resources."""
-        pass
+
+    async def __aenter__(self) -> AsyncTokenProviderCredential:
+        """
+        Enter the async context manager.
+
+        Returns:
+            AsyncTokenProviderCredential: This credential instance.
+        """
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        """Exit the async context manager."""
+        await self.close()
 
 
 class AzureAuth(Authenticator):
