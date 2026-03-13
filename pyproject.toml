@@ -69,9 +69,10 @@ dependencies = [
 # always make sure the individual ones are in sync with the all group
 dev = [
     "feedgen>=1.0.0",
+    "griffe>=2.0.0",
     "ipykernel>=6.29.5",
     "jupyter>=1.1.1",
-    "jupyter-book==1.0.4",
+    "jupyter-book>=2.0.0",
     "jupytext>=1.17.1",
     "matplotlib>=3.10.0",
     "mypy>=1.16.0",
@@ -85,7 +86,6 @@ dev = [
     "pytest-xdist>=3.6.1",
     "respx>=0.22.0",
     "ruff>=0.14.4",
-    "sphinxcontrib-mermaid>=1.0.0",
     "types-aiofiles>=24.1.0",
     "types-cachetools>=5.5.0",
     "types-decorator>=5.1.0",
