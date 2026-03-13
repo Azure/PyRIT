@@ -11,7 +11,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { ConnectionHealthProvider, useConnectionHealth } from './hooks/useConnectionHealth'
 import { DEFAULT_GLOBAL_LABELS } from './components/Labels/labelDefaults'
 import type { ViewName } from './components/Sidebar/Navigation'
-import type { Message, TargetInstance, TargetInfo } from './types'
+import type { TargetInstance, TargetInfo } from './types'
 import { attacksApi, versionApi } from './services/api'
 
 const AUTO_DISMISS_MS = 5_000
@@ -36,7 +36,6 @@ function ConnectionBannerContainer() {
 }
 
 function App() {
-  const [messages, setMessages] = useState<Message[]>([])
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [currentView, setCurrentView] = useState<ViewName>('chat')
   const [activeTarget, setActiveTarget] = useState<TargetInstance | null>(null)
@@ -57,9 +56,6 @@ function App() {
       .catch(() => { /* version fetch handled elsewhere */ })
   }, [])
 
-  // When the user switches to a genuinely different target, start a fresh attack.
-  // Just re-selecting the same target (or viewing config without changing) keeps
-  // the current conversation intact so the user can branch from it.
   const handleSetActiveTarget = useCallback((target: TargetInstance) => {
     setActiveTarget(prev => {
       const isSame = prev &&
@@ -89,22 +85,7 @@ function App() {
   /** Number of related conversations for the currently loaded attack. */
   const [relatedConversationCount, setRelatedConversationCount] = useState(0)
 
-  const handleSendMessage = (message: Message) => {
-    setMessages(prev => [...prev, message])
-  }
-
-  const handleReceiveMessage = (message: Message) => {
-    setMessages(prev => {
-      // If the last message is a loading indicator, replace it
-      if (prev.length > 0 && prev[prev.length - 1].isLoading) {
-        return [...prev.slice(0, -1), message]
-      }
-      return [...prev, message]
-    })
-  }
-
   const clearAttackState = useCallback(() => {
-    setMessages([])
     setAttackResultId(null)
     setConversationId(null)
     setActiveConversationId(null)
@@ -137,7 +118,6 @@ function App() {
   }, [])
 
   const handleOpenAttack = useCallback(async (openAttackResultId: string) => {
-    setMessages([])
     setAttackResultId(openAttackResultId)
     setIsLoadingAttack(true)
     setCurrentView('chat')
@@ -173,9 +153,6 @@ function App() {
           >
             {currentView === 'chat' && (
               <ChatWindow
-                messages={messages}
-                onSendMessage={handleSendMessage}
-                onReceiveMessage={handleReceiveMessage}
                 onNewAttack={handleNewAttack}
                 activeTarget={activeTarget}
                 attackResultId={attackResultId}
@@ -183,7 +160,6 @@ function App() {
                 activeConversationId={activeConversationId}
                 onConversationCreated={handleConversationCreated}
                 onSelectConversation={handleSelectConversation}
-                onSetMessages={setMessages}
                 labels={globalLabels}
                 onLabelsChange={setGlobalLabels}
                 onNavigate={setCurrentView}

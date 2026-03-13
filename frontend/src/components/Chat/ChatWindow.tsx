@@ -19,9 +19,6 @@ import type { ViewName } from '../Sidebar/Navigation'
 import { useChatWindowStyles } from './ChatWindow.styles'
 
 interface ChatWindowProps {
-  messages: Message[]
-  onSendMessage: (message: Message) => void
-  onReceiveMessage: (message: Message) => void
   onNewAttack: () => void
   activeTarget: TargetInstance | null
   attackResultId: string | null
@@ -29,7 +26,6 @@ interface ChatWindowProps {
   activeConversationId: string | null
   onConversationCreated: (attackResultId: string, conversationId: string) => void
   onSelectConversation: (conversationId: string) => void
-  onSetMessages: (messages: Message[]) => void
   labels?: Record<string, string>
   onLabelsChange?: (labels: Record<string, string>) => void
   onNavigate?: (view: ViewName) => void
@@ -44,9 +40,6 @@ interface ChatWindowProps {
 }
 
 export default function ChatWindow({
-  messages,
-  onSendMessage,
-  onReceiveMessage,
   onNewAttack,
   activeTarget,
   attackResultId,
@@ -54,7 +47,6 @@ export default function ChatWindow({
   activeConversationId,
   onConversationCreated,
   onSelectConversation,
-  onSetMessages,
   labels,
   onLabelsChange,
   onNavigate,
@@ -64,6 +56,7 @@ export default function ChatWindow({
   relatedConversationCount,
 }: ChatWindowProps) {
   const styles = useChatWindowStyles()
+  const [messages, setMessages] = useState<Message[]>([])
   // Track sending state per conversation so parallel conversations can send independently
   const [sendingConversations, setSendingConversations] = useState<Set<string>>(new Set())
   /** True while an async message fetch is in-flight */
@@ -91,6 +84,14 @@ export default function ChatWindow({
   // Used to restore the user's input when switching back to an in-flight conversation.
   const pendingUserMessagesRef = useRef<Map<string, Message[]>>(new Map())
 
+  // Clear internal messages when attack state is reset (e.g. New Attack)
+  useEffect(() => {
+    if (!attackResultId) {
+      setMessages([])
+      setLoadedConversationId(null)
+    }
+  }, [attackResultId])
+
   // Load messages for a given conversation
   const loadConversation = useCallback(async (arId: string, convId: string) => {
     setIsLoadingMessages(true)
@@ -111,16 +112,16 @@ export default function ChatWindow({
           isLoading: true,
         })
       }
-      onSetMessages(frontendMessages)
+      setMessages(frontendMessages)
       setLoadedConversationId(convId)
     } catch {
       if (viewedConvRef.current !== convId) { return }
-      onSetMessages([])
+      setMessages([])
       setLoadedConversationId(convId)
     } finally {
       setIsLoadingMessages(false)
     }
-  }, [onSetMessages])
+  }, [])
 
   // Reload messages when activeConversationId changes
   useEffect(() => {
@@ -163,7 +164,7 @@ export default function ChatWindow({
       timestamp: new Date().toISOString(),
       attachments: attachments.length > 0 ? attachments : undefined,
     }
-    onSendMessage(userMessage)
+    setMessages(prev => [...prev, userMessage])
 
     // Track as pending so switching back before the server stores it still shows it
     const pending = pendingUserMessagesRef.current.get(sendConvId) ?? []
@@ -178,7 +179,7 @@ export default function ChatWindow({
       timestamp: new Date().toISOString(),
       isLoading: true,
     }
-    onReceiveMessage(loadingMessage)
+    setMessages(prev => [...prev, loadingMessage])
 
     try {
       // Build message pieces from text + attachments
@@ -207,6 +208,9 @@ export default function ChatWindow({
           pendingUserMessagesRef.current.set(currentConversationId!, pendingMsgs)
         }
         onConversationCreated(currentAttackResultId, currentConversationId)
+        // Update the viewed-conversation ref so the success/error guards
+        // below recognise this as the active conversation.
+        viewedConvRef.current = currentConversationId!
         // Update sending tracker to use real ID instead of __pending__
         setSendingConversations(prev => {
           const next = new Set(prev)
@@ -238,7 +242,7 @@ export default function ChatWindow({
         // This correctly handles the case where the user switched away and
         // back during the request — the full conversation is restored.
         const backendMessages = backendMessagesToFrontend(response.messages.messages)
-        onSetMessages(backendMessages)
+        setMessages(backendMessages)
         setLoadedConversationId(effectiveConvId!)
       }
     } catch (err) {
@@ -263,7 +267,12 @@ export default function ChatWindow({
             description,
           },
         }
-        onReceiveMessage(errorMessage)
+        setMessages(prev => {
+          if (prev.length > 0 && prev[prev.length - 1].isLoading) {
+            return [...prev.slice(0, -1), errorMessage]
+          }
+          return [...prev, errorMessage]
+        })
 
         // Preserve the failed message text in the input box for easy re-send
         if (originalValue && inputBoxRef.current) {
@@ -349,11 +358,11 @@ export default function ChatWindow({
       // Load the cloned messages
       const messagesResp = await attacksApi.getMessages(attackResultId, response.conversation_id)
       const frontendMessages = backendMessagesToFrontend(messagesResp.messages)
-      onSetMessages(frontendMessages)
+      setMessages(frontendMessages)
     } catch (err) {
       console.error('Failed to branch into new conversation:', err)
     }
-  }, [attackResultId, activeConversationId, onSelectConversation, onSetMessages])
+  }, [attackResultId, activeConversationId, onSelectConversation])
 
   /** 4. Branch into a brand-new attack (clone up to clicked message with new labels) */
   const handleBranchAttack = useCallback(async (messageIndex: number) => {
@@ -370,12 +379,12 @@ export default function ChatWindow({
       // Load the cloned messages into the UI
       const messagesResp = await attacksApi.getMessages(createResponse.attack_result_id, createResponse.conversation_id)
       const frontendMessages = backendMessagesToFrontend(messagesResp.messages)
-      onSetMessages(frontendMessages)
+      setMessages(frontendMessages)
       setLoadedConversationId(createResponse.conversation_id)
     } catch (err) {
       console.error('Failed to branch into new attack:', err)
     }
-  }, [activeTarget, activeConversationId, labels, onConversationCreated, onSetMessages])
+  }, [activeTarget, activeConversationId, labels, onConversationCreated])
 
   const handleChangeMainConversation = useCallback(async (convId: string) => {
     if (!attackResultId) { return }
@@ -431,12 +440,12 @@ export default function ChatWindow({
       // Load the cloned messages into the UI
       const messagesResp = await attacksApi.getMessages(createResponse.attack_result_id, createResponse.conversation_id)
       const frontendMessages = backendMessagesToFrontend(messagesResp.messages)
-      onSetMessages(frontendMessages)
+      setMessages(frontendMessages)
       setLoadedConversationId(createResponse.conversation_id)
     } catch (err) {
       console.error('Failed to use as template:', err)
     }
-  }, [attackResultId, activeTarget, activeConversationId, messages, labels, onConversationCreated, onSetMessages])
+  }, [attackResultId, activeTarget, activeConversationId, messages, labels, onConversationCreated])
 
   return (
     <div className={styles.root}>

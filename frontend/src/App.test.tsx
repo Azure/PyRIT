@@ -75,18 +75,12 @@ jest.mock("./components/Layout/MainLayout", () => {
 
 jest.mock("./components/Chat/ChatWindow", () => {
   const MockChatWindow = ({
-    messages,
-    onSendMessage,
-    onReceiveMessage,
     onNewAttack,
     activeTarget,
     conversationId,
     onConversationCreated,
     onSelectConversation,
   }: {
-    messages: Array<{ id: string; content: string; isLoading?: boolean }>;
-    onSendMessage: (msg: { id: string; content: string }) => void;
-    onReceiveMessage: (msg: { id: string; content: string; isLoading?: boolean }) => void;
     onNewAttack: () => void;
     activeTarget: unknown;
     conversationId: string | null;
@@ -95,27 +89,8 @@ jest.mock("./components/Chat/ChatWindow", () => {
   }) => {
     return (
       <div data-testid="chat-window">
-        <span data-testid="message-count">{messages.length}</span>
         <span data-testid="conversation-id">{conversationId ?? "none"}</span>
         <span data-testid="has-target">{activeTarget ? "yes" : "no"}</span>
-        <button
-          onClick={() => onSendMessage({ id: "1", content: "test" })}
-          data-testid="send-message"
-        >
-          Send
-        </button>
-        <button
-          onClick={() => onReceiveMessage({ id: "2", content: "response" })}
-          data-testid="receive-message"
-        >
-          Receive
-        </button>
-        <button
-          onClick={() => onReceiveMessage({ id: "loading", content: "...", isLoading: true })}
-          data-testid="receive-loading"
-        >
-          Receive Loading
-        </button>
         <button onClick={onNewAttack} data-testid="new-attack">
           New Attack
         </button>
@@ -237,36 +212,6 @@ describe("App", () => {
     );
   });
 
-  it("starts with empty messages", () => {
-    render(<App />);
-    expect(screen.getByTestId("message-count")).toHaveTextContent("0");
-  });
-
-  it("adds messages when handleSendMessage is called", () => {
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId("send-message"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("1");
-  });
-
-  it("adds messages when handleReceiveMessage is called", () => {
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId("receive-message"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("1");
-  });
-
-  it("clears messages when handleNewAttack is called", () => {
-    render(<App />);
-
-    fireEvent.click(screen.getByTestId("send-message"));
-    fireEvent.click(screen.getByTestId("receive-message"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("2");
-
-    fireEvent.click(screen.getByTestId("new-attack"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("0");
-  });
-
   it("starts in chat view", () => {
     render(<App />);
 
@@ -372,36 +317,6 @@ describe("App", () => {
     await waitFor(() => expect(mockGetAttack).toHaveBeenCalledWith("ar-attack-1"));
     // Conversation should be cleared on error
     await waitFor(() => expect(screen.getByTestId("conversation-id")).toHaveTextContent("none"));
-  });
-
-  it("replaces loading indicator with received message", () => {
-    render(<App />);
-
-    // Send a message, then a loading indicator, then a real response
-    fireEvent.click(screen.getByTestId("send-message"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("1");
-
-    // Receive replaces loading messages — we can't simulate isLoading from mock,
-    // but we verify the receive handler adds to messages
-    fireEvent.click(screen.getByTestId("receive-message"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("2");
-  });
-
-  it("replaces loading message when response arrives", () => {
-    render(<App />);
-
-    // Send a user message
-    fireEvent.click(screen.getByTestId("send-message"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("1");
-
-    // Receive a loading indicator
-    fireEvent.click(screen.getByTestId("receive-loading"));
-    expect(screen.getByTestId("message-count")).toHaveTextContent("2");
-
-    // Replace loading with actual response
-    fireEvent.click(screen.getByTestId("receive-message"));
-    // Loading message should be replaced, not appended
-    expect(screen.getByTestId("message-count")).toHaveTextContent("2");
   });
 
   it("merges default labels from backend version API", async () => {

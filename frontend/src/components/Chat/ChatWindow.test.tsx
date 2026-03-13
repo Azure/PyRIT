@@ -223,9 +223,6 @@ describe("ChatWindow Integration", () => {
   ];
 
   const defaultProps = {
-    messages: [] as Message[],
-    onSendMessage: jest.fn(),
-    onReceiveMessage: jest.fn(),
     onNewAttack: jest.fn(),
     activeTarget: mockTarget,
     attackResultId: null as string | null,
@@ -233,7 +230,6 @@ describe("ChatWindow Integration", () => {
     activeConversationId: null as string | null,
     onConversationCreated: jest.fn(),
     onSelectConversation: jest.fn(),
-    onSetMessages: jest.fn(),
     labels: { operator: 'testuser', operation: 'test_op' },
     onLabelsChange: jest.fn(),
   };
@@ -263,15 +259,25 @@ describe("ChatWindow Integration", () => {
     expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("should display existing messages", () => {
+  it("should display existing messages", async () => {
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(mockMessages);
+
     render(
       <TestWrapper>
-        <ChatWindow {...defaultProps} messages={mockMessages} />
+        <ChatWindow
+          {...defaultProps}
+          attackResultId="ar-test"
+          conversationId="conv-test"
+          activeConversationId="conv-test"
+        />
       </TestWrapper>
     );
 
-    expect(screen.getByText("Hello")).toBeInTheDocument();
-    expect(screen.getByText("Hi there!")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Hello")).toBeInTheDocument();
+      expect(screen.getByText("Hi there!")).toBeInTheDocument();
+    });
   });
 
   it("should show target info when target is active", () => {
@@ -300,9 +306,9 @@ describe("ChatWindow Integration", () => {
   it("should call onNewAttack when New Attack button is clicked", async () => {
     const user = userEvent.setup();
     const onNewAttack = jest.fn();
-    const existingMessages: Message[] = [
-      { role: "user", content: "hello", timestamp: "2024-01-01T00:00:00Z" },
-    ];
+
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue([]);
 
     render(
       <TestWrapper>
@@ -312,7 +318,6 @@ describe("ChatWindow Integration", () => {
           attackResultId="ar-conv-123"
           conversationId="conv-123"
           activeConversationId="conv-123"
-          messages={existingMessages}
         />
       </TestWrapper>
     );
@@ -360,8 +365,6 @@ describe("ChatWindow Integration", () => {
 
   it("should create attack and send text message on first message", async () => {
     const user = userEvent.setup();
-    const onSendMessage = jest.fn();
-    const onReceiveMessage = jest.fn();
     const onConversationCreated = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
@@ -375,9 +378,14 @@ describe("ChatWindow Integration", () => {
     mockedAttacksApi.addMessage.mockResolvedValue(makeTextResponse("Hello back!") as never);
     mockedMapper.backendMessagesToFrontend.mockReturnValue([
       {
+        role: "user",
+        content: "Hello",
+        timestamp: "2026-01-01T00:00:00Z",
+      },
+      {
         role: "assistant",
         content: "Hello back!",
-        timestamp: "2026-01-01T00:00:00Z",
+        timestamp: "2026-01-01T00:00:01Z",
       },
     ]);
 
@@ -385,8 +393,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          onSendMessage={onSendMessage}
-          onReceiveMessage={onReceiveMessage}
           onConversationCreated={onConversationCreated}
           conversationId={null}
         />
@@ -398,9 +404,6 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onSendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ role: "user", content: "Hello" })
-      );
       expect(mockedAttacksApi.createAttack).toHaveBeenCalledWith({
         target_registry_name: "openai_chat_1",
         labels: { operator: 'testuser', operation: 'test_op' },
@@ -414,6 +417,11 @@ describe("ChatWindow Integration", () => {
         target_conversation_id: "conv-1",
         labels: { operator: "testuser", operation: "test_op" },
       });
+    });
+
+    // Messages should appear in the DOM
+    await waitFor(() => {
+      expect(screen.getByText("Hello back!")).toBeInTheDocument();
     });
   });
 
@@ -461,7 +469,6 @@ describe("ChatWindow Integration", () => {
 
   it("should show error message when API call fails", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "test" },
@@ -475,7 +482,6 @@ describe("ChatWindow Integration", () => {
         <ChatWindow
           {...defaultProps}
           conversationId={null}
-          onReceiveMessage={onReceiveMessage}
         />
       </TestWrapper>
     );
@@ -485,21 +491,12 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          role: "assistant",
-          error: expect.objectContaining({
-            type: "unknown",
-            description: "Network error",
-          }),
-        })
-      );
+      expect(screen.getByText(/Network error/)).toBeInTheDocument();
     });
   });
 
   it("should show error message when addMessage fails", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "test" },
@@ -518,7 +515,6 @@ describe("ChatWindow Integration", () => {
         <ChatWindow
           {...defaultProps}
           conversationId={null}
-          onReceiveMessage={onReceiveMessage}
         />
       </TestWrapper>
     );
@@ -528,20 +524,12 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          role: "assistant",
-          error: expect.objectContaining({
-            description: "Request failed with status code 404",
-          }),
-        })
-      );
+      expect(screen.getByText(/Request failed with status code 404/)).toBeInTheDocument();
     });
   });
 
   it("should extract detail from axios-style error response", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "test" },
@@ -561,7 +549,6 @@ describe("ChatWindow Integration", () => {
         <ChatWindow
           {...defaultProps}
           conversationId="conv-x"
-          onReceiveMessage={onReceiveMessage}
         />
       </TestWrapper>
     );
@@ -571,19 +558,12 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.objectContaining({
-            description: "Failed to add message: Image URLs are only allowed for messages with role 'user'",
-          }),
-        })
-      );
+      expect(screen.getByText(/Failed to add message/)).toBeInTheDocument();
     });
   });
 
   it("should extract plain string from axios-style error response", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "test" },
@@ -603,7 +583,6 @@ describe("ChatWindow Integration", () => {
         <ChatWindow
           {...defaultProps}
           conversationId="conv-x"
-          onReceiveMessage={onReceiveMessage}
         />
       </TestWrapper>
     );
@@ -613,19 +592,12 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.objectContaining({
-            description: "Internal Server Error",
-          }),
-        })
-      );
+      expect(screen.getByText(/Internal Server Error/)).toBeInTheDocument();
     });
   });
 
   it("should show generic error for non-Error thrown values", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "test" },
@@ -637,7 +609,6 @@ describe("ChatWindow Integration", () => {
         <ChatWindow
           {...defaultProps}
           conversationId="conv-x"
-          onReceiveMessage={onReceiveMessage}
         />
       </TestWrapper>
     );
@@ -647,13 +618,7 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.objectContaining({
-            description: "string error",
-          }),
-        })
-      );
+      expect(screen.getByText(/string error/)).toBeInTheDocument();
     });
   });
 
@@ -663,14 +628,17 @@ describe("ChatWindow Integration", () => {
 
   it("should show loading then replace with response", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
-    const onSetMessages = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "Hello" },
     ]);
     mockedAttacksApi.addMessage.mockResolvedValue(makeTextResponse("Hi!") as never);
     mockedMapper.backendMessagesToFrontend.mockReturnValue([
+      {
+        role: "user",
+        content: "Hello",
+        timestamp: "2026-01-01T00:00:00Z",
+      },
       {
         role: "assistant",
         content: "Hi!",
@@ -684,8 +652,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-2"
           conversationId="conv-2"
-          onReceiveMessage={onReceiveMessage}
-          onSetMessages={onSetMessages}
         />
       </TestWrapper>
     );
@@ -694,17 +660,9 @@ describe("ChatWindow Integration", () => {
     await user.type(input, "Hello");
     await user.click(screen.getByRole("button", { name: /send/i }));
 
+    // Response should appear in the DOM
     await waitFor(() => {
-      // Loading message delivered via onReceiveMessage
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ content: "...", isLoading: true })
-      );
-      // Actual response delivered via onSetMessages (full server data)
-      expect(onSetMessages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ content: "Hi!" }),
-        ])
-      );
+      expect(screen.getByText("Hi!")).toBeInTheDocument();
     });
   });
 
@@ -714,7 +672,6 @@ describe("ChatWindow Integration", () => {
 
   it("should handle image response from backend", async () => {
     const user = userEvent.setup();
-    const onSetMessages = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "Generate an image" },
@@ -743,7 +700,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-img"
           conversationId="conv-img"
-          onSetMessages={onSetMessages}
         />
       </TestWrapper>
     );
@@ -752,18 +708,9 @@ describe("ChatWindow Integration", () => {
     await user.type(input, "Generate an image");
     await user.click(screen.getByRole("button", { name: /send/i }));
 
+    // The response should include the image attachment rendered in the DOM
     await waitFor(() => {
-      // The response should include the image attachment
-      expect(onSetMessages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            role: "assistant",
-            attachments: expect.arrayContaining([
-              expect.objectContaining({ type: "image" }),
-            ]),
-          }),
-        ])
-      );
+      expect(screen.getByRole("img")).toBeInTheDocument();
     });
   });
 
@@ -773,7 +720,6 @@ describe("ChatWindow Integration", () => {
 
   it("should handle audio response from backend", async () => {
     const user = userEvent.setup();
-    const onSetMessages = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "Read this aloud" },
@@ -802,7 +748,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-audio"
           conversationId="conv-audio"
-          onSetMessages={onSetMessages}
         />
       </TestWrapper>
     );
@@ -811,17 +756,10 @@ describe("ChatWindow Integration", () => {
     await user.type(input, "Read this aloud");
     await user.click(screen.getByRole("button", { name: /send/i }));
 
+    // Audio element should appear in the DOM
     await waitFor(() => {
-      expect(onSetMessages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            role: "assistant",
-            attachments: expect.arrayContaining([
-              expect.objectContaining({ type: "audio" }),
-            ]),
-          }),
-        ])
-      );
+      const audioEl = document.querySelector("audio");
+      expect(audioEl).toBeInTheDocument();
     });
   });
 
@@ -831,7 +769,6 @@ describe("ChatWindow Integration", () => {
 
   it("should handle video response from backend", async () => {
     const user = userEvent.setup();
-    const onSetMessages = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "Create a video" },
@@ -860,7 +797,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-video"
           conversationId="conv-video"
-          onSetMessages={onSetMessages}
         />
       </TestWrapper>
     );
@@ -869,17 +805,10 @@ describe("ChatWindow Integration", () => {
     await user.type(input, "Create a video");
     await user.click(screen.getByRole("button", { name: /send/i }));
 
+    // Video element should appear in the DOM
     await waitFor(() => {
-      expect(onSetMessages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            role: "assistant",
-            attachments: expect.arrayContaining([
-              expect.objectContaining({ type: "video" }),
-            ]),
-          }),
-        ])
-      );
+      const videoEl = document.querySelector("video");
+      expect(videoEl).toBeInTheDocument();
     });
   });
 
@@ -889,7 +818,6 @@ describe("ChatWindow Integration", () => {
 
   it("should handle mixed text + image response", async () => {
     const user = userEvent.setup();
-    const onSetMessages = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "Describe and show" },
@@ -918,7 +846,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-multi"
           conversationId="conv-multi"
-          onSetMessages={onSetMessages}
         />
       </TestWrapper>
     );
@@ -927,18 +854,10 @@ describe("ChatWindow Integration", () => {
     await user.type(input, "Describe and show");
     await user.click(screen.getByRole("button", { name: /send/i }));
 
+    // Both text and image should appear in the DOM
     await waitFor(() => {
-      expect(onSetMessages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            role: "assistant",
-            content: "Here is the result:",
-            attachments: expect.arrayContaining([
-              expect.objectContaining({ type: "image" }),
-            ]),
-          }),
-        ])
-      );
+      expect(screen.getByText("Here is the result:")).toBeInTheDocument();
+      expect(screen.getByRole("img")).toBeInTheDocument();
     });
   });
 
@@ -948,7 +867,6 @@ describe("ChatWindow Integration", () => {
 
   it("should send image attachment alongside text", async () => {
     const user = userEvent.setup();
-    const onSendMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "What is this?" },
@@ -973,7 +891,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-attach"
           conversationId="conv-attach"
-          onSendMessage={onSendMessage}
         />
       </TestWrapper>
     );
@@ -1059,7 +976,6 @@ describe("ChatWindow Integration", () => {
 
   it("should handle blocked response from target", async () => {
     const user = userEvent.setup();
-    const onSetMessages = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "bad prompt" },
@@ -1085,7 +1001,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-block"
           conversationId="conv-block"
-          onSetMessages={onSetMessages}
         />
       </TestWrapper>
     );
@@ -1095,14 +1010,7 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onSetMessages).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({
-            role: "assistant",
-            error: expect.objectContaining({ type: "blocked" }),
-          }),
-        ])
-      );
+      expect(screen.getByText(/Content was filtered by safety system/)).toBeInTheDocument();
     });
   });
 
@@ -1113,8 +1021,6 @@ describe("ChatWindow Integration", () => {
   it("should support multi-turn: create on first, reuse on second", async () => {
     const user = userEvent.setup();
     const onConversationCreated = jest.fn();
-    const onSendMessage = jest.fn();
-    const onReceiveMessage = jest.fn();
 
     // First message
     mockedMapper.buildMessagePieces.mockResolvedValue([
@@ -1128,6 +1034,11 @@ describe("ChatWindow Integration", () => {
     mockedAttacksApi.addMessage.mockResolvedValue(makeTextResponse("Reply 1") as never);
     mockedMapper.backendMessagesToFrontend.mockReturnValue([
       {
+        role: "user",
+        content: "Turn 1",
+        timestamp: "2026-01-01T00:00:00Z",
+      },
+      {
         role: "assistant",
         content: "Reply 1",
         timestamp: "2026-01-01T00:00:01Z",
@@ -1139,8 +1050,6 @@ describe("ChatWindow Integration", () => {
         <ChatWindow
           {...defaultProps}
           conversationId={null}
-          onSendMessage={onSendMessage}
-          onReceiveMessage={onReceiveMessage}
           onConversationCreated={onConversationCreated}
         />
       </TestWrapper>
@@ -1163,9 +1072,24 @@ describe("ChatWindow Integration", () => {
     mockedAttacksApi.addMessage.mockResolvedValue(makeTextResponse("Reply 2") as never);
     mockedMapper.backendMessagesToFrontend.mockReturnValue([
       {
+        role: "user",
+        content: "Turn 1",
+        timestamp: "2026-01-01T00:00:00Z",
+      },
+      {
+        role: "assistant",
+        content: "Reply 1",
+        timestamp: "2026-01-01T00:00:01Z",
+      },
+      {
+        role: "user",
+        content: "Turn 2",
+        timestamp: "2026-01-01T00:00:02Z",
+      },
+      {
         role: "assistant",
         content: "Reply 2",
-        timestamp: "2026-01-01T00:00:02Z",
+        timestamp: "2026-01-01T00:00:03Z",
       },
     ]);
 
@@ -1175,8 +1099,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           attackResultId="ar-conv-multi-turn"
           conversationId="conv-multi-turn"
-          onSendMessage={onSendMessage}
-          onReceiveMessage={onReceiveMessage}
           onConversationCreated={onConversationCreated}
         />
       </TestWrapper>
@@ -1281,7 +1203,7 @@ describe("ChatWindow Integration", () => {
   // Single-turn target UX
   // -----------------------------------------------------------------------
 
-  it("should show single-turn banner for single-turn target with existing user messages", () => {
+  it("should show single-turn banner for single-turn target with existing user messages", async () => {
     const singleTurnTarget: TargetInstance = {
       target_registry_name: "openai_image_1",
       target_type: "OpenAIImageTarget",
@@ -1293,20 +1215,25 @@ describe("ChatWindow Integration", () => {
       { role: "assistant", content: "Here is the image", timestamp: "2026-01-01T00:00:01Z" },
     ];
 
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(messagesWithUser);
+
     render(
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
           activeTarget={singleTurnTarget}
-          messages={messagesWithUser}
+          attackResultId="ar-conv-single"
           conversationId="conv-single"
           activeConversationId="conv-single"
         />
       </TestWrapper>
     );
 
-    expect(screen.getByTestId("single-turn-banner")).toBeInTheDocument();
-    expect(screen.getByText(/only supports single-turn/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("single-turn-banner")).toBeInTheDocument();
+      expect(screen.getByText(/only supports single-turn/)).toBeInTheDocument();
+    });
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
@@ -1322,7 +1249,6 @@ describe("ChatWindow Integration", () => {
         <ChatWindow
           {...defaultProps}
           activeTarget={singleTurnTarget}
-          messages={[]}
           conversationId="conv-single"
           activeConversationId="conv-single"
         />
@@ -1333,28 +1259,34 @@ describe("ChatWindow Integration", () => {
     expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("should not show single-turn banner for multiturn target with messages", () => {
+  it("should not show single-turn banner for multiturn target with messages", async () => {
     const messagesWithUser: Message[] = [
       { role: "user", content: "Hello", timestamp: "2026-01-01T00:00:00Z" },
       { role: "assistant", content: "Hi there", timestamp: "2026-01-01T00:00:01Z" },
     ];
 
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(messagesWithUser);
+
     render(
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={messagesWithUser}
+          attackResultId="ar-conv-multi"
           conversationId="conv-multi"
           activeConversationId="conv-multi"
         />
       </TestWrapper>
     );
 
+    await waitFor(() => {
+      expect(screen.getByText("Hello")).toBeInTheDocument();
+    });
     expect(screen.queryByTestId("single-turn-banner")).not.toBeInTheDocument();
     expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 
-  it("should show New Conversation button in single-turn banner when conversation exists", () => {
+  it("should show New Conversation button in single-turn banner when conversation exists", async () => {
     const singleTurnTarget: TargetInstance = {
       target_registry_name: "openai_tts_1",
       target_type: "OpenAITTSTarget",
@@ -1366,12 +1298,14 @@ describe("ChatWindow Integration", () => {
       { role: "assistant", content: "Audio output", timestamp: "2026-01-01T00:00:01Z" },
     ];
 
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(messagesWithUser);
+
     render(
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
           activeTarget={singleTurnTarget}
-          messages={messagesWithUser}
           attackResultId="ar-conv-tts"
           conversationId="conv-tts"
           activeConversationId="conv-tts"
@@ -1379,7 +1313,9 @@ describe("ChatWindow Integration", () => {
       </TestWrapper>
     );
 
-    expect(screen.getByTestId("new-conversation-btn")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("new-conversation-btn")).toBeInTheDocument();
+    });
   });
 
   it("should show cross-target banner when attackTarget differs from activeTarget", () => {
@@ -1485,7 +1421,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-branch"
           conversationId="conv-main"
           activeConversationId="conv-main"
@@ -1529,7 +1464,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-copy"
           conversationId="conv-main"
           activeConversationId="conv-main"
@@ -1565,8 +1499,6 @@ describe("ChatWindow Integration", () => {
     mockedAttacksApi.createConversation.mockResolvedValue({
       conversation_id: "new-conv-from-new",
     });
-    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
-    mockedMapper.backendMessagesToFrontend.mockReturnValue([]);
 
     const singleTurnTarget: TargetInstance = {
       target_registry_name: "openai_image_1",
@@ -1579,12 +1511,14 @@ describe("ChatWindow Integration", () => {
       { role: "assistant", content: "Here is the image", timestamp: "2026-01-01T00:00:01Z" },
     ];
 
+    mockedAttacksApi.getMessages.mockResolvedValue({ messages: [] });
+    mockedMapper.backendMessagesToFrontend.mockReturnValue(messagesWithUser);
+
     render(
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
           activeTarget={singleTurnTarget}
-          messages={messagesWithUser}
           attackResultId="ar-new-conv"
           conversationId="conv-existing"
           activeConversationId="conv-existing"
@@ -1643,7 +1577,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-copy-input"
           conversationId="conv-copy-input"
           activeConversationId="conv-copy-input"
@@ -1687,7 +1620,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-copy-new"
           conversationId="conv-copy-new"
           activeConversationId="conv-copy-new"
@@ -1724,7 +1656,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-fail-copy"
           conversationId="conv-fail-copy"
           activeConversationId="conv-fail-copy"
@@ -1753,7 +1684,6 @@ describe("ChatWindow Integration", () => {
 
   it("should branch conversation and load cloned messages", async () => {
     const onSelectConversation = jest.fn();
-    const onSetMessages = jest.fn();
     const mockMessages: Message[] = [
       { role: "user", content: "hello" },
       { role: "assistant", content: "response" },
@@ -1769,12 +1699,10 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-branch-test"
           conversationId="conv-branch-test"
           activeConversationId="conv-branch-test"
           onSelectConversation={onSelectConversation}
-          onSetMessages={onSetMessages}
           relatedConversationCount={0}
         />
       </TestWrapper>
@@ -1802,7 +1730,6 @@ describe("ChatWindow Integration", () => {
 
   it("should branch into a new attack and load cloned messages", async () => {
     const onConversationCreated = jest.fn();
-    const onSetMessages = jest.fn();
     const mockMessages: Message[] = [
       { role: "user", content: "hello" },
       { role: "assistant", content: "response" },
@@ -1818,12 +1745,10 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-branch-attack"
           conversationId="conv-branch-attack"
           activeConversationId="conv-branch-attack"
           onConversationCreated={onConversationCreated}
-          onSetMessages={onSetMessages}
           relatedConversationCount={0}
         />
       </TestWrapper>
@@ -1854,7 +1779,6 @@ describe("ChatWindow Integration", () => {
         })
       );
       expect(onConversationCreated).toHaveBeenCalledWith("ar-new-branch", "conv-new-branch");
-      expect(onSetMessages).toHaveBeenCalledWith(clonedMessages);
     });
   });
 
@@ -1912,7 +1836,6 @@ describe("ChatWindow Integration", () => {
 
   it("should create new attack from template when use-as-template button is clicked", async () => {
     const onConversationCreated = jest.fn();
-    const onSetMessages = jest.fn();
     const existingMessages: Message[] = [
       { role: "user", content: "hello", timestamp: "2026-01-01T00:00:00Z" },
       { role: "assistant", content: "response", timestamp: "2026-01-01T00:00:01Z" },
@@ -1940,13 +1863,11 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={existingMessages}
           attackResultId="ar-cross-template"
           conversationId="conv-cross-template"
           activeConversationId="conv-cross-template"
           attackTarget={differentTarget}
           onConversationCreated={onConversationCreated}
-          onSetMessages={onSetMessages}
         />
       </TestWrapper>
     );
@@ -1988,7 +1909,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={existingMessages}
           attackResultId="ar-locked"
           conversationId="conv-locked"
           activeConversationId="conv-locked"
@@ -2065,7 +1985,6 @@ describe("ChatWindow Integration", () => {
 
   it("should show network error when addMessage fails with network error", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "test" },
@@ -2086,7 +2005,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           conversationId="conv-net-err"
           attackResultId="ar-net-err"
-          onReceiveMessage={onReceiveMessage}
         />
       </TestWrapper>
     );
@@ -2096,20 +2014,12 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.objectContaining({
-            type: "network",
-            description: expect.stringContaining("Network error"),
-          }),
-        })
-      );
+      expect(screen.getByText(/Network error/)).toBeInTheDocument();
     });
   });
 
   it("should show timeout error when addMessage fails with timeout", async () => {
     const user = userEvent.setup();
-    const onReceiveMessage = jest.fn();
 
     mockedMapper.buildMessagePieces.mockResolvedValue([
       { data_type: "text", original_value: "test" },
@@ -2129,7 +2039,6 @@ describe("ChatWindow Integration", () => {
           {...defaultProps}
           conversationId="conv-timeout"
           attackResultId="ar-timeout"
-          onReceiveMessage={onReceiveMessage}
         />
       </TestWrapper>
     );
@@ -2139,14 +2048,7 @@ describe("ChatWindow Integration", () => {
     await user.click(screen.getByRole("button", { name: /send/i }));
 
     await waitFor(() => {
-      expect(onReceiveMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: expect.objectContaining({
-            type: "timeout",
-            description: expect.stringContaining("timed out"),
-          }),
-        })
-      );
+      expect(screen.getByText(/timed out/)).toBeInTheDocument();
     });
   });
 
@@ -2223,7 +2125,6 @@ describe("ChatWindow Integration", () => {
       <TestWrapper>
         <ChatWindow
           {...defaultProps}
-          messages={mockMessages}
           attackResultId="ar-copy-att"
           conversationId="conv-copy-att"
           activeConversationId="conv-copy-att"
