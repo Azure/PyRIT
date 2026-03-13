@@ -13,7 +13,6 @@ Exit codes:
     1: Validation errors found
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -52,12 +51,22 @@ def validate_toc_files(toc_files: set[str], doc_root: Path) -> list[str]:
 def find_orphaned_files(toc_files: set[str], doc_root: Path) -> list[str]:
     """Find documentation files not referenced in the TOC."""
     skip_dirs = {
-        "_build", "_api", "api", "css", ".ipynb_checkpoints",
-        "__pycache__", "playwright_demo", "generate_docs",
+        "_build",
+        "_api",
+        "api",
+        "css",
+        ".ipynb_checkpoints",
+        "__pycache__",
+        "playwright_demo",
+        "generate_docs",
     }
     skip_files = {
-        "myst.yml", "roakey.png", "banner.png", ".gitignore",
-        "references.bib", "requirements.txt",
+        "myst.yml",
+        "roakey.png",
+        "banner.png",
+        ".gitignore",
+        "references.bib",
+        "requirements.txt",
     }
 
     # Normalize TOC references (strip extensions for comparison)
