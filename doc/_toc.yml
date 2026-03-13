@@ -132,6 +132,9 @@ chapters:
     - file: code/auxiliary_attacks/0_auxiliary_attacks
       sections:
       - file: code/auxiliary_attacks/1_gcg_azure_ml
+      - file: code/auxiliary_attacks/agentic_attacks/0_agentic_security
+        sections:
+        - file: code/auxiliary_attacks/agentic_attacks/1_sensitive_data_access
     - file: code/scenarios/0_scenarios
       sections:
       - file: code/scenarios/1_configuring_scenarios

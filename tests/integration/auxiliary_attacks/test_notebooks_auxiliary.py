@@ -13,7 +13,8 @@ from pyrit.common import path
 nb_directory_path = pathlib.Path(path.DOCS_CODE_PATH, "auxiliary_attacks").resolve()
 
 skipped_files = [
-    "1_gcg_azure_ml.ipynb",  # missing required env variables
+    "1_gcg_azure_ml.ipynb",
+    "1_sensitive_data_access.ipynb",  # missing required env variables
 ]
 
 
