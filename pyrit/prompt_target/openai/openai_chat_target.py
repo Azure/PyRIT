@@ -507,7 +507,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
         for turn in conversation:
             if len(turn.message_pieces) != 1:
                 return False
-            if turn.message_pieces[0].converted_value_data_type != "text":
+            if turn.message_pieces[0].converted_value_data_type not in ("text", "error"):
                 return False
         return True
 
@@ -535,8 +535,11 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
 
             message_piece = message.message_pieces[0]
 
-            if message_piece.converted_value_data_type != "text":
-                raise ValueError("_build_chat_messages_for_text only supports text.")
+            if message_piece.converted_value_data_type not in ("text", "error"):
+                raise ValueError(
+                    f"_build_chat_messages_for_text only supports text and error data types."
+                    f" Received: {message_piece.converted_value_data_type}."
+                )
 
             chat_message = ChatMessage(role=message_piece.api_role, content=message_piece.converted_value)
             chat_messages.append(chat_message.model_dump(exclude_none=True))
@@ -581,7 +584,7 @@ class OpenAIChatTarget(OpenAITarget, PromptChatTarget):
                 ):
                     continue
 
-                if message_piece.converted_value_data_type == "text":
+                if message_piece.converted_value_data_type in ("text", "error"):
                     entry = {"type": "text", "text": message_piece.converted_value}
                     content.append(entry)
                 elif message_piece.converted_value_data_type == "image_path":

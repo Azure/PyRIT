@@ -37,7 +37,7 @@ class TestAzureSpeechAudioToTextConverter:
     )
     @patch("azure.cognitiveservices.speech.SpeechRecognizer")
     @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-    def test_stop_cb(self, mock_logger, MockSpeechRecognizer, mock_get_required_value):
+    def test_stop_cb(self, mock_logger, MockSpeechRecognizer, mock_get_required_value):  # noqa: N803
         import azure.cognitiveservices.speech as speechsdk
 
         # Create a mock event
@@ -66,7 +66,7 @@ class TestAzureSpeechAudioToTextConverter:
     )
     @patch("azure.cognitiveservices.speech.SpeechRecognizer")
     @patch("pyrit.prompt_converter.azure_speech_audio_to_text_converter.logger")
-    def test_transcript_cb(self, mock_logger, MockSpeechRecognizer, mock_get_required_value):
+    def test_transcript_cb(self, mock_logger, MockSpeechRecognizer, mock_get_required_value):  # noqa: N803
         import azure.cognitiveservices.speech as speechsdk
 
         # Create a mock event
