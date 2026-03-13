@@ -26,6 +26,7 @@ from pyrit.executor.attack.multi_turn.multi_turn_attack_strategy import (
     MultiTurnAttackContext,
     MultiTurnAttackStrategy,
 )
+from pyrit.identifiers import build_atomic_attack_identifier
 from pyrit.memory import CentralMemory
 from pyrit.models import (
     AttackOutcome,
@@ -314,7 +315,7 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
 
         # Prepare the result
         return AttackResult(
-            attack_identifier=self.get_identifier(),
+            atomic_attack_identifier=build_atomic_attack_identifier(attack_identifier=self.get_identifier()),
             conversation_id=context.session.conversation_id,
             objective=context.objective,
             outcome=(AttackOutcome.SUCCESS if achieved_objective else AttackOutcome.FAILURE),
@@ -523,6 +524,9 @@ class RedTeamingAttack(MultiTurnAttackStrategy[MultiTurnAttackContext[Any], Atta
             ValueError: If no response is received from the target system.
         """
         logger.info(f"Sending prompt to target: {message.get_value()[:50]}...")
+
+        # For single-turn targets, rotate conversation_id so each turn starts fresh
+        self._rotate_conversation_for_single_turn_target(context=context)
 
         with execution_context(
             component_role=ComponentRole.OBJECTIVE_TARGET,

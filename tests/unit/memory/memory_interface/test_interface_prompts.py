@@ -4,7 +4,7 @@
 
 import uuid
 from collections.abc import MutableSequence, Sequence
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -702,7 +702,7 @@ def test_insert_prompt_memories_not_inserts_embedding(
 
 
 def test_get_message_pieces_labels(sqlite_instance: MemoryInterface):
-    labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
+    labels = {"operation": "op1", "operator": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
             entry=MessagePiece(
@@ -732,8 +732,8 @@ def test_get_message_pieces_labels(sqlite_instance: MemoryInterface):
 
     assert len(retrieved_entries) == 2  # Two entries should have the specific memory labels
     for retrieved_entry in retrieved_entries:
-        assert "op_name" in retrieved_entry.labels
-        assert "user_name" in retrieved_entry.labels
+        assert "operation" in retrieved_entry.labels
+        assert "operator" in retrieved_entry.labels
         assert "harm_category" in retrieved_entry.labels
 
 
@@ -866,12 +866,12 @@ def test_get_message_pieces_sent_after(sqlite_instance: MemoryInterface):
         ),
     ]
 
-    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
-    entries[1].timestamp = datetime(2022, 12, 25, 15, 30, 0)
+    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
+    entries[1].timestamp = datetime(2022, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_message_pieces(sent_after=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_message_pieces(sent_after=datetime(2024, 1, 1, tzinfo=timezone.utc))
 
     assert len(retrieved_entries) == 1
     assert "Hello 3" in retrieved_entries[0].original_value
@@ -899,12 +899,12 @@ def test_get_message_pieces_sent_before(sqlite_instance: MemoryInterface):
         ),
     ]
 
-    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0)
-    entries[1].timestamp = datetime(2021, 12, 25, 15, 30, 0)
+    entries[0].timestamp = datetime(2022, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
+    entries[1].timestamp = datetime(2021, 12, 25, 15, 30, 0, tzinfo=timezone.utc)
 
     sqlite_instance._insert_entries(entries=entries)
 
-    retrieved_entries = sqlite_instance.get_message_pieces(sent_before=datetime(2024, 1, 1))
+    retrieved_entries = sqlite_instance.get_message_pieces(sent_before=datetime(2024, 1, 1, tzinfo=timezone.utc))
 
     assert len(retrieved_entries) == 2
     assert_original_value_in_list("Hello 1", retrieved_entries)
@@ -970,7 +970,7 @@ def test_get_message_pieces_by_hash(sqlite_instance: MemoryInterface):
 
 def test_get_message_pieces_with_non_matching_memory_labels(sqlite_instance: MemoryInterface):
     attack = PromptSendingAttack(objective_target=get_mock_target())
-    labels = {"op_name": "op1", "user_name": "name1", "harm_category": "dummy1"}
+    labels = {"operation": "op1", "operator": "name1", "harm_category": "dummy1"}
     entries = [
         PromptMemoryEntry(
             entry=MessagePiece(

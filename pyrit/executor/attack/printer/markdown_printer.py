@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pyrit.executor.attack.printer.attack_result_printer import AttackResultPrinter
 from pyrit.memory import CentralMemory
@@ -170,7 +170,8 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
 
         # Footer
         markdown_lines.append("\n---")
-        markdown_lines.append(f"*Report generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
+        timestamp_utc = datetime.now(tz=timezone.utc).isoformat().replace("+00:00", "Z")
+        markdown_lines.append(f"*Report generated at {timestamp_utc}*")
 
         self._render_markdown(markdown_lines)
 
@@ -486,7 +487,9 @@ class MarkdownAttackResultPrinter(AttackResultPrinter):
         markdown_lines.append("|-------|-------|")
         markdown_lines.append(f"| **Objective** | {result.objective} |")
 
-        attack_type = result.attack_identifier.class_name if result.attack_identifier else "Unknown"
+        attack_type = (
+            result.get_attack_strategy_identifier().class_name if result.get_attack_strategy_identifier() else "Unknown"
+        )
 
         markdown_lines.append(f"| **Attack Type** | `{attack_type}` |")
         markdown_lines.append(f"| **Conversation ID** | `{result.conversation_id}` |")

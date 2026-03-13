@@ -404,7 +404,7 @@ class PyRITShell(cmd.Cmd):
     # Shortcuts and aliases
     do_quit = do_exit
     do_q = do_exit
-    do_EOF = do_exit  # Ctrl+D on Unix, Ctrl+Z on Windows
+    do_EOF = do_exit  # Ctrl+D on Unix, Ctrl+Z on Windows  # noqa: N815
 
     def emptyline(self) -> bool:
         """
@@ -456,11 +456,11 @@ def main() -> int:
     parser.add_argument(
         "--database",
         choices=[frontend_core.IN_MEMORY, frontend_core.SQLITE, frontend_core.AZURE_SQL],
-        default=frontend_core.SQLITE,
+        default=None,
         help=(
             f"Default database type to use"
             f" ({frontend_core.IN_MEMORY}, {frontend_core.SQLITE}, {frontend_core.AZURE_SQL})"
-            f" (default: {frontend_core.SQLITE}, can be overridden per-run)"
+            f" (defaults to config file value, or {frontend_core.SQLITE} if not specified)"
         ),
     )
 
