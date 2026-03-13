@@ -54,10 +54,16 @@ const useStyles = makeStyles({
   ribbon: {
     borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
     backgroundColor: tokens.colorNeutralBackground1,
-    padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalXL}`,
+    padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalM}`,
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalXS,
+    '@media (min-width: 1081px)': {
+      padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`,
+    },
+    '@media (min-width: 1401px)': {
+      padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalXL}`,
+    },
   },
   helper: {
     color: tokens.colorNeutralForeground3,
@@ -69,15 +75,21 @@ const useStyles = makeStyles({
     flex: 1,
     minHeight: 0,
     display: 'grid',
-    gridTemplateColumns: 'minmax(280px, 340px) minmax(340px, 1fr) minmax(340px, 1fr)',
-    gridTemplateRows: 'minmax(0, 1fr)',
-    gap: tokens.spacingHorizontalL,
-    padding: tokens.spacingHorizontalXL,
-    overflow: 'hidden',
-    '@media (max-width: 1280px)': {
-      gridTemplateColumns: '1fr',
-      gridTemplateRows: 'none',
-      overflowY: 'auto',
+    gridTemplateColumns: '1fr',
+    gap: tokens.spacingVerticalL,
+    padding: tokens.spacingHorizontalM,
+    overflowY: 'auto',
+    '@media (min-width: 1081px)': {
+      gridTemplateColumns: 'minmax(220px, 260px) minmax(280px, 1fr) minmax(280px, 1fr)',
+      gridTemplateRows: 'minmax(0, 1fr)',
+      gap: tokens.spacingHorizontalS,
+      padding: tokens.spacingHorizontalM,
+      overflow: 'hidden',
+    },
+    '@media (min-width: 1401px)': {
+      gridTemplateColumns: 'minmax(240px, 280px) minmax(300px, 1fr) minmax(300px, 1fr)',
+      gap: tokens.spacingHorizontalM,
+      padding: tokens.spacingHorizontalL,
     },
   },
   loading: {
