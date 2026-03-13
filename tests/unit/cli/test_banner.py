@@ -200,7 +200,7 @@ class TestPlayAnimation:
             nonlocal call_count
             call_count += 1
             if call_count >= 3:
-                raise KeyboardInterrupt()
+                raise KeyboardInterrupt
 
         with (
             patch("pyrit.cli.banner.can_animate", return_value=True),
