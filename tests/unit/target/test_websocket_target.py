@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import json
-from typing import Callable, List
+from collections.abc import Callable
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -14,7 +14,7 @@ from pyrit.prompt_target.websocket_target import WebsocketTarget
 
 
 @pytest.fixture
-def mock_initialization_strings() -> List[str]:
+def mock_initialization_strings() -> list[str]:
     return ["connect_message", "authenticate_message"]
 
 
@@ -22,8 +22,9 @@ def mock_initialization_strings() -> List[str]:
 def mock_response_parser() -> Callable:
     def response_parser(text: str):
         json_body = json.loads(text)
-        if "message" in json_body.keys():
+        if "message" in json_body:
             return json_body["message"]
+        return None
 
     return response_parser
 
@@ -33,8 +34,7 @@ def mock_message_builder() -> Callable:
     def message_builder(prompt: str):
         message_format = f"""{{"message":"{{PROMPT}}"}}"""
 
-        message_w_prompt = message_format.replace("{PROMPT}", prompt)
-        return message_w_prompt
+        return message_format.replace("{PROMPT}", prompt)
 
     return message_builder
 
@@ -165,7 +165,7 @@ async def test_send_prompt_async_invalid_request(mock_websocket_target):
     with pytest.raises(ValueError) as excinfo:
         mock_websocket_target._validate_request(message=message)
 
-    assert "This target only supports text prompt input. Received: image_path." == str(excinfo.value)
+    assert str(excinfo.value) == "This target only supports text prompt input. Received: image_path."
 
 
 @pytest.mark.asyncio

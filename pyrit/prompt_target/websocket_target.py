@@ -4,7 +4,7 @@
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import websockets
 
@@ -27,7 +27,8 @@ class WebsocketTarget(PromptTarget):
     In addition to initialization strings, there is no standard format for websocket messages.
     As such, functions must be provided for both formatting messages to send and parsing responses from the target.
 
-    After establishing a conversation over websocket, the target typically begins the conversation with 1 or more greeting messages.
+    After establishing a conversation over websocket, the target typically begins the
+    conversation with 1 or more greeting messages.
     The greeting message is discarded so that is not interpreted as a response to the first adversarial prompt.
     The number of greeting messages to discard is dictated by discard_initial_messages argument.
     """
@@ -35,7 +36,7 @@ class WebsocketTarget(PromptTarget):
     def __init__(
         self,
         endpoint: str,
-        initialization_strings: List[str],
+        initialization_strings: list[str],
         response_parser: Callable[[str], str],
         message_builder: Callable[[str], str],
         discard_initial_messages: Optional[int] = 1,
@@ -48,10 +49,13 @@ class WebsocketTarget(PromptTarget):
 
         Args:
             endpoint (str): the target endpoint
-            initialization_strings (List[str]): These are the connection/initialization strings that must be sent after connecting to websocket in order to initiate conversation
-            response_parser: (Callable): Function that takes raw websocket message and tries to parse response message; message is discarded if function fails
+            initialization_strings (List[str]): These are the connection/initialization strings that must
+             be sent after connecting to websocket in order to initiate conversation
+            response_parser: (Callable): Function that takes raw websocket message and tries to parse
+             response message; message is discarded if function fails
             message_builder: (Callable): Function that takes prompt and builds the message to send with it
-            discard_initial_messages (int): The number of greeting messages that are sent after initialization and should be discarded
+            discard_initial_messages (int): The number of greeting messages that are
+             sent after initialization and should be discarded
             existing_convo (dict[str, websockets.WebSocketClientProtocol], Optional): Existing conversations.
             max_requests_per_minute (int, Optional): Maximum number of requests per minute.
             websockets_kwargs: Additional keyword arguments for websockets connection
@@ -121,7 +125,7 @@ class WebsocketTarget(PromptTarget):
             # Need to make sure bot has finished joining before we proceed
             await asyncio.sleep(5.0)
             # Below loop is to discard greeting message(s)
-            for i in range(self._discard_initial_messages):
+            for _i in range(self._discard_initial_messages):
                 result = await self.receive_messages(conversation_id=convo_id)
 
         websocket = self._existing_conversation[convo_id]
@@ -189,16 +193,17 @@ class WebsocketTarget(PromptTarget):
             async for message in websocket:
                 try:
                     parsed_message = self._response_parser(message)
-                except:
+                except Exception:
                     parsed_message = None
 
                 if parsed_message:
                     logger.debug(f"Received message: {parsed_message}")
                     result = parsed_message
                     break
-                else:
-                    logger.debug(f"Websocket message did not contain response from LLM. Continuing.")
+                logger.debug(f"Websocket message did not contain response from LLM. Continuing.")
 
+        except asyncio.CancelledError:
+            logger.error("Receive task was cancelled")
         except websockets.ConnectionClosed as e:
             logger.error(f"WebSocket connection closed for conversation {conversation_id}: {e}")
         except Exception as e:
@@ -244,9 +249,7 @@ class WebsocketTarget(PromptTarget):
         # Listen for responses
         receive_messages = asyncio.create_task(self.receive_messages(conversation_id=conversation_id))
 
-        result = await asyncio.wait_for(receive_messages, timeout=30.0)  # Wait for all responses to be received
-
-        return result
+        return await asyncio.wait_for(receive_messages, timeout=30.0)  # Wait for all responses to be received
 
     def _validate_request(self, *, message: Message) -> None:
         """
