@@ -58,6 +58,10 @@ const buildResponse: BuilderBuildResponse = {
 }
 
 describe("PromptOutputPanel", () => {
+  beforeEach(() => {
+    window.HTMLElement.prototype.scrollIntoView = jest.fn()
+  })
+
   it("shows variants, builder steps, and unavailable image guidance", () => {
     const onSelectVariant = jest.fn()
 
@@ -84,6 +88,8 @@ describe("PromptOutputPanel", () => {
       />,
     )
 
+    expect(screen.getByText("Source before transformation")).toBeInTheDocument()
+    expect(screen.getByText("Transformed output")).toBeInTheDocument()
     expect(screen.getAllByText("rewritten source prompt")).toHaveLength(2)
     expect(screen.getByText("Builder steps")).toBeInTheDocument()
     expect(screen.getByText("Blocked-word avoidance")).toBeInTheDocument()

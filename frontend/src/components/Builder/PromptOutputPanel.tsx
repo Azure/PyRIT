@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import {
   Badge,
   Button,
@@ -128,22 +129,31 @@ export default function PromptOutputPanel({
   onGenerateReferenceImage,
 }: PromptOutputPanelProps) {
   const styles = useStyles()
+  const transformedPanelRef = useRef<HTMLDivElement | null>(null)
   const sourceLabel = option ? `${humanizeDataType(getPrimaryInputType(option))} input` : 'Source input'
   const displayedSourceValue = buildResponse?.resolved_source_value || basePrompt
   const selectedVariant = buildResponse?.variants.find(variant => variant.variant_id === selectedVariantId) || buildResponse?.variants[0] || null
+  const selectedOutputValue = selectedVariant?.value || buildResponse?.converted_value || ''
+  const outputLooksUnchanged = Boolean(buildResponse && selectedOutputValue === displayedSourceValue)
   const transformedLabel = selectedVariant
     ? `${humanizeDataType(selectedVariant.data_type)} output`
     : option
       ? `${humanizeDataType(getPrimaryOutputType(option))} output`
       : 'Transformed output'
 
+  useEffect(() => {
+    if (buildResponse) {
+      transformedPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [buildResponse, selectedVariantId])
+
   return (
     <section className={styles.root}>
       <div className={styles.panel}>
         <div>
-          <Text as="h2" size={500} weight="semibold">Built output</Text>
+          <Text as="h2" size={500} weight="semibold">Source before transformation</Text>
           <Text className={styles.helper} block>
-            PyRIT starts from the source input below, then applies the selected option.
+            This top card is the starting input PyRIT will transform. The actual result appears in the next panel.
           </Text>
         </div>
 
@@ -178,8 +188,14 @@ export default function PromptOutputPanel({
         )}
       </div>
 
-      <div className={styles.panel}>
-        <Text as="h3" weight="semibold">{transformedLabel}</Text>
+      <div className={styles.panel} ref={transformedPanelRef}>
+        <div>
+          <Text as="h3" weight="semibold">Transformed output</Text>
+          <Text className={styles.helper} block>
+            This is the result after PyRIT applies the selected option.
+          </Text>
+        </div>
+        <Text weight="semibold">{transformedLabel}</Text>
 
         {buildResponse ? (
           <>
@@ -198,9 +214,9 @@ export default function PromptOutputPanel({
               </div>
             )}
 
-            <pre className={styles.codeBlock}>{selectedVariant?.value || buildResponse.converted_value}</pre>
+            <pre className={styles.codeBlock}>{selectedOutputValue}</pre>
             <div className={styles.buttonRow}>
-              <Button appearance="secondary" onClick={() => onCopy(selectedVariant?.value || buildResponse.converted_value)}>
+              <Button appearance="secondary" onClick={() => onCopy(selectedOutputValue)}>
                 Copy transformed output
               </Button>
               {selectedVariant?.data_type === 'text' && (
@@ -216,6 +232,11 @@ export default function PromptOutputPanel({
             <Text className={styles.helper} block>
               The selected option changed the input from {buildResponse.resolved_source_data_type} to {buildResponse.converted_value_data_type}.
             </Text>
+            {outputLooksUnchanged && (
+              <Text className={styles.helper} block>
+                This run came back with the same visible text as the source. That can happen when the selected option does not find a useful rewrite for this prompt.
+              </Text>
+            )}
             {buildResponse.warnings.length > 0 && buildResponse.warnings.map(warning => (
               <Text key={warning} className={styles.helper} block>{warning}</Text>
             ))}
