@@ -40,6 +40,9 @@ from pyrit.datasets.seed_datasets.remote.harmbench_dataset import (
 from pyrit.datasets.seed_datasets.remote.harmbench_multimodal_dataset import (
     _HarmBenchMultimodalDataset,
 )  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.harmful_qa_dataset import (
+    _HarmfulQADataset,
+)  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.jbb_behaviors_dataset import (
     _JBBBehaviorsDataset,
 )  # noqa: F401
@@ -92,6 +95,9 @@ from pyrit.datasets.seed_datasets.remote.sosbench_dataset import (
 from pyrit.datasets.seed_datasets.remote.tdc23_redteaming_dataset import (
     _TDC23RedteamingDataset,
 )  # noqa: F401
+from pyrit.datasets.seed_datasets.remote.toxic_chat_dataset import (
+    _ToxicChatDataset,
+)  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.transphobia_awareness_dataset import (  # noqa: F401
     _TransphobiaAwarenessDataset,
 )
@@ -116,6 +122,7 @@ __all__ = [
     "_ForbiddenQuestionsDataset",
     "_HarmBenchDataset",
     "_HarmBenchMultimodalDataset",
+    "_HarmfulQADataset",
     "_JBBBehaviorsDataset",
     "_LibrAIDoNotAnswerDataset",
     "_LLMLatentAdversarialTrainingDataset",
@@ -134,6 +141,7 @@ __all__ = [
     "_SOSBenchDataset",
     "_SorryBenchDataset",
     "_TDC23RedteamingDataset",
+    "_ToxicChatDataset",
     "_TransphobiaAwarenessDataset",
     "_VLSUMultimodalDataset",
     "_XSTestDataset",
