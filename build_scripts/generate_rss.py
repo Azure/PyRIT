@@ -45,7 +45,7 @@ fg.language("en")
 
 # Iterate over the blog files and sort them
 print("Pulling blog files...")
-directory = Path("doc/_build/html/blog/")
+directory = Path("doc/_build/site/blog/")
 files = [file for file in directory.iterdir() if file.is_file() and file.name.startswith("20")]
 if len(files) == 0:
     print("Error: No blog files found. Exiting.")
@@ -85,8 +85,8 @@ if first_entry.description() != (
 
 # Export the RSS feed
 print("Exporting RSS feed...")
-fg.rss_file("doc/_build/html/blog/rss.xml", pretty=True)
-file = Path("doc/_build/html/blog/rss.xml")
+fg.rss_file("doc/_build/site/blog/rss.xml", pretty=True)
+file = Path("doc/_build/site/blog/rss.xml")
 if not file.exists() or file.stat().st_size == 0:
     print("Error: RSS feed export failed. Exiting.")
     sys.exit(1)

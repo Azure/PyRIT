@@ -170,7 +170,7 @@ def module_to_dict(mod: griffe.Module, include_submodules: bool = False) -> dict
                     # Unresolvable alias — just record the name
                     result["members"].append({"name": name, "kind": "alias", "target": str(member.target_path)})
             elif isinstance(member, griffe.Module) and include_submodules:
-                result["members"].append(module_to_dict(member))
+                result["members"].append(module_to_dict(member, include_submodules=True))
         except Exception as e:
             print(f"  Warning: skipping {name}: {e}", file=sys.stderr)
             continue

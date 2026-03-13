@@ -176,18 +176,59 @@ def render_module(data: dict) -> str:
     return "\n".join(parts)
 
 
+def split_aggregate_json(api_json_dir: Path) -> None:
+    """Split aggregate JSON files that contain nested submodules into individual files.
+
+    When pydoc2json.py runs with --submodules, it produces a single JSON file
+    (e.g. pyrit_all.json) whose members are submodules. This function recursively
+    splits those nested submodules into individual JSON files so that each
+    submodule gets its own API reference page.
+    """
+    for jf in sorted(api_json_dir.glob("*.json")):
+        data = json.loads(jf.read_text(encoding="utf-8"))
+        _split_submodules(data, jf.name, api_json_dir)
+
+
+def _split_submodules(data: dict, source_name: str, api_json_dir: Path) -> None:
+    """Recursively extract and write submodule members to individual JSON files."""
+    for member in data.get("members", []):
+        if member.get("kind") != "module":
+            continue
+        sub_name = member["name"]
+        sub_path = api_json_dir / f"{sub_name}.json"
+        if not sub_path.exists():
+            sub_path.write_text(json.dumps(member, indent=2, default=str), encoding="utf-8")
+            print(f"Split {sub_name} from {source_name}")
+        # Recurse into nested submodules
+        _split_submodules(member, source_name, api_json_dir)
+
+
 def main() -> None:
     API_MD_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Split aggregate JSON files (e.g. pyrit_all.json) into per-module files
+    split_aggregate_json(API_JSON_DIR)
+
+    # Exclude aggregate files that only contain submodules (no direct classes/functions)
     json_files = sorted(API_JSON_DIR.glob("*.json"))
     if not json_files:
         print("No JSON files found in", API_JSON_DIR)
         return
 
-    # Generate index page
-    index_parts = ["# API Reference\n"]
+    # Collect module data, skipping pure-aggregate files
+    modules = []
     for jf in json_files:
         data = json.loads(jf.read_text(encoding="utf-8"))
+        members = data.get("members", [])
+        # Skip files whose members are all submodules (aggregates like pyrit_all.json)
+        non_module_members = [m for m in members if m.get("kind") != "module"]
+        if not non_module_members and any(m.get("kind") == "module" for m in members):
+            continue
+        modules.append(data)
+
+    # Generate index page
+    index_parts = ["# API Reference\n"]
+    for data in modules:
         mod_name = data["name"]
         members = data.get("members", [])
         member_count = len(members)
@@ -205,8 +246,7 @@ def main() -> None:
     print(f"Written {index_path}")
 
     # Generate per-module pages
-    for jf in json_files:
-        data = json.loads(jf.read_text(encoding="utf-8"))
+    for data in modules:
         mod_name = data["name"]
         members = data.get("members", [])
         # Skip modules with no members and no meaningful docstring
