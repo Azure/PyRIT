@@ -1,80 +1,40 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test"
 
-test.describe("Accessibility", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-  });
+import { mockBuilderApis } from "./builderTestUtils"
 
-  test("should have accessible form controls", async ({ page }) => {
-    // Input should be accessible
-    const input = page.getByRole("textbox");
-    await expect(input).toBeVisible();
+test.describe("Prompt builder accessibility", () => {
+  test("exposes labeled builder controls", async ({ page }) => {
+    await mockBuilderApis(page)
+    await page.goto("/")
 
-    // Send button should have accessible name
-    const sendButton = page.getByRole("button", { name: /send/i });
-    await expect(sendButton).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Prompt builder" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Attack starter" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Attack options" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Built output" })).toBeVisible()
 
-    // New Chat button should have accessible name
-    const newChatButton = page.getByRole("button", { name: /new chat/i });
-    await expect(newChatButton).toBeVisible();
-  });
+    await page.getByRole("button", { name: "Variation", exact: true }).click()
 
-  test("should be navigable with keyboard", async ({ page }) => {
-    // Tab to the first interactive element
-    await page.keyboard.press("Tab");
-    const focused = page.locator(":focus");
-    await expect(focused).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Attack family" })).toBeVisible()
+    await expect(page.getByRole("combobox", { name: "Starter preset" })).toBeVisible()
+    await expect(page.getByRole("combobox", { name: "Versions" })).toBeVisible()
+    await expect(page.getByRole("textbox", { name: /Text to transform/i })).toBeVisible()
+  })
 
-    // Continue tabbing through elements
-    await page.keyboard.press("Tab");
-    await expect(page.locator(":focus")).toBeVisible();
-  });
+  test("supports keyboard movement through the builder controls", async ({ page }) => {
+    await mockBuilderApis(page)
+    await page.goto("/")
 
-  test("should support Enter key to send message", async ({ page }) => {
-    const input = page.getByRole("textbox");
-    await input.fill("Test message via Enter");
+    await page.keyboard.press("Tab")
+    await expect(page.locator(":focus")).toBeVisible()
 
-    // Press Enter to send (if supported)
-    await input.press("Enter");
+    await page.keyboard.press("Tab")
+    await expect(page.locator(":focus")).toBeVisible()
 
-    // Either the message is sent, or we're still in the input
-    // This depends on the implementation
-    await expect(page.locator("body")).toBeVisible();
-  });
+    await page.getByRole("button", { name: "Variation", exact: true }).click()
+    await page.getByRole("textbox", { name: /Character concept/i }).focus()
+    await expect(page.getByRole("textbox", { name: /Character concept/i })).toBeFocused()
 
-  test("should have proper focus management", async ({ page }) => {
-    const input = page.getByRole("textbox");
-
-    // Focus input
-    await input.focus();
-    await expect(input).toBeFocused();
-
-    // Type and verify focus is maintained
-    await input.fill("Test");
-    await expect(input).toBeFocused();
-  });
-});
-
-test.describe("Visual Consistency", () => {
-  test("should render without layout shifts", async ({ page }) => {
-    await page.goto("/");
-
-    // Wait for initial render
-    await expect(page.getByText("PyRIT Frontend")).toBeVisible();
-
-    // Take measurements
-    const header = page.getByText("PyRIT Frontend");
-    const initialBox = await header.boundingBox();
-
-    // Wait a moment for any delayed renders
-    await page.waitForTimeout(500);
-
-    // Verify position hasn't changed
-    const finalBox = await header.boundingBox();
-
-    if (initialBox && finalBox) {
-      expect(finalBox.x).toBe(initialBox.x);
-      expect(finalBox.y).toBe(initialBox.y);
-    }
-  });
-});
+    await page.keyboard.type("masked antihero")
+    await expect(page.getByRole("textbox", { name: /Character concept/i })).toHaveValue("masked antihero")
+  })
+})

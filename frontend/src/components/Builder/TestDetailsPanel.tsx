@@ -34,6 +34,7 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalL,
+    flex: 1,
     minHeight: 0,
     overflowY: 'auto',
   },

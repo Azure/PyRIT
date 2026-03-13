@@ -6,29 +6,39 @@ import {
   tokens,
 } from '@fluentui/react-components'
 import AttackOptionList from './AttackOptionList'
+import AttackStarterPanel from './AttackStarterPanel'
 import PromptOutputPanel from './PromptOutputPanel'
 import TestDetailsPanel from './TestDetailsPanel'
 import {
+  canRequestVariants,
+  canUseAttackStarter,
+  formatBlockedWords,
+  getInitialPresetValues,
   getPrimaryInputType,
-  buildPreviewParams,
   buildPromptPreview,
+  buildPreviewParams,
+  expandPresetTemplate,
   getMissingRequiredParams,
   humanizeOptionName,
   humanizeParameterLabel,
+  parseBlockedWords,
   getSourceFieldLabel,
   isGoodForVideoPromptTesting,
   isVideoSpecificOption,
   worksWithImageUploads,
 } from './builderUtils'
 import {
-  converterPreviewApi,
+  builderApi,
   converterTypesApi,
   targetsApi,
 } from '../../services/api'
 import type {
-  ConverterPreviewResponse,
+  BuilderBuildResponse,
+  BuilderConfigResponse,
+  PromptBankPreset,
   ConverterTypeMetadata,
   PromptBuilderFormState,
+  ReferenceImageResponse,
   TargetInstance,
 } from '../../types'
 
@@ -76,11 +86,22 @@ const useStyles = makeStyles({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  middleColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: tokens.spacingVerticalL,
+    minHeight: 0,
+  },
 })
 
 const emptyFormState: PromptBuilderFormState = {
   selectedTargetId: '',
   sourceContent: '',
+  selectedPresetId: '',
+  presetValues: {},
+  avoidBlockedWords: false,
+  blockedWordsText: '',
+  variantCount: 1,
   parameterValues: {},
 }
 
@@ -90,20 +111,28 @@ export default function PromptBuilderPage() {
   const [formState, setFormState] = useState<PromptBuilderFormState>(emptyFormState)
   const [options, setOptions] = useState<ConverterTypeMetadata[]>([])
   const [targets, setTargets] = useState<TargetInstance[]>([])
+  const [builderConfig, setBuilderConfig] = useState<BuilderConfigResponse | null>(null)
+  const [selectedFamilyId, setSelectedFamilyId] = useState('')
   const [selectedOptionType, setSelectedOptionType] = useState<string | null>(null)
-  const [preview, setPreview] = useState<ConverterPreviewResponse | null>(null)
+  const [buildResponse, setBuildResponse] = useState<BuilderBuildResponse | null>(null)
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [referenceImage, setReferenceImage] = useState<ReferenceImageResponse | null>(null)
+  const [latestGeneratedImage, setLatestGeneratedImage] = useState<ReferenceImageResponse | null>(null)
+  const [isReferenceImageLoading, setIsReferenceImageLoading] = useState(false)
+  const [referenceImageError, setReferenceImageError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
 
     const load = async () => {
       try {
-        const [typeResponse, targetResponse] = await Promise.all([
+        const [typeResponse, targetResponse, builderConfigResponse] = await Promise.all([
           converterTypesApi.listTypes(),
           targetsApi.listTargets(),
+          builderApi.getConfig(),
         ])
 
         if (cancelled) {
@@ -112,6 +141,16 @@ export default function PromptBuilderPage() {
 
         setOptions(typeResponse.items)
         setTargets(targetResponse.items)
+        setBuilderConfig(builderConfigResponse)
+        const defaultFamilyId = builderConfigResponse.families[0]?.family_id || ''
+        const defaultPreset = builderConfigResponse.presets.find(preset => preset.family_id === defaultFamilyId) || null
+        setSelectedFamilyId(defaultFamilyId)
+        setFormState(current => ({
+          ...current,
+          selectedPresetId: defaultPreset?.preset_id || '',
+          presetValues: getInitialPresetValues(defaultPreset),
+          blockedWordsText: formatBlockedWords(builderConfigResponse.defaults.default_blocked_words),
+        }))
 
         if (typeResponse.items.length > 0) {
           const preferredDefault =
@@ -144,6 +183,22 @@ export default function PromptBuilderPage() {
     () => options.find(option => option.converter_type === selectedOptionType) || null,
     [options, selectedOptionType],
   )
+
+  const selectedPreset = useMemo<PromptBankPreset | null>(() => {
+    if (!builderConfig || !formState.selectedPresetId) {
+      return null
+    }
+
+    return builderConfig.presets.find(preset => preset.preset_id === formState.selectedPresetId) || null
+  }, [builderConfig, formState.selectedPresetId])
+
+  const selectedVariant = useMemo(() => {
+    if (!buildResponse) {
+      return null
+    }
+
+    return buildResponse.variants.find(variant => variant.variant_id === selectedVariantId) || buildResponse.variants[0] || null
+  }, [buildResponse, selectedVariantId])
 
   const basePrompt = useMemo(
     () => buildPromptPreview(formState),
@@ -190,8 +245,11 @@ export default function PromptBuilderPage() {
       ...current,
       [field]: value,
     }))
-    setPreview(null)
+    setBuildResponse(null)
+    setSelectedVariantId(null)
     setPreviewError(null)
+    setReferenceImage(null)
+    setReferenceImageError(null)
   }
 
   const handleParameterChange = (name: string, value: string | number | boolean) => {
@@ -202,8 +260,11 @@ export default function PromptBuilderPage() {
         [name]: value,
       },
     }))
-    setPreview(null)
+    setBuildResponse(null)
+    setSelectedVariantId(null)
     setPreviewError(null)
+    setReferenceImage(null)
+    setReferenceImageError(null)
   }
 
   const handleSelectOption = (option: ConverterTypeMetadata) => {
@@ -211,9 +272,13 @@ export default function PromptBuilderPage() {
     setFormState(current => ({
       ...current,
       parameterValues: {},
+      variantCount: canRequestVariants(option, builderConfig) ? current.variantCount : 1,
     }))
-    setPreview(null)
+    setBuildResponse(null)
+    setSelectedVariantId(null)
     setPreviewError(null)
+    setReferenceImage(null)
+    setReferenceImageError(null)
   }
 
   const handleBuildPreview = async () => {
@@ -225,15 +290,24 @@ export default function PromptBuilderPage() {
     setPreviewError(null)
 
     try {
-      const response = await converterPreviewApi.previewType(
-        selectedOption.converter_type,
-        buildPreviewParams(selectedOption, formState.parameterValues),
-        basePrompt,
-        getPrimaryInputType(selectedOption),
-      )
-      setPreview(response)
+      const response = await builderApi.build({
+        source_content: formState.sourceContent,
+        source_content_data_type: getPrimaryInputType(selectedOption),
+        converter_type: selectedOption.converter_type,
+        converter_params: buildPreviewParams(selectedOption, formState.parameterValues),
+        preset_id: formState.selectedPresetId || null,
+        preset_values: formState.presetValues,
+        avoid_blocked_words: canUseAttackStarter(selectedOption) ? formState.avoidBlockedWords : false,
+        blocked_words: parseBlockedWords(formState.blockedWordsText),
+        variant_count: canRequestVariants(selectedOption, builderConfig) ? formState.variantCount : 1,
+      })
+      setBuildResponse(response)
+      setSelectedVariantId(response.variants[0]?.variant_id || null)
+      setReferenceImage(null)
+      setReferenceImageError(null)
     } catch (error) {
-      setPreview(null)
+      setBuildResponse(null)
+      setSelectedVariantId(null)
       setPreviewError(
         error instanceof Error
           ? error.message
@@ -241,6 +315,30 @@ export default function PromptBuilderPage() {
       )
     } finally {
       setIsPreviewLoading(false)
+    }
+  }
+
+  const handleGenerateReferenceImage = async () => {
+    if (!selectedVariant || selectedVariant.data_type !== 'text') {
+      return
+    }
+
+    setIsReferenceImageLoading(true)
+    setReferenceImageError(null)
+
+    try {
+      const response = await builderApi.generateReferenceImage(selectedVariant.value)
+      setReferenceImage(response)
+      setLatestGeneratedImage(response)
+    } catch (error) {
+      setReferenceImage(null)
+      setReferenceImageError(
+        error instanceof Error
+          ? error.message
+          : 'The reference image could not be generated with the current helper model.',
+      )
+    } finally {
+      setIsReferenceImageLoading(false)
     }
   }
 
@@ -256,6 +354,37 @@ export default function PromptBuilderPage() {
     } catch (_error) {
       setPreviewError('Copy failed. You can still select the text and copy it manually.')
     }
+  }
+
+  const handlePresetChange = (presetId: string) => {
+    const preset = builderConfig?.presets.find(item => item.preset_id === presetId) || null
+    setFormState(current => ({
+      ...current,
+      selectedPresetId: presetId,
+      presetValues: getInitialPresetValues(preset),
+    }))
+    setBuildResponse(null)
+    setSelectedVariantId(null)
+    setPreviewError(null)
+    setReferenceImage(null)
+    setReferenceImageError(null)
+  }
+
+  const handleApplyPreset = () => {
+    const expanded = expandPresetTemplate(selectedPreset, formState.presetValues)
+    if (!expanded) {
+      return
+    }
+
+    setFormState(current => ({
+      ...current,
+      sourceContent: expanded,
+    }))
+    setBuildResponse(null)
+    setSelectedVariantId(null)
+    setPreviewError(null)
+    setReferenceImage(null)
+    setReferenceImageError(null)
   }
 
   if (isLoading) {
@@ -287,33 +416,122 @@ export default function PromptBuilderPage() {
           onSelect={handleSelectOption}
         />
 
-        <TestDetailsPanel
-          option={selectedOption}
-          targets={targets}
-          formState={formState}
-          onFieldChange={handleFieldChange}
-          onParameterChange={handleParameterChange}
-          onClearOptionSettings={() => {
-            setFormState(current => ({
-              ...current,
-              parameterValues: {},
-            }))
-            setPreview(null)
-            setPreviewError(null)
-          }}
-        />
+        <div className={styles.middleColumn}>
+          <AttackStarterPanel
+            option={selectedOption}
+            config={builderConfig}
+            formState={formState}
+            selectedFamilyId={selectedFamilyId}
+            selectedPreset={selectedPreset}
+            latestGeneratedImage={latestGeneratedImage}
+            onFamilyChange={value => {
+              setSelectedFamilyId(value)
+              const nextPreset = builderConfig?.presets.find(preset => preset.family_id === value) || null
+              setFormState(current => ({
+                ...current,
+                selectedPresetId: nextPreset?.preset_id || '',
+                presetValues: getInitialPresetValues(nextPreset),
+              }))
+              setBuildResponse(null)
+              setSelectedVariantId(null)
+              setPreviewError(null)
+              setReferenceImage(null)
+              setReferenceImageError(null)
+            }}
+            onPresetChange={handlePresetChange}
+            onPresetFieldChange={(name, value) => {
+              setFormState(current => ({
+                ...current,
+                presetValues: {
+                  ...current.presetValues,
+                  [name]: value,
+                },
+              }))
+              setBuildResponse(null)
+              setSelectedVariantId(null)
+              setPreviewError(null)
+              setReferenceImage(null)
+              setReferenceImageError(null)
+            }}
+            onApplyPreset={handleApplyPreset}
+            onAvoidBlockedWordsChange={value => {
+              setFormState(current => ({
+                ...current,
+                avoidBlockedWords: value,
+              }))
+              setBuildResponse(null)
+              setSelectedVariantId(null)
+              setPreviewError(null)
+              setReferenceImage(null)
+              setReferenceImageError(null)
+            }}
+            onBlockedWordsTextChange={value => {
+              setFormState(current => ({
+                ...current,
+                blockedWordsText: value,
+              }))
+              setBuildResponse(null)
+              setSelectedVariantId(null)
+              setPreviewError(null)
+              setReferenceImage(null)
+              setReferenceImageError(null)
+            }}
+            onVariantCountChange={value => {
+              setFormState(current => ({
+                ...current,
+                variantCount: value,
+              }))
+              setBuildResponse(null)
+              setSelectedVariantId(null)
+              setPreviewError(null)
+              setReferenceImage(null)
+              setReferenceImageError(null)
+            }}
+            onUseLatestGeneratedImage={() => {
+              if (!latestGeneratedImage) {
+                return
+              }
+              handleFieldChange('sourceContent', latestGeneratedImage.image_path)
+            }}
+          />
+
+          <TestDetailsPanel
+            option={selectedOption}
+            targets={targets}
+            formState={formState}
+            onFieldChange={handleFieldChange}
+            onParameterChange={handleParameterChange}
+            onClearOptionSettings={() => {
+              setFormState(current => ({
+                ...current,
+                parameterValues: {},
+              }))
+              setBuildResponse(null)
+              setSelectedVariantId(null)
+              setPreviewError(null)
+            }}
+          />
+        </div>
 
         <PromptOutputPanel
           option={selectedOption}
           basePrompt={basePrompt}
           isPromptReady={Boolean(formState.sourceContent.trim())}
-          preview={preview}
+          buildResponse={buildResponse}
+          selectedVariantId={selectedVariantId}
           isPreviewLoading={isPreviewLoading}
           previewError={previewError}
           canPreview={canPreview}
           previewHint={previewHint}
           onBuildTransformedPrompt={handleBuildPreview}
+          onSelectVariant={setSelectedVariantId}
           onCopy={handleCopy}
+          referenceImage={referenceImage}
+          referenceImageAvailable={Boolean(builderConfig?.capabilities.reference_image_available)}
+          referenceImageTargetName={builderConfig?.capabilities.reference_image_target_name || null}
+          isReferenceImageLoading={isReferenceImageLoading}
+          referenceImageError={referenceImageError}
+          onGenerateReferenceImage={handleGenerateReferenceImage}
         />
       </div>
     </div>

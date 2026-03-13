@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 import pyrit
 from pyrit.backend.middleware import register_error_handlers
-from pyrit.backend.routes import attacks, converters, health, labels, media, targets, version
+from pyrit.backend.routes import attacks, builder, converters, health, labels, media, targets, version
 from pyrit.memory import CentralMemory
 
 # Check for development mode from environment variable
@@ -70,6 +70,7 @@ app.add_middleware(
 app.include_router(attacks.router, prefix="/api", tags=["attacks"])
 app.include_router(targets.router, prefix="/api", tags=["targets"])
 app.include_router(converters.router, prefix="/api", tags=["converters"])
+app.include_router(builder.router, prefix="/api", tags=["builder"])
 app.include_router(labels.router, prefix="/api", tags=["labels"])
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(media.router, prefix="/api", tags=["media"])

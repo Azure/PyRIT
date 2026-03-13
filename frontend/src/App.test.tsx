@@ -41,12 +41,12 @@ describe("App", () => {
     expect(screen.getByTestId("prompt-builder-page")).toBeInTheDocument();
   });
 
-  it("starts in dark mode", () => {
+  it("starts in light mode", () => {
     render(<App />);
 
     expect(screen.getByTestId("main-layout")).toHaveAttribute(
       "data-dark-mode",
-      "true"
+      "false"
     );
   });
 
@@ -56,13 +56,13 @@ describe("App", () => {
     fireEvent.click(screen.getByTestId("toggle-theme"));
     expect(screen.getByTestId("main-layout")).toHaveAttribute(
       "data-dark-mode",
-      "false"
+      "true"
     );
 
     fireEvent.click(screen.getByTestId("toggle-theme"));
     expect(screen.getByTestId("main-layout")).toHaveAttribute(
       "data-dark-mode",
-      "true"
+      "false"
     );
   });
 });

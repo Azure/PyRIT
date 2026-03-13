@@ -11,6 +11,10 @@ from pyrit.backend.services.attack_service import (
     AttackService,
     get_attack_service,
 )
+from pyrit.backend.services.builder_service import (
+    BuilderService,
+    get_builder_service,
+)
 from pyrit.backend.services.converter_service import (
     ConverterService,
     get_converter_service,
@@ -23,6 +27,8 @@ from pyrit.backend.services.target_service import (
 __all__ = [
     "AttackService",
     "get_attack_service",
+    "BuilderService",
+    "get_builder_service",
     "ConverterService",
     "get_converter_service",
     "TargetService",

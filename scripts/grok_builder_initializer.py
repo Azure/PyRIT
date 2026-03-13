@@ -2,7 +2,7 @@ import os
 
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
 from pyrit.prompt_converter import PromptConverter
-from pyrit.prompt_target import OpenAIChatTarget
+from pyrit.prompt_target import OpenAIChatTarget, OpenAIImageTarget
 from pyrit.setup.initializers.pyrit_initializer import PyRITInitializer
 
 
@@ -45,3 +45,17 @@ class GrokBuilderInitializer(PyRITInitializer):
             parameter_name="converter_target",
             value=builder_target,
         )
+
+        image_model = os.getenv("OPENAI_IMAGE_MODEL")
+        if image_model:
+            image_target_kwargs = {
+                "endpoint": os.getenv("OPENAI_IMAGE_ENDPOINT", endpoint),
+                "api_key": os.getenv("OPENAI_IMAGE_KEY", api_key),
+                "model_name": image_model,
+            }
+            image_underlying_model = os.getenv("OPENAI_IMAGE_UNDERLYING_MODEL") or None
+            if image_underlying_model:
+                image_target_kwargs["underlying_model"] = image_underlying_model
+
+            builder_image_target = OpenAIImageTarget(**image_target_kwargs)
+            set_global_variable(name="default_builder_image_target", value=builder_image_target)

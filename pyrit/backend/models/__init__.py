@@ -31,6 +31,20 @@ from pyrit.backend.models.attacks import (
     UpdateMainConversationRequest,
     UpdateMainConversationResponse,
 )
+from pyrit.backend.models.builder import (
+    BuilderBuildRequest,
+    BuilderBuildResponse,
+    BuilderCapabilities,
+    BuilderConfigResponse,
+    BuilderDefaults,
+    BuilderPipelineStep,
+    BuilderPreset,
+    BuilderPresetField,
+    BuilderPromptFamily,
+    BuilderVariant,
+    ReferenceImageRequest,
+    ReferenceImageResponse,
+)
 from pyrit.backend.models.common import (
     SENSITIVE_FIELD_PATTERNS,
     FieldError,
@@ -77,6 +91,19 @@ __all__ = [
     "Score",
     "TargetInfo",
     "UpdateAttackRequest",
+    # Builder
+    "BuilderBuildRequest",
+    "BuilderBuildResponse",
+    "BuilderCapabilities",
+    "BuilderConfigResponse",
+    "BuilderDefaults",
+    "BuilderPipelineStep",
+    "BuilderPreset",
+    "BuilderPresetField",
+    "BuilderPromptFamily",
+    "BuilderVariant",
+    "ReferenceImageRequest",
+    "ReferenceImageResponse",
     # Common
     "SENSITIVE_FIELD_PATTERNS",
     "FieldError",

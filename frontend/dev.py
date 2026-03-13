@@ -22,6 +22,10 @@ sys.stderr.reconfigure(errors="replace")  # type: ignore[attr-defined]
 # Determine workspace root (parent of frontend directory)
 FRONTEND_DIR = Path(__file__).parent.absolute()
 WORKSPACE_ROOT = FRONTEND_DIR.parent
+DEFAULT_BACKEND_HOST = os.environ.get("PYRIT_BACKEND_HOST", "0.0.0.0")
+DEFAULT_BACKEND_PORT = os.environ.get("PYRIT_BACKEND_PORT", "8000")
+DEFAULT_FRONTEND_HOST = os.environ.get("PYRIT_FRONTEND_HOST", "127.0.0.1")
+DEFAULT_FRONTEND_PORT = os.environ.get("PYRIT_FRONTEND_PORT", "3000")
 
 
 def is_windows():
@@ -89,7 +93,7 @@ def start_backend(initializers: list[str] | None = None):
         initializers: Optional list of initializer names to run at startup.
             If not specified, no initializers are run.
     """
-    print("🚀 Starting backend on port 8000...")
+    print(f"🚀 Starting backend on port {DEFAULT_BACKEND_PORT}...")
 
     # Change to workspace root
     os.chdir(WORKSPACE_ROOT)
@@ -108,9 +112,9 @@ def start_backend(initializers: list[str] | None = None):
         "-m",
         "pyrit.cli.pyrit_backend",
         "--host",
-        "0.0.0.0",
+        DEFAULT_BACKEND_HOST,
         "--port",
-        "8000",
+        DEFAULT_BACKEND_PORT,
         "--log-level",
         "info",
     ]
@@ -125,14 +129,27 @@ def start_backend(initializers: list[str] | None = None):
 
 def start_frontend():
     """Start the Vite frontend"""
-    print("🎨 Starting frontend on port 3000...")
+    print(f"🎨 Starting frontend on port {DEFAULT_FRONTEND_PORT}...")
 
     # Change to frontend directory
     os.chdir(FRONTEND_DIR)
 
     # Start frontend process
     npm_cmd = "npm.cmd" if is_windows() else "npm"
-    return subprocess.Popen([npm_cmd, "run", "dev"])
+    env = os.environ.copy()
+    return subprocess.Popen(
+        [
+            npm_cmd,
+            "run",
+            "dev",
+            "--",
+            "--host",
+            DEFAULT_FRONTEND_HOST,
+            "--port",
+            DEFAULT_FRONTEND_PORT,
+        ],
+        env=env,
+    )
 
 
 def start_servers():
@@ -149,9 +166,9 @@ def start_servers():
 
     print()
     print("✅ Servers running!")
-    print(f"   Backend:  http://localhost:8000 (PID: {backend.pid})")
-    print(f"   Frontend: http://localhost:3000 (PID: {frontend.pid})")
-    print("   API Docs: http://localhost:8000/docs")
+    print(f"   Backend:  http://localhost:{DEFAULT_BACKEND_PORT} (PID: {backend.pid})")
+    print(f"   Frontend: http://localhost:{DEFAULT_FRONTEND_PORT} (PID: {frontend.pid})")
+    print(f"   API Docs: http://localhost:{DEFAULT_BACKEND_PORT}/docs")
     print()
     print("Press Ctrl+C to stop")
 
@@ -203,8 +220,8 @@ def main():
         elif command == "backend":
             print("🚀 Starting backend only...")
             backend = start_backend()
-            print(f"✅ Backend running on http://localhost:8000 (PID: {backend.pid})")
-            print("   API Docs: http://localhost:8000/docs")
+            print(f"✅ Backend running on http://localhost:{DEFAULT_BACKEND_PORT} (PID: {backend.pid})")
+            print(f"   API Docs: http://localhost:{DEFAULT_BACKEND_PORT}/docs")
             print("\nPress Ctrl+C to stop")
             try:
                 backend.wait()
@@ -217,7 +234,7 @@ def main():
         elif command == "frontend":
             print("🎨 Starting frontend only...")
             frontend = start_frontend()
-            print(f"✅ Frontend running on http://localhost:3000 (PID: {frontend.pid})")
+            print(f"✅ Frontend running on http://localhost:{DEFAULT_FRONTEND_PORT} (PID: {frontend.pid})")
             print("\nPress Ctrl+C to stop")
             try:
                 frontend.wait()

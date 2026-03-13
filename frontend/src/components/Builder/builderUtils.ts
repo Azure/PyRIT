@@ -1,6 +1,8 @@
 import type {
+  BuilderConfigResponse,
   ConverterParameterMetadata,
   ConverterTypeMetadata,
+  PromptBankPreset,
   PromptBuilderFormState,
 } from '../../types'
 
@@ -328,6 +330,57 @@ export function buildPromptPreview(
   formState: PromptBuilderFormState,
 ) {
   return formState.sourceContent.trim() || '[Add the source content this option should transform]'
+}
+
+export function canUseAttackStarter(option: ConverterTypeMetadata | null) {
+  return getPrimaryInputType(option) === 'text'
+}
+
+export function canRequestVariants(
+  option: ConverterTypeMetadata | null,
+  config: BuilderConfigResponse | null,
+) {
+  if (!option || !config) {
+    return false
+  }
+
+  return config.defaults.multi_variant_converter_types.includes(option.converter_type)
+}
+
+export function expandPresetTemplate(
+  preset: PromptBankPreset | null,
+  values: Record<string, string>,
+) {
+  if (!preset) {
+    return ''
+  }
+
+  return preset.template.replace(/\{\{\s*([^}]+)\s*\}\}/g, (_match, key: string) => {
+    const normalizedKey = key.trim()
+    return (values[normalizedKey] || '').trim()
+  }).replace(/\s+/g, ' ').trim()
+}
+
+export function getInitialPresetValues(preset: PromptBankPreset | null) {
+  if (!preset) {
+    return {}
+  }
+
+  return preset.fields.reduce<Record<string, string>>((values, field) => {
+    values[field.name] = field.default_value || ''
+    return values
+  }, {})
+}
+
+export function parseBlockedWords(text: string) {
+  return text
+    .split(/\n|,/)
+    .map(item => item.trim())
+    .filter(Boolean)
+}
+
+export function formatBlockedWords(words: string[]) {
+  return words.join('\n')
 }
 
 export function getMissingRequiredParams(

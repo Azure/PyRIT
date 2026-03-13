@@ -13,7 +13,11 @@ Main local characteristics:
 - The frontend is a prompt builder, not a chat shell.
 - The left panel surfaces all available converter options by default.
 - The builder is biased toward video-generator testing, while still exposing the full PyRIT converter list.
+- The middle panel now includes an attack-starter bank with small, editable preset families for common video red-team workflows.
 - Grok is used as the helper model that rewrites or expands prompts. It is not the system under test unless you explicitly choose to test Grok.
+- You can ask the helper model to avoid obviously blocked words before the main converter runs.
+- You can request several text versions from one build instead of only one output.
+- You can optionally generate a reference image from a built text prompt, then reuse that image in image-based attack flows.
 - Some rewrite-style options include a `Prompt length` control so Grok can return a longer version of the prompt when that makes sense.
 - The builder can work without a concrete target selected. This is useful when you are building prompts before deciding where to run them.
 - For file-based flows, the current UI expects an existing file path or URL. It does not yet upload a new browser file directly from the builder.
@@ -73,6 +77,22 @@ OPENAI_CHAT_UNDERLYING_MODEL="grok-4-latest"
 
 Those values make Grok available as the helper model for converter previews and prompt rewrites.
 
+If you also want optional reference-image generation in the builder, add:
+
+```env
+OPENAI_IMAGE_MODEL="gpt-image-1"
+```
+
+Optional overrides:
+
+```env
+OPENAI_IMAGE_ENDPOINT="https://api.x.ai/v1"
+OPENAI_IMAGE_KEY="YOUR_GROK_KEY"
+OPENAI_IMAGE_UNDERLYING_MODEL="gpt-image-1"
+```
+
+If you do not set `OPENAI_IMAGE_MODEL`, the builder still works. The reference-image section simply stays unavailable.
+
 ## Recommended Local Run Modes
 
 ### Option A: Run Jupyter In Docker
@@ -126,6 +146,11 @@ What this mode gives you:
 
 - All converter options visible in the left panel
 - Video-oriented grouping to help people testing video generators
+- Curated attack starters for Crescendo, TAP, RedTeaming, and single-turn probes
+- Character-driven preset fields that write into the normal prompt box without locking it
+- Optional blocked-word avoidance before the selected converter runs
+- Multiple text versions when the chosen converter can support them
+- Optional helper-generated reference images you can reuse in image-based attacks
 - Grok-backed previews for rewrite-style options
 - Prompt-length controls where longer output makes sense
 
@@ -161,10 +186,14 @@ The current builder is a thin layer over PyRIT converters.
 The flow is:
 
 1. The frontend asks the backend for the available converter types.
-2. The backend returns the converter settings and lightweight UI metadata.
-3. The user picks a converter and fills in the settings.
-4. For rewrite-style converters, the backend sends that request through Grok.
-5. The frontend shows the transformed output and explains what changed.
+2. The backend also returns the curated prompt-bank families, starter presets, and builder defaults.
+3. The user can apply a starter preset, then edit the prompt manually like normal.
+4. The user picks a converter and fills in the settings.
+5. If blocked-word avoidance is turned on, the helper model rephrases the obvious trigger words first.
+6. The backend applies the selected PyRIT converter.
+7. If requested and supported, the backend asks the helper model for extra text versions.
+8. The frontend shows the transformed output, the version choices, and the step-by-step trace.
+9. If available, the frontend can also ask the helper model for one reference image from the selected text version.
 
 This means the builder is not inventing a new attack engine. It is mostly making the existing PyRIT converter system easier to browse and use.
 
@@ -173,6 +202,10 @@ This means the builder is not inventing a new attack engine. It is mostly making
 These are the practical rules for this fork right now:
 
 - Grok is the helper model for building and previewing prompts.
+- The prompt bank is a speed layer, not a locked workflow. You can always overwrite the filled prompt manually.
+- Blocked-word avoidance is off by default and only tries to soften obvious trigger words.
+- Multiple versions are text-only in this local fork.
+- Reference-image generation is optional and only appears when an image-capable helper model is configured.
 - The target you are testing can be left blank while building prompts.
 - Some converters still need extra setup, and the UI should say that clearly.
 - Some converters are better for long prompts, and the UI marks those.
@@ -184,7 +217,7 @@ These are the practical rules for this fork right now:
 
 - The builder currently expects existing file paths or URLs for media-heavy flows.
 - It does not yet provide a polished browser upload flow for images or videos.
-- The builder is for prompt creation and preview. It is not yet a complete end-to-end run console for every PyRIT scenario.
+- The builder is for prompt creation, preview, and optional helper-generated reference images. It is not yet a complete end-to-end run console for every PyRIT scenario.
 - Some converter previews depend on how well the helper model follows structured instructions. The current Grok fallback makes previews usable, but results can still vary.
 
 ## Useful Commands

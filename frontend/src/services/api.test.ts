@@ -10,90 +10,172 @@ jest.mock("axios", () => ({
       response: { use: jest.fn() },
     },
   })),
-}));
+}))
 
-// Mock import.meta.env before importing api
+// Mock the api module so tests can validate endpoint wiring without relying on import.meta support in Jest
 jest.mock("./api", () => {
   const mockApiClient = {
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
     delete: jest.fn(),
-  };
+  }
 
   return {
     apiClient: mockApiClient,
     healthApi: {
       checkHealth: jest.fn(async () => {
-        const response = await mockApiClient.get("/health");
-        return response.data;
+        const response = await mockApiClient.get("/health")
+        return response.data
       }),
     },
     versionApi: {
       getVersion: jest.fn(async () => {
-        const response = await mockApiClient.get("/version");
-        return response.data;
+        const response = await mockApiClient.get("/version")
+        return response.data
       }),
     },
-  };
-});
+    targetsApi: {
+      listTargets: jest.fn(async () => {
+        const response = await mockApiClient.get("/targets")
+        return response.data
+      }),
+    },
+    converterTypesApi: {
+      listTypes: jest.fn(async () => {
+        const response = await mockApiClient.get("/converters/types")
+        return response.data
+      }),
+    },
+    builderApi: {
+      getConfig: jest.fn(async () => {
+        const response = await mockApiClient.get("/builder/config")
+        return response.data
+      }),
+      build: jest.fn(async (request) => {
+        const response = await mockApiClient.post("/builder/build", request)
+        return response.data
+      }),
+      generateReferenceImage: jest.fn(async (prompt: string) => {
+        const response = await mockApiClient.post("/builder/reference-image", { prompt })
+        return response.data
+      }),
+    },
+    converterPreviewApi: {
+      previewType: jest.fn(async (type, params, originalValue, originalValueDataType = "text") => {
+        const response = await mockApiClient.post("/converters/preview-type", {
+          type,
+          params,
+          original_value: originalValue,
+          original_value_data_type: originalValueDataType,
+        })
+        return response.data
+      }),
+    },
+  }
+})
 
-import { apiClient, healthApi, versionApi } from "./api";
+import {
+  apiClient,
+  builderApi,
+  converterPreviewApi,
+  converterTypesApi,
+  healthApi,
+  targetsApi,
+  versionApi,
+} from "./api"
 
 describe("api service", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-  });
+    jest.clearAllMocks()
+  })
 
-  describe("apiClient", () => {
-    it("should be defined", () => {
-      expect(apiClient).toBeDefined();
-    });
+  it("exposes the shared api client", () => {
+    expect(apiClient).toBeDefined()
+    expect(apiClient.get).toBeDefined()
+    expect(apiClient.post).toBeDefined()
+  })
 
-    it("should have correct methods", () => {
-      expect(apiClient.get).toBeDefined();
-      expect(apiClient.post).toBeDefined();
-    });
-  });
+  it("calls the health endpoint", async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValueOnce({ data: { status: "healthy" } })
 
-  describe("healthApi", () => {
-    it("should have checkHealth method", () => {
-      expect(healthApi.checkHealth).toBeDefined();
-      expect(typeof healthApi.checkHealth).toBe("function");
-    });
+    const result = await healthApi.checkHealth()
 
-    it("should call correct endpoint", async () => {
-      const mockResponse = { data: { status: "healthy" } };
-      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+    expect(apiClient.get).toHaveBeenCalledWith("/health")
+    expect(result).toEqual({ status: "healthy" })
+  })
 
-      const result = await healthApi.checkHealth();
+  it("calls the version endpoint", async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValueOnce({ data: { version: "0.11.1" } })
 
-      expect(apiClient.get).toHaveBeenCalledWith("/health");
-      expect(result).toEqual({ status: "healthy" });
-    });
+    const result = await versionApi.getVersion()
 
-    it("should handle errors", async () => {
-      const error = new Error("Network error");
-      (apiClient.get as jest.Mock).mockRejectedValueOnce(error);
+    expect(apiClient.get).toHaveBeenCalledWith("/version")
+    expect(result).toEqual({ version: "0.11.1" })
+  })
 
-      await expect(healthApi.checkHealth()).rejects.toThrow("Network error");
-    });
-  });
+  it("loads builder config", async () => {
+    ;(apiClient.get as jest.Mock).mockResolvedValueOnce({ data: { families: [], presets: [] } })
 
-  describe("versionApi", () => {
-    it("should have getVersion method", () => {
-      expect(versionApi.getVersion).toBeDefined();
-      expect(typeof versionApi.getVersion).toBe("function");
-    });
+    const result = await builderApi.getConfig()
 
-    it("should call correct endpoint", async () => {
-      const mockResponse = { data: { version: "0.10.1" } };
-      (apiClient.get as jest.Mock).mockResolvedValueOnce(mockResponse);
+    expect(apiClient.get).toHaveBeenCalledWith("/builder/config")
+    expect(result).toEqual({ families: [], presets: [] })
+  })
 
-      const result = await versionApi.getVersion();
+  it("posts builder build requests", async () => {
+    const request = {
+      source_content: "source",
+      source_content_data_type: "text",
+      converter_type: "VariationConverter",
+      converter_params: {},
+      preset_values: {},
+      avoid_blocked_words: false,
+      blocked_words: [],
+      variant_count: 1,
+    }
+    ;(apiClient.post as jest.Mock).mockResolvedValueOnce({ data: { converted_value: "built" } })
 
-      expect(apiClient.get).toHaveBeenCalledWith("/version");
-      expect(result).toEqual({ version: "0.10.1" });
-    });
-  });
-});
+    const result = await builderApi.build(request)
+
+    expect(apiClient.post).toHaveBeenCalledWith("/builder/build", request)
+    expect(result).toEqual({ converted_value: "built" })
+  })
+
+  it("posts reference-image requests", async () => {
+    ;(apiClient.post as jest.Mock).mockResolvedValueOnce({ data: { image_path: "/tmp/reference.png" } })
+
+    const result = await builderApi.generateReferenceImage("prompt text")
+
+    expect(apiClient.post).toHaveBeenCalledWith("/builder/reference-image", { prompt: "prompt text" })
+    expect(result).toEqual({ image_path: "/tmp/reference.png" })
+  })
+
+  it("loads targets and converter types", async () => {
+    ;(apiClient.get as jest.Mock)
+      .mockResolvedValueOnce({ data: { items: [] } })
+      .mockResolvedValueOnce({ data: { items: [] } })
+
+    const targets = await targetsApi.listTargets()
+    const converterTypes = await converterTypesApi.listTypes()
+
+    expect(apiClient.get).toHaveBeenNthCalledWith(1, "/targets")
+    expect(apiClient.get).toHaveBeenNthCalledWith(2, "/converters/types")
+    expect(targets).toEqual({ items: [] })
+    expect(converterTypes).toEqual({ items: [] })
+  })
+
+  it("posts converter preview requests", async () => {
+    ;(apiClient.post as jest.Mock).mockResolvedValueOnce({ data: { converted_value: "preview" } })
+
+    const result = await converterPreviewApi.previewType("VariationConverter", { tone: "calm" }, "seed text")
+
+    expect(apiClient.post).toHaveBeenCalledWith("/converters/preview-type", {
+      type: "VariationConverter",
+      params: { tone: "calm" },
+      original_value: "seed text",
+      original_value_data_type: "text",
+    })
+    expect(result).toEqual({ converted_value: "preview" })
+  })
+})

@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const frontendPort = 4173;
+const backendPort = 8003;
+
+process.env.PYRIT_FRONTEND_PORT = String(frontendPort);
+process.env.PYRIT_BACKEND_PORT = String(backendPort);
+process.env.PYRIT_BACKEND_PROXY_URL = `http://127.0.0.1:${backendPort}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -10,7 +17,7 @@ export default defineConfig({
   timeout: 30000,
 
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: `http://127.0.0.1:${frontendPort}`,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -29,9 +36,8 @@ export default defineConfig({
 
   /* Automatically start servers before running tests */
   webServer: {
-    command: process.env.CI ? "cd .. && uv run python frontend/dev.py" : "python dev.py",
-    // Use 127.0.0.1 to avoid Node.js 17+ resolving localhost to IPv6 ::1
-    url: "http://127.0.0.1:3000",
+    command: process.env.CI ? "cd .. && uv run python frontend/dev.py" : "../.venv/bin/python dev.py",
+    url: `http://127.0.0.1:${frontendPort}`,
     reuseExistingServer: !process.env.CI,
     // CI needs extra time for uv sync + backend startup
     timeout: 120_000,

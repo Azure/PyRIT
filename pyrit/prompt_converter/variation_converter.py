@@ -44,6 +44,7 @@ class VariationConverter(PromptConverter):
         converter_target: PromptChatTarget = REQUIRED_VALUE,  # type: ignore[assignment]
         prompt_template: Optional[SeedPrompt] = None,
         length_mode: LengthMode = "normal",
+        number_variations: int = 1,
     ):
         """
         Initialize the converter with the specified target and prompt template.
@@ -60,25 +61,29 @@ class VariationConverter(PromptConverter):
         self.converter_target = converter_target
 
         # set to default strategy if not provided
-        prompt_template = (
+        self._prompt_template = (
             prompt_template
             if prompt_template
             else SeedPrompt.from_yaml_file(pathlib.Path(CONVERTER_SEED_PROMPT_PATH) / "variation_converter.yaml")
         )
 
-        self.number_variations = 1
+        self.number_variations = max(1, number_variations)
         self._length_mode = length_mode
 
-        self.system_prompt = str(prompt_template.render_template_value(number_iterations=str(self.number_variations)))
+        self.system_prompt = self._build_system_prompt()
+
+    def _build_system_prompt(self) -> str:
+        system_prompt = str(self._prompt_template.render_template_value(number_iterations=str(self.number_variations)))
         length_instruction = build_length_mode_instruction(
-            length_mode=length_mode,
+            length_mode=self._length_mode,
             focus=(
                 "Use the extra space to make the variation richer, more specific, and better suited to a long-form "
                 "video prompt while keeping it a true variation of the source."
             ),
         )
         if length_instruction:
-            self.system_prompt = f"{self.system_prompt}\n\n{length_instruction}"
+            system_prompt = f"{system_prompt}\n\n{length_instruction}"
+        return system_prompt
 
     def _build_identifier(self) -> ComponentIdentifier:
         """
@@ -88,7 +93,7 @@ class VariationConverter(PromptConverter):
             ComponentIdentifier: The identifier for this converter.
         """
         return self._create_identifier(
-            params={"length_mode": self._length_mode},
+            params={"length_mode": self._length_mode, "number_variations": self.number_variations},
             children={"converter_target": self.converter_target.get_identifier()},
         )
 
@@ -105,6 +110,19 @@ class VariationConverter(PromptConverter):
 
         Raises:
             ValueError: If the input type is not supported.
+        """
+        if not self.input_supported(input_type):
+            raise ValueError("Input type not supported")
+
+        response_messages = await self.convert_variations_async(prompt=prompt, input_type=input_type)
+        return ConverterResult(output_text=response_messages[0], output_type="text")
+
+    async def convert_variations_async(self, *, prompt: str, input_type: PromptDataType = "text") -> list[str]:
+        """
+        Return all generated variations.
+
+        This keeps the existing single-output converter behavior intact while also
+        giving the builder service a safe way to request multiple prompt versions.
         """
         if not self.input_supported(input_type):
             raise ValueError("Input type not supported")
@@ -140,12 +158,10 @@ class VariationConverter(PromptConverter):
                 )
             ]
         )
-        response_msg = await self.send_variation_prompt_async(request)
-
-        return ConverterResult(output_text=response_msg, output_type="text")
+        return await self.send_variation_prompt_async(request)
 
     @pyrit_json_retry
-    async def send_variation_prompt_async(self, request: Message) -> str:
+    async def send_variation_prompt_async(self, request: Message) -> list[str]:
         """
         Send the message to the converter target and retrieve the response.
 
@@ -153,7 +169,7 @@ class VariationConverter(PromptConverter):
             request (Message): The message to be sent to the converter target.
 
         Returns:
-            str: The response message from the converter target.
+            list[str]: The response messages from the converter target.
 
         Raises:
             InvalidJsonException: If the response is not valid JSON or does not contain the expected keys.
@@ -168,7 +184,6 @@ class VariationConverter(PromptConverter):
         except json.JSONDecodeError:
             raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}") from None
 
-        try:
-            return str(response[0])
-        except KeyError:
+        if not isinstance(response, list) or not response:
             raise InvalidJsonException(message=f"Invalid JSON response: {response_msg}") from None
+        return [str(item) for item in response]
