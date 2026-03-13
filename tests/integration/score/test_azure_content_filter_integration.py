@@ -12,6 +12,11 @@ from pyrit.common.path import HOME_PATH
 from pyrit.memory import CentralMemory, MemoryInterface
 from pyrit.score import AzureContentFilterScorer
 
+pytestmark = pytest.mark.skipif(
+    not os.getenv("AZURE_CONTENT_SAFETY_API_ENDPOINT"),
+    reason="AZURE_CONTENT_SAFETY_API_ENDPOINT not configured",
+)
+
 
 @pytest.fixture
 def memory() -> Generator[MemoryInterface, None, None]:
@@ -27,13 +32,6 @@ async def test_azure_content_filter_scorer_image_integration(memory) -> None:
     environment variables to be set. Uses a sample image from the assets folder.
     """
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        # Verify required environment variables are set
-        api_key = os.getenv("AZURE_CONTENT_SAFETY_API_KEY")
-        endpoint = os.getenv("AZURE_CONTENT_SAFETY_API_ENDPOINT")
-
-        if not api_key or not endpoint:
-            pytest.skip("Azure Content Safety credentials not configured")
-
         scorer = AzureContentFilterScorer()
 
         image_path = HOME_PATH / "assets" / "architecture_components.png"
@@ -62,13 +60,6 @@ async def test_azure_content_filter_scorer_long_text_chunking_integration(memory
     This verifies that the chunking and aggregation logic works correctly with the real API.
     """
     with patch.object(CentralMemory, "get_memory_instance", return_value=memory):
-        # Verify required environment variables are set
-        api_key = os.getenv("AZURE_CONTENT_SAFETY_API_KEY")
-        endpoint = os.getenv("AZURE_CONTENT_SAFETY_API_ENDPOINT")
-
-        if not api_key or not endpoint:
-            pytest.skip("Azure Content Safety credentials not configured")
-
         scorer = AzureContentFilterScorer()
 
         # This should be greater than the rate limit
