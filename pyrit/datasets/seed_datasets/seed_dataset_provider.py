@@ -72,6 +72,19 @@ class SeedDatasetProvider(ABC):
             Exception: If the dataset cannot be fetched or processed.
         """
 
+    def _parse_metadata(self) -> Optional[SeedDatasetMetadata]:
+        """
+        Parse provider-specific metadata into the shared schema.
+
+        Subclasses can override this to source metadata from class attributes,
+        prompt files, or any other backing format. The default implementation
+        returns None, which means metadata is not available for this provider.
+
+        Returns:
+            Optional[SeedDatasetMetadata]: Parsed metadata for this provider, or None.
+        """
+        return None
+
     @classmethod
     def get_all_providers(cls) -> dict[str, type["SeedDatasetProvider"]]:
         """
@@ -107,19 +120,24 @@ class SeedDatasetProvider(ABC):
                 provider = provider_class()
 
                 # Parser ensures a standard metadata format
-                metadata: SeedDatasetMetadata = cls._parse_metadata()
-                if filters and not metadata and "all" not in filters.tags:
+                metadata = provider._parse_metadata()
+
+                # "all" bypasses metadata filtering and returns every dataset.
+                if filters and filters.tags and "all" in filters.tags:
+                    dataset_names.add(provider.dataset_name)
+                    continue
+
+                if filters and not metadata:
                     # Datasets without metadata are skipped unless we want "all"
                     continue
 
                 # Filters detected but no match -> don't add this dataset
-                if filters and not cls._match_filter(metadata=metadata, filters=filters):
+                if filters and metadata and not cls._match_filter(metadata=metadata, filters=filters):
                     continue
 
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
-                raise ValueError(
-                    f"Could not get dataset name from {provider_class.__name__}: {e}") from e
+                raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}") from e
         return sorted(dataset_names)
 
     @classmethod
@@ -140,9 +158,7 @@ class SeedDatasetProvider(ABC):
             bool: Whether or not the filters match or not.
         """
         # Tags
-        if metadata.tags and "all" in metadata.tags:
-            # This is the only condition that returns true, because we want the "all"
-            # tag to override everything else in the filter.
+        if filters.tags and "all" in filters.tags:
             return True
 
         # These lines all disable SIM103 because metadata and filters tags can be optional, so
@@ -156,8 +172,11 @@ class SeedDatasetProvider(ABC):
             return False
 
         # Harm Categories
-        if metadata.harm_categories and filters.harm_categories and \
-            not set(metadata.harm_categories) & set(filters.harm_categories):  # noqa: SIM103
+        if (
+            metadata.harm_categories
+            and filters.harm_categories
+            and not set(metadata.harm_categories) & set(filters.harm_categories)
+        ):  # noqa: SIM103
             return False
 
         # Source Type
@@ -165,8 +184,7 @@ class SeedDatasetProvider(ABC):
             return False
 
         # Modalities
-        if metadata.modalities and filters.modalities and \
-            not set(metadata.modalities) & set(filters.modalities):  # noqa: SIM103
+        if metadata.modalities and filters.modalities and not set(metadata.modalities) & set(filters.modalities):  # noqa: SIM103
             return False
 
         # Rank
@@ -215,11 +233,9 @@ class SeedDatasetProvider(ABC):
         # Validate dataset names if specified
         if dataset_names is not None:
             available_names = cls.get_all_dataset_names()
-            invalid_names = [
-                name for name in dataset_names if name not in available_names]
+            invalid_names = [name for name in dataset_names if name not in available_names]
             if invalid_names:
-                raise ValueError(
-                    f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
+                raise ValueError(f"Dataset(s) not found: {invalid_names}. Available datasets: {available_names}")
 
         async def fetch_single_dataset(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -245,8 +261,7 @@ class SeedDatasetProvider(ABC):
 
         # Progress tracking
         total_count = len(cls._registry)
-        pbar = tqdm(total=total_count,
-                    desc="Loading datasets - this can take a few minutes", unit="dataset")
+        pbar = tqdm(total=total_count, desc="Loading datasets - this can take a few minutes", unit="dataset")
 
         async def fetch_with_semaphore(
             provider_name: str, provider_class: type["SeedDatasetProvider"]
@@ -284,12 +299,10 @@ class SeedDatasetProvider(ABC):
                 logger.info(f"Merging multiple sources for {dataset_name}.")
 
                 existing_dataset = datasets[dataset_name]
-                combined_seeds = list(
-                    existing_dataset.seeds) + list(dataset.seeds)
+                combined_seeds = list(existing_dataset.seeds) + list(dataset.seeds)
                 existing_dataset.seeds = combined_seeds
             else:
                 datasets[dataset_name] = dataset
 
-        logger.info(
-            f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
+        logger.info(f"Successfully fetched {len(datasets)} unique datasets from {len(cls._registry)} providers")
         return list(datasets.values())

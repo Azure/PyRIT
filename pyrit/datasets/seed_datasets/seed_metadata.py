@@ -5,12 +5,16 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from pyrit.common.path import DATASETS_PATH
-
 """
 Contains metadata objects for datasets (i.e. subclasses of SeedDatasetProvider).
 
-The ground truth is SeedDatasetMetadata. This is 
+SeedDatasetMetadata is the internal schema used to normalize metadata fields
+from different sources:
+- Remote providers that declare metadata as class attributes
+- Local prompt files that store metadata at the top level
+
+SeedDatasetFilter is the user-facing filter schema consumed by
+SeedDatasetProvider.get_all_dataset_names().
 """
 
 
@@ -61,12 +65,12 @@ class SeedDatasetFilter:
     SeedDatasetProvider.
     """
 
-    tags: Optional[set[str]]
-    sizes: Optional[list[SeedDatasetSize]]
-    modalities: Optional[list[SeedDatasetModality]]
-    sources: Optional[list[SeedDatasetSourceType]]
-    ranks: Optional[list[SeedDatasetLoadingRank]]
-    harm_categories: Optional[list[str]]
+    tags: Optional[set[str]] = None
+    sizes: Optional[list[SeedDatasetSize]] = None
+    modalities: Optional[list[SeedDatasetModality]] = None
+    sources: Optional[list[SeedDatasetSourceType]] = None
+    ranks: Optional[list[SeedDatasetLoadingRank]] = None
+    harm_categories: Optional[list[str]] = None
 
 
 @dataclass(frozen=True)
@@ -76,38 +80,9 @@ class SeedDatasetMetadata:
     object.
     """
 
-    tags: Optional[set[str]]
-    size: Optional[SeedDatasetSize]
-    modalities: Optional[list[SeedDatasetModality]]
-    source: Optional[SeedDatasetSourceType]
-    rank: Optional[SeedDatasetLoadingRank]
-    harm_categories: Optional[list[str]]
-
-
-class SeedDatasetMetadataUtilities:
-    """
-    Collected utilities for managing and updating metadata.
-    """
-
-    @staticmethod
-    def populate_metadata() -> None:
-        """
-        WARNING: Because this function updates the metadata for each SeedDatasetProvider,
-        it changes the provider's corresopnding source file. Run with caution!
-
-        Updates the metadata per SeedDatasetProvider.
-        """
-
-        # 1 Gather all dataset files
-
-        # 2 For each file, download and store in the database (in-memory)
-
-        # 3 Count the number of entries exactly and identify its threshold
-
-        # 4 If harm categories are found in source, add them
-
-        # 5 Inspect type of prompts to identify modalities present
-
-        # 6 Inspect source file to find where it pulled from
-
-        # 7 Leave rank optional for now
+    tags: Optional[set[str]] = None
+    size: Optional[SeedDatasetSize] = None
+    modalities: Optional[list[SeedDatasetModality]] = None
+    source: Optional[SeedDatasetSourceType] = None
+    rank: Optional[SeedDatasetLoadingRank] = None
+    harm_categories: Optional[list[str]] = None

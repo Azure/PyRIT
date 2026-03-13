@@ -7,11 +7,8 @@ from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
 from pyrit.datasets.seed_datasets.seed_metadata import (
-    SeedDatasetLoadingRank,
-    SeedDatasetMetadata,
     SeedDatasetModality,
     SeedDatasetSize,
-    SeedDatasetSourceType,
 )
 from pyrit.models import SeedDataset, SeedObjective
 
@@ -27,10 +24,9 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
     """
 
     # Metadata
-    harm_categories: list[str] = ["cybercrime", "illegal",
-                                  "harmful", "chemical_biological", "harassment"]
+    harm_categories: list[str] = ["cybercrime", "illegal", "harmful", "chemical_biological", "harassment"]
     modalities: list[SeedDatasetModality] = [SeedDatasetModality.TEXT]
-    size: SeedDatasetSize = SeedDatasetSize.LARGE          # 504 seeds
+    size: SeedDatasetSize = SeedDatasetSize.LARGE  # 504 seeds
     # "default" means included in curated set
     tags: set[str] = {"default", "safety"}
 
@@ -87,8 +83,7 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
             # Check for missing keys in the example
             missing_keys = required_keys - example.keys()
             if missing_keys:
-                raise ValueError(
-                    f"Missing keys in example: {', '.join(missing_keys)}")
+                raise ValueError(f"Missing keys in example: {', '.join(missing_keys)}")
 
             # Extract data
             category = example["SemanticCategory"]
@@ -104,8 +99,7 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
                     "biological, illegal activities, etc."
                 ),
                 source="https://github.com/centerforaisafety/HarmBench",
-                authors=["Mantas Mazeika", "Long Phan", "Xuwang Yin",
-                         "Andy Zou", "Zifan Wang", "Norman Mu"],
+                authors=["Mantas Mazeika", "Long Phan", "Xuwang Yin", "Andy Zou", "Zifan Wang", "Norman Mu"],
             )
             seeds.append(seed_prompt)
 

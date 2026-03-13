@@ -2,14 +2,22 @@
 # Licensed under the MIT license.
 
 import logging
-import yaml
 from collections.abc import Callable
+from dataclasses import fields
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
+
+import yaml
 
 from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
+from pyrit.datasets.seed_datasets.seed_metadata import (
+    SeedDatasetLoadingRank,
+    SeedDatasetMetadata,
+    SeedDatasetModality,
+    SeedDatasetSize,
+    SeedDatasetSourceType,
+)
 from pyrit.models import SeedDataset
-from pyrit.datasets.seed_datasets.seed_metadata import SeedDatasetMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +46,7 @@ class _LocalDatasetLoader(SeedDatasetProvider):
             dataset = SeedDataset.from_yaml_file(file_path)
             # Use the dataset_name from the YAML if available, otherwise use filename
             self._dataset_name = (
-                getattr(dataset, "dataset_name", None) or getattr(
-                    dataset, "name", None) or file_path.stem
+                getattr(dataset, "dataset_name", None) or getattr(dataset, "name", None) or file_path.stem
             )
         except Exception as e:
             logger.warning(f"Could not pre-load dataset from {file_path}: {e}")
@@ -70,31 +77,66 @@ class _LocalDatasetLoader(SeedDatasetProvider):
                 dataset.dataset_name = self.dataset_name
             return dataset
         except Exception as e:
-            logger.error(
-                f"Failed to load local dataset from {self.file_path}: {e}")
+            logger.error(f"Failed to load local dataset from {self.file_path}: {e}")
             raise
 
-    def _parse_metadata(self) -> SeedDatasetMetadata | None:
+    def _parse_metadata(self) -> Optional[SeedDatasetMetadata]:
         """
-        Extract metadata from class attributes and format into SeedDatasetMetadata schema.
-        
+        Extract metadata from a local YAML file and coerce raw values into typed schema fields.
+
+        YAML produces raw Python primitives (str, list) that must be converted to the
+        enum and set types expected by SeedDatasetMetadata before _match_filter can work.
+
+        Returns:
+            Optional[SeedDatasetMetadata]: Parsed metadata if available, otherwise None.
+
         Raises:
-            Exception: If the dataset cannot be loaded.
+            Exception: If the dataset file cannot be read.
         """
         valid_fields = [f.name for f in fields(SeedDatasetMetadata)]
         try:
-            with open(self.file_path, 'r') as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 dataset = yaml.safe_load(f)
         except Exception as e:
-            logger.error(
-                f"Failed to load local datset from {self.file_path}: {e}"
-            )
+            logger.error(f"Failed to load local dataset from {self.file_path}: {e}")
             raise
-        self_metadata = {k: v for k, v in dataset if k in valid_fields}
-        if not self_metadata:
-            return None
-        return SeedDatasetMetadata(**self_metadata)
 
+        if not isinstance(dataset, dict):
+            return None
+
+        raw = {k: v for k, v in dataset.items() if k in valid_fields}
+        if not raw:
+            return None
+
+        coerced = self._coerce_metadata_values(raw_metadata=raw)
+        return SeedDatasetMetadata(**coerced)
+
+    @staticmethod
+    def _coerce_metadata_values(*, raw_metadata: dict[str, Any]) -> dict[str, Any]:
+        """
+        Convert YAML primitive values into the enum/set types expected by SeedDatasetMetadata.
+
+        Args:
+            raw_metadata (dict[str, Any]): Dictionary of field names to raw YAML-parsed values.
+
+        Returns:
+            dict[str, Any]: Dictionary with values coerced to the correct types.
+        """
+        coerced: dict[str, Any] = {}
+        for key, value in raw_metadata.items():
+            if key == "tags" and isinstance(value, list):
+                coerced[key] = set(value)
+            elif key == "size" and isinstance(value, str):
+                coerced[key] = SeedDatasetSize(value)
+            elif key == "source" and isinstance(value, str):
+                coerced[key] = SeedDatasetSourceType(value)
+            elif key == "rank" and isinstance(value, str):
+                coerced[key] = SeedDatasetLoadingRank(value)
+            elif key == "modalities" and isinstance(value, list):
+                coerced[key] = [SeedDatasetModality(v) for v in value]
+            else:
+                coerced[key] = value
+        return coerced
 
 
 def _register_local_datasets() -> None:
@@ -119,26 +161,21 @@ def _register_local_datasets() -> None:
 
                     def make_init(path: Path) -> Callable[[Any], None]:
                         def __init__(self: Any) -> None:  # noqa: N807
-                            super(self.__class__, self).__init__(
-                                file_path=path)
+                            super(self.__class__, self).__init__(file_path=path)
 
                         return __init__
 
                     type(
                         class_name,
                         (_LocalDatasetLoader,),
-                        {"__init__": make_init(
-                            yaml_file), "should_register": True, "__module__": __name__},
+                        {"__init__": make_init(yaml_file), "should_register": True, "__module__": __name__},
                     )
 
-                    logger.debug(
-                        f"Registered local dataset loader: {class_name} for {yaml_file.name}")
+                    logger.debug(f"Registered local dataset loader: {class_name} for {yaml_file.name}")
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to register local dataset {yaml_file}: {e}")
+                    logger.warning(f"Failed to register local dataset {yaml_file}: {e}")
     else:
-        logger.warning(
-            f"Seed datasets directory not found: {seed_datasets_path}")
+        logger.warning(f"Seed datasets directory not found: {seed_datasets_path}")
 
 
 # Execute registration

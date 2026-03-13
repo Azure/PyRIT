@@ -1,13 +1,23 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import textwrap
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from pyrit.datasets import SeedDatasetProvider
+from pyrit.datasets.seed_datasets.local.local_dataset_loader import _LocalDatasetLoader
 from pyrit.datasets.seed_datasets.remote.darkbench_dataset import _DarkBenchDataset
 from pyrit.datasets.seed_datasets.remote.harmbench_dataset import _HarmBenchDataset
+from pyrit.datasets.seed_datasets.seed_metadata import (
+    SeedDatasetFilter,
+    SeedDatasetLoadingRank,
+    SeedDatasetMetadata,
+    SeedDatasetModality,
+    SeedDatasetSize,
+    SeedDatasetSourceType,
+)
 from pyrit.models import SeedDataset, SeedObjective, SeedPrompt
 
 
@@ -78,15 +88,13 @@ class TestSeedDatasetProvider:
         mock_provider1 = MagicMock()
         mock_provider1.return_value.dataset_name = "d1"
         mock_provider1.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(
-                seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
+            return_value=SeedDataset(seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
         )
 
         mock_provider2 = MagicMock()
         mock_provider2.return_value.dataset_name = "d2"
         mock_provider2.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(
-                seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
+            return_value=SeedDataset(seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
         )
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
@@ -99,14 +107,12 @@ class TestSeedDatasetProvider:
         mock_provider1 = MagicMock()
         mock_provider1.return_value.dataset_name = "d1"
         mock_provider1.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(
-                seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
+            return_value=SeedDataset(seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
         )
 
         mock_provider2 = MagicMock()
         mock_provider2.return_value.dataset_name = "d2"
-        mock_provider2.return_value.fetch_dataset = AsyncMock(
-            side_effect=Exception("Should not be called"))
+        mock_provider2.return_value.fetch_dataset = AsyncMock(side_effect=Exception("Should not be called"))
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
             datasets = await SeedDatasetProvider.fetch_datasets_async(dataset_names=["d1"])
@@ -119,15 +125,13 @@ class TestSeedDatasetProvider:
         mock_provider1 = MagicMock()
         mock_provider1.return_value.dataset_name = "d1"
         mock_provider1.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(
-                seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
+            return_value=SeedDataset(seeds=[SeedPrompt(value="p1", data_type="text")], dataset_name="d1")
         )
 
         mock_provider2 = MagicMock()
         mock_provider2.return_value.dataset_name = "d2"
         mock_provider2.return_value.fetch_dataset = AsyncMock(
-            return_value=SeedDataset(
-                seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
+            return_value=SeedDataset(seeds=[SeedPrompt(value="p2", data_type="text")], dataset_name="d2")
         )
 
         with patch.dict(SeedDatasetProvider._registry, {"P1": mock_provider1, "P2": mock_provider2}, clear=True):
@@ -245,57 +249,319 @@ class TestDarkBenchDataset:
 
 
 class TestMetadataParsingRemote:
+    """Test metadata parsing and filter matching for remote providers."""
+
+    def test_parse_metadata_from_class_attrs(self):
+        """Test _parse_metadata correctly extracts class-level metadata attributes."""
+        loader = _HarmBenchDataset()
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        assert metadata.tags == {"default", "safety"}
+        assert metadata.size == SeedDatasetSize.LARGE
+        assert metadata.modalities == [SeedDatasetModality.TEXT]
+        assert metadata.harm_categories == ["cybercrime", "illegal", "harmful", "chemical_biological", "harassment"]
+        # source and rank are not declared as class attributes on HarmBench
+        assert metadata.source is None
+        assert metadata.rank is None
+
     def test_all_tag(self):
-        pass
+        """Filter with tags={'all'} matches any metadata."""
+        metadata = SeedDatasetMetadata(tags={"safety"})
+        filters = SeedDatasetFilter(tags={"all"})
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
 
     def test_tags(self):
-        pass
+        """Tag filter uses set intersection."""
+        metadata = SeedDatasetMetadata(tags={"safety", "default"})
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=SeedDatasetFilter(tags={"safety"}))
+        assert not SeedDatasetProvider._match_filter(metadata=metadata, filters=SeedDatasetFilter(tags={"unrelated"}))
 
     def test_sizes(self):
-        pass
+        """Size filter checks membership in the sizes list."""
+        metadata = SeedDatasetMetadata(size=SeedDatasetSize.LARGE)
+        assert SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(sizes=[SeedDatasetSize.LARGE, SeedDatasetSize.HUGE]),
+        )
+        assert not SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(sizes=[SeedDatasetSize.SMALL]),
+        )
 
     def test_modalities(self):
-        pass
+        """Modality filter uses set intersection."""
+        metadata = SeedDatasetMetadata(modalities=[SeedDatasetModality.TEXT, SeedDatasetModality.IMAGE])
+        assert SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(modalities=[SeedDatasetModality.TEXT]),
+        )
+        assert not SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(modalities=[SeedDatasetModality.AUDIO]),
+        )
 
     def test_sources(self):
-        pass
+        """Source filter checks membership."""
+        metadata = SeedDatasetMetadata(source=SeedDatasetSourceType.REMOTE)
+        assert SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(sources=[SeedDatasetSourceType.REMOTE]),
+        )
+        assert not SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(sources=[SeedDatasetSourceType.LOCAL]),
+        )
 
     def test_ranks(self):
-        pass
+        """Rank filter checks membership."""
+        metadata = SeedDatasetMetadata(rank=SeedDatasetLoadingRank.DEFAULT)
+        assert SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(ranks=[SeedDatasetLoadingRank.DEFAULT]),
+        )
+        assert not SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(ranks=[SeedDatasetLoadingRank.SLOW]),
+        )
 
     def test_harm_categories(self):
-        pass
+        """Harm category filter uses set intersection."""
+        metadata = SeedDatasetMetadata(harm_categories=["violence", "cybercrime"])
+        assert SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(harm_categories=["violence"]),
+        )
+        assert not SeedDatasetProvider._match_filter(
+            metadata=metadata,
+            filters=SeedDatasetFilter(harm_categories=["unrelated"]),
+        )
 
-    def test_empty_fitler(self):
-        pass
+    def test_empty_filter(self):
+        """Empty filter (all None) matches any metadata."""
+        metadata = SeedDatasetMetadata(tags={"safety"}, size=SeedDatasetSize.LARGE)
+        filters = SeedDatasetFilter()
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
 
     def test_no_metadata(self):
-        pass
+        """Provider without metadata is skipped when filters are applied."""
+        mock_provider_cls = MagicMock()
+        mock_provider_instance = mock_provider_cls.return_value
+        mock_provider_instance.dataset_name = "no_metadata"
+        mock_provider_instance._parse_metadata.return_value = None
+
+        with patch.dict(SeedDatasetProvider._registry, {"NoProv": mock_provider_cls}, clear=True):
+            names = SeedDatasetProvider.get_all_dataset_names(filters=SeedDatasetFilter(tags={"safety"}))
+            assert names == []
+
 
 class TestMetadataParsingLocal:
-    def test_all_tag(self):
-        pass
+    """Test metadata parsing and filter matching for local YAML providers."""
 
-    def test_tags(self):
-        pass
+    def _make_loader(self, yaml_path):
+        """Create a _LocalDatasetLoader bypassing SeedDataset pre-loading."""
+        loader = _LocalDatasetLoader.__new__(_LocalDatasetLoader)
+        loader.file_path = yaml_path
+        loader._dataset_name = yaml_path.stem
+        return loader
 
-    def test_sizes(self):
-        pass
+    def _write_yaml(self, tmp_path, name, content):
+        """Write a .prompt YAML file and return its path."""
+        path = tmp_path / f"{name}.prompt"
+        path.write_text(content)
+        return path
 
-    def test_modalities(self):
-        pass
+    def test_parse_metadata_extracts_fields(self, tmp_path):
+        """Test _parse_metadata correctly extracts metadata fields from YAML."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                harm_categories:
+                  - violence
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        assert metadata.harm_categories == ["violence"]
 
-    def test_sources(self):
-        pass
+    def test_all_tag(self, tmp_path):
+        """Filter with tags={'all'} matches regardless of metadata types."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                tags:
+                  - safety
+                harm_categories:
+                  - violence
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter(tags={"all"})
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
 
-    def test_ranks(self):
-        pass
+    def test_tags(self, tmp_path):
+        """YAML produces tags as list; set intersection in _match_filter expects a set."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                tags:
+                  - safety
+                  - default
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter(tags={"safety"})
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
 
-    def test_harm_categories(self):
-        pass
+    def test_sizes(self, tmp_path):
+        """YAML produces size as string; _match_filter compares against enum values."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                size: large
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter(sizes=[SeedDatasetSize.LARGE])
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
 
-    def test_empty_fitler(self):
-        pass
+    def test_modalities(self, tmp_path):
+        """YAML produces modalities as list of strings; _match_filter uses enum values."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                modalities:
+                  - text
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter(modalities=[SeedDatasetModality.TEXT])
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
 
-    def test_no_metadata(self):
-        pass
+    def test_sources(self, tmp_path):
+        """YAML produces source as string; _match_filter compares against enum values."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                source: remote
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter(sources=[SeedDatasetSourceType.REMOTE])
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
+
+    def test_ranks(self, tmp_path):
+        """YAML produces rank as string; _match_filter compares against enum values."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                rank: default
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter(ranks=[SeedDatasetLoadingRank.DEFAULT])
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
+
+    def test_harm_categories(self, tmp_path):
+        """Both YAML and filter use list[str], so intersection works correctly."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                harm_categories:
+                  - violence
+                  - cybercrime
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter(harm_categories=["violence"])
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
+
+    def test_empty_filter(self, tmp_path):
+        """Empty filter matches everything."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                harm_categories:
+                  - violence
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is not None
+        filters = SeedDatasetFilter()
+        assert SeedDatasetProvider._match_filter(metadata=metadata, filters=filters)
+
+    def test_no_metadata(self, tmp_path):
+        """YAML without any metadata fields returns None from _parse_metadata."""
+        yaml_path = self._write_yaml(
+            tmp_path,
+            "test",
+            textwrap.dedent("""\
+                dataset_name: test
+                seeds:
+                  - value: test prompt
+                    data_type: text
+            """),
+        )
+        loader = self._make_loader(yaml_path)
+        metadata = loader._parse_metadata()
+        assert metadata is None
