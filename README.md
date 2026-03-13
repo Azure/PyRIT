@@ -9,6 +9,7 @@ identify risks in generative AI systems.
 - Check out our [website](https://azure.github.io/PyRIT/) for more information
   about how to use, install, or contribute to PyRIT.
 - Visit our [Discord server](https://discord.gg/9fMpq3tc8u) to chat with the team and community.
+- For the local setup and prompt-builder behavior in this fork, see [LOCAL_DEPLOYMENT.md](./LOCAL_DEPLOYMENT.md).
 
 ## Trademarks
 
