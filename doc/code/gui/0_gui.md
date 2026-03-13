@@ -36,7 +36,7 @@ CoPyRIT has three main views, accessible from the left sidebar: **Chat**, **Atta
 
 The Chat view is the primary workspace for running interactive attacks against configured targets.
 
-<img width="1662" alt="Text-to-text chat" src="https://github.com/user-attachments/assets/0841d7d8-889f-49c8-8856-561bcac0e4ca" />
+<img width="1662" alt="Text-to-text chat" src="images/chat_text.png" />
 
 #### Sending Messages
 
@@ -55,7 +55,7 @@ CoPyRIT renders different response types inline:
 - **Audio:** Playable audio player
 - **Video:** Embedded video player
 
-<img width="1662" alt="Text-to-image response" src="https://github.com/user-attachments/assets/af89165e-a66d-428f-a829-fa6cc00b0702" />
+<img width="1662" alt="Text-to-image response" src="images/chat_image.png" />
 
 #### Branching Conversations
 
@@ -66,7 +66,7 @@ Each assistant message has four action buttons:
 3. **Branch conversation:** Clones the conversation up to the selected message into a new conversation within the same attack.
 4. **Branch into new attack:** Creates an entirely new attack with the conversation cloned up to the selected message.
 
-<img width="1663" alt="Branching into a new conversation" src="https://github.com/user-attachments/assets/f455ac5b-f75c-414e-91cb-4106f9ef7a78" />
+<img width="1663" alt="Branching into a new conversation" src="images/chat_branch.png" />
 
 #### Conversations Panel
 
@@ -89,7 +89,7 @@ CoPyRIT enforces several safety guards:
 
 The History view lists all past attacks with filtering and pagination.
 
-<img width="1664" alt="Attack history view" src="https://github.com/user-attachments/assets/5f6c940f-7c95-40dd-8db7-24e7bccafdb4" />
+<img width="1664" alt="Attack history view" src="images/history.png" />
 
 #### Filters
 
@@ -132,7 +132,7 @@ Results are paginated (25 per page) with "First" and "Next" navigation buttons.
 
 The Configuration view manages the targets available for attacks.
 
-<img width="1636" alt="Target configuration" src="https://github.com/user-attachments/assets/04fc892a-c9be-4cca-8d97-d65a9c6402f8" />
+<img width="1636" alt="Target configuration" src="images/config.png" />
 
 #### Target Table
 
