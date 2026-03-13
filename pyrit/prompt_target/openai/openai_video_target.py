@@ -177,6 +177,10 @@ class OpenAIVideoTarget(OpenAITarget):
         - Text+Image-to-video: Text piece + image_path piece (image becomes first frame)
         - Remix: Text piece with prompt_metadata["video_id"] set to an existing video ID
 
+        If no video_id is provided in prompt_metadata, the target automatically
+        looks up the most recent video_id from conversation history to enable
+        chained remixes.
+
         Args:
             message: The message object containing the prompt.
 
@@ -190,6 +194,10 @@ class OpenAIVideoTarget(OpenAITarget):
         self._validate_request(message=message)
 
         text_piece = message.get_piece_by_type(data_type="text")
+
+        # Validate video_path pieces for remix mode (does not strip them)
+        self._validate_video_remix_pieces(message=message)
+
         image_piece = message.get_piece_by_type(data_type="image_path")
         prompt = text_piece.converted_value
 
@@ -444,6 +452,7 @@ class OpenAIVideoTarget(OpenAITarget):
         Accepts:
         - Single text piece (text-to-video or remix mode)
         - Text piece + image_path piece (text+image-to-video mode)
+        - Text piece + video_path piece (remix mode via history lookup)
 
         Args:
             message: The message to validate.
@@ -453,16 +462,19 @@ class OpenAIVideoTarget(OpenAITarget):
         """
         text_pieces = message.get_pieces_by_type(data_type="text")
         image_pieces = message.get_pieces_by_type(data_type="image_path")
+        video_pieces = message.get_pieces_by_type(data_type="video_path")
 
         # Check for unsupported types
-        supported_count = len(text_pieces) + len(image_pieces)
+        supported_count = len(text_pieces) + len(image_pieces) + len(video_pieces)
         if supported_count != len(message.message_pieces):
             other_types = [
                 p.converted_value_data_type
                 for p in message.message_pieces
-                if p.converted_value_data_type not in ("text", "image_path")
+                if p.converted_value_data_type not in ("text", "image_path", "video_path")
             ]
-            raise ValueError(f"Unsupported piece types: {other_types}. Only 'text' and 'image_path' are supported.")
+            raise ValueError(
+                f"Unsupported piece types: {other_types}. Only 'text', 'image_path', and 'video_path' are supported."
+            )
 
         # Must have exactly one text piece
         if len(text_pieces) != 1:
@@ -477,6 +489,10 @@ class OpenAIVideoTarget(OpenAITarget):
         remix_video_id = text_piece.prompt_metadata.get("video_id") if text_piece.prompt_metadata else None
         if remix_video_id and image_pieces:
             raise ValueError("Cannot use image input in remix mode. Remix uses existing video as reference.")
+
+        # Cannot combine video_path and image_path
+        if video_pieces and image_pieces:
+            raise ValueError("Cannot combine video_path and image_path pieces.")
 
         messages = self._memory.get_conversation(conversation_id=text_piece.conversation_id)
 
@@ -495,3 +511,55 @@ class OpenAIVideoTarget(OpenAITarget):
             bool: False, as video generation doesn't return JSON content.
         """
         return False
+
+    @staticmethod
+    def _validate_video_remix_pieces(*, message: Message) -> None:
+        """
+        Validate video remix pieces.
+
+        When the frontend sends a video_path piece alongside a text piece for
+        remix mode, both must carry matching ``video_id`` in their
+        ``prompt_metadata``.  The video_path pieces are kept in the message
+        so the normalizer stores the complete user request (including the
+        video attachment) for display in the UI.
+
+        Raises:
+            ValueError: If video_path pieces are present without ``video_id``,
+                or if the ``video_id`` values on text and video_path pieces
+                do not match.
+        """
+        text_piece = None
+        for p in message.message_pieces:
+            if p.original_value_data_type == "text":
+                text_piece = p
+                break
+
+        if not text_piece:
+            return
+
+        video_pieces = [p for p in message.message_pieces if p.converted_value_data_type == "video_path"]
+        if not video_pieces:
+            return
+
+        text_video_id = (text_piece.prompt_metadata or {}).get("video_id")
+        if not text_video_id:
+            raise ValueError(
+                "video_path piece(s) present but the text piece is missing "
+                "'video_id' in prompt_metadata. Set video_id on the text piece for remix."
+            )
+
+        for vp in video_pieces:
+            vp_video_id = (vp.prompt_metadata or {}).get("video_id")
+            if not vp_video_id:
+                raise ValueError(
+                    "video_path piece is missing 'video_id' in prompt_metadata. "
+                    "Both text and video_path pieces must carry a video_id for remix."
+                )
+            if vp_video_id != text_video_id:
+                raise ValueError(
+                    f"video_id mismatch: text piece has '{text_video_id}' but video_path piece has '{vp_video_id}'."
+                )
+
+        # Video_path pieces are used only for validation — the target operates
+        # via video_id from prompt_metadata.  Do NOT strip them so the normalizer
+        # stores the complete user request (including the video attachment).

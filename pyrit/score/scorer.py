@@ -74,17 +74,17 @@ class Scorer(Identifiable, abc.ABC):
         """
         Compute a behavioral equivalence hash for evaluation grouping.
 
-        Delegates to ``ScorerEvaluationIdentity`` which filters target children
+        Delegates to ``ScorerEvaluationIdentifier`` which filters target children
         (prompt_target, converter_target) to behavioral params only, so the same
         scorer configuration on different deployments produces the same eval hash.
 
         Returns:
             str: A hex-encoded SHA256 hash suitable for eval registry keying.
         """
-        # Deferred import to avoid circular dependency (scorer_evaluation_identity → identifiers → …)
-        from pyrit.score.scorer_evaluation.scorer_evaluation_identity import ScorerEvaluationIdentity
+        # Deferred import to avoid circular dependency (evaluation_identifier → identifiers → …)
+        from pyrit.identifiers.evaluation_identifier import ScorerEvaluationIdentifier
 
-        return ScorerEvaluationIdentity(self.get_identifier()).eval_hash
+        return ScorerEvaluationIdentifier(self.get_identifier()).eval_hash
 
     @property
     def scorer_type(self) -> ScoreType:

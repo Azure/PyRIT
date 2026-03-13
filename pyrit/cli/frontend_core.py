@@ -15,13 +15,18 @@ Both pyrit_scan and pyrit_shell use these functions.
 
 from __future__ import annotations
 
+import argparse
+import inspect
 import json
 import logging
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
-from pyrit.setup import ConfigurationLoader
+from pyrit.registry import InitializerRegistry, ScenarioRegistry
+from pyrit.scenario import DatasetConfiguration
+from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
+from pyrit.setup import ConfigurationLoader, initialize_pyrit_async
 from pyrit.setup.configuration_loader import _MEMORY_DB_TYPE_MAP
 
 try:
@@ -47,9 +52,7 @@ if TYPE_CHECKING:
     from pyrit.models.scenario_result import ScenarioResult
     from pyrit.registry import (
         InitializerMetadata,
-        InitializerRegistry,
         ScenarioMetadata,
-        ScenarioRegistry,
     )
 
 logger = logging.getLogger(__name__)
@@ -131,6 +134,8 @@ class FrontendCore:
             [ic.name for ic in config._initializer_configs] if config._initializer_configs else None
         )
         self._env_files = config._resolve_env_files()
+        self._operator = config.operator
+        self._operation = config.operation
 
         # Lazy-loaded registries
         self._scenario_registry: Optional[ScenarioRegistry] = None
@@ -141,14 +146,17 @@ class FrontendCore:
         logging.basicConfig(level=self._log_level)
 
     async def initialize_async(self) -> None:
-        """Initialize PyRIT and load registries (heavy operation)."""
+        """
+        Initialize PyRIT and load registries (heavy operation).
+
+        Sets up memory and loads scenario/initializer registries.
+        Initializers are NOT run here — they are run separately
+        (per-scenario in pyrit_scan, or up-front in pyrit_backend).
+        """
         if self._initialized:
             return
 
-        from pyrit.registry import InitializerRegistry, ScenarioRegistry
-        from pyrit.setup import initialize_pyrit_async
-
-        # Initialize PyRIT without initializers (they run per-scenario)
+        # Initialize PyRIT without initializers (they run separately)
         await initialize_pyrit_async(
             memory_db_type=self._database,
             initialization_scripts=None,
@@ -227,8 +235,6 @@ async def list_initializers_async(
         Sequence of initializer metadata dictionaries describing each initializer class.
     """
     if discovery_path:
-        from pyrit.registry import InitializerRegistry
-
         registry = InitializerRegistry(discovery_path=discovery_path)
         return registry.list_metadata()
 
@@ -276,9 +282,6 @@ async def run_scenario_async(
     Note:
         Initializers from PyRITContext will be run before the scenario executes.
     """
-    from pyrit.scenario.printer.console_printer import ConsoleScenarioResultPrinter
-    from pyrit.setup import initialize_pyrit_async
-
     # Ensure context is initialized first (loads registries)
     # This must happen BEFORE we run initializers to avoid double-initialization
     if not context._initialized:
@@ -343,8 +346,6 @@ async def run_scenario_async(
     # - max_dataset_size only: default datasets with overridden limit
     if dataset_names:
         # User specified dataset names - create new config (fetches all unless max_dataset_size set)
-        from pyrit.scenario import DatasetConfiguration
-
         init_kwargs["dataset_config"] = DatasetConfiguration(
             dataset_names=dataset_names,
             max_dataset_size=max_dataset_size,
@@ -599,8 +600,6 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
     Raises:
         ValueError: If validator_func has no parameters.
     """
-    import inspect
-
     # Get the first parameter name from the function signature
     sig = inspect.signature(validator_func)
     params = list(sig.parameters.keys())
@@ -609,13 +608,11 @@ def _argparse_validator(validator_func: Callable[..., Any]) -> Callable[[Any], A
     first_param = params[0]
 
     def wrapper(value: Any) -> Any:
-        import argparse as ap
-
         try:
             # Call with keyword argument to support keyword-only parameters
             return validator_func(**{first_param: value})
         except ValueError as e:
-            raise ap.ArgumentTypeError(str(e)) from e
+            raise argparse.ArgumentTypeError(str(e)) from e
 
     # Preserve function metadata for better debugging
     wrapper.__name__ = getattr(validator_func, "__name__", "argparse_validator")
@@ -636,8 +633,6 @@ def resolve_initialization_scripts(script_paths: list[str]) -> list[Path]:
     Raises:
         FileNotFoundError: If a script path does not exist.
     """
-    from pyrit.registry import InitializerRegistry
-
     return InitializerRegistry.resolve_script_paths(script_paths=script_paths)
 
 
