@@ -10,7 +10,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyrit.cli import banner, pyrit_shell
-from pyrit.cli.banner import get_static_banner
 
 
 class TestPyRITShell:
@@ -34,17 +33,36 @@ class TestPyRITShell:
         mock_context.initialize_async.assert_called_once()
 
     def test_prompt_and_intro(self):
-        """Test shell prompt is set and intro is set via cmdloop."""
+        """Test shell prompt is set and cmdloop wires play_animation to intro."""
         mock_context = MagicMock()
         mock_context.initialize_async = AsyncMock()
 
         shell = pyrit_shell.PyRITShell(context=mock_context)
 
         assert shell.prompt == "pyrit> "
-        # intro is now set dynamically in cmdloop via banner.play_animation
-        # Verify that calling play_animation with no_animation produces expected content
-        static = get_static_banner()
-        assert "Interactive Shell" in static
+
+        # Verify that cmdloop calls play_animation and passes the result as intro
+        with (
+            patch("pyrit.cli.banner.play_animation", return_value="TEST_BANNER") as mock_play,
+            patch("cmd.Cmd.cmdloop") as mock_cmdloop,
+        ):
+            shell.cmdloop()
+
+            mock_play.assert_called_once_with(no_animation=shell._no_animation)
+            mock_cmdloop.assert_called_once_with(intro="TEST_BANNER")
+
+    def test_cmdloop_honors_explicit_intro(self):
+        """Test that cmdloop passes through a non-None intro without calling play_animation."""
+        mock_context = MagicMock()
+        mock_context.initialize_async = AsyncMock()
+
+        shell = pyrit_shell.PyRITShell(context=mock_context)
+
+        with patch("pyrit.cli.banner.play_animation") as mock_play, patch("cmd.Cmd.cmdloop") as mock_cmdloop:
+            shell.cmdloop(intro="Custom intro")
+
+            mock_play.assert_not_called()
+            mock_cmdloop.assert_called_once_with(intro="Custom intro")
 
     @patch("pyrit.cli.frontend_core.print_scenarios_list_async", new_callable=AsyncMock)
     def test_do_list_scenarios(self, mock_print_scenarios: AsyncMock):
@@ -705,6 +723,34 @@ class TestMain:
         call_kwargs = mock_frontend_core.call_args[1]
         assert call_kwargs["initialization_scripts"] is None
         assert call_kwargs["initializer_names"] is None
+
+    @patch("pyrit.cli.pyrit_shell.PyRITShell")
+    @patch("pyrit.cli.frontend_core.FrontendCore")
+    def test_main_with_no_animation_flag(self, mock_frontend_core: MagicMock, mock_shell_class: MagicMock):
+        """Test main passes --no-animation flag to PyRITShell."""
+        mock_shell = MagicMock()
+        mock_shell_class.return_value = mock_shell
+
+        with patch("sys.argv", ["pyrit_shell", "--no-animation"]):
+            result = pyrit_shell.main()
+
+        assert result == 0
+        call_kwargs = mock_shell_class.call_args[1]
+        assert call_kwargs["no_animation"] is True
+
+    @patch("pyrit.cli.pyrit_shell.PyRITShell")
+    @patch("pyrit.cli.frontend_core.FrontendCore")
+    def test_main_default_animation_enabled(self, mock_frontend_core: MagicMock, mock_shell_class: MagicMock):
+        """Test main defaults to animation enabled (no_animation=False)."""
+        mock_shell = MagicMock()
+        mock_shell_class.return_value = mock_shell
+
+        with patch("sys.argv", ["pyrit_shell"]):
+            result = pyrit_shell.main()
+
+        assert result == 0
+        call_kwargs = mock_shell_class.call_args[1]
+        assert call_kwargs["no_animation"] is False
 
 
 class TestPyRITShellRunCommand:

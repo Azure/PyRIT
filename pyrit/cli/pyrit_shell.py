@@ -59,9 +59,10 @@ class PyRITShell(cmd.Cmd):
 
     def __init__(
         self,
+        *,
         context: frontend_core.FrontendCore,
         no_animation: bool = False,
-    ):
+    ) -> None:
         """
         Initialize the PyRIT shell.
 
@@ -512,7 +513,7 @@ def main() -> int:
 
     # Start shell
     try:
-        shell = PyRITShell(context, no_animation=args.no_animation)
+        shell = PyRITShell(context=context, no_animation=args.no_animation)
         shell.cmdloop()
         return 0
     except KeyboardInterrupt:

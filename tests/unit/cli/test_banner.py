@@ -104,9 +104,14 @@ class TestAnimationFrames:
     def test_all_frames_have_consistent_width(self) -> None:
         frames = _build_animation_frames()
         for frame in frames:
+            assert frame.lines, "Animation frame has no lines"
+            expected_width = len(frame.lines[0])
             for line in frame.lines:
-                # All lines should start with ╔/║/╠/╚ and end with ╗/║/╣/╝
+                assert len(line) == expected_width, (
+                    f"Inconsistent line width in frame: expected {expected_width}, got {len(line)}"
+                )
                 assert line[0] in "╔║╠╚", f"Line doesn't start with box char: {line[:5]}..."
+                assert line[-1] in "╗║╣╝", f"Line doesn't end with box char: ...{line[-5:]}"
 
     def test_frames_have_positive_duration(self) -> None:
         frames = _build_animation_frames()

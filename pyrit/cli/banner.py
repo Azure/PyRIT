@@ -23,6 +23,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
+from pyrit.cli.banner_assets import BRAILLE_RACCOON, PYRIT_LETTERS, PYRIT_WIDTH, RACCOON_TAIL
+
 
 class ColorRole(Enum):
     """Semantic color roles for banner elements."""
@@ -31,8 +33,6 @@ class ColorRole(Enum):
     PYRIT_TEXT = "pyrit_text"
     SUBTITLE = "subtitle"
     RACCOON_BODY = "raccoon_body"
-    RACCOON_MASK = "raccoon_mask"
-    RACCOON_EYES = "raccoon_eyes"
     RACCOON_TAIL = "raccoon_tail"
     SPARKLE = "sparkle"
     COMMANDS = "commands"
@@ -67,8 +67,6 @@ DARK_THEME: dict[ColorRole, str] = {
     ColorRole.PYRIT_TEXT: "bright_cyan",
     ColorRole.SUBTITLE: "bright_white",
     ColorRole.RACCOON_BODY: "bright_magenta",
-    ColorRole.RACCOON_MASK: "bright_black",
-    ColorRole.RACCOON_EYES: "bright_green",
     ColorRole.RACCOON_TAIL: "bright_magenta",
     ColorRole.SPARKLE: "bright_yellow",
     ColorRole.COMMANDS: "white",
@@ -80,8 +78,6 @@ LIGHT_THEME: dict[ColorRole, str] = {
     ColorRole.PYRIT_TEXT: "blue",
     ColorRole.SUBTITLE: "black",
     ColorRole.RACCOON_BODY: "magenta",
-    ColorRole.RACCOON_MASK: "black",
-    ColorRole.RACCOON_EYES: "green",
     ColorRole.RACCOON_TAIL: "magenta",
     ColorRole.SPARKLE: "yellow",
     ColorRole.COMMANDS: "bright_black",
@@ -152,47 +148,16 @@ def can_animate() -> bool:
     return ci_val not in ("1", "true", "yes", "on")
 
 
-# ── Raccoon braille art ────────────────────────────────────────────────────────
-# High-detail raccoon face rendered in Unicode braille characters.
-# The raccoon's bandit mask and features are visible as lighter dot patterns
-# against the solid ⣿ background.
-
-BRAILLE_RACCOON = [
-    "⠀⠀⠀⠀⠀⠀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⠀⠀",
-    "⠀⠀⠀⠀⠀⣼⢻⠈⢑⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⢎⠁⠉⣻⡀⠀⠀⠀⠀",
-    "⠀⠀⠀⠀⠀⡇⠀⠁⢙⣿⣮⢲⠀⠀⠀⠀⠀⠀⠀⢠⣾⣟⠀⠸⢫⡇⠀⠀⠀⠀",
-    "⠀⠀⠀⠀⠀⣧⢀⠀⠘⣷⣿⠆⠀⠐⠘⠿⠓⠀⠀⢾⣧⠃⠀⠐⣼⠀⠀⠀⠀⠀",
-    "⠀⠀⠀⠀⠀⠘⣇⢰⣶⠛⣁⣐⣷⣦⠐⢘⣼⣷⣂⡀⠛⢽⣆⣸⠁⠀⠀⠀⠀⠀",
-    "⠀⠀⠀⠀⠀⣚⣾⡿⢡⣴⣿⣿⣿⣿⠇⠸⣿⣿⣿⣿⣶⡄⠾⣷⣟⡀⠀⠀⠀⠀",
-    "⠀⠀⠀⠀⠘⣻⠇⣲⡿⠟⠋⢉⠉⢿⠰⠆⡿⠋⠉⠙⠿⣿⣆⡻⣿⣓⠀⠀⠀⠀",
-    "⠀⠀⠀⣰⢿⣷⠞⢩⠀⠀⠀⠈⢀⣀⠀⡀⣠⡀⠈⠀⠀⣨⠛⢷⣿⣭⠃⠀⠀⠀",
-    "⠀⠀⠀⣶⠟⠁⠶⠀⠀⠀⠀⣠⣾⡟⠘⠃⢻⣿⣌⠀⠀⠀⠀⠀⠀⠻⣷⠀⠀⠀",
-    "⠀⠀⠘⠿⣔⠺⠀⠀⠀⠀⢰⣿⣿⡀⠘⠀⢀⣿⣿⡆⡂⠀⡈⠡⠜⣙⣿⠇⠀⠀",
-    "⠀⠀⠀⠐⠻⢿⣶⣅⢀⠐⠀⠙⣒⡃⡀⠄⢘⠉⠋⠁⠆⢀⢼⣿⣿⡟⠋⠁⠀⠀",
-    "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠭⠛⠿⠿⠛⠧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-]
-
-# ── PYRIT block letters (same style as existing banner) ────────────────────────
-
-PYRIT_LETTERS = [
-    "██████╗          ██████╗ ██╗████████╗",
-    "██╔══██╗██╗   ██╗██╔══██╗██║╚══██╔══╝",
-    "██████╔╝╚██╗ ██╔╝██████╔╝██║   ██║   ",
-    "██╔═══╝  ╚████╔╝ ██╔══██╗██║   ██║   ",
-    "██║       ╚██╔╝  ██║  ██║██║   ██║   ",
-    "╚═╝        ██║   ╚═╝  ╚═╝╚═╝   ╚═╝   ",
-    "           ╚═╝                       ",
-]
-
-# How many characters to reveal per frame (left to right)
-PYRIT_WIDTH = 37  # approximate visible width of PYRIT_LETTERS
-
 # ── Banner layout constants ────────────────────────────────────────────────────
 
-BOX_W = 94  # inner width between ║ chars
-RACCOON_COL = 32  # width reserved for raccoon column in header (30 + 2 padding)
-HEADER_ROWS = 12  # match braille raccoon height
-PYRIT_START_ROW = 2  # PYRIT text starts at this row within the header
+# Inner width between the left and right ║ border characters
+BOX_W = 94
+# Width reserved for the raccoon column in the header area (30 char art + 2 padding)
+RACCOON_COL = 32
+# Number of rows in the header section (matches braille raccoon art height)
+HEADER_ROWS = 12
+# Row offset where PYRIT block letters start within the header
+PYRIT_START_ROW = 2
 
 
 def _box_line(content: str) -> str:
@@ -210,15 +175,24 @@ def _empty_line() -> str:
     return _box_line("")
 
 
+@dataclass
+class StaticBannerData:
+    """Result of building the static banner."""
+
+    lines: list[str]
+    color_map: dict[int, ColorRole]
+    segment_colors: dict[int, list[tuple[int, int, ColorRole]]]
+
+
 # ── Static banner (final frame / fallback) ─────────────────────────────────────
 
 
-def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, list[tuple[int, int, ColorRole]]]]:
+def _build_static_banner() -> StaticBannerData:
     """
     Build the static banner lines, color map, and per-segment colors.
 
     Returns:
-        A tuple of (lines, color_map, segment_colors).
+        A StaticBannerData containing the lines, color map, and segment colors.
     """
     raccoon = BRAILLE_RACCOON
     lines: list[str] = []
@@ -273,20 +247,7 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, l
 
     # Mid divider (with tail attachment point)
     tail_col = 77
-    # Curling tail: curves right then sweeps back left at the tip
-    # offsets: 0→1→2→3→3→3→2→1→0 creates the curl
-    tail = [
-        "⣿⣿⣿⣿⣿⣿⣿⣿⠀",  # off=0 w=8 (dark)
-        "⠇⠀⠀⠀⠀⠀⠀⠀⠸",  # off=0 w=9 (light edges)
-        "⠀⣿⣿⣿⣿⣿⣿⣿⣿",  # off=1 w=8 (dark, curving right)
-        "⠀⠀⠇⠀⠀⠀⠀⠀⠸",  # off=2 w=7 (light edges)
-        "⠀⠀⠀⣿⣿⣿⣿⣿⣿",  # off=3 w=6 (dark, peak of curl)
-        "⠀⠀⠀⠇⠀⠀⠀⠀⠸",  # off=3 w=6 (light edges)
-        "⠀⠀⠀⣿⣿⣿⣿⣿⠀",  # off=3 w=5 (dark, starting back)
-        "⠀⠀⠇⠀⠀⠸⠀⠀⠀",  # off=2 w=4 (light edges, curling back)
-        "⠀⣿⣿⣿⠀⠀⠀⠀⠀",  # off=1 w=3 (dark, curling back)
-        "⠇⠸⠀⠀⠀⠀⠀⠀⠀",  # off=0 w=2 (light edges / tip)
-    ]
+    tail = RACCOON_TAIL
     add("╠" + "═" * BOX_W + "╣", ColorRole.BORDER)
 
     # Commands section with striped tail hanging from divider
@@ -351,10 +312,13 @@ def _build_static_banner() -> tuple[list[str], dict[int, ColorRole], dict[int, l
     # Bottom border
     add("╚" + "═" * BOX_W + "╝", ColorRole.BORDER)
 
-    return lines, color_map, segment_colors
+    return StaticBannerData(lines=lines, color_map=color_map, segment_colors=segment_colors)
 
 
-STATIC_BANNER_LINES, STATIC_COLOR_MAP, STATIC_SEGMENT_COLORS = _build_static_banner()
+_STATIC_BANNER = _build_static_banner()
+STATIC_BANNER_LINES = _STATIC_BANNER.lines
+STATIC_COLOR_MAP = _STATIC_BANNER.color_map
+STATIC_SEGMENT_COLORS = _STATIC_BANNER.segment_colors
 
 
 def _build_animation_frames() -> list[AnimationFrame]:
@@ -525,10 +489,15 @@ def _build_animation_frames() -> list[AnimationFrame]:
                 segs.append((pyrit_start, len(full_line) - 1, ColorRole.SUBTITLE))
             else:
                 segs.append((pyrit_start, len(full_line) - 1, ColorRole.BORDER))
-            # Add sparkle color segments (+1 to account for left ║ border)
-            for s_row, s_col, _ in spots:
+            # Add sparkle color segments only where a sparkle char was actually placed
+            for s_row, s_col, s_char in spots:
                 target_col = s_col + 1
-                if row_i == s_row and 1 < s_col < BOX_W and target_col < len(full_line) - 1:
+                if (
+                    row_i == s_row
+                    and 1 < s_col < BOX_W
+                    and target_col < len(full_line) - 1
+                    and full_line[target_col] == s_char
+                ):
                     segs.append((target_col, target_col + 1, ColorRole.SPARKLE))
             segs.append((len(full_line) - 1, len(full_line), ColorRole.BORDER))
             seg_colors[line_idx] = segs
@@ -706,8 +675,9 @@ def play_animation(no_animation: bool = False) -> str:
         sys.stdout.flush()
 
     except KeyboardInterrupt:
-        # User pressed Ctrl+C — show static banner immediately
-        sys.stdout.write("\r\033[J")  # clear from cursor to end of screen
+        # User pressed Ctrl+C — move cursor to top of reserved space, then show static banner
+        sys.stdout.write(f"\033[{frame_height - 1}A\r")
+        sys.stdout.write("\033[J")  # clear from cursor to end of screen
         static = _render_static_banner(theme)
         sys.stdout.write(static)
         sys.stdout.write("\n")
