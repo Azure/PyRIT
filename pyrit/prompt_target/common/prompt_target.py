@@ -88,6 +88,8 @@ class PromptTarget(Identifiable):
             message: The message to validate.
 
         Raises:
+            ValueError: if the target does not support the provided message pieces or if the message
+                violates any constraints based on the target's capabilities.
 
         """
         n_pieces = len(message.message_pieces)
