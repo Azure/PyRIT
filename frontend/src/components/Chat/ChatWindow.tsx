@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import {
-  makeStyles,
-  tokens,
   Button,
   Text,
   Badge,
@@ -18,56 +16,7 @@ import { toApiError } from '../../services/errors'
 import { buildMessagePieces, backendMessagesToFrontend } from '../../utils/messageMapper'
 import type { Message, MessageAttachment, TargetInstance, TargetInfo } from '../../types'
 import type { ViewName } from '../Sidebar/Navigation'
-
-const useStyles = makeStyles({
-  root: {
-    display: 'flex',
-    height: '100%',
-    width: '100%',
-    overflow: 'hidden',
-  },
-  chatArea: {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minWidth: 0,
-    backgroundColor: tokens.colorNeutralBackground2,
-    overflow: 'hidden',
-  },
-  ribbon: {
-    height: '48px',
-    minHeight: '48px',
-    flexShrink: 0,
-    backgroundColor: tokens.colorNeutralBackground3,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: `0 ${tokens.spacingHorizontalL}`,
-    gap: tokens.spacingHorizontalM,
-  },
-  conversationInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalS,
-    color: tokens.colorNeutralForeground2,
-    fontSize: tokens.fontSizeBase300,
-  },
-  targetInfo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalXS,
-  },
-  noTarget: {
-    color: tokens.colorNeutralForeground3,
-    fontStyle: 'italic',
-  },
-  ribbonActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: tokens.spacingHorizontalS,
-  },
-})
+import { useChatWindowStyles } from './ChatWindow.styles'
 
 interface ChatWindowProps {
   messages: Message[]
@@ -114,7 +63,7 @@ export default function ChatWindow({
   isLoadingAttack,
   relatedConversationCount,
 }: ChatWindowProps) {
-  const styles = useStyles()
+  const styles = useChatWindowStyles()
   // Track sending state per conversation so parallel conversations can send independently
   const [sendingConversations, setSendingConversations] = useState<Set<string>>(new Set())
   /** True while an async message fetch is in-flight */

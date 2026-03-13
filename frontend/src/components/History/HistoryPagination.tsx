@@ -10,12 +10,12 @@ import { useAttackHistoryStyles } from './AttackHistory.styles'
 
 interface HistoryPaginationProps {
   page: number
-  hasMore: boolean
+  isLastPage: boolean
   onPrevPage: () => void
   onNextPage: () => void
 }
 
-export default function HistoryPagination({ page, hasMore, onPrevPage, onNextPage }: HistoryPaginationProps) {
+export default function HistoryPagination({ page, isLastPage, onPrevPage, onNextPage }: HistoryPaginationProps) {
   const styles = useAttackHistoryStyles()
 
   return (
@@ -34,7 +34,7 @@ export default function HistoryPagination({ page, hasMore, onPrevPage, onNextPag
         appearance="subtle"
         icon={<ChevronRightRegular />}
         iconPosition="after"
-        disabled={!hasMore}
+        disabled={isLastPage}
         onClick={onNextPage}
         data-testid="next-page-btn"
       >

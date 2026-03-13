@@ -1,7 +1,5 @@
 import {
-  makeStyles,
   Button,
-  tokens,
 } from '@fluentui/react-components'
 import {
   ChatRegular,
@@ -10,33 +8,7 @@ import {
   WeatherMoonRegular,
   WeatherSunnyRegular,
 } from '@fluentui/react-icons'
-
-const useStyles = makeStyles({
-  root: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    padding: tokens.spacingVerticalM,
-    alignItems: 'center',
-    gap: tokens.spacingVerticalM,
-  },
-  navButton: {
-    width: '44px',
-    height: '44px',
-    minWidth: '44px',
-    padding: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    '&[data-active="true"]': {
-      backgroundColor: tokens.colorBrandBackground2,
-      borderRadius: tokens.borderRadiusMedium,
-    },
-  },
-  spacer: {
-    flex: 1,
-  },
-})
+import { useNavigationStyles } from './Navigation.styles'
 
 export type ViewName = 'chat' | 'history' | 'config'
 
@@ -48,7 +20,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ currentView, onNavigate, onToggleTheme, isDarkMode }: NavigationProps) {
-  const styles = useStyles()
+  const styles = useNavigationStyles()
 
   return (
     <div className={styles.root}>

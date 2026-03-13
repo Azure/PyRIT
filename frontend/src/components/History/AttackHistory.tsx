@@ -37,7 +37,7 @@ export default function AttackHistory({ onOpenAttack, filters, onFiltersChange }
 
   // Pagination
   const [cursor, setCursor] = useState<string | undefined>(undefined)
-  const [hasMore, setHasMore] = useState(false)
+  const [isLastPage, setIsLastPage] = useState(true)
   const [page, setPage] = useState(0)
 
   const PAGE_SIZE = 25
@@ -60,7 +60,7 @@ export default function AttackHistory({ onOpenAttack, filters, onFiltersChange }
         ...(labelParams.length > 0 && { label: labelParams }),
       })
       setAttacks(response.items.map(attack => ({ ...attack, labels: attack.labels ?? {} })))
-      setHasMore(response.pagination.has_more)
+      setIsLastPage(!response.pagination.has_more)
       setCursor(response.pagination.next_cursor ?? undefined)
     } catch (err) {
       setAttacks([])
@@ -198,7 +198,7 @@ export default function AttackHistory({ onOpenAttack, filters, onFiltersChange }
       {!loading && attacks.length > 0 && (
         <HistoryPagination
           page={page}
-          hasMore={hasMore}
+          isLastPage={isLastPage}
           onPrevPage={handlePrevPage}
           onNextPage={handleNextPage}
         />
