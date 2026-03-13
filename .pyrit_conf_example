@@ -55,8 +55,8 @@ initializers:
 #
 # Both are optional. If omitted, the GUI uses placeholder defaults that
 # should be changed before running real attacks.
-operator: my_team
-operation: my_operation
+operator: roakey
+operation: op_trash_panda
 
 # Initialization Scripts
 # ----------------------
