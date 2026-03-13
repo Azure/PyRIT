@@ -40,7 +40,11 @@ export default defineConfig({
 
   /* Automatically start servers before running tests */
   webServer: {
-    command: process.env.CI ? "cd .. && uv run python frontend/dev.py" : "python dev.py",
+    // CI runs only the mock project (no backend needed) — start Vite directly.
+    // Locally, dev.py starts both backend + frontend for seeded/live tests.
+    command: process.env.CI
+      ? "npx vite --port 3000"
+      : "python dev.py",
     // Use 127.0.0.1 to avoid Node.js 17+ resolving localhost to IPv6 ::1
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
