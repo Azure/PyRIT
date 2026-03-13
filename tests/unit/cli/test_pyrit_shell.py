@@ -602,7 +602,7 @@ class TestMain:
         assert result == 0
         mock_frontend_core.assert_called_once()
         call_kwargs = mock_frontend_core.call_args[1]
-        assert call_kwargs["database"] == "SQLite"
+        assert call_kwargs["database"] is None
         assert call_kwargs["log_level"] == "WARNING"
         mock_shell.cmdloop.assert_called_once()
 
