@@ -336,6 +336,53 @@ export function canUseAttackStarter(option: ConverterTypeMetadata | null) {
   return getPrimaryInputType(option) === 'text'
 }
 
+function looksLikeUrl(value: string) {
+  return /^(https?:\/\/|data:|blob:)/i.test(value)
+}
+
+function looksLikeStoredMediaUrl(value: string) {
+  return /^\/api\/media\?path=/i.test(value)
+}
+
+function looksLikeLocalPath(value: string) {
+  return /^(\/|\.{1,2}\/|~\/|[A-Za-z]:\\|\\\\)/.test(value) || /[\\/]/.test(value)
+}
+
+function looksLikeFileReference(value: string) {
+  return looksLikeUrl(value) || looksLikeStoredMediaUrl(value) || looksLikeLocalPath(value)
+}
+
+export function getSourceCompatibilityIssue(
+  option: ConverterTypeMetadata | null,
+  sourceContent: string,
+) {
+  if (!option) {
+    return null
+  }
+
+  const trimmedValue = sourceContent.trim()
+  if (!trimmedValue) {
+    return null
+  }
+
+  const inputType = getPrimaryInputType(option)
+
+  if (inputType === 'text') {
+    return null
+  }
+
+  if (inputType === 'url' && !looksLikeUrl(trimmedValue)) {
+    return 'This option needs a URL. The current value still looks like prompt text instead of a link.'
+  }
+
+  if (['image_path', 'audio_path', 'video_path', 'binary_path'].includes(inputType) && !looksLikeFileReference(trimmedValue)) {
+    const label = inputType === 'binary_path' ? 'file' : humanizeDataType(inputType).toLowerCase()
+    return `This option needs a saved ${label} path or URL. The current value still looks like prompt text from a text-based workflow.`
+  }
+
+  return null
+}
+
 export function canRequestVariants(
   option: ConverterTypeMetadata | null,
   config: BuilderConfigResponse | null,

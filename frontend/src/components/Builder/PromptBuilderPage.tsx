@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { isAxiosError } from 'axios'
 import {
   Spinner,
   Text,
@@ -18,6 +19,7 @@ import {
   buildPromptPreview,
   buildPreviewParams,
   expandPresetTemplate,
+  getSourceCompatibilityIssue,
   getMissingRequiredParams,
   humanizeOptionName,
   humanizeParameterLabel,
@@ -117,6 +119,21 @@ const emptyFormState: PromptBuilderFormState = {
   blockedWordsText: '',
   variantCount: 1,
   parameterValues: {},
+}
+
+function getReadableErrorMessage(error: unknown, fallback: string) {
+  if (isAxiosError(error)) {
+    const detail = error.response?.data?.detail
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message
+  }
+
+  return fallback
 }
 
 export default function PromptBuilderPage() {
@@ -224,6 +241,11 @@ export default function PromptBuilderPage() {
     [formState.parameterValues, selectedOption],
   )
 
+  const sourceCompatibilityIssue = useMemo(
+    () => getSourceCompatibilityIssue(selectedOption, formState.sourceContent),
+    [formState.sourceContent, selectedOption],
+  )
+
   const previewHint = useMemo(() => {
     if (!selectedOption) {
       return 'Choose an option to build its transformed prompt.'
@@ -237,17 +259,22 @@ export default function PromptBuilderPage() {
       return `Add ${getSourceFieldLabel(selectedOption).toLowerCase()} so PyRIT has starting content to transform.`
     }
 
+    if (sourceCompatibilityIssue) {
+      return sourceCompatibilityIssue
+    }
+
     if (missingRequiredParams.length > 0) {
       return `Add the required option settings: ${missingRequiredParams.map(param => humanizeParameterLabel(param)).join(', ')}.`
     }
 
     return 'Build transformed output to see the final result for this option.'
-  }, [formState.sourceContent, missingRequiredParams, selectedOption])
+  }, [formState.sourceContent, missingRequiredParams, selectedOption, sourceCompatibilityIssue])
 
   const canPreview = Boolean(
     selectedOption &&
       selectedOption.preview_supported &&
       formState.sourceContent.trim() &&
+      !sourceCompatibilityIssue &&
       missingRequiredParams.length === 0,
   )
 
@@ -322,11 +349,7 @@ export default function PromptBuilderPage() {
     } catch (error) {
       setBuildResponse(null)
       setSelectedVariantId(null)
-      setPreviewError(
-        error instanceof Error
-          ? error.message
-          : 'The transformed prompt could not be built with the current settings.',
-      )
+      setPreviewError(getReadableErrorMessage(error, 'The transformed prompt could not be built with the current settings.'))
     } finally {
       setIsPreviewLoading(false)
     }
@@ -346,11 +369,7 @@ export default function PromptBuilderPage() {
       setLatestGeneratedImage(response)
     } catch (error) {
       setReferenceImage(null)
-      setReferenceImageError(
-        error instanceof Error
-          ? error.message
-          : 'The reference image could not be generated with the current helper model.',
-      )
+      setReferenceImageError(getReadableErrorMessage(error, 'The reference image could not be generated with the current helper model.'))
     } finally {
       setIsReferenceImageLoading(false)
     }
@@ -512,9 +531,10 @@ export default function PromptBuilderPage() {
           <TestDetailsPanel
             option={selectedOption}
             targets={targets}
-            formState={formState}
-            onFieldChange={handleFieldChange}
-            onParameterChange={handleParameterChange}
+          formState={formState}
+          sourceCompatibilityIssue={sourceCompatibilityIssue}
+          onFieldChange={handleFieldChange}
+          onParameterChange={handleParameterChange}
             onClearOptionSettings={() => {
               setFormState(current => ({
                 ...current,
@@ -530,7 +550,7 @@ export default function PromptBuilderPage() {
         <PromptOutputPanel
           option={selectedOption}
           basePrompt={basePrompt}
-          isPromptReady={Boolean(formState.sourceContent.trim())}
+          isPromptReady={Boolean(formState.sourceContent.trim()) && !sourceCompatibilityIssue}
           buildResponse={buildResponse}
           selectedVariantId={selectedVariantId}
           isPreviewLoading={isPreviewLoading}

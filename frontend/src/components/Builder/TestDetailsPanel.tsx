@@ -113,6 +113,7 @@ interface TestDetailsPanelProps {
   option: ConverterTypeMetadata | null
   targets: TargetInstance[]
   formState: PromptBuilderFormState
+  sourceCompatibilityIssue: string | null
   onFieldChange: (
     field: keyof Omit<PromptBuilderFormState, 'parameterValues'>,
     value: string,
@@ -223,6 +224,7 @@ export default function TestDetailsPanel({
   option,
   targets,
   formState,
+  sourceCompatibilityIssue,
   onFieldChange,
   onParameterChange,
   onClearOptionSettings,
@@ -340,6 +342,15 @@ export default function TestDetailsPanel({
             />
           )}
         </Field>
+
+        {sourceCompatibilityIssue && (
+          <div className={styles.noteBox}>
+            <Text weight="semibold">Current source does not match this option</Text>
+            <Text className={styles.helper} block>
+              {sourceCompatibilityIssue}
+            </Text>
+          </div>
+        )}
 
         {['image_path', 'video_path', 'binary_path'].includes(getPrimaryInputType(option)) && (
           <div className={styles.noteBox}>

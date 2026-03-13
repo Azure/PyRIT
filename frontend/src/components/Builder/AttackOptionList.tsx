@@ -135,6 +135,7 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacingVerticalXS,
+    minWidth: 0,
   },
   selectedCard: {
     boxShadow: `inset 0 0 0 1px ${tokens.colorBrandStroke1}`,
@@ -147,6 +148,13 @@ const useStyles = makeStyles({
     display: 'flex',
     flexWrap: 'wrap',
     gap: tokens.spacingHorizontalXS,
+    alignItems: 'flex-start',
+  },
+  badge: {
+    maxWidth: '100%',
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
+    wordBreak: 'break-word',
   },
   helper: {
     color: tokens.colorNeutralForeground3,
@@ -386,17 +394,17 @@ export default function AttackOptionList({
                     <Text weight="semibold">{humanizeOptionName(option)}</Text>
                     <Text size={200}>{humanizeOptionDescription(option)}</Text>
                     <div className={styles.metaRow}>
-                      <Badge appearance="outline">{formatOptionFlow(option)}</Badge>
-                      <Badge appearance="outline">{formatRequiredSetupLabel(option)}</Badge>
-                      <Badge appearance="outline">{getVideoWorkflowGuidance(option).title}</Badge>
+                      <Badge appearance="outline" className={styles.badge}>{formatOptionFlow(option)}</Badge>
+                      <Badge appearance="outline" className={styles.badge}>{formatRequiredSetupLabel(option)}</Badge>
+                      <Badge appearance="outline" className={styles.badge}>{getVideoWorkflowGuidance(option).title}</Badge>
                       {isGoodForLongPrompts(option) && (
-                        <Badge appearance="outline">Good for long prompts</Badge>
+                        <Badge appearance="outline" className={styles.badge}>Good for long prompts</Badge>
                       )}
                       {unsupportedCount > 0 && (
-                        <Badge appearance="tint">{unsupportedCount} needs extra setup</Badge>
+                        <Badge appearance="tint" className={styles.badge}>{unsupportedCount} needs extra setup</Badge>
                       )}
                       {isMatching && (
-                        <Badge appearance="filled">Match</Badge>
+                        <Badge appearance="filled" className={styles.badge}>Match</Badge>
                       )}
                     </div>
                   </button>

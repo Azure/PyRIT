@@ -2,6 +2,7 @@ import {
   canRequestVariants,
   expandPresetTemplate,
   formatBlockedWords,
+  getSourceCompatibilityIssue,
   getInitialPresetValues,
   parseBlockedWords,
 } from "./builderUtils"
@@ -107,5 +108,41 @@ describe("builder utils", () => {
         builderConfig,
       ),
     ).toBe(false)
+  })
+
+  it("flags prompt text reused as an image input", () => {
+    expect(
+      getSourceCompatibilityIssue(
+        {
+          converter_type: "ImageCompressionConverter",
+          display_name: "Image Compression",
+          description: "Compresses images",
+          supported_input_types: ["image_path"],
+          supported_output_types: ["image_path"],
+          parameters: [],
+          preview_supported: true,
+          preview_unavailable_reason: null,
+        },
+        "Act like a demanding film director and write a prompt.",
+      ),
+    ).toMatch(/saved image path or URL/i)
+  })
+
+  it("accepts a file-like reference for image workflows", () => {
+    expect(
+      getSourceCompatibilityIssue(
+        {
+          converter_type: "ImageCompressionConverter",
+          display_name: "Image Compression",
+          description: "Compresses images",
+          supported_input_types: ["image_path"],
+          supported_output_types: ["image_path"],
+          parameters: [],
+          preview_supported: true,
+          preview_unavailable_reason: null,
+        },
+        "/tmp/reference-image.png",
+      ),
+    ).toBeNull()
   })
 })
