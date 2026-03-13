@@ -2,7 +2,7 @@
 # Licensed under the MIT license.
 
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from pyrit.cli.banner import (
     ANSI_COLORS,
@@ -170,3 +170,47 @@ class TestPlayAnimation:
         with patch("pyrit.cli.banner.can_animate", return_value=False):
             result = play_animation()
             assert "Python Risk Identification Tool" in result
+
+    def test_animation_writes_frames_to_stdout(self) -> None:
+        mock_stdout = MagicMock()
+        mock_stdout.isatty.return_value = True
+
+        with (
+            patch("pyrit.cli.banner.can_animate", return_value=True),
+            patch("pyrit.cli.banner._detect_theme", return_value=DARK_THEME),
+            patch("pyrit.cli.banner.time.sleep"),
+            patch("pyrit.cli.banner.sys.stdout", mock_stdout),
+        ):
+            result = play_animation()
+
+        assert result == ""
+        assert mock_stdout.write.called
+        written = "".join(str(call.args[0]) for call in mock_stdout.write.call_args_list)
+        assert "\033[" in written  # ANSI escape codes
+        assert "╔" in written  # box-drawing characters
+        assert "\033[?25l" in written  # cursor hide
+        assert "\033[?25h" in written  # cursor restore
+
+    def test_ctrl_c_restores_cursor_and_shows_static_banner(self) -> None:
+        mock_stdout = MagicMock()
+        mock_stdout.isatty.return_value = True
+        call_count = 0
+
+        def sleep_then_interrupt(duration: float) -> None:
+            nonlocal call_count
+            call_count += 1
+            if call_count >= 3:
+                raise KeyboardInterrupt()
+
+        with (
+            patch("pyrit.cli.banner.can_animate", return_value=True),
+            patch("pyrit.cli.banner._detect_theme", return_value=DARK_THEME),
+            patch("pyrit.cli.banner.time.sleep", side_effect=sleep_then_interrupt),
+            patch("pyrit.cli.banner.sys.stdout", mock_stdout),
+        ):
+            result = play_animation()
+
+        assert result == ""
+        written = "".join(str(call.args[0]) for call in mock_stdout.write.call_args_list)
+        assert "\033[?25h" in written  # cursor restored after interrupt
+        assert "╔" in written  # static banner was written
