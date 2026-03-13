@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM mcr.microsoft.com/devcontainers/python:3.11-bookworm
 
 # Makes installation faster
@@ -12,8 +13,8 @@ USER root
 RUN rm -f /etc/apt/sources.list.d/yarn.list 2>/dev/null || true
 
 # Install required system packages + ODBC prerequisites
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update \
  && apt-get install -y --no-install-recommends \
       sudo \
@@ -25,10 +26,10 @@ RUN --mount=type=cache,target=/var/cache/apt \
       xdg-utils \
       build-essential
 
-# Install the Azure CLI, Microsoft ODBC Driver 18 & SQL tools
+# Install Microsoft ODBC Driver 18 & SQL tools
 # Note: Debian Trixie's sqv rejects SHA1 signatures, so we use gpg directly to import the Microsoft key
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update \
  && apt-get install -y --no-install-recommends \
       ca-certificates \
@@ -42,28 +43,27 @@ RUN --mount=type=cache,target=/var/cache/apt \
  && ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
       msodbcsql18 \
       mssql-tools18 \
-      azure-cli \
  && echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> /etc/profile.d/sqltools.sh
 
 # audio back-ends needed by Azure Speech SDK
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update \
  && apt-get install -y --no-install-recommends \
       libasound2 \
       libpulse0
-
-# Install Node.js 24.x LTS for frontend development
-RUN --mount=type=cache,target=/var/cache/apt \
-    --mount=type=cache,target=/var/lib/apt \
-    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
- && apt-get install -y --no-install-recommends nodejs
 
 # Install uv system-wide and create pyrit-dev venv
 COPY --from=ghcr.io/astral-sh/uv:0.10.8 /uv /uvx /bin/
 RUN uv venv /opt/venv --python 3.11 --prompt pyrit-dev \
  && chown -R vscode:vscode /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+
+# Install Node.js 24.x LTS for frontend development
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs
 
 # vscode user already exists in the base image, just ensure sudo access
 RUN echo "vscode ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
