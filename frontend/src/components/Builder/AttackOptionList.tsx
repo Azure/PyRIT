@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import {
-  Badge,
   Button,
   Input,
   Text,
@@ -150,11 +149,29 @@ const useStyles = makeStyles({
     gap: tokens.spacingHorizontalXS,
     alignItems: 'flex-start',
   },
-  badge: {
+  tag: {
     maxWidth: '100%',
     whiteSpace: 'normal',
     overflowWrap: 'anywhere',
     wordBreak: 'break-word',
+    display: 'inline-flex',
+    alignItems: 'flex-start',
+    alignSelf: 'flex-start',
+    border: `1px solid ${tokens.colorBrandStroke1}`,
+    color: tokens.colorBrandForeground1,
+    borderRadius: '999px',
+    backgroundColor: tokens.colorNeutralBackground1,
+    paddingLeft: tokens.spacingHorizontalS,
+    paddingRight: tokens.spacingHorizontalS,
+    paddingTop: '2px',
+    paddingBottom: '2px',
+    lineHeight: tokens.lineHeightBase200,
+  },
+  subtleTag: {
+    backgroundColor: tokens.colorNeutralBackground2,
+  },
+  filledTag: {
+    backgroundColor: tokens.colorBrandBackground2,
   },
   helper: {
     color: tokens.colorNeutralForeground3,
@@ -394,17 +411,17 @@ export default function AttackOptionList({
                     <Text weight="semibold">{humanizeOptionName(option)}</Text>
                     <Text size={200}>{humanizeOptionDescription(option)}</Text>
                     <div className={styles.metaRow}>
-                      <Badge appearance="outline" className={styles.badge}>{formatOptionFlow(option)}</Badge>
-                      <Badge appearance="outline" className={styles.badge}>{formatRequiredSetupLabel(option)}</Badge>
-                      <Badge appearance="outline" className={styles.badge}>{getVideoWorkflowGuidance(option).title}</Badge>
+                      <span className={styles.tag}>{formatOptionFlow(option)}</span>
+                      <span className={styles.tag}>{formatRequiredSetupLabel(option)}</span>
+                      <span className={styles.tag}>{getVideoWorkflowGuidance(option).title}</span>
                       {isGoodForLongPrompts(option) && (
-                        <Badge appearance="outline" className={styles.badge}>Good for long prompts</Badge>
+                        <span className={styles.tag}>Good for long prompts</span>
                       )}
                       {unsupportedCount > 0 && (
-                        <Badge appearance="tint" className={styles.badge}>{unsupportedCount} needs extra setup</Badge>
+                        <span className={`${styles.tag} ${styles.subtleTag}`}>{unsupportedCount} needs extra setup</span>
                       )}
                       {isMatching && (
-                        <Badge appearance="filled" className={styles.badge}>Match</Badge>
+                        <span className={`${styles.tag} ${styles.filledTag}`}>Match</span>
                       )}
                     </div>
                   </button>
