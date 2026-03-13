@@ -4,6 +4,7 @@
 import json
 import logging
 from collections.abc import Awaitable, Callable, MutableSequence
+from copy import deepcopy
 from enum import Enum
 from typing import (
     Any,
@@ -163,6 +164,54 @@ class OpenAIResponseTarget(OpenAITarget, PromptChatTarget):
                     tool_name = tool.get("name")
                     logger.debug("Detected grammar tool: %s", tool_name)
                     self._grammar_name = tool_name
+
+        # Set up a fresh construction
+        kwargs_copy = {}
+        for k, v in kwargs.items():
+            if callable(v):
+                kwargs_copy[k] = v
+            else:
+                kwargs_copy[k] = deepcopy(v)
+
+        self._init_args = {
+            "custom_functions": deepcopy(custom_functions),
+            "max_output_tokens": max_output_tokens,
+            "temperature": temperature,
+            "top_p": top_p,
+            "extra_body_parameters": deepcopy(extra_body_parameters),
+            "fail_on_missing_function": fail_on_missing_function,
+            "reasoning_effort": reasoning_effort,
+            "reasoning_summary": reasoning_summary,
+            **kwargs_copy,
+        }
+
+    def fresh_instance(
+        self,
+        *,
+        extra_body_parameters: Optional[dict[str, Any]] = None,
+        grammar_name: Optional[str] = None,
+    ) -> "OpenAIResponseTarget":
+        """
+        Create a fresh instance of the OpenAIResponseTarget with the same configuration.
+
+        Optionally override extra body parameters or a grammar name for the new instance.
+
+        Args:
+            extra_body_parameters (Optional[dict[str, Any]]): Optional overrides for the
+                extra body parameters of the new instance.
+            grammar_name (Optional[str]): Optional override for the grammar name of the
+                new instance.
+
+        Returns:
+            OpenAIResponseTarget: A new instance of OpenAIResponseTarget.
+        """
+        init_args: dict[str, Any] = deepcopy(self._init_args)
+        if extra_body_parameters is not None:
+            init_args["extra_body_parameters"] = deepcopy(extra_body_parameters)
+        result = OpenAIResponseTarget(**init_args)
+        if grammar_name is not None:
+            result._grammar_name = grammar_name
+        return result
 
     def _build_identifier(self) -> ComponentIdentifier:
         """
