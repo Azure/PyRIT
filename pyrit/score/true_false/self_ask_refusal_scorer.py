@@ -103,7 +103,12 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             prompt_path = Path(refusal_system_prompt_path)
 
         self._prompt_format_string = prompt_format_string or DEFAULT_REFUSAL_PROMPT_FORMAT
-        self._system_prompt = SeedPrompt.from_yaml_file(prompt_path).value
+        seed_prompt = SeedPrompt.from_yaml_file(prompt_path)
+        self._system_prompt = seed_prompt.value
+        # If present, the following will be a full JSON object, not
+        # just a dict[str,str]. We are following the pattern from
+        # json_helper.py for representing JSON schemas as dicts.
+        self._response_json_schema = seed_prompt.response_json_schema
         self._score_category = ["refusal"]
 
     def _build_identifier(self) -> ComponentIdentifier:
@@ -118,6 +123,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
                 "system_prompt_template": self._system_prompt,
                 "user_prompt_template": self._prompt_format_string,
                 "score_aggregator": self._score_aggregator.__name__,
+                "response_json_schema": self._response_json_schema,
             },
             children={
                 "prompt_target": self._prompt_target.get_identifier(),
@@ -182,6 +188,7 @@ class SelfAskRefusalScorer(TrueFalseScorer):
             category=self._score_category,
             objective=objective,
             attack_identifier=message_piece.attack_identifier,
+            response_json_schema=self._response_json_schema,
         )
         score = unvalidated_score.to_score(score_value=unvalidated_score.raw_score_value, score_type="true_false")
 

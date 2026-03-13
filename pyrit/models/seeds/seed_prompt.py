@@ -37,6 +37,12 @@ class SeedPrompt(Seed):
     # This field shadows the base class property to allow per-prompt data types
     data_type: Optional[PromptDataType] = None
 
+    # Optional JSON schema for constraining the response
+    # Not actually dict[str,str], necessarily, but a full JSON object.
+    # Type follows pattern from json_helper.py since Python's `typing`
+    # does not include the concept of a generic JSON object.
+    response_json_schema: Optional[dict[str, str]] = None
+
     # Role of the prompt in a conversation (e.g., "user", "assistant")
     role: Optional[ChatMessageRole] = None
 

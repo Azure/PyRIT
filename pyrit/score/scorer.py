@@ -508,6 +508,7 @@ class Scorer(Identifiable, abc.ABC):
         metadata_output_key: str = "metadata",
         category_output_key: str = "category",
         attack_identifier: Optional[ComponentIdentifier] = None,
+        response_json_schema: Optional[dict[str, str]] = None,
     ) -> UnvalidatedScore:
         """
         Send a request to a target, and take care of retries.
@@ -543,6 +544,8 @@ class Scorer(Identifiable, abc.ABC):
                 Defaults to "category".
             attack_identifier (Optional[ComponentIdentifier]): The attack identifier.
                 Defaults to None.
+            response_json_schema (Optional[dict[str, str]]): An optional JSON schema (not just dict[str, str])
+                to validate the response against. Defaults to None.
 
         Returns:
             UnvalidatedScore: The score object containing the response from the target LLM.
@@ -561,6 +564,11 @@ class Scorer(Identifiable, abc.ABC):
             attack_identifier=attack_identifier,
         )
         prompt_metadata: dict[str, str | int] = {"response_format": "json"}
+        if response_json_schema:
+            # The 'cast' here is ugly, but is in the pattern of json_helper.py
+            # Fundamentally, Python does not offer anything in Typing to represent
+            # JSON structures
+            prompt_metadata["json_schema"] = cast("str", response_json_schema)
 
         # Build message pieces - prepended text context first (if provided), then the main message being scored
         message_pieces: list[MessagePiece] = []
