@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from pyrit.models.scenario_result import ScenarioResult
 
-from pyrit.cli import frontend_core
+from pyrit.cli import banner, frontend_core
 
 
 class PyRITShell(cmd.Cmd):
@@ -41,6 +41,7 @@ class PyRITShell(cmd.Cmd):
         --database <type>       Database type (InMemory, SQLite, AzureSQL) - default for all runs
         --log-level <level>     Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL) - default for all runs
         --env-files <path> ...  Environment files to load in order - default for all runs
+        --no-animation          Disable the animated startup banner
 
     Run Command Options:
         --initializers <name> ...       Built-in initializers (supports name:key=val1,val2 syntax)
@@ -54,50 +55,24 @@ class PyRITShell(cmd.Cmd):
         --log-level <level>             Override default log level for this run
     """
 
-    intro = """
-╔══════════════════════════════════════════════════════════════════════════════════════════════╗
-║                                                                                              ║
-║                       ██████╗ ██╗   ██╗██████╗ ██╗████████╗                                  ║
-║                       ██╔══██╗╚██╗ ██╔╝██╔══██╗██║╚══██╔══╝                                  ║
-║                       ██████╔╝ ╚████╔╝ ██████╔╝██║   ██║                                     ║
-║                       ██╔═══╝   ╚██╔╝  ██╔══██╗██║   ██║                                     ║
-║                       ██║        ██║   ██║  ██║██║   ██║                                     ║
-║                       ╚═╝        ╚═╝   ╚═╝  ╚═╝╚═╝   ╚═╝                                     ║
-║                                                                                              ║
-║                          Python Risk Identification Tool                                     ║
-║                                Interactive Shell                                             ║
-║                                                                                              ║
-╠══════════════════════════════════════════════════════════════════════════════════════════════╣
-║                                                                                              ║
-║  Commands:                                                                                   ║
-║    • list-scenarios        - See all available scenarios                                     ║
-║    • list-initializers     - See all available initializers                                  ║
-║    • run <scenario> [opts] - Execute a security scenario                                     ║
-║    • scenario-history      - View your session history                                       ║
-║    • print-scenario [N]    - Display detailed results                                        ║
-║    • help [command]        - Get help on any command                                         ║
-║    • exit                  - Quit the shell                                                  ║
-║                                                                                              ║
-║  Quick Start:                                                                                ║
-║    pyrit> list-scenarios                                                                     ║
-║    pyrit> run foundry --initializers openai_objective_target load_default_datasets           ║
-║                                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════════════════════╝
-"""
     prompt = "pyrit> "
 
     def __init__(
         self,
+        *,
         context: frontend_core.FrontendCore,
-    ):
+        no_animation: bool = False,
+    ) -> None:
         """
         Initialize the PyRIT shell.
 
         Args:
             context: PyRIT context with loaded registries.
+            no_animation: If True, skip the animated startup banner.
         """
         super().__init__()
         self.context = context
+        self._no_animation = no_animation
         self.default_database = context._database
         self.default_log_level: Optional[int] = context._log_level
         self.default_env_files = context._env_files
@@ -105,7 +80,7 @@ class PyRITShell(cmd.Cmd):
         # Track scenario execution history: list of (command_string, ScenarioResult) tuples
         self._scenario_history: list[tuple[str, ScenarioResult]] = []
 
-        # Initialize PyRIT in background thread for faster startup
+        # Initialize PyRIT in background thread for faster startup.
         self._init_thread = threading.Thread(target=self._background_init, daemon=True)
         self._init_complete = threading.Event()
         self._init_thread.start()
@@ -121,6 +96,16 @@ class PyRITShell(cmd.Cmd):
             print("Waiting for PyRIT initialization to complete...")
             sys.stdout.flush()
             self._init_complete.wait()
+
+    def cmdloop(self, intro: Optional[str] = None) -> None:
+        """Override cmdloop to play animated banner before starting the REPL."""
+        if intro is None:
+            # Wait for background init to finish BEFORE animation,
+            # so its log output doesn't interfere with cursor positioning
+            self._init_complete.wait()
+            intro = banner.play_animation(no_animation=self._no_animation)
+        self.intro = intro
+        super().cmdloop(intro=self.intro)
 
     def do_list_scenarios(self, arg: str) -> None:
         """List all available scenarios."""
@@ -479,11 +464,11 @@ def main() -> int:
     parser.add_argument(
         "--database",
         choices=[frontend_core.IN_MEMORY, frontend_core.SQLITE, frontend_core.AZURE_SQL],
-        default=frontend_core.SQLITE,
+        default=None,
         help=(
             f"Default database type to use"
             f" ({frontend_core.IN_MEMORY}, {frontend_core.SQLITE}, {frontend_core.AZURE_SQL})"
-            f" (default: {frontend_core.SQLITE}, can be overridden per-run)"
+            f" (defaults to config file value, or {frontend_core.SQLITE} if not specified)"
         ),
     )
 
@@ -503,6 +488,13 @@ def main() -> int:
         type=str,
         nargs="+",
         help="Environment files to load in order (default for all runs, can be overridden per-run)",
+    )
+
+    parser.add_argument(
+        "--no-animation",
+        action="store_true",
+        default=False,
+        help="Disable the animated startup banner (show static banner instead)",
     )
 
     args = parser.parse_args()
@@ -528,7 +520,7 @@ def main() -> int:
 
     # Start shell
     try:
-        shell = PyRITShell(context)
+        shell = PyRITShell(context=context, no_animation=args.no_animation)
         shell.cmdloop()
         return 0
     except KeyboardInterrupt:
