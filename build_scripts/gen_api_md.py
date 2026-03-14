@@ -151,6 +151,16 @@ def render_class(cls: dict) -> str:
     return "\n".join(parts)
 
 
+def render_alias(alias: dict) -> str:
+    """Render an alias as markdown."""
+    name = alias["name"]
+    target = alias.get("target", "")
+    parts = [f"### `{name}`\n"]
+    if target:
+        parts.append(f"Alias of `{target}`.\n")
+    return "\n".join(parts)
+
+
 def render_module(data: dict) -> str:
     """Render a full module page."""
     mod_name = data["name"]
@@ -171,7 +181,14 @@ def render_module(data: dict) -> str:
         parts.append("## Functions\n")
         parts.extend(render_function(f) for f in functions)
 
+    if aliases:
+        parts.append("## Aliases\n")
+        parts.extend(render_alias(a) for a in aliases)
+
     parts.extend(render_class(cls) for cls in classes)
+
+    if not functions and not aliases and not classes:
+        parts.append("No public API members were detected for this module.\n")
 
     return "\n".join(parts)
 
@@ -226,6 +243,16 @@ def main() -> None:
             continue
         modules.append(data)
 
+    # Generate per-module pages
+    for data in modules:
+        mod_name = data["name"]
+        slug = mod_name.replace(".", "_")
+        md_path = API_MD_DIR / f"{slug}.md"
+        content = render_module(data)
+        members = data.get("members", [])
+        md_path.write_text(content, encoding="utf-8")
+        print(f"Written {md_path} ({len(members)} members)")
+
     # Generate index page
     index_parts = ["# API Reference\n"]
     for data in modules:
@@ -233,31 +260,24 @@ def main() -> None:
         members = data.get("members", [])
         member_count = len(members)
         slug = mod_name.replace(".", "_")
-        classes = [m["name"] for m in members if m.get("kind") == "class"][:8]
-        preview = ", ".join(f"`{c}`" for c in classes)
-        if len(classes) < member_count:
+
+        classes = [f"`{m['name']}`" for m in members if m.get("kind") == "class"]
+        functions = [f"`{m['name']}()`" for m in members if m.get("kind") == "function"]
+        aliases = [f"`{m['name']}`" for m in members if m.get("kind") == "alias"]
+        preview_items = (classes + functions + aliases)[:8]
+        preview = ", ".join(preview_items)
+        if member_count > len(preview_items):
             preview += f" ... ({member_count} total)"
+
         index_parts.append(f"## [{mod_name}]({slug}.md)\n")
         if preview:
             index_parts.append(preview + "\n")
+        else:
+            index_parts.append("_No public API members detected._\n")
 
     index_path = API_MD_DIR / "index.md"
     index_path.write_text("\n".join(index_parts), encoding="utf-8")
     print(f"Written {index_path}")
-
-    # Generate per-module pages
-    for data in modules:
-        mod_name = data["name"]
-        members = data.get("members", [])
-        # Skip modules with no members and no meaningful docstring
-        ds_text = (data.get("docstring") or {}).get("text", "")
-        if not members and len(ds_text) < 50:
-            continue
-        slug = mod_name.replace(".", "_")
-        md_path = API_MD_DIR / f"{slug}.md"
-        content = render_module(data)
-        md_path.write_text(content, encoding="utf-8")
-        print(f"Written {md_path} ({len(members)} members)")
 
 
 if __name__ == "__main__":
