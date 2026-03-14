@@ -9,7 +9,7 @@ from typing import Any, Optional
 
 from tqdm import tqdm
 
-from pyrit.datasets.seed_datasets.seed_metadata import SeedDatasetFilter, SeedDatasetMetadata
+from pyrit.datasets.seed_datasets.seed_metadata import SeedDatasetFilter, SeedDatasetLoadingRank, SeedDatasetMetadata
 from pyrit.models.seeds import SeedDataset
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ class SeedDatasetProvider(ABC):
     """
 
     _registry: dict[str, type["SeedDatasetProvider"]] = {}
+    rank: SeedDatasetLoadingRank = SeedDatasetLoadingRank.UNKNOWN
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """

@@ -263,9 +263,10 @@ class TestMetadataParsingRemote:
         assert metadata.size == SeedDatasetSize.LARGE
         assert metadata.modalities == [SeedDatasetModality.TEXT]
         assert metadata.harm_categories == ["cybercrime", "illegal", "harmful", "chemical_biological", "harassment"]
-        # source and rank are not declared as class attributes on HarmBench
+        # source_type is not declared as a class attribute on HarmBench;
+        # rank inherits the UNKNOWN default from SeedDatasetProvider base class
         assert metadata.source_type is None
-        assert metadata.rank is None
+        assert metadata.rank == SeedDatasetLoadingRank.UNKNOWN
 
     def test_all_tag(self):
         """Filter with tags={'all'} matches any metadata."""
@@ -324,7 +325,7 @@ class TestMetadataParsingRemote:
         )
         assert not SeedDatasetProvider._match_filter(
             metadata=metadata,
-            filters=SeedDatasetFilter(ranks=[SeedDatasetLoadingRank.SLOW]),
+            filters=SeedDatasetFilter(ranks=[SeedDatasetLoadingRank.TERTIARY]),
         )
 
     def test_harm_categories(self):

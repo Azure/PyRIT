@@ -27,7 +27,7 @@ class TestMetadataLifecycle:
         assert metadata.size is None
         assert metadata.modalities is None
         assert metadata.source_type is None
-        assert metadata.rank is None
+        assert metadata.rank == SeedDatasetLoadingRank.UNKNOWN
         assert metadata.harm_categories is None
 
     def test_has_some_values(self):
@@ -36,7 +36,7 @@ class TestMetadataLifecycle:
         assert metadata.size == SeedDatasetSize.LARGE
         assert metadata.modalities is None
         assert metadata.source_type is None
-        assert metadata.rank is None
+        assert metadata.rank == SeedDatasetLoadingRank.UNKNOWN
         assert metadata.harm_categories is None
 
     def test_has_all_values(self):
@@ -142,9 +142,9 @@ class TestFilterProperties:
         assert SeedDatasetSize.LARGE in f.sizes
 
     def test_loading_ranks_values(self):
-        f = SeedDatasetFilter(ranks=[SeedDatasetLoadingRank.DEFAULT, SeedDatasetLoadingRank.SLOW])
+        f = SeedDatasetFilter(ranks=[SeedDatasetLoadingRank.DEFAULT, SeedDatasetLoadingRank.TERTIARY])
         assert SeedDatasetLoadingRank.DEFAULT in f.ranks
-        assert SeedDatasetLoadingRank.SLOW in f.ranks
+        assert SeedDatasetLoadingRank.TERTIARY in f.ranks
 
     def test_sources_values(self):
         f = SeedDatasetFilter(source_types=[SeedDatasetSourceType.LOCAL, SeedDatasetSourceType.REMOTE])
