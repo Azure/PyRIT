@@ -16,6 +16,7 @@ from pyrit.prompt_target.common.target_capabilities import TargetCapabilities
 from pyrit.prompt_target.common.utils import limit_requests_per_minute
 from pyrit.prompt_target.crucible_target import CrucibleTarget
 from pyrit.prompt_target.gandalf_target import GandalfLevel, GandalfTarget
+from pyrit.prompt_target.hack_a_prompt_target import HackAPromptTarget
 from pyrit.prompt_target.http_target.http_target import HTTPTarget
 from pyrit.prompt_target.http_target.http_target_callback_functions import (
     get_http_target_json_response_callback_function,
@@ -48,6 +49,7 @@ __all__ = [
     "GandalfTarget",
     "get_http_target_json_response_callback_function",
     "get_http_target_regex_matching_callback_function",
+    "HackAPromptTarget",
     "HTTPTarget",
     "HTTPXAPITarget",
     "HuggingFaceChatTarget",
