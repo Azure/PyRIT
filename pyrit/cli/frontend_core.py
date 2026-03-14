@@ -134,6 +134,8 @@ class FrontendCore:
         self._initialization_scripts = config._resolve_initialization_scripts()
         self._initializer_configs = config._initializer_configs if config._initializer_configs else None
         self._env_files = config._resolve_env_files()
+        self._operator = config.operator
+        self._operation = config.operation
 
         # Lazy-loaded registries
         self._scenario_registry: Optional[ScenarioRegistry] = None
