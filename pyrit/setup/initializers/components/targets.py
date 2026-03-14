@@ -428,7 +428,8 @@ class TargetInitializer(PyRITInitializer):
         await initializer.initialize_async()
 
         # Register scorer temperature variants too
-        await initializer.initialize_async(params={"tags": ["default", "scorer"]})
+        initializer.params = {"tags": ["default", "scorer"]}
+        await initializer.initialize_async()
     """
 
     @property
@@ -470,19 +471,15 @@ class TargetInitializer(PyRITInitializer):
         """
         return []
 
-    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
+    async def initialize_async(self) -> None:
         """
         Register available targets based on environment variables.
 
         Scans for known endpoint environment variables and registers the
         corresponding targets into the TargetRegistry. Only targets with
         tags matching the configured tags are registered.
-
-        Args:
-            params: Optional parameters. Supports 'tags' (list of tag names).
         """
-        params = params or {}
-        tags = params.get("tags", ["default"])
+        tags = self.params.get("tags", ["default"])
         if "all" in tags:
             tags = ALL_TARGET_TAGS
 

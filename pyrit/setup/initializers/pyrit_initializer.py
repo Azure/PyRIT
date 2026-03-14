@@ -118,7 +118,7 @@ class PyRITInitializer(ABC):
         Get the list of parameters this initializer accepts.
 
         Override this property to declare what parameters the initializer
-        supports. Parameters are passed as a dict[str, list[str]] to initialize_async().
+        supports. Parameters are set on self.params before initialize_async() is called.
 
         Returns:
             list[InitializerParameter]: List of supported parameters. Defaults to empty list.
@@ -126,7 +126,7 @@ class PyRITInitializer(ABC):
         return []
 
     @abstractmethod
-    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
+    async def initialize_async(self) -> None:
         """
         Execute the initialization logic asynchronously.
 
@@ -134,9 +134,8 @@ class PyRITInitializer(ABC):
         calls to set_default_value() and set_global_variable() as needed.
         All initializers must implement this as an async method.
 
-        Args:
-            params: Optional dictionary of string-list parameters.
-                Use supported_parameters to declare which params are accepted.
+        Subclasses that accept parameters should read them from self.params,
+        which is populated before this method is called.
         """
 
     def validate(self) -> None:
@@ -199,18 +198,12 @@ class PyRITInitializer(ABC):
         """
         Execute initialization while tracking what changes are made.
 
-        This method runs initialize_async() with stored params and captures
-        information about what default values and global variables were set.
-        The tracking information is not cached - it's captured during the actual
-        initialization run.
+        This method runs initialize_async() and captures information about what
+        default values and global variables were set. The tracking information
+        is not cached - it's captured during the actual initialization run.
         """
         with self._track_initialization_changes():
-            params = self.params if self.params else None
-            try:
-                await self.initialize_async(params=params)
-            except TypeError:
-                # Backward compatibility: old-style initializers without params argument
-                await self.initialize_async()
+            await self.initialize_async()
 
     @contextmanager
     def _track_initialization_changes(self) -> Iterator[dict[str, Any]]:
@@ -293,11 +286,7 @@ class PyRITInitializer(ABC):
         try:
             # Run initialization in sandbox with tracking (starting from empty state)
             with self._track_initialization_changes() as tracking_info:
-                params = self.params if self.params else None
-                try:
-                    await self.initialize_async(params=params)
-                except TypeError:
-                    await self.initialize_async()
+                await self.initialize_async()
 
             return tracking_info
 

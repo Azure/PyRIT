@@ -364,8 +364,7 @@ class PyRITShell(cmd.Cmd):
             print("      Example: run foundry --initializers openai_objective_target load_default_datasets")
             print("      With params: run foundry --initializers target:tags=default,scorer")
             print(
-                "      Multiple with params: run foundry --initializers"
-                " target:tags=default,scorer dataset:mode=strict"
+                "      Multiple with params: run foundry --initializers target:tags=default,scorer dataset:mode=strict"
             )
             print()
             print("  --initialization-scripts <path> [<path> ...]  (Alternative to --initializers)")

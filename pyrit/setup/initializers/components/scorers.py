@@ -131,18 +131,14 @@ class ScorerInitializer(PyRITInitializer):
         """
         return []
 
-    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
+    async def initialize_async(self) -> None:
         """
         Register available scorers using targets from the TargetRegistry.
-
-        Args:
-            params: Optional parameters. Supports 'tags' (list of tag names).
 
         Raises:
             RuntimeError: If the TargetRegistry is empty or hasn't been initialized.
         """
-        params = params or {}
-        tags = params.get("tags", ["default"])
+        tags = self.params.get("tags", ["default"])
 
         target_registry = TargetRegistry.get_registry_singleton()
 

@@ -9,7 +9,6 @@ simple configuration including converters, scorers, and targets using basic Open
 """
 
 import os
-from typing import Optional
 
 from pyrit.common.apply_defaults import set_default_value, set_global_variable
 from pyrit.executor.attack import (
@@ -113,7 +112,7 @@ class SimpleInitializer(PyRITInitializer):
 
         return get_azure_openai_auth(endpoint)
 
-    async def initialize_async(self, *, params: Optional[dict[str, list[str]]] = None) -> None:
+    async def initialize_async(self) -> None:
         """
         Execute the complete simple initialization.
 
