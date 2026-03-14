@@ -101,6 +101,11 @@ from pyrit.datasets.seed_datasets.remote.toxic_chat_dataset import (
 from pyrit.datasets.seed_datasets.remote.transphobia_awareness_dataset import (  # noqa: F401
     _TransphobiaAwarenessDataset,
 )
+from pyrit.datasets.seed_datasets.remote.vlguard_dataset import (
+    VLGuardCategory,
+    VLGuardSubset,
+    _VLGuardDataset,
+)  # noqa: F401
 from pyrit.datasets.seed_datasets.remote.vlsu_multimodal_dataset import (
     _VLSUMultimodalDataset,
 )  # noqa: F401
@@ -111,6 +116,8 @@ from pyrit.datasets.seed_datasets.remote.xstest_dataset import (
 __all__ = [
     "PromptIntelCategory",
     "PromptIntelSeverity",
+    "VLGuardCategory",
+    "VLGuardSubset",
     "_AegisContentSafetyDataset",
     "_AyaRedteamingDataset",
     "_BabelscapeAlertDataset",
@@ -143,6 +150,7 @@ __all__ = [
     "_TDC23RedteamingDataset",
     "_ToxicChatDataset",
     "_TransphobiaAwarenessDataset",
+    "_VLGuardDataset",
     "_VLSUMultimodalDataset",
     "_XSTestDataset",
 ]
