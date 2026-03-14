@@ -8,6 +8,7 @@ import logging
 import tempfile
 from abc import ABC
 from collections.abc import Callable
+from dataclasses import fields
 from pathlib import Path
 from typing import Any, Literal, Optional, TextIO, cast
 
@@ -19,6 +20,7 @@ from pyrit.common.json_helper import read_json, read_jsonl, write_json, write_js
 from pyrit.common.path import DB_DATA_PATH
 from pyrit.common.text_helper import read_txt, write_txt
 from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
+from pyrit.datasets.seed_datasets.seed_metadata import SeedDatasetMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -285,3 +287,21 @@ class _RemoteDatasetLoader(SeedDatasetProvider, ABC):
         except Exception as e:
             logger.error(f"Failed to load HuggingFace dataset {dataset_name}: {e}")
             raise
+
+    def _parse_metadata(self) -> Optional[SeedDatasetMetadata]:
+        """
+        Extract metadata from class attributes and format into SeedDatasetMetadata schema.
+
+        Returns:
+            Optional[SeedDatasetMetadata]: Parsed metadata if available, otherwise None.
+        """
+        valid_fields = [f.name for f in fields(SeedDatasetMetadata)]
+
+        provider_class = type(self)
+        self_metadata = {
+            key: getattr(provider_class, key) for key in valid_fields if getattr(provider_class, key, None) is not None
+        }
+
+        if not self_metadata:
+            return None
+        return SeedDatasetMetadata(**self_metadata)

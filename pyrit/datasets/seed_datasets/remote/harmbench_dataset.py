@@ -6,6 +6,10 @@ from typing import Literal
 from pyrit.datasets.seed_datasets.remote.remote_dataset_loader import (
     _RemoteDatasetLoader,
 )
+from pyrit.datasets.seed_datasets.seed_metadata import (
+    SeedDatasetModality,
+    SeedDatasetSize,
+)
 from pyrit.models import SeedDataset, SeedObjective
 
 
@@ -18,6 +22,13 @@ class _HarmBenchDataset(_RemoteDatasetLoader):
 
     Reference: https://github.com/centerforaisafety/HarmBench
     """
+
+    # Metadata
+    harm_categories: list[str] = ["cybercrime", "illegal", "harmful", "chemical_biological", "harassment"]
+    modalities: list[SeedDatasetModality] = [SeedDatasetModality.TEXT]
+    size: SeedDatasetSize = SeedDatasetSize.LARGE  # 504 seeds
+    # "default" means included in curated set
+    tags: set[str] = {"default", "safety"}
 
     def __init__(
         self,

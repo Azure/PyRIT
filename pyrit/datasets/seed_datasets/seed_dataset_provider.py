@@ -9,6 +9,7 @@ from typing import Any, Optional
 
 from tqdm import tqdm
 
+from pyrit.datasets.seed_datasets.seed_metadata import SeedDatasetFilter, SeedDatasetLoadingRank, SeedDatasetMetadata
 from pyrit.models.seeds import SeedDataset
 
 logger = logging.getLogger(__name__)
@@ -25,9 +26,14 @@ class SeedDatasetProvider(ABC):
     Subclasses must implement:
     - fetch_dataset(): Fetch and return the dataset as a SeedDataset
     - dataset_name property: Human-readable name for the dataset
+
+    All subclasses also have a _metadata property that is optional to make
+    dataset addition easier, but failing to complete it makes downstream
+    analysis more difficult.
     """
 
     _registry: dict[str, type["SeedDatasetProvider"]] = {}
+    rank: SeedDatasetLoadingRank = SeedDatasetLoadingRank.UNKNOWN
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """
@@ -67,6 +73,19 @@ class SeedDatasetProvider(ABC):
             Exception: If the dataset cannot be fetched or processed.
         """
 
+    def _parse_metadata(self) -> Optional[SeedDatasetMetadata]:
+        """
+        Parse provider-specific metadata into the shared schema.
+
+        Subclasses can override this to source metadata from class attributes,
+        prompt files, or any other backing format. The default implementation
+        returns None, which means metadata is not available for this provider.
+
+        Returns:
+            Optional[SeedDatasetMetadata]: Parsed metadata for this provider, or None.
+        """
+        return None
+
     @classmethod
     def get_all_providers(cls) -> dict[str, type["SeedDatasetProvider"]]:
         """
@@ -78,9 +97,12 @@ class SeedDatasetProvider(ABC):
         return cls._registry.copy()
 
     @classmethod
-    def get_all_dataset_names(cls) -> list[str]:
+    def get_all_dataset_names(cls, filters: Optional[SeedDatasetFilter] = None) -> list[str]:
         """
         Get the names of all registered datasets.
+
+        Args:
+            filters (Optional[SeedDatasetFilter]): List of filters to apply.
 
         Returns:
             List[str]: List of dataset names from all registered providers.
@@ -97,10 +119,80 @@ class SeedDatasetProvider(ABC):
             try:
                 # Instantiate to get dataset name
                 provider = provider_class()
+
+                # Parser ensures a standard metadata format
+                metadata = provider._parse_metadata()
+
+                # "all" bypasses metadata filtering and returns every dataset.
+                if filters and filters.tags and "all" in filters.tags:
+                    dataset_names.add(provider.dataset_name)
+                    continue
+
+                if filters and not metadata:
+                    # Datasets without metadata are skipped unless we want "all"
+                    continue
+
+                # Filters detected but no match -> don't add this dataset
+                if filters and metadata and not cls._match_filter(metadata=metadata, filters=filters):
+                    continue
+
                 dataset_names.add(provider.dataset_name)
             except Exception as e:
                 raise ValueError(f"Could not get dataset name from {provider_class.__name__}: {e}") from e
         return sorted(dataset_names)
+
+    @classmethod
+    def _match_filter(cls, metadata: SeedDatasetMetadata, filters: SeedDatasetFilter) -> bool:
+        """
+
+        Match the filter(s) with the metadata provided by the SeedDatasetProvider subclass.
+        By default, filters across dimensions (e.g. size, harm categories) are treated as AND
+        requirements. Filters within a dimension (e.g. SeedDatasetSize.SMALL,
+        SeedDatasetSize.LARGE) are treated as OR requirements.
+
+        Args:
+            metadata (SeedDatasetMetadata): The metadata object extracted from the SeedDatasetProvider
+                subclass.
+            filters (SeedDatasetFilter): The filter object provided by the user to get_all_dataset_names.
+
+        Returns:
+            bool: Whether or not the filters match or not.
+        """
+        # Tags
+        if filters.tags and "all" in filters.tags:
+            return True
+
+        # These lines all disable SIM103 because metadata and filters tags can be optional, so
+        # directly checking for membership breaks type checking.
+
+        if metadata.tags and filters.tags and not (filters.tags & metadata.tags):  # noqa: SIM103
+            return False
+
+        # Size
+        if metadata.size and filters.sizes and metadata.size not in filters.sizes:  # noqa: SIM103
+            return False
+
+        # Harm Categories
+        if (
+            metadata.harm_categories
+            and filters.harm_categories
+            and not set(metadata.harm_categories) & set(filters.harm_categories)
+        ):  # noqa: SIM103
+            return False
+
+        # Source Type
+        if metadata.source_type and filters.source_types and metadata.source_type not in filters.source_types:  # noqa: SIM103
+            return False
+
+        # Modalities
+        if metadata.modalities and filters.modalities and not set(metadata.modalities) & set(filters.modalities):  # noqa: SIM103
+            return False
+
+        # Rank
+        if metadata.rank and filters.ranks and metadata.rank not in filters.ranks:  # noqa: SIM103
+            return False
+
+        return True
 
     @classmethod
     async def fetch_datasets_async(

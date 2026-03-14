@@ -3,10 +3,20 @@
 
 import logging
 from collections.abc import Callable
+from dataclasses import fields
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
+
+import yaml
 
 from pyrit.datasets.seed_datasets.seed_dataset_provider import SeedDatasetProvider
+from pyrit.datasets.seed_datasets.seed_metadata import (
+    SeedDatasetLoadingRank,
+    SeedDatasetMetadata,
+    SeedDatasetModality,
+    SeedDatasetSize,
+    SeedDatasetSourceType,
+)
 from pyrit.models import SeedDataset
 
 logger = logging.getLogger(__name__)
@@ -69,6 +79,68 @@ class _LocalDatasetLoader(SeedDatasetProvider):
         except Exception as e:
             logger.error(f"Failed to load local dataset from {self.file_path}: {e}")
             raise
+
+    def _parse_metadata(self) -> Optional[SeedDatasetMetadata]:
+        """
+        Extract metadata from a local YAML file and coerce raw values into typed schema fields.
+
+        YAML produces raw Python primitives (str, list) that must be converted to the
+        enum and set types expected by SeedDatasetMetadata before _match_filter can work.
+
+        Returns:
+            Optional[SeedDatasetMetadata]: Parsed metadata if available, otherwise None.
+
+        Raises:
+            Exception: If the dataset file cannot be read.
+        """
+        valid_fields = [f.name for f in fields(SeedDatasetMetadata)]
+        try:
+            with open(self.file_path, encoding="utf-8") as f:
+                dataset = yaml.safe_load(f)
+        except Exception as e:
+            logger.error(f"Failed to load local dataset from {self.file_path}: {e}")
+            raise
+
+        if not isinstance(dataset, dict):
+            return None
+
+        raw = {k: v for k, v in dataset.items() if k in valid_fields}
+        if not raw:
+            return None
+
+        coerced = self._coerce_metadata_values(raw_metadata=raw)
+        return SeedDatasetMetadata(**coerced)
+
+    @staticmethod
+    def _coerce_metadata_values(*, raw_metadata: dict[str, Any]) -> dict[str, Any]:
+        """
+        Convert YAML primitive values into the enum/set types expected by SeedDatasetMetadata.
+
+        Args:
+            raw_metadata (dict[str, Any]): Dictionary of field names to raw YAML-parsed values.
+
+        Returns:
+            dict[str, Any]: Dictionary with values coerced to the correct types.
+        """
+        coerced: dict[str, Any] = {}
+        for key, value in raw_metadata.items():
+            if key == "tags" and isinstance(value, list):
+                coerced[key] = set(value)
+            elif key == "size" and isinstance(value, str):
+                coerced[key] = SeedDatasetSize(value)
+            elif key == "source_type" and isinstance(value, str):
+                coerced[key] = SeedDatasetSourceType(value)
+            elif key == "rank" and isinstance(value, str):
+                coerced[key] = SeedDatasetLoadingRank(value)
+            elif key == "modalities" and isinstance(value, list):
+                coerced[key] = [SeedDatasetModality(v) for v in value]
+            elif key == "harm_categories" and isinstance(value, str):
+                coerced[key] = [value]
+            elif key == "tags" and isinstance(value, str):
+                coerced[key] = {value}
+            else:
+                coerced[key] = value
+        return coerced
 
 
 def _register_local_datasets() -> None:
