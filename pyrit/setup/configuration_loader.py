@@ -318,6 +318,8 @@ class ConfigurationLoader(YamlLoadable):
                 instance.params = {
                     k: [str(i) for i in v] if isinstance(v, list) else [str(v)] for k, v in config.args.items()
                 }
+                # Validate params early against supported_parameters to fail fast
+                instance._validate_params(params=instance.params)
 
             resolved.append(instance)
 

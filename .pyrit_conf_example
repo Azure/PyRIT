@@ -44,7 +44,13 @@ memory_db_type: sqlite
 #         - default
 #         - scorer
 initializers:
-  - simple
+  - name: simple
+  - name: scorer
+  - name: target
+    args:
+      tags:
+        - default
+        - scorer
 
 # Initialization Scripts
 # ----------------------

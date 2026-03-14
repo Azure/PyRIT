@@ -165,6 +165,8 @@ class PyRITShell(cmd.Cmd):
                 load_default_datasets
             run garak.encoding --initializers custom_target \
                 load_default_datasets --strategies base64 rot13
+            run foundry --initializers target:tags=default,scorer \
+                dataset:mode=strict --strategies base64
             run foundry --initializers openai_objective_target \
                 load_default_datasets --max-concurrency 10 --max-retries 3
             run garak.encoding --initializers custom_target \
@@ -376,6 +378,10 @@ class PyRITShell(cmd.Cmd):
             print("      Every scenario requires at least one initializer")
             print("      Example: run foundry --initializers openai_objective_target load_default_datasets")
             print("      With params: run foundry --initializers target:tags=default,scorer")
+            print(
+                "      Multiple with params: run foundry --initializers"
+                " target:tags=default,scorer dataset:mode=strict"
+            )
             print()
             print("  --initialization-scripts <path> [<path> ...]  (Alternative to --initializers)")
             print(f"      {frontend_core.ARG_HELP['initialization_scripts']}")

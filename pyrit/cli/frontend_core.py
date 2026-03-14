@@ -787,7 +787,8 @@ ARG_HELP = {
     ),
     "initializers": (
         "Built-in initializer names to run before the scenario. "
-        "Supports optional params with name:key=val syntax (e.g., target:tags=default,scorer)"
+        "Supports optional params with name:key=val syntax "
+        "(e.g., target:tags=default,scorer dataset:mode=strict)"
     ),
     "initialization_scripts": "Paths to custom Python initialization scripts to run before the scenario",
     "env_files": "Paths to environment files to load in order (e.g., .env.production .env.local). Later files "
@@ -813,7 +814,8 @@ def _parse_initializer_arg(arg: str) -> dict[str, Any]:
     - Simple name: "simple" → {"name": "simple"}
     - Name with params: "target:tags=default,scorer" → {"name": "target", "args": {"tags": "default,scorer"}}
 
-    For multiple params, separate with semicolons: "name:key1=val1;key2=val2"
+    For multiple params on one initializer, separate with semicolons: "name:key1=val1;key2=val2"
+    For multiple initializers with params, space-separate them: "target:tags=a,b dataset:mode=strict"
 
     Args:
         arg: The CLI argument string.
