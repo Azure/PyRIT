@@ -9,6 +9,7 @@ import { AddRegular, PanelRightRegular } from '@fluentui/react-icons'
 import MessageList from './MessageList'
 import ChatInputArea from './ChatInputArea'
 import ConversationPanel from './ConversationPanel'
+import ConverterPanel from './ConverterPanel'
 import LabelsBar from '../Labels/LabelsBar'
 import type { ChatInputAreaHandle } from './ChatInputArea'
 import { attacksApi } from '../../services/api'
@@ -65,6 +66,10 @@ export default function ChatWindow({
   const [loadedConversationId, setLoadedConversationId] = useState<string | null>(null)
   const isSending = activeConversationId ? sendingConversations.has(activeConversationId) : Boolean(sendingConversations.size)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [isConverterPanelOpen, setIsConverterPanelOpen] = useState(false)
+  const [chatInputText, setChatInputText] = useState('')
+  const [convertedValue, setConvertedValue] = useState<string | null>(null)
+  const [originalValue, setOriginalValue] = useState<string | null>(null)
   const [panelRefreshKey, setPanelRefreshKey] = useState(0)
   const inputBoxRef = useRef<ChatInputAreaHandle>(null)
 
@@ -149,7 +154,7 @@ export default function ChatWindow({
     }
   }, [attackResultId, activeConversationId, onSelectConversation, loadConversation])
 
-  const handleSend = async (originalValue: string, _convertedValue: string | undefined, attachments: MessageAttachment[]) => {
+  const handleSend = async (originalValue: string, convertedValue: string | undefined, attachments: MessageAttachment[]) => {
     if (!activeTarget) { return }
 
     // Track which conversation this send belongs to (may be updated after attack creation)
@@ -157,12 +162,18 @@ export default function ChatWindow({
     // Mark synchronously so the useEffect guard sees it immediately
     sendingConvIdsRef.current.add(sendConvId)
 
+    // When a converter was applied, display the converted text as content
+    // and preserve the original for the "Original" indicator
+    const displayContent = convertedValue ?? originalValue
+    const hasConversion = convertedValue != null && convertedValue !== originalValue
+
     // Add user message with attachments for display
     const userMessage: Message = {
       role: 'user',
-      content: originalValue,
+      content: displayContent,
       timestamp: new Date().toISOString(),
       attachments: attachments.length > 0 ? attachments : undefined,
+      originalContent: hasConversion ? originalValue : undefined,
     }
     setMessages(prev => [...prev, userMessage])
 
@@ -183,7 +194,7 @@ export default function ChatWindow({
 
     try {
       // Build message pieces from text + attachments
-      const pieces = await buildMessagePieces(originalValue, attachments)
+      const pieces = await buildMessagePieces(displayContent, attachments)
 
       // Create attack lazily on first message
       let currentAttackResultId = attackResultId
@@ -449,6 +460,16 @@ export default function ChatWindow({
 
   return (
     <div className={styles.root}>
+      {isConverterPanelOpen && (
+        <ConverterPanel
+          onClose={() => setIsConverterPanelOpen(false)}
+          previewText={chatInputText}
+          onUseConvertedValue={(original, converted) => {
+            setOriginalValue(original)
+            setConvertedValue(converted)
+          }}
+        />
+      )}
       <div className={styles.chatArea}>
         <div className={styles.ribbon}>
           <div className={styles.conversationInfo}>
@@ -518,6 +539,12 @@ export default function ChatWindow({
           attackOperator={isOperatorLocked ? attackOperator ?? undefined : undefined}
           noTargetSelected={!activeTarget}
           onConfigureTarget={!activeTarget ? () => onNavigate?.('config') : undefined}
+          onToggleConverterPanel={() => setIsConverterPanelOpen(prev => !prev)}
+          isConverterPanelOpen={isConverterPanelOpen}
+          onInputChange={setChatInputText}
+          convertedValue={convertedValue}
+          originalValue={originalValue}
+          onClearConversion={() => { setConvertedValue(null); setOriginalValue(null) }}
         />
       </div>
       {isPanelOpen && (

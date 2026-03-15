@@ -1,12 +1,12 @@
 import { useState, useEffect, useLayoutEffect, useRef, forwardRef, useImperativeHandle, KeyboardEvent } from 'react'
 import {
   Button,
-  tokens,
   Caption1,
   Tooltip,
   Text,
+  tokens,
 } from '@fluentui/react-components'
-import { SendRegular, AttachRegular, DismissRegular, InfoRegular, AddRegular, CopyRegular, WarningRegular, SettingsRegular } from '@fluentui/react-icons'
+import { SendRegular, AttachRegular, DismissRegular, InfoRegular, AddRegular, CopyRegular, WarningRegular, SettingsRegular, ArrowSyncRegular } from '@fluentui/react-icons'
 import { MessageAttachment, TargetInstance } from '../../types'
 import { useChatInputAreaStyles } from './ChatInputArea.styles'
 
@@ -68,9 +68,15 @@ interface ChatInputAreaProps {
   attackOperator?: string
   noTargetSelected?: boolean
   onConfigureTarget?: () => void
+  onToggleConverterPanel?: () => void
+  isConverterPanelOpen?: boolean
+  onInputChange?: (value: string) => void
+  convertedValue?: string | null
+  originalValue?: string | null
+  onClearConversion?: () => void
 }
 
-const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(function ChatInputArea({ onSend, disabled = false, activeTarget, singleTurnLimitReached = false, onNewConversation, operatorLocked = false, crossTargetLocked = false, onUseAsTemplate, attackOperator, noTargetSelected = false, onConfigureTarget }, ref) {
+const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(function ChatInputArea({ onSend, disabled = false, activeTarget, singleTurnLimitReached = false, onNewConversation, operatorLocked = false, crossTargetLocked = false, onUseAsTemplate, attackOperator, noTargetSelected = false, onConfigureTarget, onToggleConverterPanel, isConverterPanelOpen = false, onInputChange, convertedValue, originalValue, onClearConversion }, ref) {
   const styles = useChatInputAreaStyles()
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<MessageAttachment[]>([])
@@ -126,9 +132,10 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(functi
 
   const handleSend = () => {
     if ((input || attachments.length > 0) && !disabled) {
-      onSend(input, undefined, attachments)
+      onSend(input, convertedValue ?? undefined, attachments)
       setInput('')
       setAttachments([])
+      onClearConversion?.()
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
       }
@@ -156,7 +163,8 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(functi
       textareaRef.current.style.height = 'auto'
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 96) + 'px'
     }
-  }, [input])
+    onInputChange?.(input)
+  }, [input, onInputChange])
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value)
@@ -261,7 +269,19 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(functi
               disabled={disabled}
               title="Attach files"
             />
+            <Button
+              className={styles.iconButton}
+              appearance={isConverterPanelOpen ? 'primary' : 'subtle'}
+              icon={<ArrowSyncRegular />}
+              onClick={onToggleConverterPanel}
+              disabled={disabled || !onToggleConverterPanel}
+              data-testid="toggle-converter-panel-btn"
+              title="Toggle converter panel"
+            />
             </div>
+          {convertedValue && (
+            <span className={styles.originalBadge} data-testid="original-banner">Original</span>
+          )}
           <textarea
             ref={textareaRef}
             className={styles.textInput}
@@ -271,6 +291,7 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(functi
             onKeyDown={handleKeyDown}
             disabled={disabled}
             rows={1}
+            data-testid="chat-input"
           />
           <div className={styles.iconButtonsRight}>
             {activeTarget && activeTarget.supports_multi_turn === false && (
@@ -293,6 +314,22 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(functi
             />
           </div>
           </div>
+          {convertedValue && (
+            <div className={styles.conversionBarBottom} data-testid="converted-indicator">
+              <span className={styles.convertedBadge}>Converted</span>
+              <Text size={200} className={styles.conversionText} truncate>
+                {convertedValue}
+              </Text>
+              <Button
+                appearance="subtle"
+                size="small"
+                onClick={onClearConversion}
+                data-testid="clear-conversion-btn"
+              >
+                ✕
+              </Button>
+            </div>
+          )}
         </div>
         </>
         )}
